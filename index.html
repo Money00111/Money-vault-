@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Money Vault Dashboard</title>
+<style>
+body{
+font-family:Arial;
+background:#111827;
+color:white;
+text-align:center;
+padding:20px;
+}
+.box{
+background:#1f2937;
+padding:20px;
+border-radius:15px;
+max-width:400px;
+margin:auto;
+}
+input,button{
+width:100%;
+padding:12px;
+margin:10px 0;
+border:none;
+border-radius:10px;
+}
+button{
+background:#10b981;
+color:white;
+font-weight:bold;
+}
+ul{
+list-style:none;
+padding:0;
+}
+li{
+background:#374151;
+padding:10px;
+margin:8px 0;
+border-radius:8px;
+}
+</style>
+</head>
+<body>
+
+<div class="box">
+<h1>Money Vault</h1>
+
+<h2>Balance: $<span id="balance">0</span></h2>
+
+<input id="amount" type="number" placeholder="Enter amount">
+
+<button onclick="deposit()">Deposit</button>
+<button onclick="withdraw()">Withdraw</button>
+
+<h3>Transactions</h3>
+<ul id="list"></ul>
+</div>
+
+<script>
+let balance=0;
+
+function update(){
+document.getElementById("balance").innerHTML=balance;
+}
+
+function addTransaction(text){
+let li=document.createElement("li");
+li.innerHTML=text;
+document.getElementById("list").appendChild(li);
+}
+
+function deposit(){
+let amount=parseInt(document.getElementById("amount").value);
+balance+=amount;
+update();
+addTransaction("Deposited $" + amount);
+}
+
+function withdraw(){
+let amount=parseInt(document.getElementById("amount").value);
+balance-=amount;
+update();
+addTransaction("Withdrew $" + amount);
+}
+</script>
+
+</body>
+</html>
