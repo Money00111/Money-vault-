@@ -1,88 +1,212 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Money Vault Dashboard</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Money Vault</title>
+
 <style>
 body{
-font-family:Arial;
-background:#111827;
-color:white;
-text-align:center;
-padding:20px;
+    margin:0;
+    padding:0;
+    background:#0f172a;
+    font-family:Arial;
+    color:white;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    min-height:100vh;
 }
+
 .box{
-background:#1f2937;
-padding:20px;
-border-radius:15px;
-max-width:400px;
-margin:auto;
+    background:#1e293b;
+    width:320px;
+    padding:20px;
+    border-radius:20px;
+    box-shadow:0 0 15px rgba(0,0,0,0.4);
 }
-input,button{
-width:100%;
-padding:12px;
-margin:10px 0;
-border:none;
-border-radius:10px;
+
+h1{
+    text-align:center;
+    margin-bottom:10px;
 }
+
+.balance{
+    text-align:center;
+    font-size:24px;
+    margin-bottom:20px;
+    font-weight:bold;
+}
+
+input{
+    width:100%;
+    padding:12px;
+    border:none;
+    border-radius:10px;
+    margin-bottom:15px;
+    font-size:16px;
+    box-sizing:border-box;
+}
+
 button{
-background:#10b981;
-color:white;
-font-weight:bold;
+    width:100%;
+    padding:12px;
+    border:none;
+    border-radius:10px;
+    margin-top:10px;
+    font-size:16px;
+    cursor:pointer;
+    font-weight:bold;
 }
-ul{
-list-style:none;
-padding:0;
+
+.deposit{
+    background:#10b981;
+    color:white;
 }
-li{
-background:#374151;
-padding:10px;
-margin:8px 0;
-border-radius:8px;
+
+.withdraw{
+    background:#ef4444;
+    color:white;
+}
+
+.clear{
+    background:#334155;
+    color:white;
+}
+
+.history{
+    margin-top:20px;
+    max-height:200px;
+    overflow:auto;
+}
+
+.item{
+    background:#0f172a;
+    padding:10px;
+    border-radius:10px;
+    margin-top:10px;
+    font-size:14px;
 }
 </style>
 </head>
+
 <body>
 
 <div class="box">
+
 <h1>Money Vault</h1>
 
-<h2>Balance: $<span id="balance">0</span></h2>
+<div class="balance">
+Balance: $<span id="balance">0</span>
+</div>
 
-<input id="amount" type="number" placeholder="Enter amount">
+<input type="number" id="amount" placeholder="Enter amount">
 
-<button onclick="deposit()">Deposit</button>
-<button onclick="withdraw()">Withdraw</button>
+<button class="deposit" onclick="depositMoney()">
+Deposit
+</button>
 
-<h3>Transactions</h3>
-<ul id="list"></ul>
+<button class="withdraw" onclick="withdrawMoney()">
+Withdraw
+</button>
+
+<button class="clear" onclick="clearHistory()">
+Clear History
+</button>
+
+<div class="history" id="history"></div>
+
 </div>
 
 <script>
-let balance=0;
 
-function update(){
-document.getElementById("balance").innerHTML=balance;
+let balance = localStorage.getItem("balance")
+? parseFloat(localStorage.getItem("balance"))
+: 0;
+
+let transactions = localStorage.getItem("transactions")
+? JSON.parse(localStorage.getItem("transactions"))
+: [];
+
+updateUI();
+
+function saveData(){
+    localStorage.setItem("balance", balance);
+    localStorage.setItem("transactions", JSON.stringify(transactions));
 }
 
-function addTransaction(text){
-let li=document.createElement("li");
-li.innerHTML=text;
-document.getElementById("list").appendChild(li);
+function updateUI(){
+
+    document.getElementById("balance").innerText = balance;
+
+    let historyDiv = document.getElementById("history");
+
+    historyDiv.innerHTML = "";
+
+    transactions.slice().reverse().forEach(item => {
+
+        historyDiv.innerHTML += `
+        <div class="item">
+        ${item}
+        </div>
+        `;
+    });
 }
 
-function deposit(){
-let amount=parseInt(document.getElementById("amount").value);
-balance+=amount;
-update();
-addTransaction("Deposited $" + amount);
+function depositMoney(){
+
+    let amount = parseFloat(document.getElementById("amount").value);
+
+    if(!amount || amount <= 0){
+        alert("Enter valid amount");
+        return;
+    }
+
+    balance += amount;
+
+    transactions.push("Deposited $" + amount);
+
+    saveData();
+
+    updateUI();
+
+    document.getElementById("amount").value = "";
 }
 
-function withdraw(){
-let amount=parseInt(document.getElementById("amount").value);
-balance-=amount;
-update();
-addTransaction("Withdrew $" + amount);
+function withdrawMoney(){
+
+    let amount = parseFloat(document.getElementById("amount").value);
+
+    if(!amount || amount <= 0){
+        alert("Enter valid amount");
+        return;
+    }
+
+    if(amount > balance){
+        alert("Insufficient balance");
+        return;
+    }
+
+    balance -= amount;
+
+    transactions.push("Withdrew $" + amount);
+
+    saveData();
+
+    updateUI();
+
+    document.getElementById("amount").value = "";
 }
+
+function clearHistory(){
+
+    transactions = [];
+
+    saveData();
+
+    updateUI();
+}
+
 </script>
 
 </body>
