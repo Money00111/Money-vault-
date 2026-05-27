@@ -6,11 +6,12 @@
 <title>Money Vault</title>
 
 <style>
+
 body{
     margin:0;
     padding:0;
-    background:#0f172a;
     font-family:Arial;
+    background:#0f172a;
     color:white;
     display:flex;
     justify-content:center;
@@ -18,45 +19,41 @@ body{
     min-height:100vh;
 }
 
-.box{
-    background:#1e293b;
+.container{
     width:320px;
+    background:#1e293b;
     padding:20px;
     border-radius:20px;
     box-shadow:0 0 15px rgba(0,0,0,0.4);
 }
 
-h1{
+h1,h2{
     text-align:center;
-    margin-bottom:10px;
-}
-
-.balance{
-    text-align:center;
-    font-size:24px;
-    margin-bottom:20px;
-    font-weight:bold;
 }
 
 input{
     width:100%;
     padding:12px;
+    margin-top:10px;
     border:none;
     border-radius:10px;
-    margin-bottom:15px;
-    font-size:16px;
     box-sizing:border-box;
 }
 
 button{
     width:100%;
     padding:12px;
+    margin-top:12px;
     border:none;
     border-radius:10px;
-    margin-top:10px;
     font-size:16px;
     cursor:pointer;
     font-weight:bold;
+}
+
+.login-btn{
+    background:#3b82f6;
+    color:white;
 }
 
 .deposit{
@@ -69,9 +66,16 @@ button{
     color:white;
 }
 
-.clear{
+.logout{
     background:#334155;
     color:white;
+}
+
+.balance{
+    text-align:center;
+    font-size:24px;
+    margin:20px 0;
+    font-weight:bold;
 }
 
 .history{
@@ -87,17 +91,38 @@ button{
     margin-top:10px;
     font-size:14px;
 }
+
+.hidden{
+    display:none;
+}
+
 </style>
 </head>
 
 <body>
 
-<div class="box">
+<!-- LOGIN PAGE -->
+
+<div class="container" id="loginPage">
 
 <h1>Money Vault</h1>
 
+<input type="text" id="username" placeholder="Enter username">
+
+<button class="login-btn" onclick="login()">
+Login
+</button>
+
+</div>
+
+<!-- DASHBOARD -->
+
+<div class="container hidden" id="dashboard">
+
+<h2 id="welcome"></h2>
+
 <div class="balance">
-Balance: $<span id="balance">0</span>
+$<span id="balance">0</span>
 </div>
 
 <input type="number" id="amount" placeholder="Enter amount">
@@ -110,8 +135,8 @@ Deposit
 Withdraw
 </button>
 
-<button class="clear" onclick="clearHistory()">
-Clear History
+<button class="logout" onclick="logout()">
+Logout
 </button>
 
 <div class="history" id="history"></div>
@@ -119,6 +144,8 @@ Clear History
 </div>
 
 <script>
+
+let savedUser = localStorage.getItem("username");
 
 let balance = localStorage.getItem("balance")
 ? parseFloat(localStorage.getItem("balance"))
@@ -128,18 +155,57 @@ let transactions = localStorage.getItem("transactions")
 ? JSON.parse(localStorage.getItem("transactions"))
 : [];
 
-updateUI();
+if(savedUser){
+    showDashboard(savedUser);
+}
+
+function login(){
+
+    let username = document.getElementById("username").value;
+
+    if(username.trim() == ""){
+        alert("Enter username");
+        return;
+    }
+
+    localStorage.setItem("username", username);
+
+    showDashboard(username);
+}
+
+function showDashboard(username){
+
+    document.getElementById("loginPage").classList.add("hidden");
+
+    document.getElementById("dashboard").classList.remove("hidden");
+
+    document.getElementById("welcome").innerText =
+    "Welcome, " + username;
+
+    updateUI();
+}
+
+function logout(){
+
+    localStorage.removeItem("username");
+
+    location.reload();
+}
 
 function saveData(){
+
     localStorage.setItem("balance", balance);
-    localStorage.setItem("transactions", JSON.stringify(transactions));
+
+    localStorage.setItem("transactions",
+    JSON.stringify(transactions));
 }
 
 function updateUI(){
 
     document.getElementById("balance").innerText = balance;
 
-    let historyDiv = document.getElementById("history");
+    let historyDiv =
+    document.getElementById("history");
 
     historyDiv.innerHTML = "";
 
@@ -155,7 +221,8 @@ function updateUI(){
 
 function depositMoney(){
 
-    let amount = parseFloat(document.getElementById("amount").value);
+    let amount =
+    parseFloat(document.getElementById("amount").value);
 
     if(!amount || amount <= 0){
         alert("Enter valid amount");
@@ -164,7 +231,11 @@ function depositMoney(){
 
     balance += amount;
 
-    transactions.push("Deposited $" + amount);
+    let time = new Date().toLocaleString();
+
+    transactions.push(
+    "Deposited $" + amount + "<br><small>" + time + "</small>"
+    );
 
     saveData();
 
@@ -175,7 +246,8 @@ function depositMoney(){
 
 function withdrawMoney(){
 
-    let amount = parseFloat(document.getElementById("amount").value);
+    let amount =
+    parseFloat(document.getElementById("amount").value);
 
     if(!amount || amount <= 0){
         alert("Enter valid amount");
@@ -189,22 +261,17 @@ function withdrawMoney(){
 
     balance -= amount;
 
-    transactions.push("Withdrew $" + amount);
+    let time = new Date().toLocaleString();
+
+    transactions.push(
+    "Withdrew $" + amount + "<br><small>" + time + "</small>"
+    );
 
     saveData();
 
     updateUI();
 
     document.getElementById("amount").value = "";
-}
-
-function clearHistory(){
-
-    transactions = [];
-
-    saveData();
-
-    updateUI();
 }
 
 </script>
