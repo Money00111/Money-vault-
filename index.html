@@ -20,7 +20,7 @@ body{
 }
 
 .container{
-    width:320px;
+    width:340px;
     background:#1e293b;
     padding:20px;
     border-radius:20px;
@@ -66,6 +66,11 @@ button{
     color:white;
 }
 
+.clear{
+    background:#f59e0b;
+    color:white;
+}
+
 .logout{
     background:#334155;
     color:white;
@@ -73,14 +78,40 @@ button{
 
 .balance{
     text-align:center;
-    font-size:24px;
+    font-size:28px;
     margin:20px 0;
+    font-weight:bold;
+}
+
+.stats{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+    margin-bottom:15px;
+}
+
+.card{
+    background:#0f172a;
+    padding:12px;
+    border-radius:12px;
+    text-align:center;
+}
+
+.card h3{
+    margin:0;
+    font-size:14px;
+    color:#94a3b8;
+}
+
+.card p{
+    margin-top:8px;
+    font-size:18px;
     font-weight:bold;
 }
 
 .history{
     margin-top:20px;
-    max-height:200px;
+    max-height:220px;
     overflow:auto;
 }
 
@@ -96,12 +127,16 @@ button{
     display:none;
 }
 
+small{
+    color:#94a3b8;
+}
+
 </style>
 </head>
 
 <body>
 
-<!-- LOGIN PAGE -->
+<!-- LOGIN -->
 
 <div class="container" id="loginPage">
 
@@ -125,6 +160,20 @@ Login
 $<span id="balance">0</span>
 </div>
 
+<div class="stats">
+
+<div class="card">
+<h3>Total Deposits</h3>
+<p id="totalDeposits">$0</p>
+</div>
+
+<div class="card">
+<h3>Total Withdrawals</h3>
+<p id="totalWithdrawals">$0</p>
+</div>
+
+</div>
+
 <input type="number" id="amount" placeholder="Enter amount">
 
 <button class="deposit" onclick="depositMoney()">
@@ -133,6 +182,10 @@ Deposit
 
 <button class="withdraw" onclick="withdrawMoney()">
 Withdraw
+</button>
+
+<button class="clear" onclick="clearHistory()">
+Clear History
 </button>
 
 <button class="logout" onclick="logout()">
@@ -149,6 +202,14 @@ let savedUser = localStorage.getItem("username");
 
 let balance = localStorage.getItem("balance")
 ? parseFloat(localStorage.getItem("balance"))
+: 0;
+
+let totalDeposits = localStorage.getItem("totalDeposits")
+? parseFloat(localStorage.getItem("totalDeposits"))
+: 0;
+
+let totalWithdrawals = localStorage.getItem("totalWithdrawals")
+? parseFloat(localStorage.getItem("totalWithdrawals"))
 : 0;
 
 let transactions = localStorage.getItem("transactions")
@@ -175,12 +236,14 @@ function login(){
 
 function showDashboard(username){
 
-    document.getElementById("loginPage").classList.add("hidden");
+    document.getElementById("loginPage")
+    .classList.add("hidden");
 
-    document.getElementById("dashboard").classList.remove("hidden");
+    document.getElementById("dashboard")
+    .classList.remove("hidden");
 
-    document.getElementById("welcome").innerText =
-    "Welcome, " + username;
+    document.getElementById("welcome")
+    .innerText = "Welcome, " + username;
 
     updateUI();
 }
@@ -196,13 +259,26 @@ function saveData(){
 
     localStorage.setItem("balance", balance);
 
+    localStorage.setItem("totalDeposits",
+    totalDeposits);
+
+    localStorage.setItem("totalWithdrawals",
+    totalWithdrawals);
+
     localStorage.setItem("transactions",
     JSON.stringify(transactions));
 }
 
 function updateUI(){
 
-    document.getElementById("balance").innerText = balance;
+    document.getElementById("balance")
+    .innerText = balance;
+
+    document.getElementById("totalDeposits")
+    .innerText = "$" + totalDeposits;
+
+    document.getElementById("totalWithdrawals")
+    .innerText = "$" + totalWithdrawals;
 
     let historyDiv =
     document.getElementById("history");
@@ -231,10 +307,13 @@ function depositMoney(){
 
     balance += amount;
 
+    totalDeposits += amount;
+
     let time = new Date().toLocaleString();
 
     transactions.push(
-    "Deposited $" + amount + "<br><small>" + time + "</small>"
+    "Deposited $" + amount +
+    "<br><small>" + time + "</small>"
     );
 
     saveData();
@@ -261,10 +340,13 @@ function withdrawMoney(){
 
     balance -= amount;
 
+    totalWithdrawals += amount;
+
     let time = new Date().toLocaleString();
 
     transactions.push(
-    "Withdrew $" + amount + "<br><small>" + time + "</small>"
+    "Withdrew $" + amount +
+    "<br><small>" + time + "</small>"
     );
 
     saveData();
@@ -272,6 +354,15 @@ function withdrawMoney(){
     updateUI();
 
     document.getElementById("amount").value = "";
+}
+
+function clearHistory(){
+
+    transactions = [];
+
+    saveData();
+
+    updateUI();
 }
 
 </script>
