@@ -1,134 +1,165 @@
+Shyiramo iyi code yose muri `index.html` 🚀
+
+```html
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Money Vault</title>
+<title>Money Vault Savings</title>
 
 <style>
 
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+font-family:Arial;
+}
+
 body{
-    margin:0;
-    padding:0;
-    font-family:Arial;
-    background:#0f172a;
-    color:white;
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    min-height:100vh;
+background:#0f172a;
+color:white;
+display:flex;
+justify-content:center;
+align-items:center;
+min-height:100vh;
+padding:20px;
 }
 
 .container{
-    width:340px;
-    background:#1e293b;
-    padding:20px;
-    border-radius:20px;
-    box-shadow:0 0 15px rgba(0,0,0,0.4);
+width:360px;
+background:#1e293b;
+padding:20px;
+border-radius:25px;
+box-shadow:0 0 20px rgba(0,0,0,0.4);
 }
 
-h1,h2{
-    text-align:center;
+h1,h2,h3{
+text-align:center;
+margin-bottom:15px;
 }
 
-input{
-    width:100%;
-    padding:12px;
-    margin-top:10px;
-    border:none;
-    border-radius:10px;
-    box-sizing:border-box;
+input,select{
+width:100%;
+padding:12px;
+margin-top:10px;
+border:none;
+border-radius:12px;
+font-size:16px;
 }
 
 button{
-    width:100%;
-    padding:12px;
-    margin-top:12px;
-    border:none;
-    border-radius:10px;
-    font-size:16px;
-    cursor:pointer;
-    font-weight:bold;
+width:100%;
+padding:12px;
+margin-top:12px;
+border:none;
+border-radius:12px;
+font-size:16px;
+font-weight:bold;
+cursor:pointer;
 }
 
 .login-btn{
-    background:#3b82f6;
-    color:white;
+background:#3b82f6;
+color:white;
 }
 
 .deposit{
-    background:#10b981;
-    color:white;
+background:#10b981;
+color:white;
 }
 
 .withdraw{
-    background:#ef4444;
-    color:white;
+background:#ef4444;
+color:white;
+}
+
+.grow{
+background:#8b5cf6;
+color:white;
 }
 
 .clear{
-    background:#f59e0b;
-    color:white;
+background:#f59e0b;
+color:white;
 }
 
 .logout{
-    background:#334155;
-    color:white;
+background:#334155;
+color:white;
 }
 
 .balance{
-    text-align:center;
-    font-size:28px;
-    margin:20px 0;
-    font-weight:bold;
+text-align:center;
+font-size:30px;
+font-weight:bold;
+margin:20px 0;
 }
 
 .stats{
-    display:grid;
-    grid-template-columns:1fr 1fr;
-    gap:10px;
-    margin-bottom:15px;
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:10px;
+margin-bottom:15px;
 }
 
 .card{
-    background:#0f172a;
-    padding:12px;
-    border-radius:12px;
-    text-align:center;
+background:#0f172a;
+padding:15px;
+border-radius:15px;
+text-align:center;
 }
 
 .card h3{
-    margin:0;
-    font-size:14px;
-    color:#94a3b8;
+font-size:14px;
+margin-bottom:8px;
 }
 
 .card p{
-    margin-top:8px;
-    font-size:18px;
-    font-weight:bold;
+font-size:20px;
+font-weight:bold;
+}
+
+.progress-box{
+margin-top:20px;
+}
+
+.progress{
+width:100%;
+height:20px;
+background:#334155;
+border-radius:20px;
+overflow:hidden;
+margin-top:10px;
+}
+
+.progress-bar{
+height:100%;
+background:#10b981;
+width:0%;
 }
 
 .history{
-    margin-top:20px;
-    max-height:220px;
-    overflow:auto;
+margin-top:20px;
+max-height:180px;
+overflow:auto;
 }
 
 .item{
-    background:#0f172a;
-    padding:10px;
-    border-radius:10px;
-    margin-top:10px;
-    font-size:14px;
+background:#0f172a;
+padding:12px;
+border-radius:12px;
+margin-top:10px;
+font-size:14px;
 }
 
 .hidden{
-    display:none;
+display:none;
 }
 
 small{
-    color:#94a3b8;
+color:gray;
 }
 
 </style>
@@ -140,11 +171,14 @@ small{
 
 <div class="container" id="loginPage">
 
-<h1>Money Vault</h1>
+<h1>Money Vault Savings</h1>
 
-<input type="text" id="username" placeholder="Enter username">
+<input type="text"
+id="username"
+placeholder="Enter username">
 
-<button class="login-btn" onclick="login()">
+<button class="login-btn"
+onclick="login()">
 Login
 </button>
 
@@ -152,7 +186,8 @@ Login
 
 <!-- DASHBOARD -->
 
-<div class="container hidden" id="dashboard">
+<div class="container hidden"
+id="dashboard">
 
 <h2 id="welcome"></h2>
 
@@ -163,209 +198,301 @@ $<span id="balance">0</span>
 <div class="stats">
 
 <div class="card">
-<h3>Total Deposits</h3>
-<p id="totalDeposits">$0</p>
+<h3>Savings Goal</h3>
+<p id="goalDisplay">$0</p>
 </div>
 
 <div class="card">
-<h3>Total Withdrawals</h3>
-<p id="totalWithdrawals">$0</p>
+<h3>Estimated Growth</h3>
+<p id="growthDisplay">$0</p>
 </div>
 
 </div>
 
-<input type="number" id="amount" placeholder="Enter amount">
+<input type="number"
+id="goalInput"
+placeholder="Set savings goal">
 
-<button class="deposit" onclick="depositMoney()">
+<button class="grow"
+onclick="setGoal()">
+Set Goal
+</button>
+
+<input type="number"
+id="amount"
+placeholder="Enter amount">
+
+<button class="deposit"
+onclick="depositMoney()">
 Deposit
 </button>
 
-<button class="withdraw" onclick="withdrawMoney()">
+<button class="withdraw"
+onclick="withdrawMoney()">
 Withdraw
 </button>
 
-<button class="clear" onclick="clearHistory()">
+<button class="grow"
+onclick="simulateGrowth()">
+Simulate Growth
+</button>
+
+<button class="clear"
+onclick="clearHistory()">
 Clear History
 </button>
 
-<button class="logout" onclick="logout()">
+<button class="logout"
+onclick="logout()">
 Logout
 </button>
 
-<div class="history" id="history"></div>
+<div class="progress-box">
+
+<h3>Goal Progress</h3>
+
+<div class="progress">
+
+<div class="progress-bar"
+id="progressBar"></div>
+
+</div>
+
+</div>
+
+<div class="history"
+id="history"></div>
 
 </div>
 
 <script>
 
-let savedUser = localStorage.getItem("username");
+let savedUser =
+localStorage.getItem("username");
 
-let balance = localStorage.getItem("balance")
+let balance =
+localStorage.getItem("balance")
 ? parseFloat(localStorage.getItem("balance"))
 : 0;
 
-let totalDeposits = localStorage.getItem("totalDeposits")
-? parseFloat(localStorage.getItem("totalDeposits"))
+let goal =
+localStorage.getItem("goal")
+? parseFloat(localStorage.getItem("goal"))
 : 0;
 
-let totalWithdrawals = localStorage.getItem("totalWithdrawals")
-? parseFloat(localStorage.getItem("totalWithdrawals"))
+let estimatedGrowth =
+localStorage.getItem("estimatedGrowth")
+? parseFloat(localStorage.getItem("estimatedGrowth"))
 : 0;
 
-let transactions = localStorage.getItem("transactions")
+let transactions =
+localStorage.getItem("transactions")
 ? JSON.parse(localStorage.getItem("transactions"))
 : [];
 
 if(savedUser){
-    showDashboard(savedUser);
+showDashboard(savedUser);
 }
 
 function login(){
 
-    let username = document.getElementById("username").value;
+let username =
+document.getElementById("username").value;
 
-    if(username.trim() == ""){
-        alert("Enter username");
-        return;
-    }
+if(username.trim() == ""){
+alert("Enter username");
+return;
+}
 
-    localStorage.setItem("username", username);
+localStorage.setItem("username", username);
 
-    showDashboard(username);
+showDashboard(username);
 }
 
 function showDashboard(username){
 
-    document.getElementById("loginPage")
-    .classList.add("hidden");
+document.getElementById("loginPage")
+.classList.add("hidden");
 
-    document.getElementById("dashboard")
-    .classList.remove("hidden");
+document.getElementById("dashboard")
+.classList.remove("hidden");
 
-    document.getElementById("welcome")
-    .innerText = "Welcome, " + username;
+document.getElementById("welcome")
+.innerText =
+"Welcome, " + username;
 
-    updateUI();
+updateUI();
 }
 
 function logout(){
 
-    localStorage.removeItem("username");
+localStorage.removeItem("username");
 
-    location.reload();
+location.reload();
 }
 
 function saveData(){
 
-    localStorage.setItem("balance", balance);
+localStorage.setItem("balance", balance);
 
-    localStorage.setItem("totalDeposits",
-    totalDeposits);
+localStorage.setItem("goal", goal);
 
-    localStorage.setItem("totalWithdrawals",
-    totalWithdrawals);
+localStorage.setItem("estimatedGrowth",
+estimatedGrowth);
 
-    localStorage.setItem("transactions",
-    JSON.stringify(transactions));
+localStorage.setItem("transactions",
+JSON.stringify(transactions));
 }
 
 function updateUI(){
 
-    document.getElementById("balance")
-    .innerText = balance;
+document.getElementById("balance")
+.innerText = balance;
 
-    document.getElementById("totalDeposits")
-    .innerText = "$" + totalDeposits;
+document.getElementById("goalDisplay")
+.innerText = "$" + goal;
 
-    document.getElementById("totalWithdrawals")
-    .innerText = "$" + totalWithdrawals;
+document.getElementById("growthDisplay")
+.innerText = "$" + estimatedGrowth;
 
-    let historyDiv =
-    document.getElementById("history");
+let historyDiv =
+document.getElementById("history");
 
-    historyDiv.innerHTML = "";
+historyDiv.innerHTML = "";
 
-    transactions.slice().reverse().forEach(item => {
+transactions.slice().reverse()
+.forEach(item => {
 
-        historyDiv.innerHTML += `
-        <div class="item">
-        ${item}
-        </div>
-        `;
-    });
+historyDiv.innerHTML += `
+<div class="item">
+${item}
+</div>
+`;
+});
+
+let progress =
+goal > 0
+? (balance / goal) * 100
+: 0;
+
+if(progress > 100){
+progress = 100;
+}
+
+document.getElementById("progressBar")
+.style.width = progress + "%";
+}
+
+function setGoal(){
+
+let newGoal =
+parseFloat(document.getElementById("goalInput").value);
+
+if(!newGoal || newGoal <= 0){
+alert("Enter valid goal");
+return;
+}
+
+goal = newGoal;
+
+saveData();
+
+updateUI();
+
+document.getElementById("goalInput").value = "";
 }
 
 function depositMoney(){
 
-    let amount =
-    parseFloat(document.getElementById("amount").value);
+let amount =
+parseFloat(document.getElementById("amount").value);
 
-    if(!amount || amount <= 0){
-        alert("Enter valid amount");
-        return;
-    }
+if(!amount || amount <= 0){
+alert("Enter valid amount");
+return;
+}
 
-    balance += amount;
+balance += amount;
 
-    totalDeposits += amount;
+let time =
+new Date().toLocaleString();
 
-    let time = new Date().toLocaleString();
+transactions.push(
+"Deposited $" + amount +
+"<br><small>" + time + "</small>"
+);
 
-    transactions.push(
-    "Deposited $" + amount +
-    "<br><small>" + time + "</small>"
-    );
+saveData();
 
-    saveData();
+updateUI();
 
-    updateUI();
-
-    document.getElementById("amount").value = "";
+document.getElementById("amount").value = "";
 }
 
 function withdrawMoney(){
 
-    let amount =
-    parseFloat(document.getElementById("amount").value);
+let amount =
+parseFloat(document.getElementById("amount").value);
 
-    if(!amount || amount <= 0){
-        alert("Enter valid amount");
-        return;
-    }
+if(!amount || amount <= 0){
+alert("Enter valid amount");
+return;
+}
 
-    if(amount > balance){
-        alert("Insufficient balance");
-        return;
-    }
+if(amount > balance){
+alert("Insufficient balance");
+return;
+}
 
-    balance -= amount;
+balance -= amount;
 
-    totalWithdrawals += amount;
+let time =
+new Date().toLocaleString();
 
-    let time = new Date().toLocaleString();
+transactions.push(
+"Withdrew $" + amount +
+"<br><small>" + time + "</small>"
+);
 
-    transactions.push(
-    "Withdrew $" + amount +
-    "<br><small>" + time + "</small>"
-    );
+saveData();
 
-    saveData();
+updateUI();
 
-    updateUI();
+document.getElementById("amount").value = "";
+}
 
-    document.getElementById("amount").value = "";
+function simulateGrowth(){
+
+let growth =
+balance * 0.05;
+
+estimatedGrowth += growth;
+
+let time =
+new Date().toLocaleString();
+
+transactions.push(
+"Growth added $" +
+growth.toFixed(2) +
+"<br><small>" + time + "</small>"
+);
+
+saveData();
+
+updateUI();
 }
 
 function clearHistory(){
 
-    transactions = [];
+transactions = [];
 
-    saveData();
+saveData();
 
-    updateUI();
+updateUI();
 }
 
 </script>
 
 </body>
 </html>
+```
