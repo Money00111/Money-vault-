@@ -1,79 +1,527 @@
-<div id="sidebar" class="sidebar">
-  <div class="close-btn" onclick="toggleSidebar()">✕</div>
-
-  <h2>Money Vault</h2>
-
-  <a href="#">🏠 Dashboard</a>
-  <a href="#">💼 My Wallet</a>
-  <a href="#">⬇️ Deposit</a>
-  <a href="#">⬆️ Withdraw</a>
-  <a href="#">👑 VIP Plans</a>
-  <a href="#">📋 Transactions</a>
-  <a href="#">👥 Referrals</a>
-  <a href="#">👤 Profile</a>
-  <a href="#">⚙️ Settings</a>
-
-  <a href="#" class="logout">🚪 Logout</a>
-</div>
-
-<div class="menu-btn" onclick="toggleSidebar()">☰</div>
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Money Vault</title>
 
 <style>
-.sidebar{
-  position:fixed;
-  top:0;
-  left:-300px;
-  width:280px;
-  height:100%;
-  background:#fff;
-  box-shadow:0 0 15px rgba(0,0,0,.2);
-  transition:.3s;
-  z-index:1000;
-  padding:20px;
+
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+font-family:Arial;
 }
 
-.sidebar.active{
-  left:0;
+body{
+background:#f4f7f6;
+color:#111827;
+padding:20px;
 }
 
-.sidebar h2{
-  color:#16a34a;
-  margin-bottom:20px;
+.topbar{
+display:flex;
+justify-content:space-between;
+align-items:center;
+margin-bottom:20px;
 }
 
-.sidebar a{
-  display:block;
-  padding:15px 10px;
-  text-decoration:none;
-  color:#222;
-  font-size:18px;
+.menu{
+font-size:24px;
+cursor:pointer;
 }
 
-.sidebar a:hover{
-  background:#f3f4f6;
-  border-radius:10px;
+.profile{
+width:45px;
+height:45px;
+background:#d1fae5;
+border-radius:50%;
+display:flex;
+justify-content:center;
+align-items:center;
+font-weight:bold;
+color:#16a34a;
+font-size:20px;
 }
 
-.logout{
-  color:red !important;
-  margin-top:20px;
+.notification{
+position:relative;
+font-size:22px;
 }
 
-.menu-btn{
-  font-size:35px;
-  cursor:pointer;
-  margin:10px;
+.badge{
+position:absolute;
+top:-8px;
+right:-8px;
+background:red;
+color:white;
+font-size:12px;
+width:20px;
+height:20px;
+border-radius:50%;
+display:flex;
+justify-content:center;
+align-items:center;
 }
 
-.close-btn{
-  font-size:30px;
-  cursor:pointer;
-  text-align:right;
+.welcome{
+background:#eef7f1;
+padding:25px;
+border-radius:20px;
+margin-bottom:20px;
 }
+
+.welcome h1{
+font-size:20px;
+margin-bottom:8px;
+}
+
+.welcome p{
+color:#64748b;
+}
+
+.cards{
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:15px;
+margin-bottom:20px;
+}
+
+.card{
+background:white;
+padding:20px;
+border-radius:20px;
+border:1px solid #e5e7eb;
+}
+
+.card small{
+color:#64748b;
+font-size:14px;
+}
+
+.card h2{
+margin-top:10px;
+font-size:18px;
+}
+
+.icon{
+width:45px;
+height:45px;
+background:#e8f5ec;
+border-radius:15px;
+display:flex;
+justify-content:center;
+align-items:center;
+font-size:20px;
+color:#16a34a;
+float:right;
+}
+
+.vip{
+background:white;
+padding:20px;
+border-radius:20px;
+border:1px solid #e5e7eb;
+margin-bottom:20px;
+}
+
+.vip h2{
+margin-bottom:15px;
+}
+
+.active{
+background:#dcfce7;
+color:#16a34a;
+padding:6px 12px;
+border-radius:20px;
+font-size:14px;
+font-weight:bold;
+display:inline-block;
+margin-top:10px;
+}
+
+.input-box{
+margin-top:20px;
+}
+
+input{
+width:100%;
+padding:14px;
+border:none;
+border-radius:14px;
+background:#f1f5f9;
+font-size:16px;
+margin-top:10px;
+}
+
+button{
+width:100%;
+padding:14px;
+border:none;
+border-radius:14px;
+font-size:16px;
+font-weight:bold;
+margin-top:12px;
+cursor:pointer;
+}
+
+.deposit{
+background:#16a34a;
+color:white;
+}
+
+.withdraw{
+background:#ef4444;
+color:white;
+}
+
+.history{
+margin-top:25px;
+}
+
+.history h3{
+margin-bottom:10px;
+}
+
+.item{
+background:white;
+padding:15px;
+border-radius:15px;
+margin-top:10px;
+border:1px solid #e5e7eb;
+}
+
+.bottom-nav{
+position:fixed;
+bottom:0;
+left:0;
+width:100%;
+background:white;
+display:flex;
+justify-content:space-around;
+padding:15px;
+border-top:1px solid #e5e7eb;
+}
+
+.bottom-nav div{
+text-align:center;
+font-size:14px;
+color:#475569;
+}
+
 </style>
+</head>
+
+<body>
+
+<div class="topbar">
+
+<div class="menu">☰</div>
+
+<div class="notification">
+🔔
+<div class="badge">2</div>
+</div>
+
+<div class="profile" id="profileLetter">
+M
+</div>
+
+</div>
+
+<div class="welcome">
+
+<h1 id="welcomeText">
+Hello 👋
+</h1>
+
+<p>
+Smart Investment, Daily Earnings
+</p>
+
+</div>
+
+<div class="cards">
+
+<div class="card">
+
+<div class="icon">💳</div>
+
+<small>Balance</small>
+
+<h2 id="balance">
+0 RWF
+</h2>
+
+</div>
+
+<div class="card">
+
+<div class="icon">⬇️</div>
+
+<small>Total Deposits</small>
+
+<h2 id="deposits">
+0 RWF
+</h2>
+
+</div>
+
+<div class="card">
+
+<div class="icon">👥</div>
+
+<small>Referral Earnings</small>
+
+<h2>
+0 RWF
+</h2>
+
+</div>
+
+<div class="card">
+
+<div class="icon">📈</div>
+
+<small>Total Profits</small>
+
+<h2 id="profits">
+0 RWF
+</h2>
+
+</div>
+
+</div>
+
+<div class="vip">
+
+<h2>👑 Active VIP Plan</h2>
+
+<h3>✅ VALID PRODUCT</h3>
+
+<p style="margin-top:15px;">
+Daily Income:
+<b>2,500 RWF</b>
+</p>
+
+<p style="margin-top:8px;">
+Duration:
+<b>3 Days</b>
+</p>
+
+<div class="active">
+Active
+</div>
+
+</div>
+
+<div class="input-box">
+
+<input
+type="number"
+id="amount"
+placeholder="Enter amount">
+
+<button
+class="deposit"
+onclick="depositMoney()">
+Deposit
+</button>
+
+<button
+class="withdraw"
+onclick="withdrawMoney()">
+Withdraw
+</button>
+
+</div>
+
+<div class="history">
+
+<h3>Transactions</h3>
+
+<div id="historyList"></div>
+
+</div>
+
+<div class="bottom-nav">
+
+<div>
+🏠<br>
+Home
+</div>
+
+<div>
+💼<br>
+Wallet
+</div>
+
+<div>
+👤<br>
+Profile
+</div>
+
+</div>
 
 <script>
-function toggleSidebar(){
-  document.getElementById("sidebar").classList.toggle("active");
+
+let username =
+localStorage.getItem("username")
+|| "niyigenaepizo9";
+
+let balance =
+localStorage.getItem("balance")
+? parseInt(localStorage.getItem("balance"))
+: 0;
+
+let deposits =
+localStorage.getItem("deposits")
+? parseInt(localStorage.getItem("deposits"))
+: 0;
+
+let profits =
+localStorage.getItem("profits")
+? parseInt(localStorage.getItem("profits"))
+: 0;
+
+let history =
+localStorage.getItem("history")
+? JSON.parse(localStorage.getItem("history"))
+: [];
+
+document.getElementById("welcomeText")
+.innerHTML =
+"Hello, " + username + " 👋";
+
+document.getElementById("profileLetter")
+.innerText =
+username.charAt(0).toLowerCase();
+
+function saveData(){
+
+localStorage.setItem("balance", balance);
+
+localStorage.setItem("deposits", deposits);
+
+localStorage.setItem("profits", profits);
+
+localStorage.setItem("history",
+JSON.stringify(history));
 }
+
+function updateUI(){
+
+document.getElementById("balance")
+.innerText =
+balance.toLocaleString() + " RWF";
+
+document.getElementById("deposits")
+.innerText =
+deposits.toLocaleString() + " RWF";
+
+document.getElementById("profits")
+.innerText =
+profits.toLocaleString() + " RWF";
+
+let historyList =
+document.getElementById("historyList");
+
+historyList.innerHTML = "";
+
+history.slice().reverse().forEach(item=>{
+
+historyList.innerHTML += `
+<div class="item">
+${item}
+</div>
+`;
+
+});
+
+}
+
+function depositMoney(){
+
+let amount =
+parseInt(document.getElementById("amount").value);
+
+if(!amount || amount <= 0){
+
+alert("Enter valid amount");
+
+return;
+}
+
+balance += amount;
+
+deposits += amount;
+
+profits += Math.floor(amount * 0.25);
+
+let time =
+new Date().toLocaleString();
+
+history.push(
+"Deposited " +
+amount.toLocaleString() +
+" RWF<br><small>" +
+time +
+"</small>"
+);
+
+saveData();
+
+updateUI();
+
+document.getElementById("amount").value="";
+}
+
+function withdrawMoney(){
+
+let amount =
+parseInt(document.getElementById("amount").value);
+
+if(!amount || amount <= 0){
+
+alert("Enter valid amount");
+
+return;
+}
+
+if(amount > balance){
+
+alert("Insufficient Balance");
+
+return;
+}
+
+balance -= amount;
+
+let time =
+new Date().toLocaleString();
+
+history.push(
+"Withdraw " +
+amount.toLocaleString() +
+" RWF<br><small>" +
+time +
+"</small>"
+);
+
+saveData();
+
+updateUI();
+
+document.getElementById("amount").value="";
+}
+
+updateUI();
+
 </script>
+
+</body>
+</html>
+```
+  
