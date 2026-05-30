@@ -1,1 +1,298 @@
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Money Vault Dashboard</title>
+
+<link rel="stylesheet" href="style.css">
+
+<style>
+
+body{
+background:#f4f7f6;
+padding:20px;
+}
+
+.sidebar{
+position:fixed;
+left:-260px;
+top:0;
+width:250px;
+height:100%;
+background:white;
+box-shadow:0 0 20px rgba(0,0,0,0.1);
+padding:20px;
+transition:.3s;
+z-index:1000;
+}
+
+.sidebar.active{
+left:0;
+}
+
+.sidebar a{
+display:block;
+padding:15px;
+text-decoration:none;
+color:#111827;
+font-weight:bold;
+border-radius:12px;
+margin-bottom:10px;
+}
+
+.sidebar a:hover{
+background:#dcfce7;
+}
+
+.topbar{
+display:flex;
+justify-content:space-between;
+align-items:center;
+margin-bottom:20px;
+}
+
+.menu-btn{
+font-size:28px;
+cursor:pointer;
+}
+
+.profile{
+width:45px;
+height:45px;
+border-radius:50%;
+background:#16a34a;
+color:white;
+display:flex;
+justify-content:center;
+align-items:center;
+font-weight:bold;
+}
+
+.card-grid{
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:15px;
+}
+
+.card{
+background:white;
+padding:20px;
+border-radius:20px;
+box-shadow:0 3px 10px rgba(0,0,0,0.05);
+}
+
+.card h3{
+font-size:14px;
+color:#64748b;
+margin-bottom:10px;
+}
+
+.card h2{
+font-size:22px;
+}
+
+.vip{
+background:white;
+padding:20px;
+border-radius:20px;
+margin-top:20px;
+}
+
+.vip h2{
+margin-bottom:10px;
+}
+
+.status{
+display:inline-block;
+background:#dcfce7;
+color:#16a34a;
+padding:8px 15px;
+border-radius:20px;
+font-weight:bold;
+margin-top:10px;
+}
+
+.transactions{
+background:white;
+padding:20px;
+border-radius:20px;
+margin-top:20px;
+}
+
+.transaction{
+padding:12px 0;
+border-bottom:1px solid #eee;
+}
+
+.logout-btn{
+width:100%;
+padding:14px;
+margin-top:20px;
+background:#ef4444;
+color:white;
+border:none;
+border-radius:12px;
+font-weight:bold;
+cursor:pointer;
+}
+
+</style>
+
+</head>
+<body>
+
+<div class="sidebar" id="sidebar">
+
+<h2>Money Vault</h2>
+
+<a href="#">🏠 Dashboard</a>
+<a href="#">💳 Wallet</a>
+<a href="#">👤 Profile</a>
+<a href="#">⚙ Settings</a>
+
+<button class="logout-btn" id="logoutBtn">
+Logout
+</button>
+
+</div>
+
+<div class="topbar">
+
+<div class="menu-btn" onclick="toggleMenu()">
+☰
+</div>
+
+<div class="profile" id="avatar">
+M
+</div>
+
+</div>
+
+<h2 id="welcomeUser">
+Welcome
+</h2>
+
+<br>
+
+<div class="card-grid">
+
+<div class="card">
+<h3>Balance</h3>
+<h2>15,750 RWF</h2>
+</div>
+
+<div class="card">
+<h3>Total Deposits</h3>
+<h2>50,000 RWF</h2>
+</div>
+
+<div class="card">
+<h3>Referral Earnings</h3>
+<h2>7,500 RWF</h2>
+</div>
+
+<div class="card">
+<h3>Total Profit</h3>
+<h2>25,250 RWF</h2>
+</div>
+
+</div>
+
+<div class="vip">
+
+<h2>👑 Active VIP Plan</h2>
+
+<p>Daily Income: <b>2,500 RWF</b></p>
+
+<p>Duration: <b>3 Days</b></p>
+
+<div class="status">
+Active
+</div>
+
+</div>
+
+<div class="transactions">
+
+<h3>Recent Transactions</h3>
+
+<div class="transaction">
++10,000 RWF Deposit
+</div>
+
+<div class="transaction">
+-2,000 RWF Withdraw
+</div>
+
+<div class="transaction">
++2,500 RWF Profit
+</div>
+
+</div>
+
+<script type="module">
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
+
+import {
+getAuth,
+onAuthStateChanged,
+signOut
+} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+
+const firebaseConfig = {
+apiKey: "AIzaSyC0ugw0iH2h00bJxxHq7qMRBvYYmFjPqCU",
+authDomain: "money-vault-c48d3.firebaseapp.com",
+projectId: "money-vault-c48d3",
+storageBucket: "money-vault-c48d3.firebasestorage.app",
+messagingSenderId: "1068478656241",
+appId: "1:1068478656241:web:aacbcf12922a21fe784350"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+
+window.toggleMenu = function(){
+document
+.getElementById("sidebar")
+.classList.toggle("active");
+};
+
+onAuthStateChanged(auth,(user)=>{
+
+if(!user){
+
+window.location.href="index.html";
+return;
+
+}
+
+document.getElementById("welcomeUser")
+.innerText =
+"Welcome, " +
+(user.displayName || user.email);
+
+document.getElementById("avatar")
+.innerText =
+(user.displayName || user.email)
+.charAt(0)
+.toUpperCase();
+
+});
+
+document
+.getElementById("logoutBtn")
+.onclick = async ()=>{
+
+await signOut(auth);
+
+window.location.href="index.html";
+
+};
+
+</script>
+
+</body>
+</html>
