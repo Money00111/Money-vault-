@@ -1,85 +1,91 @@
-Niba ushaka ko gukanda kuri turiya turongo dutatu (☰) bihita bifungura menu yose irimo Dashboard, Wallet, Deposit, Withdraw, VIP Plans, Transactions, Referrals, Profile, Settings na Logout, koresha iyi code yose:
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Money Vault</title>
 
-```html
-<div id="sidebar" class="sidebar">
-  <div class="close-btn" onclick="toggleSidebar()">✕</div>
+<link rel="stylesheet" href="style.css">
+</head>
 
-  <h2>Money Vault</h2>
+<body>
 
-  <a href="#">🏠 Dashboard</a>
-  <a href="#">💼 My Wallet</a>
-  <a href="#">⬇️ Deposit</a>
-  <a href="#">⬆️ Withdraw</a>
-  <a href="#">👑 VIP Plans</a>
-  <a href="#">📋 Transactions</a>
-  <a href="#">👥 Referrals</a>
-  <a href="#">👤 Profile</a>
-  <a href="#">⚙️ Settings</a>
+<div class="auth-container">
 
-  <a href="#" class="logout">🚪 Logout</a>
+<div class="logo">
+💰
 </div>
 
-<div class="menu-btn" onclick="toggleSidebar()">☰</div>
+<h1>Money Vault</h1>
 
-<style>
-.sidebar{
-  position:fixed;
-  top:0;
-  left:-300px;
-  width:280px;
-  height:100%;
-  background:#fff;
-  box-shadow:0 0 15px rgba(0,0,0,.2);
-  transition:.3s;
-  z-index:1000;
-  padding:20px;
-}
+<p class="subtitle">
+Secure Savings & Finance Platform
+</p>
 
-.sidebar.active{
-  left:0;
-}
+<div class="tabs">
+<button id="loginTab" class="active">
+Login
+</button>
 
-.sidebar h2{
-  color:#16a34a;
-  margin-bottom:20px;
-}
+<button id="registerTab">
+Register
+</button>
+</div>
 
-.sidebar a{
-  display:block;
-  padding:15px 10px;
-  text-decoration:none;
-  color:#222;
-  font-size:18px;
-}
+<!-- LOGIN FORM -->
 
-.sidebar a:hover{
-  background:#f3f4f6;
-  border-radius:10px;
-}
+<div id="loginForm">
 
-.logout{
-  color:red !important;
-  margin-top:20px;
-}
+<input
+type="email"
+id="loginEmail"
+placeholder="Email Address">
 
-.menu-btn{
-  font-size:35px;
-  cursor:pointer;
-  margin:10px;
-}
+<input
+type="password"
+id="loginPassword"
+placeholder="Password">
 
-.close-btn{
-  font-size:30px;
-  cursor:pointer;
-  text-align:right;
-}
-</style>
+<button
+class="main-btn"
+id="loginBtn">
+Login
+</button>
 
-<script>
-function toggleSidebar(){
-  document.getElementById("sidebar").classList.toggle("active");
-}
-</script>
-```
+</div>
 
-Shyira iyi code muri `index.html`, hanyuma Commit Changes muri GitHub. Iyo ukanze kuri ☰ izafungura menu yose, ukande ✕ ikongeye kuyifunga.
+<!-- REGISTER FORM -->
+
+<div id="registerForm" class="hidden">
+
+<input
+type="text"
+id="registerName"
+placeholder="Full Name">
+
+<input
+type="email"
+id="registerEmail"
+placeholder="Email Address">
+
+<input
+type="password"
+id="registerPassword"
+placeholder="Password">
+
+<button
+class="main-btn"
+id="registerBtn">
+Create Account
+</button>
+
+</div>
+
+<p id="message"></p>
+
+</div>
+
+<script src="app.js" type="module"></script>
+
+</body>
+  </html>
