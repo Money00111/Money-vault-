@@ -474,3 +474,141 @@ window.location.href="index.html";
 
 </body>
                                </html>
+
+```html
+<!DOCTYPE html>
+<html lang="rw">
+<head>
+<meta charset="UTF-8">
+<title>Money Vault</title>
+<style>
+body{ margin:0; font-family:Segoe UI; background:#f9fafb; padding-bottom:80px; }
+.sidebar{ position:fixed; top:0; left:-280px; width:280px; height:100%; background:#fff; box-shadow:2px 0 15px rgba(0,0,0,.2); transition:.3s; z-index:1001; padding:20px; }
+.sidebar.active{ left:0; }
+.sidebar a{ display:block; padding:14px 10px; text-decoration:none; color:#222; border-radius:10px; cursor:pointer; }
+.sidebar a.active{ background:#dcfce7; color:#16a34a; }
+.overlay{ position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,.4); display:none; z-index:1000; }
+.overlay.active{ display:block; }
+.bottom-nav{ position:fixed; bottom:0; left:0; width:100%; background:#fff; display:flex; justify-content:space-around; padding:10px 0; box-shadow:0 -2px 15px rgba(0,0,0,.1); z-index:999; }
+.bottom-nav a{ flex:1; text-align:center; text-decoration:none; color:#6b7280; font-size:12px; cursor:pointer; }
+.bottom-nav a.active{ color:#16a34a; }
+.content{ padding:20px; }
+.page{ display:none; } /* ibipaji byose bihishe mbere */
+.page.active{ display:block; } /* igaragara gusa ifite active */
+.card{ background:#fff; padding:20px; border-radius:15px; margin-top:15px; box-shadow:0 2px 8px rgba(0,0,0,.05); }
+.menu-btn{ font-size:32px; cursor:pointer; margin:15px; color:#16a34a; }
+.close-btn{ font-size:30px; cursor:pointer; text-align:right; }
+</style>
+</head>
+<body>
+
+<div class="overlay" onclick="toggleSidebar()"></div>
+
+<div id="sidebar" class="sidebar">
+  <div class="close-btn" onclick="toggleSidebar()">✕</div>
+  <h2 style="color:#16a34a">Money Vault</h2>
+  <a onclick="showPage('dashboard', this)" class="active">🏠 Dashboard</a>
+  <a onclick="showPage('wallet', this)">💼 My Wallet</a>
+  <a onclick="showPage('deposit', this)">⬇️ Deposit</a>
+  <a onclick="showPage('withdraw', this)">⬆️ Withdraw</a>
+  <a onclick="showPage('vip', this)">👑 VIP Plans</a>
+  <a onclick="showPage('transactions', this)">📋 Transactions</a>
+  <a onclick="showPage('referrals', this)">👥 Referrals</a>
+  <a onclick="showPage('profile', this)">👤 Profile</a>
+  <a onclick="showPage('settings', this)">⚙️ Settings</a>
+  <a onclick="logout()" class="logout" style="color:red">🚪 Logout</a>
+</div>
+
+<div class="menu-btn" onclick="toggleSidebar()">☰</div>
+
+<div class="content">
+  <!-- BURI PAGE IRI HANU -->
+  <div id="dashboard" class="page active">
+    <h1>Dashboard</h1>
+    <div class="card"><h3>Balance: 0 RWF</h3></div>
+  </div>
+
+  <div id="wallet" class="page">
+    <h1>My Wallet</h1>
+    <div class="card"><p>Amafaranga yawe yose hano</p></div>
+  </div>
+
+  <div id="deposit" class="page">
+    <h1>Deposit</h1>
+    <div class="card"><input placeholder="Amafaranga"> <button>Deposit</button></div>
+  </div>
+
+  <div id="withdraw" class="page">
+    <h1>Withdraw</h1>
+    <div class="card"><input placeholder="Amafaranga"> <button>Withdraw</button></div>
+  </div>
+
+  <div id="vip" class="page">
+    <h1>VIP Plans</h1>
+    <div class="card"><p>Hitamo plan yawe</p></div>
+  </div>
+
+  <div id="transactions" class="page">
+    <h1>Transactions</h1>
+    <div class="card"><p>Nta transaction iraba</p></div>
+  </div>
+
+  <div id="referrals" class="page">
+    <h1>Referrals</h1>
+    <div class="card"><p>Link yawe: moneyvault.com/ref/123</p></div>
+  </div>
+
+  <div id="profile" class="page">
+    <h1>Profile</h1>
+    <div class="card"><p>Amazina, Tel, Email...</p></div>
+  </div>
+
+  <div id="settings" class="page">
+    <h1>Settings</h1>
+    <div class="card">
+      <label><input type="checkbox"> Dark Mode</label><br>
+      <label><input type="checkbox"> Notification</label>
+    </div>
+  </div>
+</div>
+
+<nav class="bottom-nav">
+  <a onclick="showPage('dashboard', this)" class="active">🏠<span>Home</span></a>
+  <a onclick="showPage('deposit', this)">⬇️<span>Deposit</span></a>
+  <a onclick="showPage('wallet', this)">💼<span>Wallet</span></a>
+  <a onclick="showPage('withdraw', this)">⬆️<span>Withdraw</span></a>
+  <a onclick="showPage('profile', this)">👤<span>Profile</span></a>
+</nav>
+
+<script>
+function toggleSidebar(){
+  document.getElementById("sidebar").classList.toggle("active");
+  document.querySelector(".overlay").classList.toggle("active");
+}
+
+function showPage(pageId, el){
+  // 1. Hisha ibipaji byose
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  // 2. Garagaza icyakunzwe
+  document.getElementById(pageId).classList.add('active');
+  
+  // 3. Hindura active kuri menu zose
+  document.querySelectorAll('.sidebar a, .bottom-nav a').forEach(a => a.classList.remove('active'));
+  el.classList.add('active');
+  
+  // 4. Funga sidebar ku mobile
+  if(window.innerWidth < 768 && document.getElementById("sidebar").classList.contains("active")) {
+    toggleSidebar();
+  }
+}
+
+function logout(){
+  if(confirm("Ushaka kuva hanze?")){
+    window.location.href = "index.html"; // Ohereza kuri login
+  }
+}
+</script>
+</body>
+</html>
+```
+      
