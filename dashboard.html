@@ -1,450 +1,108 @@
+```html
 <!DOCTYPE html>
-<html lang="en">
+<html lang="rw">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Money Vault</title>
-
+<title>Money Vault - Dashboard</title>
 <style>
-*{
-margin:0;
-padding:0;
-box-sizing:border-box;
-font-family:Arial,sans-serif;
-}
+body{ margin:0; font-family:Segoe UI, sans-serif; background:#f9fafb; padding-bottom:80px; }
 
-body{
-background:#f4f7f6;
-padding:15px;
-padding-bottom:90px;
+/* SIDEBAR */
+.sidebar{ 
+  position:fixed; top:0; left:-280px; width:280px; height:100%; 
+  background:#fff; box-shadow:2px 0 15px rgba(0,0,0,.2); 
+  transition:.3s; z-index:1001; padding:20px; 
 }
+.sidebar.active{ left:0; }
+.sidebar h2{ color:#16a34a; margin-bottom:20px; }
+.sidebar a{ display:block; padding:14px 10px; text-decoration:none; color:#222; font-size:17px; border-radius:10px; }
+.sidebar a:hover, .sidebar a.active{ background:#dcfce7; color:#16a34a; }
+.logout{ color:red !important; margin-top:25px; }
+.close-btn{ font-size:30px; cursor:pointer; text-align:right; margin-bottom:10px; }
+.menu-btn{ font-size:32px; cursor:pointer; margin:15px; color:#16a34a; }
 
-.sidebar{
-position:fixed;
-left:-270px;
-top:0;
-width:260px;
-height:100%;
-background:white;
-box-shadow:0 0 20px rgba(0,0,0,.15);
-padding:20px;
-transition:.3s;
-z-index:999;
-}
+/* OVERLAY */
+.overlay{ position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,.4); display:none; z-index:1000; }
+.overlay.active{ display:block; }
 
-.sidebar.active{
-left:0;
-}
-
-.sidebar h2{
-margin-bottom:20px;
-color:#16a34a;
-}
-
-.sidebar a{
-display:block;
-padding:14px;
-text-decoration:none;
-color:#111827;
-font-weight:bold;
-border-radius:12px;
-margin-bottom:8px;
-}
-
-.sidebar a:hover{
-background:#dcfce7;
-}
-
-.topbar{
-display:flex;
-justify-content:space-between;
-align-items:center;
-margin-bottom:20px;
-}
-
-.menu-btn{
-font-size:30px;
-cursor:pointer;
-}
-
-.right{
-display:flex;
-align-items:center;
-gap:15px;
-}
-
-.bell{
-position:relative;
-font-size:28px;
-}
-
-.badge{
-position:absolute;
-top:-8px;
-right:-8px;
-background:red;
-color:white;
-width:20px;
-height:20px;
-border-radius:50%;
-font-size:12px;
-display:flex;
-align-items:center;
-justify-content:center;
-}
-
-.avatar{
-width:50px;
-height:50px;
-border-radius:50%;
-background:#dff7e7;
-color:#16a34a;
-font-size:24px;
-font-weight:bold;
-display:flex;
-align-items:center;
-justify-content:center;
-}
-
-.welcome{
-background:#edf7f1;
-padding:25px;
-border-radius:20px;
-margin-bottom:20px;
-}
-
-.welcome h1{
-font-size:20px;
-margin-bottom:10px;
-}
-
-.welcome p{
-color:#64748b;
-}
-
-.cards{
-display:grid;
-grid-template-columns:1fr 1fr;
-gap:15px;
-}
-
-.card{
-background:white;
-border:1px solid #e5e7eb;
-border-radius:20px;
-padding:20px;
-}
-
-.card-title{
-color:#64748b;
-font-size:14px;
-margin-bottom:10px;
-}
-
-.card-value{
-font-size:18px;
-font-weight:bold;
-color:#111827;
-}
-
-.vip{
-background:white;
-border:1px solid #e5e7eb;
-border-radius:20px;
-padding:20px;
-margin-top:20px;
-}
-
-.vip h2{
-margin-bottom:15px;
-}
-
-.status{
-display:inline-block;
-padding:8px 16px;
-border-radius:20px;
-background:#dcfce7;
-color:#16a34a;
-font-weight:bold;
-margin-top:10px;
-}
-
-.transactions{
-background:white;
-border:1px solid #e5e7eb;
-border-radius:20px;
-padding:20px;
-margin-top:20px;
-}
-
-.tx{
-padding:10px 0;
-border-bottom:1px solid #eee;
-}
-
+/* BOTTOM NAV */
 .bottom-nav{
-position:fixed;
-left:0;
-bottom:0;
-width:100%;
-background:white;
-display:flex;
-justify-content:space-around;
-padding:12px;
-border-top:1px solid #ddd;
+  position:fixed; bottom:0; left:0; width:100%;
+  background:#fff; display:flex; justify-content:space-around;
+  padding:10px 0; box-shadow:0 -2px 15px rgba(0,0,0,.1);
+  border-top-left-radius:20px; border-top-right-radius:20px; z-index:999;
 }
+.bottom-nav a{ flex:1; text-align:center; text-decoration:none; color:#6b7280; font-size:12px; }
+.bottom-nav a span{ display:block; margin-top:4px; }
+.bottom-nav a.active{ color:#16a34a; transform:translateY(-3px); }
 
-.bottom-nav a{
-text-decoration:none;
-color:#555;
-font-weight:bold;
-}
-
-.logout{
-width:100%;
-padding:14px;
-margin-top:20px;
-border:none;
-border-radius:12px;
-background:#ef4444;
-color:white;
-font-weight:bold;
-}
+/* CONTENT */
+.content{ padding:20px; }
+.content h1{ color:#16a34a; }
+.card{ background:#fff; padding:20px; border-radius:15px; margin-top:15px; box-shadow:0 2px 8px rgba(0,0,0,.05); }
 </style>
 </head>
-
 <body>
 
-<div class="sidebar" id="sidebar">
+<!-- OVERLAY -->
+<div class="overlay" onclick="toggleSidebar()"></div>
 
-<h2>Money Vault</h2>
-
-<a href="#">🏠 Dashboard</a>
-<a href="#">💳 Wallet</a>
-<a href="#">👤 Profile</a>
-<a href="#">⚙ Settings</a>
-
-<button class="logout" id="logoutBtn">
-Logout
-</button>
-
-</div>
-
-<div class="topbar">
-
-<div class="menu-btn" onclick="toggleMenu()">
-☰
-</div>
-
-<div class="right">
-
-<div class="bell">
-🔔
-<div class="badge">2</div>
-</div>
-
-<div class="avatar" id="avatar">
-M
-</div>
-
-</div>
-
-</div>
-
-<div class="welcome">
-<h1 id="welcomeUser">
-Hello, User 👋
-</h1>
-<p>Smart Investment, Daily Earnings</p>
-</div>
-
-<div class="cards">
-
-<div class="card">
-<div class="card-title">Balance</div>
-<div class="card-value">15,750 RWF</div>
-</div>
-
-<div class="card">
-<div class="card-title">Total Deposits</div>
-<div class="card-value">50,000 RWF</div>
-</div>
-
-<div class="card">
-<div class="card-title">Referral Earnings</div>
-<div class="card-value">7,500 RWF</div>
-</div>
-
-<div class="card">
-<div class="card-title">Total Profits</div>
-<div class="card-value">25,250 RWF</div>
-</div>
-
-</div>
-
-<div class="vip">
-
-<h2>👑 Active VIP Plan</h2>
-
-<p><b>VALID PRODUCT</b></p>
-
-<br>
-
-<p>Daily Income: <b>2,500 RWF</b></p>
-<p>Duration: <b>3 Days</b></p>
-
-<div class="status">
-Active
-</div>
-
-</div>
-
-<div class="transactions">
-
-<h3>Recent Transactions</h3>
-
-<div class="tx">+10,000 RWF Deposit</div>
-<div class="tx">+2,500 RWF Profit</div>
-<div class="tx">-2,000 RWF Withdrawal</div>
-
-</div>
-
-<div class="bottom-nav">
-<a href="#">🏠 Home</a>
-<a href="#">💼 Wallet</a>
-<a href="#">👤 Profile</a>
-</div>
-
-<script type="module">
-
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
-import {
-getAuth,
-onAuthStateChanged,
-signOut
-} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
-
-const firebaseConfig = {
-apiKey: "AIzaSyC0ugw0iH2h00bJxxHq7qMRBvYYmFjPqCU",
-authDomain: "money-vault-c48d3.firebaseapp.com",
-projectId: "money-vault-c48d3",
-storageBucket: "money-vault-c48d3.firebasestorage.app",
-messagingSenderId: "1068478656241",
-appId: "1:1068478656241:web:aacbcf12922a21fe784350"
-};
-
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-
-window.toggleMenu = function(){
-document.getElementById("sidebar").classList.toggle("active");
-};
-
-onAuthStateChanged(auth,(user)=>{
-
-if(!user){
-window.location.href="index.html";
-return;
-}
-
-document.getElementById("welcomeUser").innerText =
-"Hello, " + (user.displayName || user.email) + " 👋";
-
-document.getElementById("avatar").innerText =
-(user.displayName || user.email)
-.charAt(0)
-.toUpperCase();
-
-});
-
-document.getElementById("logoutBtn").onclick = async()=>{
-await signOut(auth);
-window.location.href="index.html";
-};
-
-</script>
-
-</body>
-</html>
-```html
+<!-- SIDEBAR -->
 <div id="sidebar" class="sidebar">
   <div class="close-btn" onclick="toggleSidebar()">✕</div>
-
   <h2>Money Vault</h2>
-
-  <a href="#">🏠 Dashboard</a>
-  <a href="#">💼 My Wallet</a>
-  <a href="#">⬇️ Deposit</a>
-  <a href="#">⬆️ Withdraw</a>
-  <a href="#">👑 VIP Plans</a>
-  <a href="#">📋 Transactions</a>
-  <a href="#">👥 Referrals</a>
-  <a href="#">👤 Profile</a>
-  <a href="#">⚙️ Settings</a>
-
-  <a href="#" class="logout">🚪 Logout</a>
+  <a href="#" class="active" onclick="setActive(this)">🏠 Dashboard</a>
+  <a href="#" onclick="setActive(this)">💼 My Wallet</a>
+  <a href="#" onclick="setActive(this)">⬇️ Deposit</a>
+  <a href="#" onclick="setActive(this)">⬆️ Withdraw</a>
+  <a href="#" onclick="setActive(this)">👑 VIP Plans</a>
+  <a href="#" onclick="setActive(this)">📋 Transactions</a>
+  <a href="#" onclick="setActive(this)">👥 Referrals</a>
+  <a href="#" onclick="setActive(this)">👤 Profile</a>
+  <a href="#" onclick="setActive(this)">⚙️ Settings</a>
+  <a href="#" class="logout" onclick="setActive(this)">🚪 Logout</a>
 </div>
 
+<!-- MENU BUTTON -->
 <div class="menu-btn" onclick="toggleSidebar()">☰</div>
 
-<style>
-.sidebar{
-  position:fixed;
-  top:0;
-  left:-300px;
-  width:280px;
-  height:100%;
-  background:#fff;
-  box-shadow:0 0 15px rgba(0,0,0,.2);
-  transition:.3s;
-  z-index:1000;
-  padding:20px;
-}
+<!-- CONTENT -->
+<div class="content">
+  <h1>Murakaza neza 👋</h1>
+  <div class="card">
+    <h3>Balance yawe</h3>
+    <h2>0 RWF</h2>
+  </div>
+  <div class="card">
+    <h3>Transactions z'ubu</h3>
+    <p>Nta transaction iraba.</p>
+  </div>
+</div>
 
-.sidebar.active{
-  left:0;
-}
-
-.sidebar h2{
-  color:#16a34a;
-  margin-bottom:20px;
-}
-
-.sidebar a{
-  display:block;
-  padding:15px 10px;
-  text-decoration:none;
-  color:#222;
-  font-size:18px;
-}
-
-.sidebar a:hover{
-  background:#f3f4f6;
-  border-radius:10px;
-}
-
-.logout{
-  color:red !important;
-  margin-top:20px;
-}
-
-.menu-btn{
-  font-size:35px;
-  cursor:pointer;
-  margin:10px;
-}
-
-.close-btn{
-  font-size:30px;
-  cursor:pointer;
-  text-align:right;
-}
-</style>
+<!-- BOTTOM NAV -->
+<nav class="bottom-nav">
+  <a href="#" class="active" onclick="setActive(this)">🏠<span>Home</span></a>
+  <a href="#" onclick="setActive(this)">⬇️<span>Deposit</span></a>
+  <a href="#" onclick="setActive(this)">💼<span>Wallet</span></a>
+  <a href="#" onclick="setActive(this)">⬆️<span>Withdraw</span></a>
+  <a href="#" onclick="setActive(this)">👤<span>Profile</span></a>
+</nav>
 
 <script>
 function toggleSidebar(){
   document.getElementById("sidebar").classList.toggle("active");
+  document.querySelector(".overlay").classList.toggle("active");
+}
+
+function setActive(el){
+  document.querySelectorAll('.sidebar a, .bottom-nav a').forEach(a=>a.classList.remove('active'));
+  el.classList.add('active');
+  // Funga sidebar iyo ukoze kuri link
+  if(window.innerWidth < 768) toggleSidebar();
 }
 </script>
+
+</body>
+</html>
 ```
-  
