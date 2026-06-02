@@ -349,3 +349,37 @@ font-weight:bold;
 color:#ef4444;
 font-weight:bold;
   }
+.bottom-nav{
+position:fixed;
+bottom:0;
+left:0;
+width:100%;
+background:white;
+display:flex;
+justify-content:space-around;
+padding:12px;
+border-top:1px solid #ddd;
+z-index:999;
+}
+
+.nav-item{
+display:flex;
+flex-direction:column;
+align-items:center;
+text-decoration:none;
+color:#666;
+font-size:14px;
+}
+
+.active-nav{
+color:#16a34a;
+font-weight:bold;
+}
+
+.wallet-card{
+background:white;
+padding:20px;
+border-radius:20px;
+margin-top:20px;
+border:1px solid #e5e7eb;
+  }
