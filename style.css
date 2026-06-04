@@ -16,7 +16,7 @@ padding:20px;
 
 .auth-container{
 width:100%;
-max-width:380px;
+max-width:100px;
 background:white;
 padding:30px;
 border-radius:25px;
@@ -33,8 +33,8 @@ background:#dcfce7;
 display:flex;
 align-items:center;
 justify-content:center;
-font-size:200px;
-margin-bottom:50px;
+font-size:100px;
+margin-bottom:20px;
 }
 
 h1{
@@ -44,7 +44,7 @@ margin-bottom:12px;
 
 .subtitle{
 color:#64748b;
-margin-bottom:50px;
+margin-bottom:20px;
 font-size:55px;
 }
 
@@ -52,8 +52,8 @@ font-size:55px;
 display:flex;
 background:#f1f5f9;
 padding:5px;
-border-radius:50px;
-margin-bottom:70px;
+border-radius:16px;
+margin-bottom:30px;
 }
 
 .tabs button{
@@ -217,34 +217,34 @@ gap:15px;
 
 .stat-card{
 background:white;
-padding:20px;
-border-radius:18px;
+padding:35px;
+border-radius:33px;
 border:1px solid #e5e7eb;
 }
 
 .stat-card h4{
 color:#666;
-margin-bottom:10px;
+margin-bottom:25px;
 }
 
 .stat-card h2{
-margin-bottom:5px;
+margin-bottom:15px;
 }
 
 .logout-btn{
 width:100%;
-padding:12px;
+padding:20px;
 border:none;
 background:#ef4444;
 color:white;
-border-radius:10px;
-margin-top:20px;
+border-radius:20px;
+margin-top:35px;
   }
 .vip-card{
 background:white;
-padding:20px;
-margin-top:20px;
-border-radius:20px;
+padding:35px;
+margin-top:35px;
+border-radius:35px;
 border:1px solid #e5e7eb;
 }
 
@@ -252,34 +252,34 @@ border:1px solid #e5e7eb;
 display:flex;
 justify-content:space-between;
 align-items:center;
-margin-bottom:15px;
+margin-bottom:30px;
 }
 
 .active-badge{
 background:#dcfce7;
 color:#16a34a;
-padding:6px 12px;
-border-radius:20px;
-font-size:12px;
+padding:15px 25px;
+border-radius:35px;
+font-size:25px;
 font-weight:bold;
 }
 
 .vip-details{
 display:flex;
 justify-content:space-between;
-margin-top:15px;
-margin-bottom:15px;
+margin-top:30px;
+margin-bottom:30px;
 }
 
 .progress-text{
-margin-bottom:10px;
+margin-bottom:35px;
 color:#666;
 }
 
 .progress-bar{
-height:8px;
+height:20px;
 background:#e5e7eb;
-border-radius:20px;
+border-radius:35px;
 overflow:hidden;
 }
 
@@ -291,24 +291,24 @@ background:#16a34a;
 
 .action-buttons{
 display:grid;
-grid-template-columns:1fr 1fr;
-gap:12px;
-margin-top:20px;
+grid-template-columns:4fr 4fr;
+gap:25px;
+margin-top:35px;
 }
 
 .deposit-btn{
-padding:15px;
+padding:30px;
 border:none;
-border-radius:12px;
+border-radius:35px;
 background:#16a34a;
 color:white;
 font-weight:bold;
 }
 
 .withdraw-btn{
-padding:15px;
+padding:35px;
 border:none;
-border-radius:12px;
+border-radius:30px;
 background:#ef4444;
 color:white;
 font-weight:bold;
@@ -316,16 +316,16 @@ font-weight:bold;
 
 .transactions-box{
 background:white;
-margin-top:20px;
-padding:20px;
-border-radius:20px;
+margin-top:35px;
+padding:35px;
+border-radius:35px;
 border:1px solid #e5e7eb;
 }
 
 .tx-header{
 display:flex;
 justify-content:space-between;
-margin-bottom:15px;
+margin-bottom:35px;
 }
 
 .tx-header span{
@@ -336,7 +336,7 @@ font-weight:bold;
 .tx-item{
 display:flex;
 justify-content:space-between;
-padding:12px 0;
+padding:32px 0;
 border-bottom:1px solid #eee;
 }
 
@@ -351,9 +351,9 @@ font-weight:bold;
   }
 .bottom-nav{
 position:fixed;
-bottom:0;
-left:0;
-width:100%;
+bottom:10;
+left:10;
+width:200%;
 background:white;
 display:flex;
 justify-content:space-around;
@@ -368,7 +368,7 @@ flex-direction:column;
 align-items:center;
 text-decoration:none;
 color:#666;
-font-size:14px;
+font-size:24px;
 }
 
 .active-nav{
@@ -379,7 +379,7 @@ font-weight:bold;
 .wallet-card{
 background:white;
 padding:20px;
-border-radius:20px;
-margin-top:20px;
-border:1px solid #e5e7eb;
+border-radius:50px;
+margin-top:50px;
+border:5px solid #e5e7eb;
   }
