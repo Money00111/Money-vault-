@@ -14,7 +14,8 @@
 <a href="#" onclick="showPage('wallet')">💼 My Wallet</a>
 <a href="#" onclick="showPage('profile')">👤 Profile</a>
 <a href="#" onclick="showPage('settings')">⚙ Settings</a>
-
+<a href="#" onclick="showPage('deposit')">⬇ Deposit</a>
+<a href="#" onclick="showPage('withdraw')">⬆ Withdraw</a>
   <button id="logoutBtn" class="logout-btn">Logout</button></div>
 
 <div class="topbar">
@@ -184,7 +185,21 @@ Hello, User 👋</h2>
 
 <div id="profilePage" style="display:none;">
   <div id="settingsPage" style="display:none;">
+<div id="depositPage" style="display:none;">
+  <div class="wallet-card">
+    <h2>⬇ Deposit Funds</h2>
+    <input type="number" placeholder="Enter amount">
+    <button class="deposit-btn">Deposit</button>
+  </div>
+</div>
 
+<div id="withdrawPage" style="display:none;">
+  <div class="wallet-card">
+    <h2>⬆ Withdraw Funds</h2>
+    <input type="number" placeholder="Enter amount">
+    <button class="withdraw-btn">Withdraw</button>
+  </div>
+</div>
   <div class="wallet-card">
     <h2>⚙ Settings</h2>
 
