@@ -192,7 +192,50 @@ Hello, User 👋</h2>
     <p>Language: English</p>
     <p>Version: Money Vault 1.0</p>
   </div>
+<script>
+function toggleMenu(){
+document.getElementById("sidebar")
+.classList.toggle("active");
+}
 
+document.addEventListener("click", function(e){
+
+const sidebar =
+document.getElementById("sidebar");
+
+const menuBtn =
+document.querySelector(".menu-btn");
+
+if(
+!sidebar.contains(e.target)
+&&
+!menuBtn.contains(e.target)
+){
+sidebar.classList.remove("active");
+}
+
+});
+
+function showPage(page){
+
+document.getElementById("walletPage").style.display="none";
+document.getElementById("profilePage").style.display="none";
+document.getElementById("settingsPage").style.display="none";
+
+if(page==="wallet"){
+document.getElementById("walletPage").style.display="block";
+}
+
+if(page==="profile"){
+document.getElementById("profilePage").style.display="block";
+}
+
+if(page==="settings"){
+document.getElementById("settingsPage").style.display="block";
+}
+
+}
+</script>
                                              </div>
   <h2>👤 Profile</h2>
 
@@ -201,13 +244,7 @@ Hello, User 👋</h2>
     <p>Status: Active Member</p>
   </div>
                           </div>
-<script>
-function toggleMenu(){
-document
-.getElementById("sidebar")
-.classList.toggle("active");
-}
-</script>
+
 
 </body>
   </html>
