@@ -4,48 +4,105 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Money Vault Dashboard</title>
+
 <link rel="stylesheet" href="style.css">
-</head><body>
+
+</head>
+<body>
+
 <div class="sidebar" id="sidebar">
+
   <div class="logo-box">
     <h2>💰 Money Vault</h2>
-    <small>Smart Investment</small></div>
-<a href="#" onclick="showPage('home')">📊 Dashboard</a>
-<a href="#" onclick="showPage('wallet')">💼 My Wallet</a>
-<a href="#" onclick="showPage('profile')">👤 Profile</a>
-<a href="#" onclick="showPage('settings')">⚙ Settings</a>
-<a href="#" onclick="showPage('deposit')">⬇ Deposit</a>
-<a href="#" onclick="showPage('withdraw')">⬆ Withdraw</a>
-  <button id="logoutBtn" class="logout-btn">Logout</button></div>
+    <small>Smart Investment</small>
+  </div>
+
+  <a href="#" onclick="showPage('home')">
+    📊 Dashboard
+  </a>
+
+  <a href="#" onclick="showPage('wallet')">
+    💼 My Wallet
+  </a>
+
+  <a href="#" onclick="showPage('deposit')">
+    ⬇ Deposit
+  </a>
+
+  <a href="#" onclick="showPage('withdraw')">
+    ⬆ Withdraw
+  </a>
+
+  <a href="#">
+    👥 Referrals
+  </a>
+
+  <a href="#" onclick="showPage('profile')">
+    👤 Profile
+  </a>
+
+  <a href="#" onclick="showPage('settings')">
+    ⚙ Settings
+  </a>
+
+  <button id="logoutBtn" class="logout-btn">
+    Logout
+  </button>
+
+</div>
 
 <div class="topbar">
 
-  <div class="menu-btn" onclick="toggleMenu()">☰</div>
+  <div class="menu-btn" onclick="toggleMenu()">
+    ☰
+  </div>
 
   <div class="top-right">
 
     <div class="notification">
       🔔
-      <span>2</span></div>
+      <span>2</span>
+    </div>
 
-    <div class="avatar" id="avatar">M</div></div></div>
+    <div class="avatar" id="avatar">
+      M
+    </div>
 
-<div class="welcome-card"><div><h2 id="welcomeUser">
-Hello, User 👋</h2>
-<p>Smart Investment, Daily Earnings</p></div>
-<div class="vault-icon">💰</div></div>
+  </div>
+
+</div>
+
+<div class="welcome-card">
+
+  <div>
+    <h2 id="welcomeUser">
+      Hello, User 👋
+    </h2>
+
+    <p>
+      Smart Investment, Daily Earnings
+    </p>
+  </div>
+
+  <div class="vault-icon">
+    💰
+  </div>
+
+</div>
 
 <div class="stats-grid">
 
   <div class="stat-card">
     <h4>Balance</h4>
     <h2>15,750</h2>
-    <span>RWF</span></div>
+    <span>RWF</span>
+  </div>
 
   <div class="stat-card">
     <h4>Total Deposits</h4>
     <h2>50,000</h2>
-    <span>RWF</span></div>
+    <span>RWF</span>
+  </div>
 
   <div class="stat-card">
     <h4>Referral Earnings</h4>
@@ -59,15 +116,17 @@ Hello, User 👋</h2>
     <span>RWF</span>
   </div>
 
-</div>
-<div class="vip-card">
+  </div>
+  <div class="vip-card">
 
   <div class="vip-header">
+
     <h2>👑 Active VIP Plan</h2>
 
     <span class="active-badge">
       Active
     </span>
+
   </div>
 
   <h3 style="color:#16a34a;">
@@ -113,12 +172,15 @@ Hello, User 👋</h2>
 <div class="transactions-box">
 
   <div class="tx-header">
+
     <h3>Recent Transactions</h3>
 
     <span>View All</span>
+
   </div>
 
   <div class="tx-item">
+
     <div>
       <strong>Deposit</strong>
       <br>
@@ -128,9 +190,11 @@ Hello, User 👋</h2>
     <div class="green">
       +10,000 RWF
     </div>
+
   </div>
 
   <div class="tx-item">
+
     <div>
       <strong>Withdraw</strong>
       <br>
@@ -140,9 +204,11 @@ Hello, User 👋</h2>
     <div class="red">
       -4,000 RWF
     </div>
+
   </div>
 
   <div class="tx-item">
+
     <div>
       <strong>Daily Profit</strong>
       <br>
@@ -152,9 +218,11 @@ Hello, User 👋</h2>
     <div class="green">
       +2,500 RWF
     </div>
+
   </div>
 
-    </div>
+</div>
+
 <div class="bottom-nav">
 
   <a href="#" class="nav-item active-nav">
@@ -172,124 +240,154 @@ Hello, User 👋</h2>
     <span>Profile</span>
   </a>
 
-</div>
+  </div>
+  <div id="walletPage" style="display:none;">
 
-<div id="walletPage" style="display:none;">
   <h2>💼 My Wallet</h2>
 
   <div class="wallet-card">
     <h3>Current Balance</h3>
     <h1 id="balanceValue">15,750 RWF</h1>
   </div>
+
 </div>
 
 <div id="profilePage" style="display:none;">
-  <div id="settingsPage" style="display:none;">
-<div id="depositPage" style="display:none;">
+
   <div class="wallet-card">
-    <h2>⬇ Deposit Funds</h2>
-    <input type="number" placeholder="Enter amount">
-    <button class="deposit-btn">Deposit</button>
+    <h2>👤 Profile</h2>
+
+    <p>Name: <span id="profileName">User</span></p>
+
+    <p>Status: Active Member</p>
   </div>
+
+</div>
+
+<div id="settingsPage" style="display:none;">
+
+  <div class="wallet-card">
+    <h2>⚙ Settings</h2>
+
+    <p>Notifications</p>
+
+    <p>Language: English</p>
+
+    <p>Version: Money Vault 1.0</p>
+  </div>
+
+</div>
+
+<div id="depositPage" style="display:none;">
+
+  <div class="wallet-card">
+
+    <h2>⬇ Deposit Funds</h2>
+
+    <input type="number" placeholder="Enter amount">
+
+    <button class="deposit-btn">
+      Deposit
+    </button>
+
+  </div>
+
 </div>
 
 <div id="withdrawPage" style="display:none;">
+
   <div class="wallet-card">
+
     <h2>⬆ Withdraw Funds</h2>
+
     <input type="number" placeholder="Enter amount">
-    <button class="withdraw-btn">Withdraw</button>
+
+    <button class="withdraw-btn">
+      Withdraw
+    </button>
+
   </div>
+
 </div>
-  <div class="wallet-card">
-    <h2>⚙ Settings</h2>
-<div id="walletPage" style="display:none;">...</div>
-    <p>Notifications</p>
-    <p>Language: English</p>
-    <p>Version: Money Vault 1.0</p>
-  </div>
+
 <script>
+
 function toggleMenu(){
-document.getElementById("sidebar")
-.classList.toggle("active");
+  document.getElementById("sidebar")
+  .classList.toggle("active");
 }
 
 document.addEventListener("click", function(e){
 
-const sidebar =
-document.getElementById("sidebar");
+  const sidebar =
+  document.getElementById("sidebar");
 
-const menuBtn =
-document.querySelector(".menu-btn");
+  const menuBtn =
+  document.querySelector(".menu-btn");
 
-if(
-!sidebar.contains(e.target)
-&&
-!menuBtn.contains(e.target)
-){
-sidebar.classList.remove("active");
-}
+  if(
+    !sidebar.contains(e.target)
+    &&
+    !menuBtn.contains(e.target)
+  ){
+    sidebar.classList.remove("active");
+  }
 
 });
 
 function hideAllPages(){
 
-const pages = [
-"walletPage",
-"profilePage",
-"settingsPage",
-"depositPage",
-"withdrawPage"
-];
+  const pages = [
+    "walletPage",
+    "profilePage",
+    "settingsPage",
+    "depositPage",
+    "withdrawPage"
+  ];
 
-pages.forEach(page=>{
+  pages.forEach(page => {
 
-const el =
-document.getElementById(page);
+    const el =
+    document.getElementById(page);
 
-if(el){
-el.style.display="none";
-}
+    if(el){
+      el.style.display="none";
+    }
 
-});
+  });
 
 }
 
 function showPage(page){
 
-hideAllPages();
+  hideAllPages();
 
-if(page==="wallet"){
-document.getElementById("walletPage").style.display="block";
+  if(page==="wallet"){
+    document.getElementById("walletPage").style.display="block";
+  }
+
+  if(page==="profile"){
+    document.getElementById("profilePage").style.display="block";
+  }
+
+  if(page==="settings"){
+    document.getElementById("settingsPage").style.display="block";
+  }
+
+  if(page==="deposit"){
+    document.getElementById("depositPage").style.display="block";
+  }
+
+  if(page==="withdraw"){
+    document.getElementById("withdrawPage").style.display="block";
+  }
+
+  document.getElementById("sidebar")
+  .classList.remove("active");
+
 }
 
-if(page==="profile"){
-document.getElementById("profilePage").style.display="block";
-}
-
-if(page==="settings"){
-document.getElementById("settingsPage").style.display="block";
-}
-
-if(page==="deposit"){
-document.getElementById("depositPage").style.display="block";
-}
-
-if(page==="withdraw"){
-document.getElementById("withdrawPage").style.display="block";
-}
-
-document.getElementById("sidebar")
-.classList.remove("active");
-
-}
 </script>
 
-  <div class="wallet-card">
-    <p>Name: <span id="profileName">User</span></p>
-    <p>Status: Active Member</p>
-  </div>
-                          </div>
-
-
 </body>
-  </html>
+    </html>
