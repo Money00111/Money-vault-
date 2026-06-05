@@ -231,20 +231,33 @@ sidebar.classList.remove("active");
 
 });
 
+function hideAllPages(){
+
+const pages = [
+"walletPage",
+"profilePage",
+"settingsPage",
+"depositPage",
+"withdrawPage"
+];
+
+pages.forEach(page=>{
+
+const el =
+document.getElementById(page);
+
+if(el){
+el.style.display="none";
+}
+
+});
+
+}
+
 function showPage(page){
 
-document.getElementById("walletPage").style.display="none";
-document.getElementById("profilePage").style.display="none";
-document.getElementById("settingsPage").style.display="none";
-document.getElementById("depositPage").style.display="none";
-document.getElementById("withdrawPage").style.display="none";  
-if(page==="deposit"){
-document.getElementById("depositPage").style.display="block";
-}
+hideAllPages();
 
-if(page==="withdraw"){
-document.getElementById("withdrawPage").style.display="block";
-}
 if(page==="wallet"){
 document.getElementById("walletPage").style.display="block";
 }
@@ -257,10 +270,19 @@ if(page==="settings"){
 document.getElementById("settingsPage").style.display="block";
 }
 
+if(page==="deposit"){
+document.getElementById("depositPage").style.display="block";
+}
+
+if(page==="withdraw"){
+document.getElementById("withdrawPage").style.display="block";
+}
+
+document.getElementById("sidebar")
+.classList.remove("active");
+
 }
 </script>
-                                             </div>
-  <h2>👤 Profile</h2>
 
   <div class="wallet-card">
     <p>Name: <span id="profileName">User</span></p>
