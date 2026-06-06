@@ -1,11 +1,51 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
+import { db } from "./firebase.js";
+import { ref, get, update } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
 
-import {
-getAuth,
-createUserWithEmailAndPassword,
-signInWithEmailAndPassword,
-updateProfile,
-onAuthStateChanged
+window.deposit = async function () {
+    const userId = document.getElementById("userId").value;
+    const amount = Number(document.getElementById("amount").value);
+
+    const userRef = ref(db, "users/" + userId);
+    const snapshot = await get(userRef);
+
+    if (snapshot.exists()) {
+        let balance = snapshot.val().balance;
+
+        await update(userRef, {
+            balance: balance + amount
+        });
+
+        alert("Deposit successful ✅");
+    } else {
+        alert("User not found ❌");
+    }
+};
+
+window.withdraw = async function () {
+    const userId = document.getElementById("userId").value;
+    const amount = Number(document.getElementById("amount").value);
+
+    const userRef = ref(db, "users/" + userId);
+    const snapshot = await get(userRef);
+
+    if (snapshot.exists()) {
+        let balance = snapshot.val().balance;
+
+        if (balance >= amount) {
+            await update(userRef, {
+                balance: balance - amount
+            });
+
+            alert("Withdraw successful 💰");
+        } else {
+            alert("Not enough balance ⚠️");
+        }
+    } else {
+        alert("User not found ❌");
+    }
+};
+import {getAuth,createUserWithEmailAndPassword,signInWithEmailAndPassword,updateProfile,onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 
 const firebaseConfig = {
