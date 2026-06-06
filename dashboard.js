@@ -1,6 +1,42 @@
 import { db } from "./firebase.js";
 import { ref, onValue, get, update } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+import { db } from "./firebase.js";
+import { ref, onValue } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
 
+const auth = getAuth();
+
+onAuthStateChanged(auth, (user) => {
+
+    if (!user) {
+        window.location.href = "index.html";
+        return;
+    }
+
+    const userRef = ref(db, "users/" + user.uid);
+
+    onValue(userRef, (snapshot) => {
+
+        const data = snapshot.val();
+
+        if (!data) return;
+
+        document.getElementById("welcomeUser").innerText =
+            "Hello, " + data.name + " 👋";
+
+        document.getElementById("balanceValue").innerText =
+            (data.balance || 0) + " RWF";
+
+        const profileName =
+            document.getElementById("profileName");
+
+        if (profileName) {
+            profileName.innerText = data.name;
+        }
+
+    });
+
+});
 // 👇 user reference (urashobora guhindura userId nyuma ya login)
 const userId = "user1";
 const userRef = ref(db, "users/" + userId);
