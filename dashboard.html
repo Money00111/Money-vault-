@@ -359,10 +359,10 @@ function hideAllPages(){
 
 }
 
-function showPage(page){
-
-  hideAllPages();
-
+function showPage(page){hideAllPages();
+if(page==="home"){
+document.getElementById("homePage").style.display="block";
+}
   if(page==="wallet"){
     document.getElementById("walletPage").style.display="block";
   }
