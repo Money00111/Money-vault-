@@ -6,10 +6,12 @@ const usersRef = ref(db, "users");
 
 // gufata data realtime
 onValue(usersRef, (snapshot) => {
-    const data = snapshot.val();
+    const data = snapshot.val();let html = "";
+<input type="number" id="amount" placeholder="Amount">
 
-    let html = "";
+<button onclick="deposit()">Deposit</button>
 
+<button onclick="withdraw()">Withdraw</button>
     for (let id in data) {
         html += `
             <div class="card">
