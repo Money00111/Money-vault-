@@ -6,10 +6,12 @@
 <title>Money Vault Dashboard</title>
 
 <link rel="stylesheet" href="style.css">
-
+<link rel="stylesheet" href="Dashboard.css">
 </head>
+
 <body>
 
+<!-- SIDEBAR -->
 <div class="sidebar" id="sidebar">
 
   <div class="logo-box">
@@ -17,379 +19,118 @@
     <small>Smart Investment</small>
   </div>
 
-  <a href="#" onclick="showPage('home')">
-    📊 Dashboard
-  </a>
-
-  <a href="#" onclick="showPage('wallet')">
-    💼 My Wallet
-  </a>
-
-  <a href="#" onclick="showPage('deposit')">
-    ⬇ Deposit
-  </a>
-
-  <a href="#" onclick="showPage('withdraw')">
-    ⬆ Withdraw
-  </a>
-
-  <a href="#">
-    👥 Referrals
-  </a>
-
-  <a href="#" onclick="showPage('profile')">
-    👤 Profile
-  </a>
-
-  <a href="#" onclick="showPage('settings')">
-    ⚙ Settings
-  </a>
-
-  <button id="logoutBtn" class="logout-btn">
-    Logout
-  </button>
+  <a href="#" onclick="showPage('home')">📊 Dashboard</a>
+  <a href="#" onclick="showPage('wallet')">💼 My Wallet</a>
+  <a href="#" onclick="showPage('deposit')">⬇ Deposit</a>
+  <a href="#" onclick="showPage('withdraw')">⬆ Withdraw</a>
+  <a href="#" onclick="showPage('profile')">👤 Profile</a>
+  <a href="#" onclick="showPage('settings')">⚙ Settings</a>
 
 </div>
 
+<!-- TOPBAR -->
 <div class="topbar">
-
-  <div class="menu-btn" onclick="toggleMenu()">
-    ☰
-  </div>
+  <div class="menu-btn" onclick="toggleMenu()">☰</div>
 
   <div class="top-right">
-
-    <div class="notification">
-      🔔
-      <span>2</span>
-    </div>
-
-    <div class="avatar" id="avatar">
-      M
-    </div>
-
+    <div class="notification">🔔 <span>2</span></div>
+    <div class="avatar">M</div>
   </div>
-
 </div>
+
+<!-- HOME PAGE -->
 <div id="homePage">
-<div class="welcome-card">
 
-  <div>
-    <h2 id="welcomeUser">
-      Hello, User 👋
-    </h2>
-
-    <p>
-      Smart Investment, Daily Earnings
-    </p>
+  <div class="welcome-card">
+    <h2 id="welcomeUser">Hello, User 👋</h2>
+    <p>Smart Investment, Daily Earnings</p>
   </div>
 
-  <div class="vault-icon">
-    💰
+  <div class="stats-grid">
+    <div class="stat-card">
+      <h4>Balance</h4>
+      <h2 id="balanceValue">0</h2>
+      <span>RWF</span>
+    </div>
   </div>
 
 </div>
 
-<div class="stats-grid">
-
-  <div class="stat-card">
-    <h4>Balance</h4>
-    <h2>15,750</h2>
-    <span>RWF</span>
-  </div>
-
-  <div class="stat-card">
-    <h4>Total Deposits</h4>
-    <h2>50,000</h2>
-    <span>RWF</span>
-  </div>
-
-  <div class="stat-card">
-    <h4>Referral Earnings</h4>
-    <h2>7,500</h2>
-    <span>RWF</span>
-  </div>
-
-  <div class="stat-card">
-    <h4>Total Profits</h4>
-    <h2>25,250</h2>
-    <span>RWF</span>
-  </div>
-
-  </div>
-  <div class="vip-card">
-
-  <div class="vip-header">
-
-    <h2>👑 Active VIP Plan</h2>
-
-    <span class="active-badge">
-      Active
-    </span>
-
-  </div>
-
-  <h3 style="color:#16a34a;">
-    ✅ VALID PRODUCT
-  </h3>
-
-  <div class="vip-details">
-
-    <div>
-      <p>Daily Income</p>
-      <h3>2,500 RWF</h3>
-    </div>
-
-    <div>
-      <p>Duration</p>
-      <h3>3 Days</h3>
-    </div>
-
-  </div>
-
-  <p class="progress-text">
-    2 / 3 Days Completed
-  </p>
-
-  <div class="progress-bar">
-    <div class="progress-fill"></div>
-  </div>
-
-</div>
-
-<div class="action-buttons">
-
-  <button class="deposit-btn">
-    ⬇ Deposit
-  </button>
-
-  <button class="withdraw-btn">
-    ⬆ Withdraw
-  </button>
-
-</div>
-
-<div class="transactions-box">
-
-  <div class="tx-header">
-
-    <h3>Recent Transactions</h3>
-
-    <span>View All</span>
-
-  </div>
-
-  <div class="tx-item">
-
-    <div>
-      <strong>Deposit</strong>
-      <br>
-      <small>20 May 2025</small>
-    </div>
-
-    <div class="green">
-      +10,000 RWF
-    </div>
-
-  </div>
-
-  <div class="tx-item">
-
-    <div>
-      <strong>Withdraw</strong>
-      <br>
-      <small>20 May 2025</small>
-    </div>
-
-    <div class="red">
-      -4,000 RWF
-    </div>
-
-  </div>
-
-  <div class="tx-item">
-
-    <div>
-      <strong>Daily Profit</strong>
-      <br>
-      <small>20 May 2025</small>
-    </div>
-
-    <div class="green">
-      +2,500 RWF
-    </div>
-
-  </div>
-
-</div>
-
-<div class="bottom-nav">
-</div>
-  <a href="#" class="nav-item active-nav">
-    🏠
-    <span>Home</span>
-  </a>
-
-  <a href="#" class="nav-item">
-    💼
-    <span>Wallet</span>
-  </a>
-
-  <a href="#" class="nav-item">
-    👤
-    <span>Profile</span>
-  </a>
-
-  </div>
-  <div id="walletPage" style="display:none;">
-
-  <h2>💼 My Wallet</h2>
-
+<!-- WALLET -->
+<div id="walletPage" style="display:none;">
   <div class="wallet-card">
-    <h3>Current Balance</h3>
-    <h1 id="balanceValue">15,750 RWF</h1>
+    <h2>💼 My Wallet</h2>
+    <h1 id="balanceValue">0 RWF</h1>
   </div>
-
 </div>
 
-<div id="profilePage" style="display:none;">
-
-  <div class="wallet-card">
-    <h2>👤 Profile</h2>
-
-    <p>Name: <span id="profileName">User</span></p>
-
-    <p>Status: Active Member</p>
-  </div>
-
-</div>
-
-<div id="settingsPage" style="display:none;">
-
-  <div class="wallet-card">
-    <h2>⚙ Settings</h2>
-
-    <p>Notifications</p>
-
-    <p>Language: English</p>
-
-    <p>Version: Money Vault 1.0</p>
-  </div>
-
-</div>
-
+<!-- DEPOSIT PAGE -->
 <div id="depositPage" style="display:none;">
-
   <div class="wallet-card">
 
     <h2>⬇ Deposit Funds</h2>
 
-    <input type="number" placeholder="Enter amount">
+    <input type="number" id="depositAmount" placeholder="Enter amount">
 
-    <button class="deposit-btn">
+    <button class="deposit-btn" onclick="deposit()">
       Deposit
     </button>
 
   </div>
-
 </div>
 
+<!-- WITHDRAW PAGE -->
 <div id="withdrawPage" style="display:none;">
-
   <div class="wallet-card">
 
     <h2>⬆ Withdraw Funds</h2>
 
-    <input type="number" placeholder="Enter amount">
+    <input type="number" id="withdrawAmount" placeholder="Enter amount">
 
-    <button class="withdraw-btn">
+    <button class="withdraw-btn" onclick="withdraw()">
       Withdraw
     </button>
 
   </div>
-
 </div>
 
+<!-- PROFILE -->
+<div id="profilePage" style="display:none;">
+  <div class="wallet-card">
+    <h2>👤 Profile</h2>
+    <p>Name: <span id="profileName">User</span></p>
+  </div>
+</div>
+
+<!-- SETTINGS -->
+<div id="settingsPage" style="display:none;">
+  <div class="wallet-card">
+    <h2>⚙ Settings</h2>
+    <p>Version: Money Vault 1.0</p>
+  </div>
+</div>
+
+<!-- JS -->
 <script>
-
 function toggleMenu(){
-  document.getElementById("sidebar")
-  .classList.toggle("active");
+  document.getElementById("sidebar").classList.toggle("active");
 }
-
-document.addEventListener("click", function(e){
-
-  const sidebar =
-  document.getElementById("sidebar");
-
-  const menuBtn =
-  document.querySelector(".menu-btn");
-
-  if(
-    !sidebar.contains(e.target)
-    &&
-    !menuBtn.contains(e.target)
-  ){
-    sidebar.classList.remove("active");
-  }
-
-});
 
 function hideAllPages(){
+  const pages = ["homePage","walletPage","depositPage","withdrawPage","profilePage","settingsPage"];
 
-  const pages = [
-"homePage",
-"walletPage",
-"profilePage",
-"settingsPage",
-"depositPage",
-"withdrawPage"
-];
-
-  pages.forEach(page => {
-
-    const el =
-    document.getElementById(page);
-
-    if(el){
-      el.style.display="none";
-    }
-
+  pages.forEach(p => {
+    document.getElementById(p).style.display = "none";
   });
-
 }
 
-function showPage(page){hideAllPages();
-if(page==="home"){
-document.getElementById("homePage").style.display="block";
+function showPage(page){
+  hideAllPages();
+  document.getElementById(page + "Page").style.display = "block";
 }
-  if(page==="wallet"){
-    document.getElementById("walletPage").style.display="block";
-  }
-
-  if(page==="profile"){
-    document.getElementById("profilePage").style.display="block";
-  }
-
-  if(page==="settings"){
-    document.getElementById("settingsPage").style.display="block";
-  }
-
-  if(page==="deposit"){
-    document.getElementById("depositPage").style.display="block";
-  }
-
-  if(page==="withdraw"){
-    document.getElementById("withdrawPage").style.display="block";
-  }
-
-  document.getElementById("sidebar")
-  .classList.remove("active");
-
-}
-...
 </script>
 
-<script type="module" src="dashboard.js"></script>
+<script type="module" src="./dashboard.js"></script>
+
 </body>
-    </html>
+  </html>
