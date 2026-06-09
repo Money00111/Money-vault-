@@ -2,14 +2,15 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/fireba
 import { getDatabase } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
 
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT.firebaseapp.com",
-  databaseURL: "https://YOUR_PROJECT-default-rtdb.firebaseio.com",
-  projectId: "YOUR_PROJECT",
-  storageBucket: "YOUR_PROJECT.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyC0ugw0iH2h00bJxxHq7qMRBvYYmFjPqCU",
+  authDomain: "money-vault-c48d3.firebaseapp.com",
+  databaseURL: "https://money-vault-c48d3-default-rtdb.firebaseio.com",
+  projectId: "money-vault-c48d3",
+  storageBucket: "money-vault-c48d3.firebasestorage.app",
+  messagingSenderId: "1068478656241",
+  appId: "1:1068478656241:web:aacbcf12922a21fe784350"
 };
 
 const app = initializeApp(firebaseConfig);
+
 export const db = getDatabase(app);
