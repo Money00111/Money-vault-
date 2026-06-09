@@ -1,7 +1,8 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
 import { db } from "./firebase.js";
 import { ref, get, update } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
-
+import { set, ref } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
+import { db } from "./firebase.js";
 window.deposit = async function () {
     const userId = document.getElementById("userId").value;
     const amount = Number(document.getElementById("amount").value);
@@ -112,7 +113,19 @@ userCredential.user,
 displayName:name
 }
 );
-
+await set(ref(db, "users/" + userCredential.user.uid), {
+  name: name,
+  email: email,
+  balance: 0,
+  totalDeposits: 0,
+  totalWithdrawals: 0,
+  vip: {
+    plan: "None",
+    dailyIncome: 0,
+    daysLeft: 0
+  },
+  createdAt: Date.now()
+});
 message.innerText =
 "Account created successfully";
 
