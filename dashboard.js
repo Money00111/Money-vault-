@@ -1,97 +1,132 @@
 import { db } from "./firebase.js";
-import { ref, onValue, get, update } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
-import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
-import { db } from "./firebase.js";
-import { ref, onValue } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
+import {
+  ref,
+  onValue,
+  get,
+  update
+} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
+
+import {
+  getAuth,
+  onAuthStateChanged,
+  signOut
+} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 
 const auth = getAuth();
 
+let currentUserRef = null;
+
+// ===== CHECK LOGIN =====
 onAuthStateChanged(auth, (user) => {
 
-    if (!user) {
-        window.location.href = "index.html";
-        return;
-    }
+  if (!user) {
+    window.location.href = "index.html";
+    return;
+  }
 
-    const userRef = ref(db, "users/" + user.uid);
+  currentUserRef = ref(db, "users/" + user.uid);
 
-    onValue(userRef, (snapshot) => {
+  // LIVE DATA
+  onValue(currentUserRef, (snapshot) => {
 
-        const data = snapshot.val();
-
-        if (!data) return;
-
-        document.getElementById("welcomeUser").innerText =
-            "Hello, " + data.name + " 👋";
-
-        document.getElementById("balanceValue").innerText =
-            (data.balance || 0) + " RWF";
-
-        const profileName =
-            document.getElementById("profileName");
-
-        if (profileName) {
-            profileName.innerText = data.name;
-        }
-
-    });
-
-});
-// 👇 user reference (urashobora guhindura userId nyuma ya login)
-const userId = "user1";
-const userRef = ref(db, "users/" + userId);
-
-// ===== LIVE DASHBOARD UPDATE =====
-onValue(userRef, (snapshot) => {
     const data = snapshot.val();
 
     if (!data) return;
 
-    document.getElementById("balanceValue").innerText = data.balance + " RWF";
-    document.getElementById("welcomeUser").innerText = "Hello, " + data.name + " 👋";
+    const welcomeUser =
+      document.getElementById("welcomeUser");
+
+    const balanceValue =
+      document.getElementById("balanceValue");
+
+    const profileName =
+      document.getElementById("profileName");
+
+    if (welcomeUser) {
+      welcomeUser.innerText =
+        "Hello, " + data.name + " 👋";
+    }
+
+    if (balanceValue) {
+      balanceValue.innerText =
+        (data.balance || 0) + " RWF";
+    }
+
+    if (profileName) {
+      profileName.innerText =
+        data.name;
+    }
+
+  });
+
 });
 
 // ===== DEPOSIT =====
 window.deposit = async function () {
-    const amount = Number(document.getElementById("depositAmount").value);
 
-    if (!amount || amount <= 0) {
-        alert("Enter valid amount");
-        return;
-    }
+  const amount =
+    Number(document.getElementById("depositAmount").value);
 
-    const snapshot = await get(userRef);
-    const data = snapshot.val();
+  if (!amount || amount <= 0) {
+    alert("Enter valid amount");
+    return;
+  }
 
-    await update(userRef, {
-        balance: (data.balance || 0) + amount
-    });
+  const snapshot = await get(currentUserRef);
+  const data = snapshot.val();
 
-    document.getElementById("depositAmount").value = "";
-    alert("Deposit successful ✅");
+  await update(currentUserRef, {
+    balance: (data.balance || 0) + amount,
+    totalDeposits: (data.totalDeposits || 0) + amount
+  });
+
+  document.getElementById("depositAmount").value = "";
+
+  alert("Deposit successful ✅");
 };
 
 // ===== WITHDRAW =====
 window.withdraw = async function () {
-    const amount = Number(document.getElementById("withdrawAmount").value);
 
-    if (!amount || amount <= 0) {
-        alert("Enter valid amount");
-        return;
-    }
+  const amount =
+    Number(document.getElementById("withdrawAmount").value);
 
-    const snapshot = await get(userRef);
-    const data = snapshot.val();
+  if (!amount || amount <= 0) {
+    alert("Enter valid amount");
+    return;
+  }
 
-    if (data.balance < amount) {
-        alert("Insufficient balance ⚠️");
-        return;
-    }
+  const snapshot = await get(currentUserRef);
+  const data = snapshot.val();
 
-    await update(userRef, {
-        balance: data.balance - amount
-    });
+  if ((data.balance || 0) < amount) {
+    alert("Insufficient balance ⚠️");
+    return;
+  }
 
-    document.getElementById("withdrawAmount").value = "";
-    alert("Withdraw successful 💰");
+  await update(currentUserRef, {
+    balance: data.balance - amount,
+    totalWithdrawals:
+      (data.totalWithdrawals || 0) + amount
+  });
+
+  document.getElementById("withdrawAmount").value = "";
+
+  alert("Withdraw successful 💰");
 };
+
+// ===== LOGOUT =====
+const logoutBtn =
+  document.getElementById("logoutBtn");
+
+if (logoutBtn) {
+
+  logoutBtn.addEventListener("click", async () => {
+
+    await signOut(auth);
+
+    window.location.href = "index.html";
+
+  });
+
+  }
