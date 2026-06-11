@@ -312,5 +312,31 @@ if (logoutBtn) {
     window.location.href = "index.html";
 
   });
+  window.claimDailyIncome = async function() {
+
+  const snapshot = await get(currentUserRef);
+  const data = snapshot.val();
+
+  if (!data.vip) {
+    alert("No VIP Plan");
+    return;
+  }
+
+  const now = Date.now();
+  const oneDay = 24 * 60 * 60 * 1000;
+
+  if (now - data.vip.lastClaim < oneDay) {
+    alert("Come back tomorrow");
+    return;
+  }
+
+  await update(currentUserRef, {
+    balance: (data.balance || 0) + data.vip.dailyIncome,
+    "vip/lastClaim": now,
+    "vip/daysLeft": (data.vip.daysLeft || 0) - 1
+  });
+
+  alert("Income Claimed ✅");
+};
 
 }
