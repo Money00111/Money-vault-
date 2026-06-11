@@ -114,7 +114,51 @@ window.withdraw = async function () {
 
   alert("Withdraw successful 💰");
 };
+// ===== VIP 1 =====
+window.buyVip1 = async function(){
 
+ const snapshot = await get(currentUserRef);
+ const data = snapshot.val();
+
+ if((data.balance || 0) < 5000){
+   alert("Not enough balance");
+   return;
+ }
+
+ await update(currentUserRef,{
+   balance:data.balance - 5000,
+   vip:{
+     plan:"VIP 1",
+     dailyIncome:500,
+     daysLeft:30
+   }
+ });
+
+ alert("VIP 1 Activated 👑");
+};
+
+// ===== VIP 2 =====
+window.buyVip2 = async function(){
+
+ const snapshot = await get(currentUserRef);
+ const data = snapshot.val();
+
+ if((data.balance || 0) < 10000){
+   alert("Not enough balance");
+   return;
+ }
+
+ await update(currentUserRef,{
+   balance:data.balance - 10000,
+   vip:{
+     plan:"VIP 2",
+     dailyIncome:1200,
+     daysLeft:30
+   }
+ });
+
+ alert("VIP 2 Activated 👑");
+};
 // ===== LOGOUT =====
 const logoutBtn =
   document.getElementById("logoutBtn");
