@@ -60,6 +60,18 @@ onAuthStateChanged(auth, (user) => {
   });
 
 });
+if(data.vip){
+
+ document.getElementById("vipPlan").innerText =
+ data.vip.plan || "None";
+
+ document.getElementById("vipIncome").innerText =
+ (data.vip.dailyIncome || 0) + " RWF";
+
+ document.getElementById("vipDays").innerText =
+ data.vip.daysLeft || 0;
+
+}
 
 // ===== DEPOSIT =====
 window.deposit = async function () {
