@@ -258,6 +258,15 @@ window.buyVip1 = async function(){
 
  alert("VIP 1 Activated 👑");
 };
+await update(currentUserRef, {
+  balance: data.balance - 5000,
+  vip: {
+    plan: "VIP 1",
+    dailyIncome: 500,
+    daysLeft: 30,
+    lastClaim: Date.now()
+  }
+});
 
 // ===== VIP 2 =====
 window.buyVip2 = async function(){
@@ -281,6 +290,15 @@ window.buyVip2 = async function(){
 
  alert("VIP 2 Activated 👑");
 };
+await update(currentUserRef, {
+  balance: data.balance - 10000,
+  vip: {
+    plan: "VIP 2",
+    dailyIncome: 1200,
+    daysLeft: 30,
+    lastClaim: Date.now()
+  }
+});
 // ===== LOGOUT =====
 const logoutBtn =
   document.getElementById("logoutBtn");
