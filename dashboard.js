@@ -124,6 +124,43 @@ if(totalWithdrawals){
   totalWithdrawals.innerText =
   data.totalWithdrawals || 0;
 }
+  const vipPlan =
+document.getElementById("vipPlan");
+
+const vipIncome =
+document.getElementById("vipIncome");
+
+const vipDays =
+document.getElementById("vipDays");
+
+const vipEarnings =
+document.getElementById("vipEarnings");
+
+if(data.vip){
+
+  if(vipPlan){
+    vipPlan.innerText =
+    data.vip.plan || "None";
+  }
+
+  if(vipIncome){
+    vipIncome.innerText =
+    (data.vip.dailyIncome || 0) + " RWF";
+  }
+
+  if(vipDays){
+    vipDays.innerText =
+    data.vip.daysLeft || 0;
+  }
+
+  if(vipEarnings){
+    vipEarnings.innerText =
+    ((data.vip.dailyIncome || 0) *
+    (30 - (data.vip.daysLeft || 30)))
+    + " RWF";
+  }
+
+}
   });
 
 // ===== DEPOSIT =====
