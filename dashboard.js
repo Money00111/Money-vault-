@@ -127,8 +127,7 @@ window.deposit = async function () {
   await update(currentUserRef, {
     balance: (data.balance || 0) + amount,
     totalDeposits: (data.totalDeposits || 0) + amount
-  });
-  const txRef = push(
+ const txRef = push(
   ref(db, "users/" + auth.currentUser.uid + "/transactions")
 );
 
@@ -142,6 +141,8 @@ await set(txRef,{
 
   alert("Deposit successful ✅");
 };
+  });
+  
 
 // ===== WITHDRAW =====
 window.withdraw = async function () {
@@ -166,8 +167,7 @@ window.withdraw = async function () {
     balance: data.balance - amount,
     totalWithdrawals:
       (data.totalWithdrawals || 0) + amount
-  });
-const txRef = push(
+ const txRef = push(
   ref(db, "users/" + auth.currentUser.uid + "/transactions")
 );
 
@@ -180,6 +180,9 @@ await set(txRef,{
 
   alert("Withdraw successful 💰");
 };
+
+  });
+
 // ===== VIP 1 =====
 window.buyVip1 = async function(){
 
