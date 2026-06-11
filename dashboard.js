@@ -58,7 +58,42 @@ onAuthStateChanged(auth, (user) => {
       profileName.innerText =
         data.name;
     }
+const txList =
+document.getElementById("transactionList");
 
+if(txList){
+
+  let html = "";
+
+  if(data.transactions){
+
+    Object.values(data.transactions)
+    .reverse()
+    .forEach(tx => {
+
+      html += `
+      <div class="tx-item">
+        <div>
+          <strong>${tx.type}</strong><br>
+          <small>${tx.date}</small>
+        </div>
+        <div class="${tx.type === "Deposit" ? "green" : "red"}">
+          ${tx.type === "Deposit" ? "+" : "-"}
+          ${tx.amount} RWF
+        </div>
+      </div>
+      `;
+
+    });
+
+  } else {
+
+    html = "No transactions yet";
+
+  }
+
+  txList.innerHTML = html;
+      }
   });
 
 });
