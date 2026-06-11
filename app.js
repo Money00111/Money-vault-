@@ -77,6 +77,9 @@ document.getElementById("registerBtn").onclick = async () => {
         balance: 0,
         totalDeposits: 0,
         totalWithdrawals: 0,
+        referralCode: Math.random().toString(36).substring(2,8).toUpperCase(),
+referralCount: 0,
+referralEarnings: 0
         vip: {
           plan: "None",
           dailyIncome: 0,
