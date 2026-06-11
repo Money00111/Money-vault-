@@ -96,7 +96,7 @@ if(txList){
       }
   });
 
-});
+
 if(data.vip){
 
  document.getElementById("vipPlan").innerText =
@@ -109,6 +109,22 @@ if(data.vip){
  data.vip.daysLeft || 0;
 
 }
+const totalDeposits =
+document.getElementById("totalDeposits");
+
+const totalWithdrawals =
+document.getElementById("totalWithdrawals");
+
+if(totalDeposits){
+  totalDeposits.innerText =
+  data.totalDeposits || 0;
+}
+
+if(totalWithdrawals){
+  totalWithdrawals.innerText =
+  data.totalWithdrawals || 0;
+}
+  });
 
 // ===== DEPOSIT =====
 window.deposit = async function () {
