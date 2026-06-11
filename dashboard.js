@@ -159,7 +159,29 @@ if(data.vip){
     (30 - (data.vip.daysLeft || 30)))
     + " RWF";
   }
+const referralCode =
+document.getElementById("referralCode");
 
+const referralCount =
+document.getElementById("referralCount");
+
+const referralEarnings =
+document.getElementById("referralEarnings");
+
+if(referralCode){
+  referralCode.innerText =
+  data.referralCode || "------";
+}
+
+if(referralCount){
+  referralCount.innerText =
+  data.referralCount || 0;
+}
+
+if(referralEarnings){
+  referralEarnings.innerText =
+  (data.referralEarnings || 0) + " RWF";
+   }
 }
   });
 
