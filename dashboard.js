@@ -93,6 +93,15 @@ window.deposit = async function () {
     balance: (data.balance || 0) + amount,
     totalDeposits: (data.totalDeposits || 0) + amount
   });
+  const txRef = push(
+  ref(db, "users/" + auth.currentUser.uid + "/transactions")
+);
+
+await set(txRef,{
+  type:"Deposit",
+  amount:amount,
+  date:new Date().toLocaleString()
+});
 
   document.getElementById("depositAmount").value = "";
 
@@ -123,7 +132,15 @@ window.withdraw = async function () {
     totalWithdrawals:
       (data.totalWithdrawals || 0) + amount
   });
+const txRef = push(
+  ref(db, "users/" + auth.currentUser.uid + "/transactions")
+);
 
+await set(txRef,{
+  type:"Withdraw",
+  amount:amount,
+  date:new Date().toLocaleString()
+});
   document.getElementById("withdrawAmount").value = "";
 
   alert("Withdraw successful 💰");
