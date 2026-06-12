@@ -301,40 +301,40 @@ function toggleMenu() {
 
 function hideAllPages() {
 
-const pages = [
-  "homePage",
-  "walletPage",
-  "depositPage",
-  "withdrawPage",
-  "profilePage",
-  "settingsPage",
-  "adminPage"
-];
+  const pages = [
+    "homePage",
+    "walletPage",
+    "depositPage",
+    "withdrawPage",
+    "profilePage",
+    "settingsPage",
+    "adminPage"
+  ];
+
   pages.forEach(page => {
-    document.getElementById(page).style.display = "none";
+    const element = document.getElementById(page);
+
+    if(element){
+      element.style.display = "none";
+    }
   });
-  
-const pages = [
-  "homePage",
-  "walletPage",
-  "depositPage",
-  "withdrawPage",
-  "profilePage",
-  "settingsPage",
-  "adminPage"
-];
+
 }
 
 function showPage(page) {
 
   hideAllPages();
 
-  document.getElementById(page + "Page")
-    .style.display = "block";
+  const selectedPage =
+    document.getElementById(page + "Page");
+
+  if(selectedPage){
+    selectedPage.style.display = "block";
+  }
 
   document.getElementById("sidebar")
     .classList.remove("active");
-  }
+}
 
 </script>
 
