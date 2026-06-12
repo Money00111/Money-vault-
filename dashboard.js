@@ -25,6 +25,16 @@ onAuthStateChanged(auth, (user) => {
     window.location.href = "index.html";
     return;
   }
+  if(user.email === "EMAIL_YAWE_HANO"){
+
+  const adminMenu =
+  document.getElementById("adminMenu");
+
+  if(adminMenu){
+    adminMenu.style.display = "block";
+  }
+
+}
 
   currentUserRef = ref(db, "users/" + user.uid);
 
