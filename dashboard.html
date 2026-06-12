@@ -292,7 +292,16 @@ function hideAllPages() {
   pages.forEach(page => {
     document.getElementById(page).style.display = "none";
   });
-
+  
+const pages = [
+  "homePage",
+  "walletPage",
+  "depositPage",
+  "withdrawPage",
+  "profilePage",
+  "settingsPage",
+  "adminPage"
+];
 }
 
 function showPage(page) {
@@ -304,7 +313,7 @@ function showPage(page) {
 
   document.getElementById("sidebar")
     .classList.remove("active");
-}
+  }
 
 </script>
 
