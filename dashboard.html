@@ -301,15 +301,15 @@ function toggleMenu() {
 
 function hideAllPages() {
 
-  const pages = [
-    "homePage",
-    "walletPage",
-    "depositPage",
-    "withdrawPage",
-    "profilePage",
-    "settingsPage"
-  ];
-
+const pages = [
+  "homePage",
+  "walletPage",
+  "depositPage",
+  "withdrawPage",
+  "profilePage",
+  "settingsPage",
+  "adminPage"
+];
   pages.forEach(page => {
     document.getElementById(page).style.display = "none";
   });
