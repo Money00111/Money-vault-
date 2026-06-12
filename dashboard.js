@@ -54,7 +54,24 @@ document.getElementById("usersList");
 
 if(usersList){
 
-  usersList.innerHTML = "";
+  const vipPlan =
+userData.vip?.plan || "None";
+
+usersList.innerHTML += `
+<div class="tx-item">
+
+  <div>
+    <strong>${userData.name || "Unknown"}</strong><br>
+    <small>${userData.email || ""}</small><br>
+    <small>👑 ${vipPlan}</small>
+  </div>
+
+  <div>
+    ${(userData.balance || 0)} RWF
+  </div>
+
+</div>
+`;
 
   snapshot.forEach((child) => {
 
