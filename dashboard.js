@@ -26,7 +26,55 @@ onAuthStateChanged(auth, (user) => {
     return;
   }
   if(user.email === "EMAIL_YAWE_HANO"){
+const usersRef = ref(db, "users");
 
+onValue(usersRef, (snapshot) => {
+
+  let totalUsers = 0;
+  let totalBalance = 0;
+  let vipUsers = 0;
+
+  snapshot.forEach((child) => {
+
+    totalUsers++;
+
+    const data = child.val();
+
+    totalBalance += data.balance || 0;
+
+    if(
+      data.vip &&
+      data.vip.plan &&
+      data.vip.plan !== "None"
+    ){
+      vipUsers++;
+    }
+
+  });
+
+  const totalUsersEl =
+    document.getElementById("totalUsers");
+
+  const totalBalanceEl =
+    document.getElementById("totalBalance");
+
+  const vipUsersEl =
+    document.getElementById("vipUsers");
+
+  if(totalUsersEl){
+    totalUsersEl.innerText = totalUsers;
+  }
+
+  if(totalBalanceEl){
+    totalBalanceEl.innerText =
+      totalBalance + " RWF";
+  }
+
+  if(vipUsersEl){
+    vipUsersEl.innerText = vipUsers;
+  }
+
+});
   const adminMenu =
   document.getElementById("adminMenu");
 
