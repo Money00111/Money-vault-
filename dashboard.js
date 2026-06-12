@@ -460,6 +460,33 @@ if (logoutBtn) {
   });
 
   alert("Income Claimed ✅");
-};
+    
+};const searchInput =
+document.getElementById("searchUser");
+
+if(searchInput){
+
+  searchInput.addEventListener("input", () => {
+
+    const value =
+    searchInput.value.toLowerCase();
+
+    document
+    .querySelectorAll("#usersList .tx-item")
+    .forEach(item => {
+
+      const text =
+      item.innerText.toLowerCase();
+
+      item.style.display =
+      text.includes(value)
+      ? "flex"
+      : "none";
+
+    });
+
+  });
+
+}
 
 }
