@@ -28,6 +28,9 @@
 <a href="#" onclick="showPage('admin')">
   🛠 Admin
 </a>
+  <a href="#" id="adminMenu" style="display:none;" onclick="showPage('admin')">
+ 🛠 Admin
+  </a>
   <button id="logoutBtn" class="logout-btn">
     Logout
   </button>
@@ -266,6 +269,24 @@
     <h2>⚙ Settings</h2>
 
     <p>Money Vault Pro Version</p>
+
+  </div>
+
+</div>
+  <div id="adminPage" style="display:none;">
+
+  <div class="wallet-card">
+
+    <h2>🛠 Admin Panel</h2>
+
+    <p>Total Users</p>
+    <h3 id="totalUsers">0</h3>
+
+    <p>Total Balance</p>
+    <h3 id="totalBalance">0 RWF</h3>
+
+    <p>VIP Users</p>
+    <h3 id="vipUsers">0</h3>
 
   </div>
 
