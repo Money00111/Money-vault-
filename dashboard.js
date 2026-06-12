@@ -49,7 +49,33 @@ onValue(usersRef, (snapshot) => {
     ){
       vipUsers++;
     }
+const usersList =
+document.getElementById("usersList");
 
+if(usersList){
+
+  usersList.innerHTML = "";
+
+  snapshot.forEach((child) => {
+
+    const userData = child.val();
+
+    usersList.innerHTML += `
+      <div class="tx-item">
+        <div>
+          <strong>${userData.name || "Unknown"}</strong><br>
+          <small>${userData.email || ""}</small>
+        </div>
+
+        <div>
+          ${(userData.balance || 0)} RWF
+        </div>
+      </div>
+    `;
+
+  });
+
+}
   });
 
   const totalUsersEl =
