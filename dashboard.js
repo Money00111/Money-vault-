@@ -138,133 +138,67 @@ if(data.vip){
     // ===== DEPOSIT =====
 window.deposit = async function () {
 
-  const amount = Number(
-    document.getElementById("depositAmount").value
-  );
+  const amount =
+  Number(document.getElementById("depositAmount").value);
 
-  if (!amount || amount <= 0) {
-    alert("Enter valid amount");
+  const method =
+  document.getElementById("depositMethod").value;
+
+  const number =
+  document.getElementById("depositNumber").value;
+
+  if(!amount || !number){
+    alert("Fill all fields");
     return;
   }
 
-  const snapshot = await get(currentUserRef);
-  const data = snapshot.val();
-
-  await update(currentUserRef, {
-    balance: (data.balance || 0) + amount,
-    totalDeposits: (data.totalDeposits || 0) + amount
-  });
-
-  const txRef = push(
-    ref(
-      db,
-      "users/" +
-      auth.currentUser.uid +
-      "/transactions"
-    )
+  const depositRef = push(
+    ref(db, "depositRequests")
   );
 
-  await set(txRef, {
-    type: "Deposit",
-    amount: amount,
-    date: new Date().toLocaleString()
+  await set(depositRef,{
+    uid: auth.currentUser.uid,
+    amount,
+    method,
+    number,
+    status:"pending",
+    date:new Date().toLocaleString()
   });
 
-  document.getElementById(
-    "depositAmount"
-  ).value = "";
-
-  alert("Deposit successful ✅");
-
-    <select id="depositMethod">
-  <option value="momo">MTN Mobile Money</option>
-  <option value="airtel">Airtel Money</option>
-</select>
-
-<input
-type="text"
-id="depositNumber"
-placeholder="Phone Number">
-
-<input
-type="number"
-id="depositAmount"
-placeholder="Amount">
-
-<button
-class="deposit-btn"
-onclick="deposit()">
-Deposit
-</button>
-
+  alert("Deposit request sent ✅");
 };
   
 // ===== WITHDRAW =====
 window.withdraw = async function () {
 
-  const amount = Number(
-    document.getElementById("withdrawAmount").value
-  );
+  const amount =
+  Number(document.getElementById("withdrawAmount").value);
 
-  if (!amount || amount <= 0) {
-    alert("Enter valid amount");
+  const method =
+  document.getElementById("withdrawMethod").value;
+
+  const number =
+  document.getElementById("withdrawNumber").value;
+
+  if(!amount || !number){
+    alert("Fill all fields");
     return;
   }
 
-  const snapshot = await get(currentUserRef);
-  const data = snapshot.val();
-
-  if ((data.balance || 0) < amount) {
-    alert("Insufficient balance ⚠️");
-    return;
-  }
-
-  await update(currentUserRef, {
-    balance: data.balance - amount,
-    totalWithdrawals:
-      (data.totalWithdrawals || 0) + amount
-  });
-
-  const txRef = push(
-    ref(
-      db,
-      "users/" +
-      auth.currentUser.uid +
-      "/transactions"
-    )
+  const withdrawRef = push(
+    ref(db, "withdrawRequests")
   );
 
-  await set(txRef, {
-    type: "Withdraw",
-    amount: amount,
-    date: new Date().toLocaleString()
+  await set(withdrawRef,{
+    uid: auth.currentUser.uid,
+    amount,
+    method,
+    number,
+    status:"pending",
+    date:new Date().toLocaleString()
   });
 
-  document.getElementById(
-    "withdrawAmount"
-  ).value = "";
-
-  alert("Withdraw successful 💰");
-  <select id="withdrawMethod">
-  <option value="momo">MTN Mobile Money</option>
-  <option value="airtel">Airtel Money</option>
-</select>
-
-<input
-type="text"
-id="withdrawNumber"
-placeholder="Phone Number">
-
-<input
-type="number"
-id="withdrawAmount"
-placeholder="Amount">
-
-<button
-class="withdraw-btn"
-onclick="withdraw()">
-Withdraw
-</button>
+  alert("Withdraw request sent ✅");
 };
     // ===== VIP 1 =====
 window.buyVip1 = async function () {
