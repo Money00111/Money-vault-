@@ -216,48 +216,44 @@
 </div>
 
 <!-- DEPOSIT PAGE -->
-<div id="depositPage" style="display:none;">
+<select id="depositMethod">
+  <option value="momo">MTN Mobile Money</option>
+  <option value="airtel">Airtel Money</option>
+</select>
 
-  <div class="wallet-card">
+<input type="text"
+id="depositNumber"
+placeholder="Phone Number">
 
-    <h2>⬇ Deposit Funds</h2>
+<input type="number"
+id="depositAmount"
+placeholder="Amount">
 
-    <input
-      type="number"
-      id="depositAmount"
-      placeholder="Enter amount">
-
-    <button
-      class="deposit-btn"
-      onclick="deposit()">
-      Deposit
-    </button>
-
-  </div>
-
-</div>
+<button
+class="deposit-btn"
+onclick="deposit()">
+Deposit
+</button>
 
 <!-- WITHDRAW PAGE -->
-<div id="withdrawPage" style="display:none;">
+<select id="withdrawMethod">
+  <option value="momo">MTN Mobile Money</option>
+  <option value="airtel">Airtel Money</option>
+</select>
 
-  <div class="wallet-card">
+<input type="text"
+id="withdrawNumber"
+placeholder="Phone Number">
 
-    <h2>⬆ Withdraw Funds</h2>
+<input type="number"
+id="withdrawAmount"
+placeholder="Amount">
 
-    <input
-      type="number"
-      id="withdrawAmount"
-      placeholder="Enter amount">
-
-    <button
-      class="withdraw-btn"
-      onclick="withdraw()">
-      Withdraw
-    </button>
-
-  </div>
-
-</div>
+<button
+class="withdraw-btn"
+onclick="withdraw()">
+Withdraw
+</button>
 
 <!-- PROFILE PAGE -->
 <div id="profilePage" style="display:none;">
