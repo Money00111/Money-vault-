@@ -1,9 +1,5 @@
 import { db } from "./firebase.js";
-import {
-  ref,
-  onValue,
-  update
-} from "firebase/database";
+import {ref,onValue,update} from "firebase/database";
 import {
   ref,
   onValue,
@@ -18,7 +14,16 @@ import {
   onAuthStateChanged,
   signOut
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+const userId = "demoUser"; // nyuma tuzashyiramo auth.uid
 
+const balanceRef = ref(db, "users/" + userId + "/balance");
+
+onValue(balanceRef, (snap) => {
+  const balance = snap.val();
+
+  document.getElementById("balanceBox").innerText =
+    "Balance: " + (balance || 0) + " RWF";
+});
 const auth = getAuth();
 
 const ADMIN_EMAIL = "SHYIRAMO_EMAIL_YAWE";
