@@ -80,7 +80,34 @@ onValue(withdrawRef, (snapshot) => {
     status: "approved"
   });
 };
+window.approveW = async (id) => {
 
+  const wRef = ref(db, "withdrawRequests/" + id);
+
+  const snap = await get(wRef);
+  const data = snap.val();
+
+  if (!data) return;
+
+  // 1. mark approved
+  await update(wRef, {
+    status: "approved"
+  });
+
+  // 2. reduce user balance
+  const userRef = ref(db, "users/" + data.uid);
+
+  const userSnap = await get(userRef);
+  const userData = userSnap.val();
+
+  const currentBalance = userData?.balance || 0;
+
+  await update(userRef, {
+    balance: currentBalance - data.amount
+  });
+
+  alert("Withdraw approved + balance updated");
+};
 window.rejectDeposit = async function(id){
   await update(ref(db, "depositRequests/" + id), {
     status: "rejected"
