@@ -245,6 +245,26 @@ window.withdraw = async function () {
   ).value = "";
 
   alert("Withdraw successful 💰");
+  <select id="withdrawMethod">
+  <option value="momo">MTN Mobile Money</option>
+  <option value="airtel">Airtel Money</option>
+</select>
+
+<input
+type="text"
+id="withdrawNumber"
+placeholder="Phone Number">
+
+<input
+type="number"
+id="withdrawAmount"
+placeholder="Amount">
+
+<button
+class="withdraw-btn"
+onclick="withdraw()">
+Withdraw
+</button>
 };
     // ===== VIP 1 =====
 window.buyVip1 = async function () {
