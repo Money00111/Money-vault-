@@ -1,9 +1,32 @@
 import { db } from "./firebase.js";
-import {
-  ref,
-  onValue,
-  update
-} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
+window.approveDep = async (id) => {
+
+  const depRef = ref(db, "depositRequests/" + id);
+
+  const snap = await get(depRef);
+  const data = snap.val();
+
+  if (!data) return;
+
+  // 1. mark approved
+  await update(depRef, {
+    status: "approved"
+  });
+
+  // 2. add balance to user
+  const userRef = ref(db, "users/" + data.uid);
+
+  const userSnap = await get(userRef);
+  const userData = userSnap.val();
+
+  const currentBalance = userData?.balance || 0;
+
+  await update(userRef, {
+    balance: currentBalance + data.amount
+  });
+
+  alert("Deposit approved + balance updated");
+};
 const depositRef = ref(db, "depositRequests");
 
 onValue(depositRef, (snapshot) => {
@@ -74,5 +97,33 @@ window.rejectWithdraw = async function(id){
   await update(ref(db, "withdrawRequests/" + id), {
     status: "rejected"
   });
+};
+window.approveW = async (id) => {
+
+  const wRef = ref(db, "withdrawRequests/" + id);
+
+  const snap = await get(wRef);
+  const data = snap.val();
+
+  if (!data) return;
+
+  // 1. mark approved
+  await update(wRef, {
+    status: "approved"
+  });
+
+  // 2. reduce user balance
+  const userRef = ref(db, "users/" + data.uid);
+
+  const userSnap = await get(userRef);
+  const userData = userSnap.val();
+
+  const currentBalance = userData?.balance || 0;
+
+  await update(userRef, {
+    balance: currentBalance - data.amount
+  });
+
+  alert("Withdraw approved + balance updated");
 };
 
