@@ -1,4 +1,5 @@
 import { db } from "./firebase.js";
+
 import {
   ref,
   onValue,
@@ -16,120 +17,30 @@ import {
 
 const auth = getAuth();
 
+const ADMIN_EMAIL = "SHYIRAMO_EMAIL_YAWE";
+
 let currentUserRef = null;
 
-// ===== CHECK LOGIN =====
 onAuthStateChanged(auth, (user) => {
 
   if (!user) {
     window.location.href = "index.html";
     return;
   }
-  if(user.email === "EMAIL_YAWE_HANO"){
-const usersRef = ref(db, "users");
-
-onValue(usersRef, (snapshot) => {
-
-  let totalUsers = 0;
-  let totalBalance = 0;
-  let vipUsers = 0;
-
-  snapshot.forEach((child) => {
-
-    totalUsers++;
-
-    const data = child.val();
-
-    totalBalance += data.balance || 0;
-
-    if(
-      data.vip &&
-      data.vip.plan &&
-      data.vip.plan !== "None"
-    ){
-      vipUsers++;
-    }
-const usersList =
-document.getElementById("usersList");
-
-if(usersList){
-
-  const vipPlan =
-userData.vip?.plan || "None";
-
-usersList.innerHTML += `
-<div class="tx-item">
-
-  <div>
-    <strong>${userData.name || "Unknown"}</strong><br>
-    <small>${userData.email || ""}</small><br>
-    <small>👑 ${vipPlan}</small>
-  </div>
-
-  <div>
-    ${(userData.balance || 0)} RWF
-  </div>
-
-</div>
-`;
-
-  snapshot.forEach((child) => {
-
-    const userData = child.val();
-
-    usersList.innerHTML += `
-      <div class="tx-item">
-        <div>
-          <strong>${userData.name || "Unknown"}</strong><br>
-          <small>${userData.email || ""}</small>
-        </div>
-
-        <div>
-          ${(userData.balance || 0)} RWF
-        </div>
-      </div>
-    `;
-
-  });
-
-}
-  });
-
-  const totalUsersEl =
-    document.getElementById("totalUsers");
-
-  const totalBalanceEl =
-    document.getElementById("totalBalance");
-
-  const vipUsersEl =
-    document.getElementById("vipUsers");
-
-  if(totalUsersEl){
-    totalUsersEl.innerText = totalUsers;
-  }
-
-  if(totalBalanceEl){
-    totalBalanceEl.innerText =
-      totalBalance + " RWF";
-  }
-
-  if(vipUsersEl){
-    vipUsersEl.innerText = vipUsers;
-  }
-
-});
-  const adminMenu =
-  document.getElementById("adminMenu");
-
-  if(adminMenu){
-    adminMenu.style.display = "block";
-  }
-
-}
 
   currentUserRef = ref(db, "users/" + user.uid);
 
-  // LIVE DATA
+  if (user.email === ADMIN_EMAIL) {
+
+    const adminMenu =
+      document.getElementById("adminMenu");
+
+    if (adminMenu) {
+      adminMenu.style.display = "block";
+    }
+
+  }
+
   onValue(currentUserRef, (snapshot) => {
 
     const data = snapshot.val();
@@ -139,15 +50,23 @@ usersList.innerHTML += `
     const welcomeUser =
       document.getElementById("welcomeUser");
 
+    const profileName =
+      document.getElementById("profileName");
+
     const balanceValue =
       document.getElementById("balanceValue");
 
-    const profileName =
-      document.getElementById("profileName");
+    const homeBalance =
+      document.getElementById("homeBalance");
 
     if (welcomeUser) {
       welcomeUser.innerText =
         "Hello, " + data.name + " 👋";
+    }
+
+    if (profileName) {
+      profileName.innerText =
+        data.name;
     }
 
     if (balanceValue) {
@@ -155,338 +74,11 @@ usersList.innerHTML += `
         (data.balance || 0) + " RWF";
     }
 
-    if (profileName) {
-      profileName.innerText =
-        data.name;
+    if (homeBalance) {
+      homeBalance.innerText =
+        (data.balance || 0);
     }
-const txList =
-document.getElementById("transactionList");
 
-if(txList){
-
-  let html = "";
-
-  if(data.transactions){
-
-    Object.values(data.transactions)
-    .reverse()
-    .forEach(tx => {
-
-      html += `
-      <div class="tx-item">
-        <div>
-          <strong>${tx.type}</strong><br>
-          <small>${tx.date}</small>
-        </div>
-        <div class="${tx.type === "Deposit" ? "green" : "red"}">
-          ${tx.type === "Deposit" ? "+" : "-"}
-          ${tx.amount} RWF
-        </div>
-      </div>
-      `;
-
-    });
-
-  } else {
-
-    html = "No transactions yet";
-
-  }
-
-  txList.innerHTML = html;
-      }
   });
 
-
-if(data.vip){
-
- document.getElementById("vipPlan").innerText =
- data.vip.plan || "None";
-
- document.getElementById("vipIncome").innerText =
- (data.vip.dailyIncome || 0) + " RWF";
-
- document.getElementById("vipDays").innerText =
- data.vip.daysLeft || 0;
-
-}
-const totalDeposits =
-document.getElementById("totalDeposits");
-
-const totalWithdrawals =
-document.getElementById("totalWithdrawals");
-
-if(totalDeposits){
-  totalDeposits.innerText =
-  data.totalDeposits || 0;
-}
-
-if(totalWithdrawals){
-  totalWithdrawals.innerText =
-  data.totalWithdrawals || 0;
-}
-  const vipPlan =
-document.getElementById("vipPlan");
-
-const vipIncome =
-document.getElementById("vipIncome");
-
-const vipDays =
-document.getElementById("vipDays");
-
-const vipEarnings =
-document.getElementById("vipEarnings");
-
-if(data.vip){
-
-  if(vipPlan){
-    vipPlan.innerText =
-    data.vip.plan || "None";
-  }
-
-  if(vipIncome){
-    vipIncome.innerText =
-    (data.vip.dailyIncome || 0) + " RWF";
-  }
-
-  if(vipDays){
-    vipDays.innerText =
-    data.vip.daysLeft || 0;
-  }
-
-  if(vipEarnings){
-    vipEarnings.innerText =
-    ((data.vip.dailyIncome || 0) *
-    (30 - (data.vip.daysLeft || 30)))
-    + " RWF";
-  }
-const referralCode =
-document.getElementById("referralCode");
-
-const referralCount =
-document.getElementById("referralCount");
-
-const referralEarnings =
-document.getElementById("referralEarnings");
-
-if(referralCode){
-  referralCode.innerText =
-  data.referralCode || "------";
-}
-
-if(referralCount){
-  referralCount.innerText =
-  data.referralCount || 0;
-}
-
-if(referralEarnings){
-  referralEarnings.innerText =
-  (data.referralEarnings || 0) + " RWF";
-   }
-}
-  });
-
-// ===== DEPOSIT =====
-window.deposit = async function () {
-
-  const amount =
-    Number(document.getElementById("depositAmount").value);
-
-  if (!amount || amount <= 0) {
-    alert("Enter valid amount");
-    return;
-  }
-
-  const snapshot = await get(currentUserRef);
-  const data = snapshot.val();
-
-  await update(currentUserRef, {
-    balance: (data.balance || 0) + amount,
-    totalDeposits: (data.totalDeposits || 0) + amount
- const txRef = push(
-  ref(db, "users/" + auth.currentUser.uid + "/transactions")
-);
-
-await set(txRef,{
-  type:"Deposit",
-  amount:amount,
-  date:new Date().toLocaleString()
 });
-
-  document.getElementById("depositAmount").value = "";
-
-  alert("Deposit successful ✅");
-};
-  });
-  
-
-// ===== WITHDRAW =====
-window.withdraw = async function () {
-
-  const amount =
-    Number(document.getElementById("withdrawAmount").value);
-
-  if (!amount || amount <= 0) {
-    alert("Enter valid amount");
-    return;
-  }
-
-  const snapshot = await get(currentUserRef);
-  const data = snapshot.val();
-
-  if ((data.balance || 0) < amount) {
-    alert("Insufficient balance ⚠️");
-    return;
-  }
-
-  await update(currentUserRef, {
-    balance: data.balance - amount,
-    totalWithdrawals:
-      (data.totalWithdrawals || 0) + amount
- const txRef = push(
-  ref(db, "users/" + auth.currentUser.uid + "/transactions")
-);
-
-await set(txRef,{
-  type:"Withdraw",
-  amount:amount,
-  date:new Date().toLocaleString()
-});
-  document.getElementById("withdrawAmount").value = "";
-
-  alert("Withdraw successful 💰");
-};
-
-  });
-
-// ===== VIP 1 =====
-window.buyVip1 = async function(){
-
- const snapshot = await get(currentUserRef);
- const data = snapshot.val();
-
- if((data.balance || 0) < 5000){
-   alert("Not enough balance");
-   return;
- }
-
- await update(currentUserRef,{
-   balance:data.balance - 5000,
-   vip:{
-     plan:"VIP 1",
-     dailyIncome:500,
-     daysLeft:30
-   }
- });
-
- alert("VIP 1 Activated 👑");
-};
-await update(currentUserRef, {
-  balance: data.balance - 5000,
-  vip: {
-    plan: "VIP 1",
-    dailyIncome: 500,
-    daysLeft: 30,
-    lastClaim: Date.now()
-  }
-});
-
-// ===== VIP 2 =====
-window.buyVip2 = async function(){
-
- const snapshot = await get(currentUserRef);
- const data = snapshot.val();
-
- if((data.balance || 0) < 10000){
-   alert("Not enough balance");
-   return;
- }
-
- await update(currentUserRef,{
-   balance:data.balance - 10000,
-   vip:{
-     plan:"VIP 2",
-     dailyIncome:1200,
-     daysLeft:30
-   }
- });
-
- alert("VIP 2 Activated 👑");
-};
-await update(currentUserRef, {
-  balance: data.balance - 10000,
-  vip: {
-    plan: "VIP 2",
-    dailyIncome: 1200,
-    daysLeft: 30,
-    lastClaim: Date.now()
-  }
-});
-// ===== LOGOUT =====
-const logoutBtn =
-  document.getElementById("logoutBtn");
-
-if (logoutBtn) {
-
-  logoutBtn.addEventListener("click", async () => {
-
-    await signOut(auth);
-
-    window.location.href = "index.html";
-
-  });
-  window.claimDailyIncome = async function() {
-
-  const snapshot = await get(currentUserRef);
-  const data = snapshot.val();
-
-  if (!data.vip) {
-    alert("No VIP Plan");
-    return;
-  }
-
-  const now = Date.now();
-  const oneDay = 24 * 60 * 60 * 1000;
-
-  if (now - data.vip.lastClaim < oneDay) {
-    alert("Come back tomorrow");
-    return;
-  }
-
-  await update(currentUserRef, {
-    balance: (data.balance || 0) + data.vip.dailyIncome,
-    "vip/lastClaim": now,
-    "vip/daysLeft": (data.vip.daysLeft || 0) - 1
-  });
-
-  alert("Income Claimed ✅");
-    
-};const searchInput =
-document.getElementById("searchUser");
-
-if(searchInput){
-
-  searchInput.addEventListener("input", () => {
-
-    const value =
-    searchInput.value.toLowerCase();
-
-    document
-    .querySelectorAll("#usersList .tx-item")
-    .forEach(item => {
-
-      const text =
-      item.innerText.toLowerCase();
-
-      item.style.display =
-      text.includes(value)
-      ? "flex"
-      : "none";
-
-    });
-
-  });
-
-}
-
-}
