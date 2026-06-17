@@ -175,9 +175,30 @@ window.deposit = async function () {
   ).value = "";
 
   alert("Deposit successful ✅");
+
+    <select id="depositMethod">
+  <option value="momo">MTN Mobile Money</option>
+  <option value="airtel">Airtel Money</option>
+</select>
+
+<input
+type="text"
+id="depositNumber"
+placeholder="Phone Number">
+
+<input
+type="number"
+id="depositAmount"
+placeholder="Amount">
+
+<button
+class="deposit-btn"
+onclick="deposit()">
+Deposit
+</button>
+
 };
-
-
+  
 // ===== WITHDRAW =====
 window.withdraw = async function () {
 
