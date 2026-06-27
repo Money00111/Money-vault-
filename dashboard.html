@@ -1,355 +1,54 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Money Vault Dashboard</title>
 
-<link rel="stylesheet" href="style.css">
-<link rel="stylesheet" href="Dashboard.css">
+<title>Dashboard | Money Vault</title>
+
+<link rel="stylesheet" href="css/dashboard.css">
 </head>
 
 <body>
 
+<div class="dashboard">
+
 <!-- SIDEBAR -->
-<div class="sidebar" id="sidebar">
+<div class="sidebar">
+  <h2>Money Vault</h2>
 
-  <div class="logo-box">
-    <h2>💰 Money Vault</h2>
-    <small>Smart Investment</small>
-  </div>
-
-  <a href="#" onclick="showPage('home')">📊 Dashboard</a>
-  <a href="#" onclick="showPage('wallet')">💼 My Wallet</a>
-  <a href="#" onclick="showPage('deposit')">⬇ Deposit</a>
-  <a href="#" onclick="showPage('withdraw')">⬆ Withdraw</a>
-  <a href="#" onclick="showPage('profile')">👤 Profile</a>
-  <a href="#" onclick="showPage('settings')">⚙ Settings</a>
-
-  <a href="#" id="adminMenu" style="display:none;" onclick="showPage('admin')">
- 🛠 Admin
-  </a>
-  <button id="logoutBtn" class="logout-btn">
-    Logout
-  </button>
-
+  <a href="#">Dashboard</a>
+  <a href="deposit.html">Deposit</a>
+  <a href="withdraw.html">Withdraw</a>
+  <a href="transactions.html">Transactions</a>
+  <a href="#" id="logoutBtn">Logout</a>
 </div>
 
-<!-- TOPBAR -->
-<div class="topbar">
+<!-- MAIN -->
+<div class="main">
 
-  <div class="menu-btn" onclick="toggleMenu()">☰</div>
+  <h1>Welcome, <span id="username">User</span></h1>
 
-  <div class="top-right">
-    <div class="notification">
-      🔔 <span>2</span>
+  <div class="cards">
+
+    <div class="card">
+      <h3>Balance</h3>
+      <p id="balance">0 RWF</p>
     </div>
 
-    <div class="avatar" id="avatar">
-      M
-    </div>
-  </div>
-
-</div>
-
-<!-- HOME PAGE -->
-
-  <div class="wallet-card">
-  <h2>🎁 Referral</h2>
-</div>
-
-<div class="wallet-card">
-
-    <h2>🛠 Admin Panel</h2>
-
-    <p>Total Users</p>
-    <h3 id="totalUsers">0</h3>
-
-    <p>Total Balance</p>
-    <h3 id="totalBalance">0 RWF</h3>
-
-    <p>VIP Users</p>
-    <h3 id="vipUsers">0</h3>
-<div class="transactions-box">
-
-  <div class="tx-header">
-    <h3>👥 Users List</h3>
-    <input
-  type="text"
-  id="searchUser"
-  placeholder="Search user..."
-  style="width:100%;padding:10px;margin:10px 0;">
-  </div>
-
-  <div id="usersList">
-    Loading users...
-  </div>
-
-</div>
-  </div>
-
-  </div>
-  <div class="welcome-card">
-
-    <div>
-      <h2 id="welcomeUser">Hello, User 👋</h2>
-      <p>Smart Investment, Daily Earnings</p>
-    </div>
-
-    <div class="vault-icon">💰</div>
-
-  </div>
-
-  <div class="stats-grid">
-
-    <div class="stat-card">
-      <h4>Balance</h4>
-      <h2 id="homeBalance">0</h2>
-      <h2 id="balanceBox">Balance: 0 RWF</h2>
-      <span>RWF</span>
-    </div>
-
-  </div>
-  <div class="vip-card">
-
-  <div class="vip-header">
-    <h2>👑 VIP PLAN</h2>
-    <span class="active-badge" id="vipPlan">
-      None
-    </span>
-  </div>
-
-  <div class="vip-details">
-    <div>
-      <p>Daily Income</p>
-      <h3 id="vipIncome">0 RWF</h3>
-    </div>
-
-    <div>
-      <p>Days Left</p>
-      <h3 id="vipDays">0</h3>
-    </div>
-  </div>
-
-  <button class="deposit-btn" onclick="buyVip1()">
-    Buy VIP 1 (5,000 RWF)
-  </button>
-
-  <br><br>
-
-  <button class="deposit-btn" onclick="buyVip2()">
-    Buy VIP 2 (10,000 RWF)
-  </button>
-    
-  <br><br>
-    
-<button class="deposit-btn" onclick="claimDailyIncome()">
-  Claim Daily Income
-  </button>
-                                </div>
-  <div class="stats-grid">
-
-  <div class="stat-card">
-    <h4>Total Deposits</h4>
-    <h2 id="totalDeposits">0</h2>
-    <span>RWF</span>
-  </div>
-
-  <div class="stat-card">
-    <h4>Total Withdrawals</h4>
-    <h2 id="totalWithdrawals">0</h2>
-    <span>RWF</span>
-  </div>
-
-    </div>
-  
-  <!-- VIP CARD -->
-    <div class="vip-details">
-
-      <div>
-        <p>Daily Income</p>
-        <h3 id="vipIncome">0 RWF</h3>
-      </div>
-
-      <div>
-        <p>Days Left</p>
-        <h3 id="vipDays">0</h3>
-      </div>
-
-    </div>
-
-  </div>
-
- <!-- TRANSACTIONS -->
-  <div class="transactions-box">
-
-    <div class="tx-header">
-      <h3>Recent Transactions</h3>
-    </div>
-
-    <div id="transactionsList">
-      <p>No transactions yet</p>
+    <div class="card">
+      <h3>Referral Code</h3>
+      <p id="refCode">---</p>
     </div>
 
   </div>
 
 </div>
 
-<!-- WALLET PAGE -->
-<div id="walletPage" style="display:none;">
-
-  <div class="wallet-card">
-    <h2>💼 My Wallet</h2>
-    <h1 id="balanceValue">0 RWF</h1>
-  </div>
-
 </div>
 
-
-  <p>Your Code:</p>
-  <h3 id="referralCode">------</h3>
-
-  <p>Total Referrals:</p>
-  <h3 id="referralCount">0</h3>
-
-  <p>Referral Earnings:</p>
-  <h3 id="referralEarnings">0 RWF</h3>
-</div>
-
-<!-- DEPOSIT PAGE -->
-<select id="depositMethod">
-  <option value="momo">MTN Mobile Money</option>
-  <option value="airtel">Airtel Money</option>
-</select>
-
-<input type="text"
-id="depositNumber"
-placeholder="0722993296">
-
-<input type="number"
-id="depositAmount"
-placeholder="Amount">
-
-<button
-class="deposit-btn"
-onclick="deposit()">
-Deposit
-</button>
-
-<!-- WITHDRAW PAGE -->
-<select id="withdrawMethod">
-  <option value="momo">MTN Mobile Money</option>
-  <option value="airtel">Airtel Money</option>
-</select>
-
-<input type="text"
-id="withdrawNumber"
-placeholder="Phone Number">
-
-<input type="number"
-id="withdrawAmount"
-placeholder="Amount">
-
-<button
-class="withdraw-btn"
-onclick="withdraw()">
-Withdraw
-</button>
-
-<!-- PROFILE PAGE -->
-<div id="profilePage" style="display:none;">
-
-  <div class="wallet-card">
-
-    <h2>👤 Profile</h2>
-
-    <p>
-      Name:
-      <span id="profileName">User</span>
-    </p>
-
-  </div>
-
-</div>
-
-<!-- SETTINGS PAGE -->
-<div id="settingsPage" style="display:none;">
-
-  <div class="wallet-card">
-
-    <h2>⚙ Settings</h2>
-
-    <p>Money Vault Pro Version</p>
-
-  </div>
-
-</div>
-  <div id="adminPage" style="display:none;">
-
-  <div class="wallet-card">
-
-    <h2>🛠 Admin Panel</h2>
-
-    <p>Total Users</p>
-    <h3 id="totalUsers">0</h3>
-
-    <p>Total Balance</p>
-    <h3 id="totalBalance">0 RWF</h3>
-
-    <p>VIP Users</p>
-    <h3 id="vipUsers">0</h3>
-
-  </div>
-
-</div>
-
-<script>
-
-function toggleMenu() {
-  document.getElementById("sidebar")
-    .classList.toggle("active");
-}
-
-function hideAllPages() {
-
-  const pages = [
-    "homePage",
-    "walletPage",
-    "depositPage",
-    "withdrawPage",
-    "profilePage",
-    "settingsPage",
-    "adminPage"
-  ];
-
-  pages.forEach(page => {
-    const element = document.getElementById(page);
-
-    if(element){
-      element.style.display = "none";
-    }
-  });
-
-}
-
-function showPage(page) {
-
-  hideAllPages();
-
-  const selectedPage =
-    document.getElementById(page + "Page");
-
-  if(selectedPage){
-    selectedPage.style.display = "block";
-  }
-
-  document.getElementById("sidebar")
-    .classList.remove("active");
-}
-
-</script>
-
-<script type="module" src="./dashboard.js"></script>
+<script type="module" src="js/dashboard.js"></script>
 
 </body>
   </html>
