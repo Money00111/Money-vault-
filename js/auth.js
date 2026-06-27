@@ -1,4 +1,5 @@
 import { auth, db } from "./firebase.js";
+
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword
@@ -15,7 +16,6 @@ export function registerUser(email, password, name, phone, referral) {
 
       const user = userCredential.user;
 
-      // Create user wallet in database
       set(ref(db, "users/" + user.uid), {
         name: name,
         email: email,
@@ -33,31 +33,16 @@ export function registerUser(email, password, name, phone, referral) {
     .catch((error) => {
       alert(error.message);
     });
-  }
-
-export function loginUser(email, password) {
-
-  signInWithEmailAndPassword(auth, email, password)
-    .then((userCredential) => {
-
-      alert("Login successful!");
-      window.location.href = "dashboard.html";
-
-    })
-    .catch((error) => {
-      alert(error.message);
-    });
 }
 
-import { auth } from "./firebase.js";
-import { signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 
+// ================= LOGIN =================
 export function loginUser(email, password) {
 
   signInWithEmailAndPassword(auth, email, password)
     .then((userCredential) => {
 
-      // ✅ LOGIN SUCCESS → DASHBOARD
+      // ✅ SUCCESS → DASHBOARD
       window.location.href = "dashboard.html";
 
     })
@@ -66,4 +51,4 @@ export function loginUser(email, password) {
       alert("Login failed: " + error.message);
 
     });
-}
+    }
