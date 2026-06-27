@@ -63,6 +63,30 @@
 
 </div>
 
+<script type="module">
+import { registerUser } from "./js/auth.js";
+
+document.querySelector("form").addEventListener("submit", (e) => {
+  e.preventDefault();
+
+  const inputs = document.querySelectorAll("input");
+
+  const name = inputs[0].value;
+  const email = inputs[1].value;
+  const phone = inputs[2].value;
+  const password = inputs[3].value;
+  const confirm = inputs[4].value;
+  const referral = inputs[5].value;
+
+  if (password !== confirm) {
+    alert("Passwords do not match");
+    return;
+  }
+
+  registerUser(email, password, name, phone, referral);
+});
+  </script>
+  
 </div>
 
 </body>
