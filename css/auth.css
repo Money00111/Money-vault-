@@ -1,0 +1,109 @@
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+font-family:Arial, sans-serif;
+}
+
+body{
+height:100vh;
+display:flex;
+justify-content:center;
+align-items:center;
+background:linear-gradient(135deg,#0d6efd,#6f42c1);
+}
+
+.container{
+width:100%;
+display:flex;
+justify-content:center;
+align-items:center;
+padding:20px;
+}
+
+.card{
+width:350px;
+background:rgba(255,255,255,0.15);
+backdrop-filter:blur(15px);
+border-radius:15px;
+padding:30px;
+box-shadow:0 10px 30px rgba(0,0,0,0.2);
+color:white;
+text-align:center;
+}
+
+.card h2{
+margin-bottom:10px;
+}
+
+.card p{
+font-size:14px;
+opacity:0.9;
+margin-bottom:20px;
+}
+
+.inputBox{
+position:relative;
+margin-bottom:20px;
+}
+
+.inputBox input{
+width:100%;
+padding:12px;
+border:none;
+outline:none;
+border-radius:8px;
+background:rgba(255,255,255,0.2);
+color:white;
+font-size:16px;
+}
+
+.inputBox span{
+position:absolute;
+left:12px;
+top:12px;
+color:#eee;
+transition:0.3s;
+pointer-events:none;
+}
+
+.inputBox input:focus + span,
+.inputBox input:valid + span{
+top:-10px;
+font-size:12px;
+color:#fff;
+}
+
+button{
+width:100%;
+padding:12px;
+border:none;
+border-radius:8px;
+background:white;
+color:#0d6efd;
+font-weight:bold;
+cursor:pointer;
+margin-top:10px;
+transition:0.3s;
+}
+
+button:hover{
+transform:scale(1.03);
+}
+
+.links{
+margin-top:15px;
+display:flex;
+justify-content:space-between;
+font-size:13px;
+}
+
+.links a{
+color:white;
+text-decoration:none;
+opacity:0.9;
+}
+
+.links a:hover{
+opacity:1;
+  }
