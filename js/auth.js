@@ -48,3 +48,22 @@ export function loginUser(email, password) {
       alert(error.message);
     });
 }
+
+import { auth } from "./firebase.js";
+import { signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+
+export function loginUser(email, password) {
+
+  signInWithEmailAndPassword(auth, email, password)
+    .then((userCredential) => {
+
+      // ✅ LOGIN SUCCESS → DASHBOARD
+      window.location.href = "dashboard.html";
+
+    })
+    .catch((error) => {
+
+      alert("Login failed: " + error.message);
+
+    });
+}
