@@ -47,7 +47,29 @@
 <!-- SCRIPT MUST BE OUTSIDE CARD -->
 <script type="module">
 import { loginUser } from "./js/auth.js";
+import { auth } from "./firebase.js";
+import { signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 
+export function loginUser(email, password) {
+
+  console.log("Trying login...");
+
+  signInWithEmailAndPassword(auth, email, password)
+    .then((userCredential) => {
+
+      console.log("LOGIN SUCCESS:", userCredential.user.email);
+
+      window.location.href = "dashboard.html";
+
+    })
+    .catch((error) => {
+
+      console.log("LOGIN ERROR:", error.code, error.message);
+
+      alert("Login failed: " + error.message);
+
+    });
+  }
 const form = document.getElementById("loginForm");
 
 form.addEventListener("submit", (e) => {
