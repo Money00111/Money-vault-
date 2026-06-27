@@ -45,6 +45,19 @@
 
 </div>
 
+<script type="module">
+import { loginUser } from "./js/auth.js";
+
+document.querySelector("form").addEventListener("submit", (e) => {
+  e.preventDefault();
+
+  const email = document.querySelectorAll("input")[0].value;
+  const password = document.querySelectorAll("input")[1].value;
+
+  loginUser(email, password);
+});
+  </script>
+  
 </div>
 
 </body>
