@@ -1,92 +1,116 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Money Vault</title>
 
-  <link rel="stylesheet" href="style.css">
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Money Vault Pro</title>
+
+<link rel="stylesheet" href="css/style.css">
 
 </head>
 
 <body>
 
-<div class="auth-container">
+<header>
 
 <div class="logo">
-💰
+
+<img src="assets/logo.png" alt="Money Vault">
+
+<h2>Money Vault</h2>
+
 </div>
 
-<h1>Money Vault</h1>
+<nav>
 
-<p class="subtitle">
-Secure Savings & Finance Platform
+<a href="login.html">Login</a>
+
+<a href="register.html" class="btn">Register</a>
+
+</nav>
+
+</header>
+
+<section class="hero">
+
+<div class="hero-text">
+
+<h1>Grow Your Money Safely</h1>
+
+<p>
+
+Deposit, Invest, Withdraw and Earn Daily Profit
+
+with our secure wallet system.
+
 </p>
 
-<div class="tabs">
-<button id="loginTab" class="active">
-Login
-</button>
+<a href="register.html" class="start-btn">
 
-<button id="registerTab">
-Register
-</button>
-</div>
+Get Started
 
-<!-- LOGIN FORM -->
-
-<div id="loginForm">
-
-<input
-type="email"
-id="loginEmail"
-placeholder="Email Address">
-
-<input
-type="password"
-id="loginPassword"
-placeholder="Password">
-
-<button
-class="main-btn"
-id="loginBtn">
-Login
-</button>
+</a>
 
 </div>
 
-<!-- REGISTER FORM -->
+<div class="hero-image">
 
-<div id="registerForm" class="hidden">
-
-<input
-type="text"
-id="registerName"
-placeholder="Full Name">
-
-<input
-type="email"
-id="registerEmail"
-placeholder="Email Address">
-
-<input
-type="password"
-id="registerPassword"
-placeholder="Password">
-
-<button
-class="main-btn"
-id="registerBtn">
-Create Account
-</button>
+<img src="assets/wallet.png" alt="Wallet">
 
 </div>
 
-<p id="message"></p>
+</section>
+
+<section class="features">
+
+<div class="card">
+
+<h3>Secure Wallet</h3>
+
+<p>Your money is protected.</p>
 
 </div>
 
-<script src="app.js" type="module"></script>
+<div class="card">
+
+<h3>Fast Deposit</h3>
+
+<p>MTN & Airtel supported.</p>
+
+</div>
+
+<div class="card">
+
+<h3>Instant Withdraw</h3>
+
+<p>Withdraw anytime.</p>
+
+</div>
+
+<div class="card">
+
+<h3>Investment Plans</h3>
+
+<p>Earn profits every day.</p>
+
+</div>
+
+</section>
+
+<footer>
+
+<p>
+
+© 2026 Money Vault Pro
+
+</p>
+
+</footer>
 
 </body>
-</html>
+
+  </html>
