@@ -36,3 +36,9 @@ onAuthStateChanged(auth, (user) => {
   });
 
 });
+
+document.getElementById("logoutBtn").addEventListener("click", () => {
+  signOut(auth).then(() => {
+    window.location.href = "login.html";
+  });
+});
