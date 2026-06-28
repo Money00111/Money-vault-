@@ -42,13 +42,16 @@ export function loginUser(email, password) {
   signInWithEmailAndPassword(auth, email, password)
     .then((userCredential) => {
 
-      // ✅ SUCCESS → DASHBOARD
+      console.log("LOGIN SUCCESS:", userCredential.user.email);
+
       window.location.href = "dashboard.html";
 
     })
     .catch((error) => {
 
+      console.log("LOGIN ERROR:", error.code, error.message);
+
       alert("Login failed: " + error.message);
 
     });
-    }
+          }
