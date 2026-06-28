@@ -37,21 +37,18 @@ export function registerUser(email, password, name, phone, referral) {
 
 
 // ================= LOGIN =================
-export function loginUser(email, password) {
+export async function loginUser(email, password) {
+  try {
+    const userCredential = await signInWithEmailAndPassword(auth, email, password);
 
-  signInWithEmailAndPassword(auth, email, password)
-    .then((userCredential) => {
+    alert("Login Success");
 
-      console.log("LOGIN SUCCESS:", userCredential.user.email);
+    console.log(userCredential.user);
 
-      window.location.href = "dashboard.html";
+    window.location.replace("./dashboard.html");
 
-    })
-    .catch((error) => {
-
-      console.log("LOGIN ERROR:", error.code, error.message);
-
-      alert("Login failed: " + error.message);
-
-    });
-          }
+  } catch (error) {
+    alert(error.code + "\n" + error.message);
+    console.error(error);
+  }
+}
