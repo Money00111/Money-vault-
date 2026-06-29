@@ -2,68 +2,120 @@
 <html lang="en">
 
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Register | Money Vault</title>
 
-<title>Register | Money Vault</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #0f172a;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
 
-<link rel="stylesheet" href="css/auth.css">
+    .container {
+      background: #111827;
+      padding: 25px;
+      border-radius: 12px;
+      width: 340px;
+      color: white;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+    }
 
+    h2 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px;
+      margin: 7px 0;
+      border: none;
+      border-radius: 6px;
+      outline: none;
+    }
+
+    button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 10px;
+      background: #16a34a;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #15803d;
+    }
+
+    .link {
+      text-align: center;
+      margin-top: 10px;
+      font-size: 14px;
+      color: #60a5fa;
+      cursor: pointer;
+    }
+  </style>
 </head>
 
 <body>
 
-<div class="container">
+  <div class="container">
+    <h2>Create Account</h2>
 
-<div class="card">
+    <input type="text" id="fullName" placeholder="Full Name" />
+    <input type="text" id="phone" placeholder="Phone Number" />
+    <input type="email" id="email" placeholder="Email" />
+    <input type="password" id="password" placeholder="Password" />
+    <input type="password" id="confirmPassword" placeholder="Confirm Password" />
+    <input type="text" id="referral" placeholder="Referral Code (Optional)" />
 
-<h2>Create Account</h2>
-<p>Join Money Vault and start earning</p>
+    <button onclick="register()">Register</button>
 
-<form>
+    <div class="link" onclick="goLogin()">
+      Already have an account? Login
+    </div>
+  </div>
 
-<input type="text" id="name" required>
-<input type="email" id="email" required>
-<input type="text" id="phone" required>
-<input type="password" id="password" required>
-<input type="password" id="confirm" required>
-<input type="text" id="referral">
+  <script type="module">
+    import { registerUser } from "./js/auth.js";
 
-<button type="submit">Register</button>
+    window.register = async function () {
 
-<div class="links">
-<a href="login.html">Already have an account?</a>
-<a href="index.html">Back Home</a>
-</div>
+      const fullName = document.getElementById("fullName").value;
+      const phone = document.getElementById("phone").value;
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+      const confirmPassword = document.getElementById("confirmPassword").value;
+      const referral = document.getElementById("referral").value;
 
-</form>
+      // Basic validation
+      if (!fullName || !phone || !email || !password) {
+        alert("Please fill all required fields");
+        return;
+      }
 
-</div>
+      if (password !== confirmPassword) {
+        alert("Passwords do not match");
+        return;
+      }
 
-<script type="module">
-import { registerUser } from "./js/auth.js";
+      await registerUser(fullName, phone, email, password, referral);
 
-document.querySelector("form").addEventListener("submit", (e) => {
-  e.preventDefault();
+      window.location.href = "login.html";
+    };
 
-  const name = document.getElementById("name").value;
-  const email = document.getElementById("email").value;
-  const phone = document.getElementById("phone").value;
-  const password = document.getElementById("password").value;
-  const confirm = document.getElementById("confirm").value;
-  const referral = document.getElementById("referral").value;
-
-  if (password !== confirm) {
-    alert("Passwords do not match");
-    return;
-  }
-
-  registerUser(email, password, name, phone, referral);
-});
+    window.goLogin = function () {
+      window.location.href = "login.html";
+    };
   </script>
-  
-</div>
 
 </body>
-
-  </html>
+    </html>
