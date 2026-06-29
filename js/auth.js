@@ -20,6 +20,7 @@ import {
 // ===============================
 // 🟢 REGISTER USER
 // ===============================
+
 export async function registerUser(fullName, phone, email, password, referralCode) {
   try {
 
@@ -28,56 +29,26 @@ export async function registerUser(fullName, phone, email, password, referralCod
 
     const uid = user.uid;
 
-    // 🎁 Registration bonus
-    const registrationBonus = 500;
-
-    // Create user in database
     await set(ref(db, "users/" + uid), {
-      fullName: fullName,
-      phone: phone,
-      email: email,
-      balance: registrationBonus,
-      totalDeposit: 0,
-      totalWithdraw: 0,
-      totalEarnings: registrationBonus,
+      fullName,
+      phone,
+      email,
+      balance: 500,
       vipLevel: 0,
-      vipActive: false,
       referralCode: uid.slice(0, 6),
       referredBy: referralCode || null,
-      referralBonus: 0,
-      referralCount: 0,
       createdAt: Date.now()
     });
 
-    // 👥 Save pending referral (Option B logic)
-    if (referralCode && referralCode !== "") {
-
-      const refUsers = await get(ref(db, "users"));
-      let referrerUid = null;
-
-      refUsers.forEach((snap) => {
-        if (snap.val().referralCode === referralCode) {
-          referrerUid = snap.key;
-        }
-      });
-
-      if (referrerUid) {
-        await update(ref(db, "users/" + uid), {
-          referredBy: referrerUid
-        });
-      }
-    }
-
-    alert("Account created successfully! +500 RWF bonus added.");
-
+    alert("Account created successfully!");
     return true;
 
   } catch (error) {
+    console.log(error);
     alert(error.message);
     return false;
   }
 }
-
 
 // ===============================
 // 🔵 LOGIN USER
