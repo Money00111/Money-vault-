@@ -1,6 +1,9 @@
+// js/firebase.js
+
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
 import { getAuth } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 import { getDatabase } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
+import { getStorage } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-storage.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyC0ugw0iH2h00bJxxHq7qMRBvYYmFjPqCU",
@@ -9,10 +12,11 @@ const firebaseConfig = {
   projectId: "money-vault-c48d3",
   storageBucket: "money-vault-c48d3.firebasestorage.app",
   messagingSenderId: "1068478656241",
-  appId: "1:1068478656241:web:06b698f04f3382a9784350"
+  appId: "1:1068478656241:web:aacbcf12922a21fe784350"
 };
 
 const app = initializeApp(firebaseConfig);
 
 export const auth = getAuth(app);
 export const db = getDatabase(app);
+export const storage = getStorage(app);
