@@ -1,54 +1,119 @@
+// js/auth.js
+
 import { auth, db } from "./firebase.js";
 
 import {
   createUserWithEmailAndPassword,
-  signInWithEmailAndPassword
+  signInWithEmailAndPassword,
+  signOut,
+  sendPasswordResetEmail
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 
-import { ref, set } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
+import {
+  ref,
+  set,
+  get,
+  update
+} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
 
 
-// ================= REGISTER =================
-export function registerUser(email, password, name, phone, referral) {
+// ===============================
+// 🟢 REGISTER USER
+// ===============================
+export async function registerUser(fullName, phone, email, password, referralCode) {
+  try {
 
-  createUserWithEmailAndPassword(auth, email, password)
-    .then((userCredential) => {
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    const user = userCredential.user;
 
-      const user = userCredential.user;
+    const uid = user.uid;
 
-      set(ref(db, "users/" + user.uid), {
-        name: name,
-        email: email,
-        phone: phone,
-        balance: 0,
-        referralCode: user.uid.slice(0, 6),
-        referredBy: referral || null,
-        createdAt: Date.now()
+    // 🎁 Registration bonus
+    const registrationBonus = 500;
+
+    // Create user in database
+    await set(ref(db, "users/" + uid), {
+      fullName: fullName,
+      phone: phone,
+      email: email,
+      balance: registrationBonus,
+      totalDeposit: 0,
+      totalWithdraw: 0,
+      totalEarnings: registrationBonus,
+      vipLevel: 0,
+      vipActive: false,
+      referralCode: uid.slice(0, 6),
+      referredBy: referralCode || null,
+      referralBonus: 0,
+      referralCount: 0,
+      createdAt: Date.now()
+    });
+
+    // 👥 Save pending referral (Option B logic)
+    if (referralCode && referralCode !== "") {
+
+      const refUsers = await get(ref(db, "users"));
+      let referrerUid = null;
+
+      refUsers.forEach((snap) => {
+        if (snap.val().referralCode === referralCode) {
+          referrerUid = snap.key;
+        }
       });
 
-      alert("Account created successfully!");
-      window.location.href = "login.html";
+      if (referrerUid) {
+        await update(ref(db, "users/" + uid), {
+          referredBy: referrerUid
+        });
+      }
+    }
 
-    })
-    .catch((error) => {
-      alert(error.message);
-    });
+    alert("Account created successfully! +500 RWF bonus added.");
+
+    return true;
+
+  } catch (error) {
+    alert(error.message);
+    return false;
+  }
 }
 
 
-// ================= LOGIN =================
+// ===============================
+// 🔵 LOGIN USER
+// ===============================
 export async function loginUser(email, password) {
   try {
-    const userCredential = await signInWithEmailAndPassword(auth, email, password);
 
-    alert("Login Success");
+    await signInWithEmailAndPassword(auth, email, password);
 
-    console.log(userCredential.user);
+    alert("Login successful!");
 
-    window.location.replace("./dashboard.html");
+    window.location.href = "dashboard.html";
 
   } catch (error) {
-    alert(error.code + "\n" + error.message);
-    console.error(error);
+    alert(error.message);
+  }
+}
+
+
+// ===============================
+// 🔴 LOGOUT
+// ===============================
+export async function logoutUser() {
+  await signOut(auth);
+  window.location.href = "login.html";
+}
+
+
+// ===============================
+// 🟡 RESET PASSWORD
+// ===============================
+export async function resetPassword(email) {
+  try {
+    await sendPasswordResetEmail(auth, email);
+    alert("Password reset email sent!");
+  } catch (error) {
+    alert(error.message);
   }
 }
