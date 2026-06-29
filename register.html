@@ -85,36 +85,27 @@
   </div>
 
   <script type="module">
-    import { registerUser } from "./js/auth.js";
+    
+window.register = async function () {
 
-    window.register = async function () {
+  const fullName = document.getElementById("fullName").value;
+  const phone = document.getElementById("phone").value;
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
+  const confirmPassword = document.getElementById("confirmPassword").value;
+  const referral = document.getElementById("referral").value;
 
-      const fullName = document.getElementById("fullName").value;
-      const phone = document.getElementById("phone").value;
-      const email = document.getElementById("email").value;
-      const password = document.getElementById("password").value;
-      const confirmPassword = document.getElementById("confirmPassword").value;
-      const referral = document.getElementById("referral").value;
+  if (password !== confirmPassword) {
+    alert("Passwords do not match");
+    return;
+  }
 
-      // Basic validation
-      if (!fullName || !phone || !email || !password) {
-        alert("Please fill all required fields");
-        return;
-      }
+  const success = await registerUser(fullName, phone, email, password, referral);
 
-      if (password !== confirmPassword) {
-        alert("Passwords do not match");
-        return;
-      }
-
-      await registerUser(fullName, phone, email, password, referral);
-
-      window.location.href = "login.html";
-    };
-
-    window.goLogin = function () {
-      window.location.href = "login.html";
-    };
+  if (success) {
+    window.location.href = "login.html";
+  }
+};
   </script>
 
 </body>
