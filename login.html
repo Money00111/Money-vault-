@@ -1,109 +1,104 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Login | Money Vault</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Money Vault | Login</title>
 
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #0f172a;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      margin: 0;
-    }
-
-    .container {
-      background: #111827;
-      padding: 25px;
-      border-radius: 12px;
-      width: 320px;
-      color: white;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.4);
-    }
-
-    h2 {
-      text-align: center;
-      margin-bottom: 20px;
-    }
-
-    input {
-      width: 100%;
-      padding: 10px;
-      margin: 8px 0;
-      border: none;
-      border-radius: 6px;
-      outline: none;
-    }
-
-    button {
-      width: 100%;
-      padding: 10px;
-      margin-top: 10px;
-      background: #2563eb;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-    }
-
-    button:hover {
-      background: #1d4ed8;
-    }
-
-    .link {
-      text-align: center;
-      margin-top: 10px;
-      font-size: 14px;
-      cursor: pointer;
-      color: #60a5fa;
-    }
-  </style>
+<link rel="stylesheet" href="css/auth.css">
 </head>
 
 <body>
 
-  <div class="container">
-    <h2>Login</h2>
+<div class="container">
 
-    <input type="email" id="email" placeholder="Email" />
-    <input type="password" id="password" placeholder="Password" />
+<div class="card">
 
-    <button onclick="login()">Login</button>
+<h1>Money Vault</h1>
+<p>Welcome Back</p>
 
-    <div class="link" onclick="forgotPassword()">
-      Forgot Password?
-    </div>
-  </div>
-<div class="links">
-  <p>Don't have an account?</p>
-  <a href="register.html">Register Now</a>
+<form id="loginForm">
+
+<div class="inputBox">
+<input
+type="email"
+id="email"
+placeholder="Email"
+required>
 </div>
-  <script type="module">
-    import { loginUser, resetPassword } from "./js/auth.js";
 
-    window.login = function () {
-      const email = document.getElementById("email").value;
-      const password = document.getElementById("password").value;
+<div class="inputBox">
+<input
+type="password"
+id="password"
+placeholder="Password"
+required>
+</div>
 
-      loginUser(email, password);
-    };
+<button type="submit">
+Login
+</button>
 
-    window.forgotPassword = function () {
-      const email = document.getElementById("email").value;
+<div class="links">
 
-      if (!email) {
-        alert("Andika email yawe usabe reset password");
-        return;
-      }
+<a href="register.html">
+Create Account
+</a>
 
-      resetPassword(email);
-    };
-  </script>
+<a href="#" id="forgotPassword">
+Forgot Password?
+</a>
+
+</div>
+
+</form>
+
+</div>
+
+</div>
+
+<script type="module">
+
+import {
+loginUser,
+resetPassword
+} from "./js/auth.js";
+
+const form =
+document.getElementById("loginForm");
+
+form.addEventListener("submit", async(e)=>{
+
+e.preventDefault();
+
+const email =
+document.getElementById("email").value.trim();
+
+const password =
+document.getElementById("password").value;
+
+await loginUser(email,password);
+
+});
+
+document
+.getElementById("forgotPassword")
+.addEventListener("click",async(e)=>{
+
+e.preventDefault();
+
+const email=
+prompt("Enter your email");
+
+if(email){
+
+await resetPassword(email);
+
+}
+
+});
+
+</script>
 
 </body>
   </html>
