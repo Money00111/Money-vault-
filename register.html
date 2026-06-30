@@ -1,112 +1,102 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Register | Money Vault</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Create Account | Money Vault</title>
 
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #0f172a;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      margin: 0;
-    }
-
-    .container {
-      background: #111827;
-      padding: 25px;
-      border-radius: 12px;
-      width: 340px;
-      color: white;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.4);
-    }
-
-    h2 {
-      text-align: center;
-      margin-bottom: 20px;
-    }
-
-    input {
-      width: 100%;
-      padding: 10px;
-      margin: 7px 0;
-      border: none;
-      border-radius: 6px;
-      outline: none;
-    }
-
-    button {
-      width: 100%;
-      padding: 10px;
-      margin-top: 10px;
-      background: #16a34a;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-    }
-
-    button:hover {
-      background: #15803d;
-    }
-
-    .link {
-      text-align: center;
-      margin-top: 10px;
-      font-size: 14px;
-      color: #60a5fa;
-      cursor: pointer;
-    }
-  </style>
+<link rel="stylesheet" href="css/auth.css">
 </head>
 
 <body>
 
-  <div class="container">
-    <h2>Create Account</h2>
+<div class="container">
 
-    <input type="text" id="fullName" placeholder="Full Name" />
-    <input type="text" id="phone" placeholder="Phone Number" />
-    <input type="email" id="email" placeholder="Email" />
-    <input type="password" id="password" placeholder="Password" />
-    <input type="password" id="confirmPassword" placeholder="Confirm Password" />
-    <input type="text" id="referral" placeholder="Referral Code (Optional)" />
+<div class="card">
 
-    <button onclick="register()">Register</button>
+<h2>Create Account</h2>
+<p>Open your Money Vault account</p>
 
-    <div class="link" onclick="goLogin()">
-      Already have an account? Login
-    </div>
-  </div>
+<form id="registerForm">
 
-  <script type="module">
-    
-window.register = async function () {
+<div class="inputBox">
+<input type="text" id="fullName" required>
+<span>Full Name</span>
+</div>
 
-  const fullName = document.getElementById("fullName").value;
-  const phone = document.getElementById("phone").value;
-  const email = document.getElementById("email").value;
-  const password = document.getElementById("password").value;
-  const confirmPassword = document.getElementById("confirmPassword").value;
-  const referral = document.getElementById("referral").value;
+<div class="inputBox">
+<input type="tel" id="phone" required>
+<span>Phone Number</span>
+</div>
 
-  if (password !== confirmPassword) {
-    alert("Passwords do not match");
+<div class="inputBox">
+<input type="email" id="email" required>
+<span>Email</span>
+</div>
+
+<div class="inputBox">
+<input type="password" id="password" required>
+<span>Password</span>
+</div>
+
+<div class="inputBox">
+<input type="password" id="confirmPassword" required>
+<span>Confirm Password</span>
+</div>
+
+<div class="inputBox">
+<input type="text" id="referralCode">
+<span>Referral Code (Optional)</span>
+</div>
+
+<button type="submit">Create Account</button>
+
+<div class="links">
+<p>Already have an account?
+<a href="login.html">Login</a>
+</p>
+</div>
+
+</form>
+
+</div>
+
+</div>
+
+<script type="module">
+import { registerUser } from "./js/auth.js";
+
+document.getElementById("registerForm").addEventListener("submit", async (e) => {
+
+e.preventDefault();
+
+const fullName = document.getElementById("fullName").value.trim();
+const phone = document.getElementById("phone").value.trim();
+const email = document.getElementById("email").value.trim();
+const password = document.getElementById("password").value;
+const confirmPassword = document.getElementById("confirmPassword").value;
+const referralCode = document.getElementById("referralCode").value.trim();
+
+if (password !== confirmPassword) {
+    alert("Passwords do not match.");
     return;
-  }
+}
 
-  const success = await registerUser(fullName, phone, email, password, referral);
+const success = await registerUser(
+    fullName,
+    phone,
+    email,
+    password,
+    referralCode
+);
 
-  if (success) {
+if (success) {
+    alert("Registration Successful! You received 500 RWF bonus.");
     window.location.href = "login.html";
-  }
-};
-  </script>
+}
+
+});
+</script>
 
 </body>
-    </html>
+  </html>
