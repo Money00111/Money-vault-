@@ -2,43 +2,76 @@ import { auth, db } from "./firebase.js";
 import {
   onAuthStateChanged,
   signOut
-} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
 import {
-  ref,
-  onValue
-} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
+  doc,
+  getDoc,
+  onSnapshot
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-
-// 🔐 AUTH GUARD
-onAuthStateChanged(auth, (user) => {
-
+// =======================
+// AUTH CHECK
+// =======================
+onAuthStateChanged(auth, async (user) => {
   if (!user) {
     window.location.href = "login.html";
     return;
   }
 
-  const uid = user.uid;
+  // Username
+  document.getElementById("username").innerText =
+    user.displayName || "User";
 
-  // USER DATA
-  const userRef = ref(db, "users/" + uid);
-
-  onValue(userRef, (snapshot) => {
-
-    const data = snapshot.val();
-
-    if (data) {
-      document.getElementById("username").innerText = data.name;
-      document.getElementById("balance").innerText = data.balance + " RWF";
-      document.getElementById("refCode").innerText = data.referralCode;
-    }
-
-  });
-
+  loadUserData(user.uid);
 });
 
-document.getElementById("logoutBtn").addEventListener("click", () => {
-  signOut(auth).then(() => {
-    window.location.href = "login.html";
+// =======================
+// LOAD USER DATA (REALTIME)
+// =======================
+function loadUserData(uid) {
+  const ref = doc(db, "users", uid);
+
+  onSnapshot(ref, (snap) => {
+    if (!snap.exists()) return;
+
+    const data = snap.data();
+
+    // Balance
+    document.getElementById("balanceBox").innerText =
+      (data.balance || 0) + " RWF";
+
+    // VIP
+    document.getElementById("vipLevel").innerText =
+      "VIP " + (data.vip || 0);
+
+    document.getElementById("vipStatus").innerText =
+      data.vip > 0 ? "Active" : "Inactive";
+
+    // Referral
+    document.getElementById("refBonus").innerText =
+      (data.refBonus || 0) + " RWF";
+
+    document.getElementById("referralBox").innerText =
+      (data.refBonus || 0) + " RWF";
+
+    // Deposit / Withdraw
+    document.getElementById("depositTotal").innerText =
+      (data.depositTotal || 0) + " RWF";
+
+    document.getElementById("withdrawTotal").innerText =
+      (data.withdrawTotal || 0) + " RWF";
+
+    // Earnings
+    document.getElementById("earningsBox").innerText =
+      (data.earnings || 0) + " RWF";
   });
+}
+
+// =======================
+// LOGOUT
+// =======================
+document.getElementById("logoutBtn").addEventListener("click", async () => {
+  await signOut(auth);
+  window.location.href = "login.html";
 });
