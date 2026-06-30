@@ -1,162 +1,149 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Dashboard | Money Vault</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Money Vault Dashboard</title>
 
-  <style>
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background: #0f172a;
-      color: white;
-    }
+<link rel="stylesheet" href="css/dashboard.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 
-    .sidebar {
-      width: 220px;
-      height: 100vh;
-      background: #111827;
-      position: fixed;
-      top: 0;
-      left: 0;
-      padding: 20px;
-    }
-
-    .sidebar h2 {
-      text-align: center;
-      margin-bottom: 30px;
-      color: #60a5fa;
-    }
-
-    .sidebar a {
-      display: block;
-      color: white;
-      padding: 10px;
-      text-decoration: none;
-      margin: 5px 0;
-      border-radius: 6px;
-    }
-
-    .sidebar a:hover {
-      background: #1f2937;
-    }
-
-    .main {
-      margin-left: 240px;
-      padding: 20px;
-    }
-
-    .card {
-      background: #111827;
-      padding: 20px;
-      border-radius: 12px;
-      margin-bottom: 15px;
-    }
-
-    .balance {
-      font-size: 28px;
-      color: #22c55e;
-    }
-
-    button {
-      padding: 10px;
-      margin: 5px;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-    }
-
-    .logout {
-      background: #ef4444;
-      color: white;
-    }
-
-    .deposit {
-      background: #16a34a;
-      color: white;
-    }
-
-    .withdraw {
-      background: #f59e0b;
-      color: white;
-    }
-  </style>
 </head>
 
 <body>
 
-  <!-- SIDEBAR -->
-  <div class="sidebar">
-    <h2>Money Vault</h2>
+<!-- Sidebar -->
 
-    <a href="#">Dashboard</a>
-    <a href="deposit.html">Deposit</a>
-    <a href="withdraw.html">Withdraw</a>
-    <a href="transactions.html">Transactions</a>
-  </div>
+<div id="sidebar" class="sidebar">
 
-  <!-- MAIN -->
-  <div class="main">
+<div class="logo">
+<h2>💰 Money Vault</h2>
+</div>
 
-    <div class="card">
-      <h3>Welcome 👋</h3>
-      <p id="userEmail">Loading...</p>
-    </div>
+<ul>
 
-    <div class="card">
-      <h3>Your Balance</h3>
-      <div class="balance" id="balance">0 RWF</div>
-    </div>
+<li><a href="dashboard.html"><i class="fa fa-home"></i> Dashboard</a></li>
 
-    <div class="card">
-      <h3>Quick Actions</h3>
+<li><a href="deposit.html"><i class="fa fa-wallet"></i> Deposit</a></li>
 
-      <button class="deposit" onclick="goDeposit()">Deposit</button>
-      <button class="withdraw" onclick="goWithdraw()">Withdraw</button>
-      <button class="logout" onclick="logout()">Logout</button>
-    </div>
+<li><a href="withdraw.html"><i class="fa fa-money-bill"></i> Withdraw</a></li>
 
-  </div>
+<li><a href="vip.html"><i class="fa fa-crown"></i> VIP Plans</a></li>
 
-  <script type="module">
-    import { auth, db } from "./js/firebase.js";
-    import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
-    import { ref, get } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
+<li><a href="referral.html"><i class="fa fa-users"></i> Referral</a></li>
 
-    // Check login
-    onAuthStateChanged(auth, async (user) => {
-      if (!user) {
-        window.location.href = "login.html";
-      } else {
-        document.getElementById("userEmail").innerText = user.email;
+<li><a href="transactions.html"><i class="fa fa-list"></i> Transactions</a></li>
 
-        // Load user data
-        const snap = await get(ref(db, "users/" + user.uid));
+<li><a href="profile.html"><i class="fa fa-user"></i> Profile</a></li>
 
-        if (snap.exists()) {
-          const data = snap.val();
-          document.getElementById("balance").innerText = data.balance + " RWF";
-        }
-      }
-    });
+<li><a href="settings.html"><i class="fa fa-gear"></i> Settings</a></li>
 
-    // Logout
-    window.logout = async function () {
-      await signOut(auth);
-      window.location.href = "login.html";
-    };
+<li><a href="#" id="logoutBtn"><i class="fa fa-right-from-bracket"></i> Logout</a></li>
 
-    // Navigation
-    window.goDeposit = function () {
-      window.location.href = "deposit.html";
-    };
+</ul>
 
-    window.goWithdraw = function () {
-      window.location.href = "withdraw.html";
-    };
-  </script>
+</div>
 
-</body>
-  </html>
+<!-- Main -->
+
+<div class="main">
+
+<!-- Header -->
+
+<header>
+
+<button id="menuBtn">
+<i class="fa fa-bars"></i>
+</button>
+
+<h2>Dashboard</h2>
+
+<div class="header-right">
+
+<i class="fa fa-bell notification"></i>
+
+<img src="assets/images/user.png" class="profile">
+
+</div>
+
+</header>
+
+<!-- Welcome -->
+
+<section class="welcome">
+
+<h3>Welcome Back 👋</h3>
+
+<p id="username">Loading...</p>
+
+</section>
+
+<!-- Wallet Card -->
+
+<section class="wallet-card">
+
+<h2>Total Balance</h2>
+
+<h1 id="balanceBox">0 RWF</h1>
+
+<div class="wallet-grid">
+
+<div>
+<h4>VIP</h4>
+<p id="vipLevel">VIP 0</p>
+</div>
+
+<div>
+<h4>Referral</h4>
+<p id="refBonus">0 RWF</p>
+</div>
+
+<div>
+<h4>Deposit</h4>
+<p id="depositTotal">0 RWF</p>
+</div>
+
+<div>
+<h4>Withdraw</h4>
+<p id="withdrawTotal">0 RWF</p>
+</div>
+
+</div>
+
+</section>
+
+<!-- Quick Actions -->
+
+<section class="actions">
+
+<a href="deposit.html" class="action">
+<i class="fa fa-wallet"></i>
+<span>Deposit</span>
+</a>
+
+<a href="withdraw.html" class="action">
+<i class="fa fa-money-bill-transfer"></i>
+<span>Withdraw</span>
+</a>
+
+<a href="vip.html" class="action">
+<i class="fa fa-crown"></i>
+<span>VIP</span>
+</a>
+
+<a href="referral.html" class="action">
+<i class="fa fa-user-group"></i>
+<span>Referral</span>
+</a>
+
+<a href="transactions.html" class="action">
+<i class="fa fa-clock-rotate-left"></i>
+<span>History</span>
+</a>
+
+<a href="profile.html" class="action">
+<i class="fa fa-user"></i>
+<span>Profile</span>
+</a>
+
+                                                                         </section>
