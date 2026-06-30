@@ -1,12 +1,13 @@
-// js/auth.js
+// ===============================
+// Money Vault Pro
+// File: js/auth.js
+// PART 1 - REGISTER
+// ===============================
 
 import { auth, db } from "./firebase.js";
 
 import {
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-  signOut,
-  sendPasswordResetEmail
+  createUserWithEmailAndPassword
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 
 import {
@@ -17,74 +18,196 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
 
 
-// ===============================
-// 🟢 REGISTER USER
-// ===============================
+// ======================================
+// REGISTER USER
+// ======================================
 
-export async function registerUser(fullName, phone, email, password, referralCode) {
+export async function registerUser(
+  fullName,
+  phone,
+  email,
+  password,
+  referralCode
+) {
+
   try {
 
-    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    // Create Firebase Auth Account
+    const userCredential =
+      await createUserWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
+
     const user = userCredential.user;
 
-    const uid = user.uid;
+    // Registration Bonus
+    const registrationBonus = 500;
 
-    await set(ref(db, "users/" + uid), {
-      fullName,
-      phone,
-      email,
-      balance: 500,
+    // Generate Referral Code
+    const myReferralCode =
+      "MV" + user.uid.substring(0, 6).toUpperCase();
+
+    // Save User
+    await set(ref(db, "users/" + user.uid), {
+
+      uid: user.uid,
+
+      fullName: fullName,
+
+      phone: phone,
+
+      email: email,
+
+      balance: registrationBonus,
+
+      totalDeposit: 0,
+
+      totalWithdraw: 0,
+
+      totalEarnings: registrationBonus,
+
       vipLevel: 0,
-      referralCode: uid.slice(0, 6),
-      referredBy: referralCode || null,
+
+      vipActive: false,
+
+      referralCode: myReferralCode,
+
+      referredBy: "",
+
+      referralBonus: 0,
+
+      referralCount: 0,
+
       createdAt: Date.now()
+
     });
 
-    alert("Account created successfully!");
+
+    // ==========================
+    // Referral (Option B)
+    // ==========================
+
+    if (referralCode !== "") {
+
+      const usersRef = ref(db, "users");
+
+      const snapshot = await get(usersRef);
+
+      if (snapshot.exists()) {
+
+        snapshot.forEach((child) => {
+
+          const data = child.val();
+
+          if (data.referralCode === referralCode) {
+
+            update(
+              ref(db, "users/" + user.uid),
+              {
+                referredBy: child.key
+              }
+            );
+
+          }
+
+        });
+
+      }
+
+    }
+
+    alert("Registration Successful!\n\n500 RWF Bonus Added.");
+
     return true;
 
-  } catch (error) {
-    console.log(error);
-    alert(error.message);
-    return false;
   }
-}
 
-// ===============================
-// 🔵 LOGIN USER
-// ===============================
+  catch (error) {
+
+    alert(error.message);
+
+    return false;
+
+  }
+
+      }
+
+// ======================================
+// LOGIN USER
+// ======================================
+
+import {
+  signInWithEmailAndPassword,
+  signOut,
+  sendPasswordResetEmail
+} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+
 export async function loginUser(email, password) {
+
   try {
 
-    await signInWithEmailAndPassword(auth, email, password);
+    await signInWithEmailAndPassword(
+      auth,
+      email,
+      password
+    );
 
-    alert("Login successful!");
+    alert("Login Successful!");
 
     window.location.href = "dashboard.html";
 
   } catch (error) {
+
     alert(error.message);
+
+    return false;
+
   }
+
 }
 
 
-// ===============================
-// 🔴 LOGOUT
-// ===============================
+
+// ======================================
+// LOGOUT USER
+// ======================================
+
 export async function logoutUser() {
-  await signOut(auth);
-  window.location.href = "login.html";
-}
 
-
-// ===============================
-// 🟡 RESET PASSWORD
-// ===============================
-export async function resetPassword(email) {
   try {
-    await sendPasswordResetEmail(auth, email);
-    alert("Password reset email sent!");
+
+    await signOut(auth);
+
+    window.location.href = "login.html";
+
   } catch (error) {
+
     alert(error.message);
+
   }
+
 }
+
+
+
+// ======================================
+// RESET PASSWORD
+// ======================================
+
+export async function resetPassword(email) {
+
+  try {
+
+    await sendPasswordResetEmail(auth, email);
+
+    alert("Password reset email sent successfully.");
+
+  } catch (error) {
+
+    alert(error.message);
+
+  }
+
+      }
