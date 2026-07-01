@@ -193,4 +193,167 @@ onAuthStateChanged(auth, async(user)=>{
 
 });
 
+// ===============================
+// DASHBOARD.JS - PART 3
+// ===============================
 
+// ---------- Notifications ----------
+
+function showNotification(message){
+
+    const list = document.getElementById("notificationList");
+
+    if(!list) return;
+
+    const card = document.createElement("div");
+
+    card.className = "notification-card";
+
+    card.innerHTML = `
+        🔔 ${message}
+    `;
+
+    list.prepend(card);
+
+    setTimeout(()=>{
+        card.remove();
+    },6000);
+
+}
+
+// ---------- VIP Buy Buttons ----------
+
+const vip1Btn = document.getElementById("vip1Btn");
+const vip2Btn = document.getElementById("vip2Btn");
+const vip3Btn = document.getElementById("vip3Btn");
+
+if(vip1Btn){
+
+vip1Btn.addEventListener("click",()=>{
+
+showNotification("Redirecting to VIP 1 purchase...");
+
+setTimeout(()=>{
+
+window.location.href="vip.html";
+
+},800);
+
+});
+
+}
+
+if(vip2Btn){
+
+vip2Btn.addEventListener("click",()=>{
+
+showNotification("Redirecting to VIP 2 purchase...");
+
+setTimeout(()=>{
+
+window.location.href="vip.html";
+
+},800);
+
+});
+
+}
+
+if(vip3Btn){
+
+vip3Btn.addEventListener("click",()=>{
+
+showNotification("Redirecting to VIP 3 purchase...");
+
+setTimeout(()=>{
+
+window.location.href="vip.html";
+
+},800);
+
+});
+
+}
+
+// ---------- Quick Actions ----------
+
+document.querySelectorAll(".action").forEach(action=>{
+
+action.addEventListener("click",()=>{
+
+showNotification("Loading page...");
+
+});
+
+});
+
+// ---------- Recent Transactions ----------
+
+function loadRecentTransactions(){
+
+const transactionList=document.getElementById("transactionList");
+
+if(!transactionList) return;
+
+const transactions=[
+
+{
+title:"Registration Bonus",
+amount:"+500 RWF",
+status:"Completed",
+className:"success"
+},
+
+{
+title:"Deposit",
+amount:"Pending",
+status:"Pending",
+className:"pending"
+},
+
+{
+title:"Withdraw",
+amount:"No Request",
+status:"Waiting",
+className:"waiting"
+}
+
+];
+
+transactionList.innerHTML="";
+
+transactions.forEach(item=>{
+
+transactionList.innerHTML+=`
+
+<div class="transaction">
+
+<div>
+
+<h4>${item.title}</h4>
+
+<p>${item.amount}</p>
+
+</div>
+
+<span class="${item.className}">
+${item.status}
+</span>
+
+</div>
+
+`;
+
+});
+
+}
+
+loadRecentTransactions();
+
+// ---------- Welcome Notification ----------
+
+setTimeout(()=>{
+
+showNotification("Welcome to Money Vault Dashboard 🎉");
+
+},1000);
