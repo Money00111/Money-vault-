@@ -357,3 +357,116 @@ setTimeout(()=>{
 showNotification("Welcome to Money Vault Dashboard 🎉");
 
 },1000);
+
+// ===============================
+// DASHBOARD.JS - PART 4
+// Final Initialization
+// ===============================
+
+// ---------- Online / Offline ----------
+
+window.addEventListener("online", () => {
+    showNotification("✅ Internet Connected");
+});
+
+window.addEventListener("offline", () => {
+    showNotification("❌ No Internet Connection");
+});
+
+// ---------- Auto Refresh Dashboard ----------
+
+function startAutoRefresh(user){
+
+    setInterval(async()=>{
+
+        try{
+
+            await loadDashboard(user);
+
+        }catch(error){
+
+            console.error(error);
+
+        }
+
+    },30000); // Refresh every 30 seconds
+
+}
+
+// ---------- Initialize Dashboard ----------
+
+onAuthStateChanged(auth, async(user)=>{
+
+    if(!user){
+
+        window.location.href="login.html";
+        return;
+
+    }
+
+    try{
+
+        await loadDashboard(user);
+
+        loadRecentTransactions();
+
+        startAutoRefresh(user);
+
+        console.log("Dashboard Loaded Successfully");
+
+    }catch(error){
+
+        console.error(error);
+
+        showNotification("Dashboard failed to load.");
+
+    }
+
+});
+
+// ---------- Page Loader ----------
+
+window.addEventListener("load",()=>{
+
+    document.body.style.opacity="0";
+
+    setTimeout(()=>{
+
+        document.body.style.transition="opacity .5s";
+
+        document.body.style.opacity="1";
+
+    },100);
+
+});
+
+// ---------- Prevent Multiple Clicks ----------
+
+document.querySelectorAll("button").forEach(btn=>{
+
+    btn.addEventListener("click",()=>{
+
+        btn.disabled=true;
+
+        setTimeout(()=>{
+
+            btn.disabled=false;
+
+        },1000);
+
+    });
+
+});
+
+// ---------- Console Message ----------
+
+console.log(`
+====================================
+        MONEY VAULT PRO
+====================================
+Dashboard Ready
+Firebase Connected
+Responsive UI Enabled
+Developed Successfully
+====================================
+`);
