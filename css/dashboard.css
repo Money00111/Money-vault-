@@ -12,7 +12,7 @@ font-family:'Poppins',sans-serif;
 }
 
 body{
-background: linear-gradient(135deg, #0f172a, #1e3a8a, #2563eb);
+background: radial-gradient(circle at top, #1e293b, #0f172a);
 color:#e5e7eb;
 display:flex;
 min-height:100vh;
