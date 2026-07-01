@@ -1,6 +1,4 @@
-
-
-  // ===============================
+// ===============================
 // DEPOSIT.JS - PART 1
 // ===============================
 
@@ -307,3 +305,297 @@ submitBtn.innerHTML =
 }
 
 });
+
+// ===============================
+// DEPOSIT.JS - PART 3
+// Deposit History + Status
+// ===============================
+
+import {
+collection,
+query,
+where,
+orderBy,
+onSnapshot
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+// HTML Elements
+
+const historyList =
+document.getElementById("historyList");
+
+const depositStatus =
+document.getElementById("depositStatus");
+
+// ===============================
+// Load Deposit History
+// ===============================
+
+function loadDepositHistory(user){
+
+const q = query(
+
+collection(db,"deposits"),
+
+where("userId","==",user.uid),
+
+orderBy("createdAt","desc")
+
+);
+
+onSnapshot(q,(snapshot)=>{
+
+historyList.innerHTML="";
+
+if(snapshot.empty){
+
+historyList.innerHTML=`
+
+<div class="history-card">
+
+<div>
+
+<h3>No Deposits Yet</h3>
+
+<p>Your deposit history will appear here.</p>
+
+</div>
+
+</div>
+
+`;
+
+depositStatus.textContent="No Deposit Request";
+
+return;
+
+}
+
+snapshot.forEach((doc)=>{
+
+const data=doc.data();
+
+let badgeClass="pending";
+
+if(data.status==="Approved"){
+
+badgeClass="approved";
+
+}
+
+if(data.status==="Rejected"){
+
+badgeClass="rejected";
+
+}
+
+const date=data.createdAt?.toDate()
+
+? data.createdAt.toDate().toLocaleString()
+
+: "Waiting...";
+
+historyList.innerHTML+=`
+
+<div class="history-card">
+
+<div>
+
+<h3>${Number(data.amount).toLocaleString()} RWF</h3>
+
+<p><strong>Method:</strong> ${data.paymentMethod}</p>
+
+<p><strong>Transaction ID:</strong> ${data.transactionId}</p>
+
+<p><strong>Date:</strong> ${date}</p>
+
+</div>
+
+<span class="${badgeClass}">
+
+${data.status}
+
+</span>
+
+</div>
+
+`;
+
+});
+
+const latest=snapshot.docs[0].data();
+
+depositStatus.innerHTML=`
+
+<strong>${latest.status}</strong>
+
+`;
+
+});
+
+}
+
+// ===============================
+// Start History
+// ===============================
+
+onAuthStateChanged(auth,(user)=>{
+
+if(!user) return;
+
+loadDepositHistory(user);
+
+});
+
+// ===============================
+// DEPOSIT.JS - PART 4
+// Final Functions
+// ===============================
+
+// ---------- Logout ----------
+
+const logoutBtn = document.getElementById("logoutBtn");
+
+if (logoutBtn) {
+
+logoutBtn.addEventListener("click", async (e) => {
+
+e.preventDefault();
+
+const ok = confirm("Do you want to logout?");
+
+if (!ok) return;
+
+try {
+
+await auth.signOut();
+
+window.location.href = "login.html";
+
+} catch (error) {
+
+alert(error.message);
+
+}
+
+});
+
+}
+
+// ---------- Notification ----------
+
+function showToast(message, color = "#2563eb") {
+
+const toast = document.createElement("div");
+
+toast.innerText = message;
+
+toast.style.position = "fixed";
+toast.style.top = "20px";
+toast.style.right = "20px";
+toast.style.background = color;
+toast.style.color = "#fff";
+toast.style.padding = "15px 22px";
+toast.style.borderRadius = "12px";
+toast.style.fontWeight = "600";
+toast.style.zIndex = "99999";
+toast.style.boxShadow = "0 10px 25px rgba(0,0,0,.25)";
+toast.style.animation = "fadeIn .3s";
+
+document.body.appendChild(toast);
+
+setTimeout(() => {
+
+toast.remove();
+
+},3000);
+
+}
+
+// ---------- Better Copy Buttons ----------
+
+copyMTN?.addEventListener("click",()=>{
+
+navigator.clipboard.writeText(
+
+document.getElementById("mtnNumber").innerText
+
+);
+
+showToast("✅ MTN Number Copied","#10b981");
+
+});
+
+copyAirtel?.addEventListener("click",()=>{
+
+navigator.clipboard.writeText(
+
+document.getElementById("airtelNumber").innerText
+
+);
+
+showToast("✅ Airtel Number Copied","#10b981");
+
+});
+
+// ---------- Validation ----------
+
+depositForm?.addEventListener("submit",(e)=>{
+
+const amount = Number(
+
+document.getElementById("amount").value
+
+);
+
+if(amount < 1000){
+
+e.preventDefault();
+
+showToast(
+
+"Minimum deposit is 1,000 RWF",
+
+"#ef4444"
+
+);
+
+return;
+
+}
+
+});
+
+// ---------- Online / Offline ----------
+
+window.addEventListener("online",()=>{
+
+showToast("Internet Connected","#10b981");
+
+});
+
+window.addEventListener("offline",()=>{
+
+showToast("No Internet Connection","#ef4444");
+
+});
+
+// ---------- Page Animation ----------
+
+window.addEventListener("load",()=>{
+
+document.body.style.opacity="0";
+
+setTimeout(()=>{
+
+document.body.style.transition="opacity .4s";
+
+document.body.style.opacity="1";
+
+},100);
+
+});
+
+// ---------- Initialize ----------
+
+console.log("Deposit Page Ready");
