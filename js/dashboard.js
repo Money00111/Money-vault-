@@ -1,77 +1,196 @@
-import { auth, db } from "./firebase.js";
+// ===============================
+// DASHBOARD.JS - PART 1
+// ===============================
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+
 import {
+  getAuth,
   onAuthStateChanged,
   signOut
-} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 import {
+  getFirestore,
   doc,
-  getDoc,
-  onSnapshot
-} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+  getDoc
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-// =======================
-// AUTH CHECK
-// =======================
-onAuthStateChanged(auth, async (user) => {
-  if (!user) {
-    window.location.href = "login.html";
-    return;
-  }
+// Firebase Config
+// Shyiramo config yawe hano niba utarayishyira muri firebase.js
+import { app } from "./firebase.js";
 
-  // Username
-  document.getElementById("username").innerText =
-    user.displayName || "User";
+const auth = getAuth(app);
+const db = getFirestore(app);
 
-  loadUserData(user.uid);
+// ===============================
+// HTML Elements
+// ===============================
+
+const username = document.getElementById("username");
+const menuBtn = document.getElementById("menuBtn");
+const sidebar = document.getElementById("sidebar");
+const logoutBtn = document.getElementById("logoutBtn");
+
+// ===============================
+// Sidebar Toggle
+// ===============================
+
+menuBtn.addEventListener("click", () => {
+    sidebar.classList.toggle("active");
 });
 
-// =======================
-// LOAD USER DATA (REALTIME)
-// =======================
-function loadUserData(uid) {
-  const ref = doc(db, "users", uid);
+// ===============================
+// Authentication
+// ===============================
 
-  onSnapshot(ref, (snap) => {
-    if (!snap.exists()) return;
+onAuthStateChanged(auth, async (user) => {
 
-    const data = snap.data();
+    if (!user) {
+        window.location.href = "login.html";
+        return;
+    }
 
-    // Balance
-    document.getElementById("balanceBox").innerText =
-      (data.balance || 0) + " RWF";
+    try {
 
-    // VIP
-    document.getElementById("vipLevel").innerText =
-      "VIP " + (data.vip || 0);
+        const userRef = doc(db, "users", user.uid);
+        const snap = await getDoc(userRef);
 
-    document.getElementById("vipStatus").innerText =
-      data.vip > 0 ? "Active" : "Inactive";
+        if (snap.exists()) {
 
-    // Referral
-    document.getElementById("refBonus").innerText =
-      (data.refBonus || 0) + " RWF";
+            const data = snap.data();
 
-    document.getElementById("referralBox").innerText =
-      (data.refBonus || 0) + " RWF";
+            username.textContent =
+                `Welcome, ${data.name || user.email}`;
+          
+          await loadDashboard(user);
 
-    // Deposit / Withdraw
-    document.getElementById("depositTotal").innerText =
-      (data.depositTotal || 0) + " RWF";
+        } else {
 
-    document.getElementById("withdrawTotal").innerText =
-      (data.withdrawTotal || 0) + " RWF";
+            username.textContent =
+                user.email;
 
-    // Earnings
-    document.getElementById("earningsBox").innerText =
-      (data.earnings || 0) + " RWF";
-  });
+        }
+
+    } catch (error) {
+
+        console.error(error);
+
+        username.textContent =
+            user.email;
+
+    }
+
+});
+
+// ===============================
+// Logout
+// ===============================
+
+logoutBtn.addEventListener("click", async (e) => {
+
+    e.preventDefault();
+
+    const ok = confirm("Do you want to logout?");
+
+    if (!ok) return;
+
+    try {
+
+        await signOut(auth);
+
+        window.location.href = "login.html";
+
+    } catch (error) {
+
+        alert(error.message);
+
+    }
+
+});
+
+// ===============================
+// DASHBOARD.JS - PART 2
+// Balance + User Data
+// ===============================
+
+// HTML Elements
+const balanceBox = document.getElementById("balanceBox");
+const vipLevel = document.getElementById("vipLevel");
+const depositTotal = document.getElementById("depositTotal");
+const withdrawTotal = document.getElementById("withdrawTotal");
+const refBonus = document.getElementById("refBonus");
+
+const earningsBox = document.getElementById("earningsBox");
+const referralBox = document.getElementById("referralBox");
+const vipStatus = document.getElementById("vipStatus");
+
+// ===============================
+// Load Dashboard Data
+// ===============================
+
+async function loadDashboard(user){
+
+    try{
+
+        const userRef = doc(db,"users",user.uid);
+        const snap = await getDoc(userRef);
+
+        if(!snap.exists()){
+            console.log("User document not found");
+            return;
+        }
+
+        const data = snap.data();
+
+        // Balance
+        balanceBox.textContent =
+        `${Number(data.balance || 0).toLocaleString()} RWF`;
+
+        // VIP
+        vipLevel.textContent =
+        data.vip || "VIP 0";
+
+        vipStatus.textContent =
+        data.vip || "Inactive";
+
+        // Deposit
+        depositTotal.textContent =
+        `${Number(data.deposit || 0).toLocaleString()} RWF`;
+
+        // Withdraw
+        withdrawTotal.textContent =
+        `${Number(data.withdraw || 0).toLocaleString()} RWF`;
+
+        // Referral
+        refBonus.textContent =
+        `${Number(data.referralBonus || 0).toLocaleString()} RWF`;
+
+        referralBox.textContent =
+        `${Number(data.referralBonus || 0).toLocaleString()} RWF`;
+
+        // Earnings
+        earningsBox.textContent =
+        `${Number(data.earnings || 0).toLocaleString()} RWF`;
+
+    }catch(error){
+
+        console.error("Dashboard Error:",error);
+
+    }
+
 }
 
-// =======================
-// LOGOUT
-// =======================
-document.getElementById("logoutBtn").addEventListener("click", async () => {
-  await signOut(auth);
-  window.location.href = "login.html";
+// ===============================
+// Call Dashboard Loader
+// ===============================
+
+onAuthStateChanged(auth, async(user)=>{
+
+    if(!user) return;
+
+    await loadDashboard(user);
+
 });
+
+
