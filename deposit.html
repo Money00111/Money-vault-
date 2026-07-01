@@ -146,4 +146,143 @@ Copy Number
 
 </section>
 
+  <!-- Deposit Form -->
+
+<section class="deposit-form">
+
+<h2>💰 Submit Deposit</h2>
+
+<form id="depositForm">
+
+<div class="input-group">
+
+<label>Amount (RWF)</label>
+
+<input
+type="number"
+id="amount"
+placeholder="Enter amount"
+min="1000"
+required>
+
+</div>
+
+<div class="input-group">
+
+<label>Payment Method</label>
+
+<select id="paymentMethod" required>
+
+<option value="">Choose Payment Method</option>
+
+<option value="MTN Mobile Money">MTN Mobile Money</option>
+
+<option value="Airtel Money">Airtel Money</option>
+
+</select>
+
+</div>
+
+<div class="input-group">
+
+<label>Sender Phone Number</label>
+
+<input
+type="tel"
+id="senderPhone"
+placeholder="07XXXXXXXX"
+required>
+
+</div>
+
+<div class="input-group">
+
+<label>Transaction ID</label>
+
+<input
+type="text"
+id="transactionId"
+placeholder="Example: PP240712ABC123"
+required>
+
+</div>
+
+<div class="input-group">
+
+<label>Date & Time of Payment</label>
+
+<input
+type="datetime-local"
+id="paymentDate"
+required>
+
+</div>
+
+<div class="input-group">
+
+<label>Upload Payment Screenshot</label>
+
+<input
+type="file"
+id="paymentProof"
+accept="image/*"
+required>
+
+</div>
+
+<div class="preview-box">
+
+<img
+id="imagePreview"
+src=""
+alt="Payment Screenshot Preview"
+style="display:none;max-width:100%;border-radius:12px;">
+
+</div>
+
+<div class="input-group">
+
+<label>Additional Note (Optional)</label>
+
+<textarea
+id="note"
+rows="4"
+placeholder="Write any additional information here..."></textarea>
+
+</div>
+
+<button
+type="submit"
+class="submit-btn">
+
+<i class="fa-solid fa-paper-plane"></i>
+
+Submit Deposit Request
+
+</button>
+
+</form>
+
+</section>
+
+<!-- Deposit Status -->
+
+<section class="deposit-status">
+
+<h2>📋 Current Deposit Status</h2>
+
+<div class="status-card pending">
+
+<h3>Status</h3>
+
+<p id="depositStatus">
+
+No Deposit Request
+
+</p>
+
+</div>
+
+  </section>
+
   
