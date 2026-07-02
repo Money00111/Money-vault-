@@ -157,3 +157,166 @@ window.location.href="login.html";
 
 });
 
+// ===============================
+// WITHDRAW.JS - PART 2
+// Submit Withdraw Request
+// ===============================
+
+import {
+collection,
+addDoc,
+serverTimestamp,
+updateDoc
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const withdrawForm =
+document.getElementById("withdrawForm");
+
+withdrawForm?.addEventListener("submit", async (e)=>{
+
+e.preventDefault();
+
+const user = auth.currentUser;
+
+if(!user){
+
+alert("Please login first.");
+
+return;
+
+}
+
+try{
+
+const amount =
+Number(document.getElementById("withdrawAmount").value);
+
+const method =
+document.getElementById("paymentMethod").value;
+
+const phone =
+document.getElementById("receiverPhone").value;
+
+const accountName =
+document.getElementById("accountName").value;
+
+const reason =
+document.getElementById("withdrawReason").value;
+
+const confirm =
+document.getElementById("confirmWithdraw");
+
+if(!confirm.checked){
+
+alert("Please confirm the information.");
+
+return;
+
+}
+
+// Read User Balance
+
+const userRef = doc(db,"users",user.uid);
+
+const snap = await getDoc(userRef);
+
+const userData = snap.data();
+
+const balance = Number(userData.balance || 0);
+
+// Validation
+
+if(amount < 2000){
+
+alert("Minimum withdraw is 2,000 RWF");
+
+return;
+
+}
+
+if(amount > balance){
+
+alert("Insufficient Balance");
+
+return;
+
+}
+
+// Fee
+
+const fee = amount * 0.05;
+
+const receive = amount - fee;
+
+// Loading
+
+const submitBtn =
+document.querySelector(".submit-btn");
+
+submitBtn.disabled = true;
+
+submitBtn.innerHTML = "Processing...";
+
+// Save Withdraw Request
+
+await addDoc(collection(db,"withdraws"),{
+
+userId:user.uid,
+
+email:user.email,
+
+amount,
+
+fee,
+
+receive,
+
+paymentMethod:method,
+
+phone,
+
+accountName,
+
+reason,
+
+status:"Pending",
+
+createdAt:serverTimestamp()
+
+});
+
+// Reserve Balance
+
+await updateDoc(userRef,{
+
+balance:balance-amount
+
+});
+
+// Success
+
+alert("Withdraw request submitted successfully.");
+
+withdrawForm.reset();
+
+submitBtn.disabled=false;
+
+submitBtn.innerHTML="Submit Withdraw Request";
+
+}catch(error){
+
+console.error(error);
+
+alert(error.message);
+
+const submitBtn =
+document.querySelector(".submit-btn");
+
+submitBtn.disabled=false;
+
+submitBtn.innerHTML="Submit Withdraw Request";
+
+}
+
+});
+
