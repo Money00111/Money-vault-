@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Withdraw | Money Vault</title>
+
+<link rel="stylesheet" href="css/withdraw.css">
+
+<link rel="stylesheet"
+href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+
+</head>
+
+<body>
+
+<!-- Sidebar -->
+
+<div id="sidebar" class="sidebar">
+
+<div class="logo">
+<h2>💰 Money Vault</h2>
+</div>
+
+<ul>
+
+<li><a href="dashboard.html"><i class="fa fa-house"></i> Dashboard</a></li>
+
+<li><a href="deposit.html"><i class="fa fa-wallet"></i> Deposit</a></li>
+
+<li><a href="withdraw.html" class="active"><i class="fa fa-money-bill-transfer"></i> Withdraw</a></li>
+
+<li><a href="transactions.html"><i class="fa fa-clock-rotate-left"></i> Transactions</a></li>
+
+<li><a href="profile.html"><i class="fa fa-user"></i> Profile</a></li>
+
+<li><a href="#" id="logoutBtn"><i class="fa fa-right-from-bracket"></i> Logout</a></li>
+
+</ul>
+
+</div>
+
+<!-- Main -->
+
+<div class="main">
+
+<header>
+
+<button id="menuBtn">
+<i class="fa fa-bars"></i>
+</button>
+
+<h2>Withdraw Money</h2>
+
+<div class="header-right">
+
+<i class="fa fa-bell notification"></i>
+
+</div>
+
+</header>
+
+<!-- Wallet Summary -->
+
+<section class="wallet-summary">
+
+<div class="balance-card">
+
+<h3>💰 Available Balance</h3>
+
+<h1 id="availableBalance">0 RWF</h1>
+
+</div>
+
+<div class="balance-card">
+
+<h3>👑 VIP Status</h3>
+
+<h2 id="vipStatus">VIP 0</h2>
+
+</div>
+
+<div class="balance-card">
+
+<h3>💸 Withdraw Fee</h3>
+
+<h2>5%</h2>
+
+</div>
+
+</section>
+
+<!-- Withdraw Rules -->
+
+<section class="withdraw-rules">
+
+<h2>📢 Withdraw Rules</h2>
+
+<ul>
+
+<li>Minimum Withdraw: <strong>2,000 RWF</strong></li>
+
+<li>Maximum Withdraw: <strong>500,000 RWF</strong></li>
+
+<li>You cannot withdraw more than your balance.</li>
+
+<li>Your request will be reviewed by Admin.</li>
+
+<li>Withdraw fee: <strong>5%</strong></li>
+
+<li>Only verified accounts can withdraw.</li>
+
+</ul>
+
+</section>
+
+<!-- Withdraw Calculator -->
+
+<section class="withdraw-calculator">
+
+<h2>🧮 Withdraw Calculator</h2>
+
+<div class="calculator-card">
+
+<p>Amount Entered</p>
+
+<h3 id="enteredAmount">0 RWF</h3>
+
+<p>Withdraw Fee (5%)</p>
+
+<h3 id="withdrawFee">0 RWF</h3>
+
+<p>You Will Receive</p>
+
+<h2 id="receiveAmount">0 RWF</h2>
+
+</div>
+
+  </section>
+
+  <!-- ===========================
+     Withdraw Form
+=========================== -->
+
+<section class="withdraw-form">
+
+<h2>💸 Submit Withdraw Request</h2>
+
+<form id="withdrawForm">
+
+<div class="input-group">
+
+<label>Amount (RWF)</label>
+
+<input
+type="number"
+id="withdrawAmount"
+placeholder="Enter amount"
+min="2000"
+required>
+
+</div>
+
+<div class="input-group">
+
+<label>Payment Method</label>
+
+<select id="paymentMethod" required>
+
+<option value="">Select Payment Method</option>
+
+<option value="MTN Mobile Money">
+MTN Mobile Money
+</option>
+
+<option value="Airtel Money">
+Airtel Money
+</option>
+
+</select>
+
+</div>
+
+<div class="input-group">
+
+<label>Receiver Phone Number</label>
+
+<input
+type="tel"
+id="receiverPhone"
+placeholder="07XXXXXXXX"
+required>
+
+</div>
+
+<div class="input-group">
+
+<label>Account Name</label>
+
+<input
+type="text"
+id="accountName"
+placeholder="Enter Account Name"
+required>
+
+</div>
+
+<div class="input-group">
+
+<label>Reason (Optional)</label>
+
+<textarea
+id="withdrawReason"
+rows="4"
+placeholder="Write a short note..."></textarea>
+
+</div>
+
+<!-- Confirmation -->
+
+<div class="confirm-box">
+
+<label>
+
+<input
+type="checkbox"
+id="confirmWithdraw"
+required>
+
+I confirm that the information above is correct.
+
+</label>
+
+</div>
+
+<!-- Summary -->
+
+<div class="summary-card">
+
+<h3>📋 Withdraw Summary</h3>
+
+<div class="summary-row">
+
+<span>Requested Amount</span>
+
+<strong id="summaryAmount">0 RWF</strong>
+
+</div>
+
+<div class="summary-row">
+
+<span>Withdraw Fee</span>
+
+<strong id="summaryFee">0 RWF</strong>
+
+</div>
+
+<div class="summary-row">
+
+<span>You Will Receive</span>
+
+<strong id="summaryReceive">0 RWF</strong>
+
+</div>
+
+</div>
+
+<button
+type="submit"
+class="submit-btn">
+
+<i class="fa-solid fa-paper-plane"></i>
+
+Submit Withdraw Request
+
+</button>
+
+</form>
+
+</section>
+
+<!-- Current Status -->
+
+<section class="withdraw-status">
+
+<h2>📊 Withdraw Status</h2>
+
+<div class="status-card pending">
+
+<h3>Current Status</h3>
+
+<p id="withdrawStatus">
+
+No Withdraw Request
+
+</p>
+
+</div>
+
+</section>
+
+  <!-- ===========================
+     Withdraw History
+=========================== -->
+
+<section class="withdraw-history">
+
+<h2>📜 Withdraw History</h2>
+
+<div id="historyList">
+
+<div class="history-card">
+
+<div>
+
+<h3>No Withdraw Yet</h3>
+
+<p>Your withdraw requests will appear here.</p>
+
+</div>
+
+<span class="pending">No Data</span>
+
+</div>
+
+</div>
+
+</section>
+
+<!-- ===========================
+     Security Notice
+=========================== -->
+
+<section class="security">
+
+<div class="security-card">
+
+<h2>🛡️ Security Notice</h2>
+
+<p>
+
+For your security, withdrawals are reviewed before approval.
+
+Please make sure your phone number and account name are correct.
+
+Incorrect information may delay or cancel your withdrawal request.
+
+</p>
+
+</div>
+
+</section>
+
+<!-- ===========================
+     Customer Support
+=========================== -->
+
+<section class="support">
+
+<div class="support-card">
+
+<h2>📞 Customer Support</h2>
+
+<p>
+
+Need help with your withdrawal?
+Contact our support team using one of the options below.
+
+</p>
+
+<div class="support-buttons">
+
+<a href="tel:+250788846187" class="call-btn">
+
+<i class="fa-solid fa-phone"></i>
+
+Call Support
+
+</a>
+
+<a href="https://wa.me/250788846187"
+target="_blank"
+class="whatsapp-btn">
+
+<i class="fa-brands fa-whatsapp"></i>
+
+WhatsApp
+
+</a>
+
+</div>
+
+</div>
+
+</section>
+
+<!-- ===========================
+     Bottom Navigation
+=========================== -->
+
+<nav class="bottom-nav">
+
+<a href="dashboard.html">
+
+<i class="fa fa-house"></i>
+
+<span>Home</span>
+
+</a>
+
+<a href="deposit.html">
+
+<i class="fa fa-wallet"></i>
+
+<span>Deposit</span>
+
+</a>
+
+<a href="withdraw.html" class="active">
+
+<i class="fa fa-money-bill-transfer"></i>
+
+<span>Withdraw</span>
+
+</a>
+
+<a href="transactions.html">
+
+<i class="fa fa-clock-rotate-left"></i>
+
+<span>History</span>
+
+</a>
+
+<a href="profile.html">
+
+<i class="fa fa-user"></i>
+
+<span>Profile</span>
+
+</a>
+
+</nav>
+
+<!-- ===========================
+     Footer
+=========================== -->
+
+<footer>
+
+<p>
+
+© 2026 Money Vault. All Rights Reserved.
+
+</p>
+
+</footer>
+
+<!-- Withdraw JavaScript -->
+
+<script type="module" src="js/withdraw.js"></script>
+
+</div>
+<!-- End Main -->
+
+</body>
+
+  </html>
