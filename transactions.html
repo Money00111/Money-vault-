@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport"
+content="width=device-width, initial-scale=1.0">
+
+<title>Transactions | Money Vault</title>
+
+<link rel="stylesheet"
+href="css/transactions.css">
+
+<link rel="stylesheet"
+href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+
+</head>
+
+<body>
+
+<!-- Sidebar -->
+
+<div id="sidebar" class="sidebar">
+
+<div class="logo">
+
+<h2>💰 Money Vault</h2>
+
+</div>
+
+<ul>
+
+<li>
+<a href="dashboard.html">
+
+<i class="fa fa-house"></i>
+
+Dashboard
+
+</a>
+</li>
+
+<li>
+<a href="deposit.html">
+
+<i class="fa fa-wallet"></i>
+
+Deposit
+
+</a>
+</li>
+
+<li>
+<a href="withdraw.html">
+
+<i class="fa fa-money-bill-transfer"></i>
+
+Withdraw
+
+</a>
+</li>
+
+<li>
+<a href="transactions.html"
+class="active">
+
+<i class="fa fa-clock-rotate-left"></i>
+
+Transactions
+
+</a>
+</li>
+
+<li>
+
+<a href="profile.html">
+
+<i class="fa fa-user"></i>
+
+Profile
+
+</a>
+
+</li>
+
+<li>
+
+<a href="#"
+id="logoutBtn">
+
+<i class="fa fa-right-from-bracket"></i>
+
+Logout
+
+</a>
+
+</li>
+
+</ul>
+
+</div>
+
+<!-- Main -->
+
+<div class="main">
+
+<header>
+
+<button id="menuBtn">
+
+<i class="fa fa-bars"></i>
+
+</button>
+
+<h2>
+
+Transaction History
+
+</h2>
+
+<i class="fa fa-bell notification"></i>
+
+</header>
+
+<!-- Statistics -->
+
+<section class="stats">
+
+<div class="stat-card">
+
+<h3>💰 Balance</h3>
+
+<h1 id="balance">
+
+0 RWF
+
+</h1>
+
+</div>
+
+<div class="stat-card">
+
+<h3>📥 Deposit</h3>
+
+<h1 id="totalDeposit">
+
+0 RWF
+
+</h1>
+
+</div>
+
+<div class="stat-card">
+
+<h3>📤 Withdraw</h3>
+
+<h1 id="totalWithdraw">
+
+0 RWF
+
+</h1>
+
+</div>
+
+<div class="stat-card">
+
+<h3>🎁 Bonus</h3>
+
+<h1 id="bonus">
+
+0 RWF
+
+</h1>
+
+</div>
+
+</section>
+
+<!-- Search -->
+
+<section class="search-box">
+
+<input
+
+type="text"
+
+id="searchInput"
+
+placeholder="Search Transaction...">
+
+</section>
+
+<!-- Filter -->
+
+<section class="filter-box">
+
+<button class="filter-btn active">
+
+All
+
+</button>
+
+<button class="filter-btn">
+
+Deposit
+
+</button>
+
+<button class="filter-btn">
+
+Withdraw
+
+</button>
+
+<button class="filter-btn">
+
+Bonus
+
+</button>
+
+  </section>
+
+  <!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport"
+content="width=device-width, initial-scale=1.0">
+
+<title>Transactions | Money Vault</title>
+
+<link rel="stylesheet"
+href="css/transactions.css">
+
+<link rel="stylesheet"
+href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+
+</head>
+
+<body>
+
+<!-- Sidebar -->
+
+<div id="sidebar" class="sidebar">
+
+<div class="logo">
+
+<h2>💰 Money Vault</h2>
+
+</div>
+
+<ul>
+
+<li>
+<a href="dashboard.html">
+
+<i class="fa fa-house"></i>
+
+Dashboard
+
+</a>
+</li>
+
+<li>
+<a href="deposit.html">
+
+<i class="fa fa-wallet"></i>
+
+Deposit
+
+</a>
+</li>
+
+<li>
+<a href="withdraw.html">
+
+<i class="fa fa-money-bill-transfer"></i>
+
+Withdraw
+
+</a>
+</li>
+
+<li>
+<a href="transactions.html"
+class="active">
+
+<i class="fa fa-clock-rotate-left"></i>
+
+Transactions
+
+</a>
+</li>
+
+<li>
+
+<a href="profile.html">
+
+<i class="fa fa-user"></i>
+
+Profile
+
+</a>
+
+</li>
+
+<li>
+
+<a href="#"
+id="logoutBtn">
+
+<i class="fa fa-right-from-bracket"></i>
+
+Logout
+
+</a>
+
+</li>
+
+</ul>
+
+</div>
+
+<!-- Main -->
+
+<div class="main">
+
+<header>
+
+<button id="menuBtn">
+
+<i class="fa fa-bars"></i>
+
+</button>
+
+<h2>
+
+Transaction History
+
+</h2>
+
+<i class="fa fa-bell notification"></i>
+
+</header>
+
+<!-- Statistics -->
+
+<section class="stats">
+
+<div class="stat-card">
+
+<h3>💰 Balance</h3>
+
+<h1 id="balance">
+
+0 RWF
+
+</h1>
+
+</div>
+
+<div class="stat-card">
+
+<h3>📥 Deposit</h3>
+
+<h1 id="totalDeposit">
+
+0 RWF
+
+</h1>
+
+</div>
+
+<div class="stat-card">
+
+<h3>📤 Withdraw</h3>
+
+<h1 id="totalWithdraw">
+
+0 RWF
+
+</h1>
+
+</div>
+
+<div class="stat-card">
+
+<h3>🎁 Bonus</h3>
+
+<h1 id="bonus">
+
+0 RWF
+
+</h1>
+
+</div>
+
+</section>
+
+<!-- Search -->
+
+<section class="search-box">
+
+<input
+
+type="text"
+
+id="searchInput"
+
+placeholder="Search Transaction...">
+
+</section>
+
+<!-- Filter -->
+
+<section class="filter-box">
+
+<button class="filter-btn active">
+
+All
+
+</button>
+
+<button class="filter-btn">
+
+Deposit
+
+</button>
+
+<button class="filter-btn">
+
+Withdraw
+
+</button>
+
+<button class="filter-btn">
+
+Bonus
+
+</button>
+
+</section>
+
+  <!-- ===========================
+     Security Notice
+=========================== -->
+
+<section class="security">
+
+<div class="security-card">
+
+<h2>🛡️ Security Notice</h2>
+
+<p>
+
+All transactions are securely stored and protected.
+
+Never share your password, verification code, or account information with anyone.
+
+If you notice any suspicious activity, contact support immediately.
+
+</p>
+
+</div>
+
+</section>
+
+<!-- ===========================
+     Customer Support
+=========================== -->
+
+<section class="support">
+
+<div class="support-card">
+
+<h2>📞 Customer Support</h2>
+
+<p>
+
+Need help with your transactions?
+Our support team is available to assist you.
+
+</p>
+
+<div class="support-buttons">
+
+<a href="tel:+250788846187" class="call-btn">
+
+<i class="fa-solid fa-phone"></i>
+
+Call Support
+
+</a>
+
+<a href="https://wa.me/250788846187"
+
+target="_blank"
+
+class="whatsapp-btn">
+
+<i class="fa-brands fa-whatsapp"></i>
+
+WhatsApp
+
+</a>
+
+</div>
+
+</div>
+
+</section>
+
+<!-- ===========================
+     Bottom Navigation
+=========================== -->
+
+<nav class="bottom-nav">
+
+<a href="dashboard.html">
+
+<i class="fa fa-house"></i>
+
+<span>Home</span>
+
+</a>
+
+<a href="deposit.html">
+
+<i class="fa fa-wallet"></i>
+
+<span>Deposit</span>
+
+</a>
+
+<a href="withdraw.html">
+
+<i class="fa fa-money-bill-transfer"></i>
+
+<span>Withdraw</span>
+
+</a>
+
+<a href="transactions.html" class="active">
+
+<i class="fa fa-clock-rotate-left"></i>
+
+<span>History</span>
+
+</a>
+
+<a href="profile.html">
+
+<i class="fa fa-user"></i>
+
+<span>Profile</span>
+
+</a>
+
+</nav>
+
+<!-- ===========================
+     Footer
+=========================== -->
+
+<footer>
+
+<div class="footer-content">
+
+<h3>💰 Money Vault</h3>
+
+<p>
+
+Fast • Secure • Reliable
+
+</p>
+
+<p>
+
+© 2026 Money Vault. All Rights Reserved.
+
+</p>
+
+</div>
+
+</footer>
+
+<!-- Loading Overlay -->
+
+<div id="loadingScreen" class="loading-screen">
+
+<div class="loader"></div>
+
+<h3>Loading Transactions...</h3>
+
+</div>
+
+<!-- Scroll To Top -->
+
+<button id="scrollTopBtn">
+
+<i class="fa-solid fa-arrow-up"></i>
+
+</button>
+
+<!-- JavaScript -->
+
+<script type="module" src="js/transactions.js"></script>
+
+</div>
+
+<!-- End Main -->
+
+</body>
+
+  </html>
