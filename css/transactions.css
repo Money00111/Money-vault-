@@ -346,3 +346,256 @@ color:#fff;
 
 }
 
+/* ===========================
+   TRANSACTIONS CSS - PART 2
+=========================== */
+
+/* Transaction History */
+
+.transactions-history{
+
+background:rgba(255,255,255,.12);
+
+backdrop-filter:blur(15px);
+
+padding:30px;
+
+border-radius:20px;
+
+margin-bottom:30px;
+
+box-shadow:0 12px 25px rgba(0,0,0,.20);
+
+animation:fadeUp .6s ease;
+
+}
+
+.transactions-history h2{
+
+font-size:28px;
+
+margin-bottom:20px;
+
+color:#fff;
+
+}
+
+/* Transaction Card */
+
+.transaction-card{
+
+display:flex;
+
+justify-content:space-between;
+
+align-items:center;
+
+background:#fff;
+
+color:#1e293b;
+
+padding:22px;
+
+border-radius:18px;
+
+margin-bottom:18px;
+
+box-shadow:0 10px 25px rgba(0,0,0,.15);
+
+transition:.35s;
+
+border-left:6px solid transparent;
+
+}
+
+.transaction-card:hover{
+
+transform:translateY(-6px);
+
+box-shadow:0 18px 35px rgba(37,99,235,.25);
+
+}
+
+/* Deposit */
+
+.transaction-card.deposit{
+
+border-left-color:#10b981;
+
+}
+
+/* Withdraw */
+
+.transaction-card.withdraw{
+
+border-left-color:#2563eb;
+
+}
+
+/* Bonus */
+
+.transaction-card.bonus{
+
+border-left-color:#f59e0b;
+
+}
+
+/* Loading */
+
+.transaction-card.loading{
+
+border-left-color:#94a3b8;
+
+opacity:.8;
+
+}
+
+.transaction-card h3{
+
+font-size:22px;
+
+margin-bottom:10px;
+
+}
+
+.transaction-card p{
+
+font-size:15px;
+
+margin:5px 0;
+
+color:#64748b;
+
+line-height:1.6;
+
+}
+
+/* Status */
+
+.pending,
+.approved,
+.rejected{
+
+padding:10px 18px;
+
+border-radius:50px;
+
+font-size:13px;
+
+font-weight:700;
+
+color:#fff;
+
+text-transform:uppercase;
+
+}
+
+.pending{
+
+background:#f59e0b;
+
+}
+
+.approved{
+
+background:#10b981;
+
+}
+
+.rejected{
+
+background:#ef4444;
+
+}
+
+/* Summary */
+
+.summary-section{
+
+margin-bottom:30px;
+
+}
+
+.summary-card{
+
+background:rgba(255,255,255,.12);
+
+backdrop-filter:blur(15px);
+
+padding:30px;
+
+border-radius:20px;
+
+box-shadow:0 12px 25px rgba(0,0,0,.20);
+
+}
+
+.summary-card h2{
+
+margin-bottom:20px;
+
+font-size:28px;
+
+color:#fff;
+
+}
+
+.summary-row{
+
+display:flex;
+
+justify-content:space-between;
+
+align-items:center;
+
+padding:15px 0;
+
+border-bottom:1px solid rgba(255,255,255,.2);
+
+font-size:17px;
+
+}
+
+.summary-row:last-child{
+
+border-bottom:none;
+
+}
+
+.summary-row strong{
+
+color:#10b981;
+
+font-size:20px;
+
+}
+
+/* Animation */
+
+@keyframes fadeUp{
+
+from{
+
+opacity:0;
+
+transform:translateY(30px);
+
+}
+
+to{
+
+opacity:1;
+
+transform:translateY(0);
+
+}
+
+}
+
+.transaction-card{
+
+animation:fadeUp .5s ease;
+
+}
+
+   
