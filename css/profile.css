@@ -1,0 +1,1037 @@
+/* ===========================
+   PROFILE CSS - PART 1
+=========================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
+
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+font-family:'Poppins',sans-serif;
+}
+
+body{
+
+background:linear-gradient(135deg,#0f172a,#1d4ed8,#38bdf8);
+
+background-attachment:fixed;
+
+min-height:100vh;
+
+color:#fff;
+
+overflow-x:hidden;
+
+}
+
+/* ===========================
+   Sidebar
+=========================== */
+
+.sidebar{
+
+position:fixed;
+
+top:0;
+
+left:0;
+
+width:260px;
+
+height:100%;
+
+background:rgba(8,15,35,.95);
+
+backdrop-filter:blur(15px);
+
+padding:25px;
+
+box-shadow:5px 0 25px rgba(0,0,0,.35);
+
+z-index:1000;
+
+}
+
+.logo{
+
+text-align:center;
+
+margin-bottom:35px;
+
+}
+
+.logo h2{
+
+font-size:28px;
+
+color:#38bdf8;
+
+font-weight:700;
+
+}
+
+.sidebar ul{
+
+list-style:none;
+
+}
+
+.sidebar ul li{
+
+margin:12px 0;
+
+}
+
+.sidebar ul li a{
+
+display:flex;
+
+align-items:center;
+
+gap:12px;
+
+padding:15px 18px;
+
+border-radius:12px;
+
+text-decoration:none;
+
+color:#fff;
+
+font-weight:500;
+
+transition:.3s;
+
+}
+
+.sidebar ul li a:hover,
+.sidebar ul li a.active{
+
+background:#2563eb;
+
+transform:translateX(8px);
+
+}
+
+/* ===========================
+   Main
+=========================== */
+
+.main{
+
+margin-left:260px;
+
+padding:30px;
+
+}
+
+/* ===========================
+   Header
+=========================== */
+
+header{
+
+display:flex;
+
+justify-content:space-between;
+
+align-items:center;
+
+background:rgba(255,255,255,.12);
+
+backdrop-filter:blur(15px);
+
+padding:18px 25px;
+
+border-radius:20px;
+
+margin-bottom:30px;
+
+box-shadow:0 12px 25px rgba(0,0,0,.25);
+
+}
+
+header h2{
+
+font-size:30px;
+
+font-weight:700;
+
+}
+
+#menuBtn{
+
+width:48px;
+
+height:48px;
+
+border:none;
+
+border-radius:12px;
+
+background:#38bdf8;
+
+color:#fff;
+
+font-size:20px;
+
+cursor:pointer;
+
+transition:.3s;
+
+}
+
+#menuBtn:hover{
+
+background:#10b981;
+
+transform:scale(1.08);
+
+}
+
+.notification{
+
+font-size:24px;
+
+cursor:pointer;
+
+transition:.3s;
+
+}
+
+.notification:hover{
+
+color:#facc15;
+
+}
+
+/* ===========================
+   Profile Card
+=========================== */
+
+.profile-card{
+
+display:flex;
+
+align-items:center;
+
+gap:30px;
+
+background:rgba(255,255,255,.12);
+
+backdrop-filter:blur(15px);
+
+padding:35px;
+
+border-radius:22px;
+
+box-shadow:0 15px 30px rgba(0,0,0,.25);
+
+margin-bottom:30px;
+
+animation:fadeUp .6s ease;
+
+}
+
+.profile-image{
+
+position:relative;
+
+}
+
+.profile-image img{
+
+width:160px;
+
+height:160px;
+
+border-radius:50%;
+
+border:5px solid #38bdf8;
+
+object-fit:cover;
+
+box-shadow:0 10px 20px rgba(0,0,0,.25);
+
+}
+
+.camera-btn{
+
+position:absolute;
+
+bottom:8px;
+
+right:8px;
+
+width:45px;
+
+height:45px;
+
+border-radius:50%;
+
+background:#2563eb;
+
+display:flex;
+
+justify-content:center;
+
+align-items:center;
+
+color:#fff;
+
+cursor:pointer;
+
+transition:.3s;
+
+}
+
+.camera-btn:hover{
+
+background:#10b981;
+
+transform:scale(1.1);
+
+}
+
+.profile-info h2{
+
+font-size:32px;
+
+margin-bottom:10px;
+
+}
+
+.profile-info p{
+
+font-size:17px;
+
+margin:8px 0;
+
+color:#e2e8f0;
+
+}
+
+.vip-badge{
+
+display:inline-block;
+
+margin-top:12px;
+
+padding:10px 18px;
+
+border-radius:50px;
+
+background:#f59e0b;
+
+font-weight:700;
+
+color:#fff;
+
+}
+
+/* ===========================
+   Wallet Cards
+=========================== */
+
+.wallet-section{
+
+display:grid;
+
+grid-template-columns:repeat(auto-fit,minmax(230px,1fr));
+
+gap:20px;
+
+margin-bottom:30px;
+
+}
+
+.wallet-card{
+
+background:rgba(255,255,255,.12);
+
+backdrop-filter:blur(15px);
+
+padding:25px;
+
+border-radius:20px;
+
+text-align:center;
+
+box-shadow:0 12px 25px rgba(0,0,0,.20);
+
+transition:.35s;
+
+}
+
+.wallet-card:hover{
+
+transform:translateY(-8px);
+
+box-shadow:0 20px 35px rgba(37,99,235,.35);
+
+}
+
+.wallet-card h3{
+
+font-size:18px;
+
+margin-bottom:12px;
+
+}
+
+.wallet-card h1{
+
+font-size:30px;
+
+font-weight:700;
+
+color:#10b981;
+
+}
+
+/* Animation */
+
+@keyframes fadeUp{
+
+from{
+
+opacity:0;
+
+transform:translateY(30px);
+
+}
+
+to{
+
+opacity:1;
+
+transform:translateY(0);
+
+}
+
+  }
+
+/* ===========================
+   PROFILE CSS - PART 2
+=========================== */
+
+/* ===========================
+   Edit Profile
+=========================== */
+
+.edit-profile{
+
+background:rgba(255,255,255,.12);
+
+backdrop-filter:blur(15px);
+
+padding:30px;
+
+border-radius:20px;
+
+margin-bottom:30px;
+
+box-shadow:0 12px 25px rgba(0,0,0,.20);
+
+animation:fadeUp .6s ease;
+
+}
+
+.edit-profile h2{
+
+font-size:28px;
+
+margin-bottom:25px;
+
+color:#fff;
+
+}
+
+/* Form */
+
+#profileForm{
+
+display:grid;
+
+grid-template-columns:repeat(auto-fit,minmax(300px,1fr));
+
+gap:20px;
+
+}
+
+.input-group{
+
+display:flex;
+
+flex-direction:column;
+
+}
+
+.input-group label{
+
+font-size:15px;
+
+font-weight:600;
+
+margin-bottom:8px;
+
+color:#fff;
+
+}
+
+.input-group input,
+.input-group select,
+.input-group textarea{
+
+width:100%;
+
+padding:15px;
+
+border:none;
+
+outline:none;
+
+border-radius:14px;
+
+font-size:15px;
+
+background:#fff;
+
+color:#1e293b;
+
+transition:.3s;
+
+box-shadow:0 5px 15px rgba(0,0,0,.10);
+
+}
+
+.input-group textarea{
+
+resize:none;
+
+min-height:130px;
+
+}
+
+.input-group input:focus,
+.input-group select:focus,
+.input-group textarea:focus{
+
+transform:translateY(-2px);
+
+box-shadow:0 0 0 3px rgba(56,189,248,.35);
+
+}
+
+/* Save Button */
+
+.save-btn{
+
+margin-top:10px;
+
+padding:16px;
+
+border:none;
+
+border-radius:14px;
+
+background:linear-gradient(135deg,#2563eb,#38bdf8);
+
+color:#fff;
+
+font-size:17px;
+
+font-weight:700;
+
+cursor:pointer;
+
+transition:.3s;
+
+box-shadow:0 12px 25px rgba(37,99,235,.35);
+
+}
+
+.save-btn:hover{
+
+background:linear-gradient(135deg,#10b981,#059669);
+
+transform:translateY(-3px);
+
+}
+
+/* ===========================
+   Password Section
+=========================== */
+
+.password-section{
+
+background:rgba(255,255,255,.12);
+
+backdrop-filter:blur(15px);
+
+padding:30px;
+
+border-radius:20px;
+
+margin-bottom:30px;
+
+box-shadow:0 12px 25px rgba(0,0,0,.20);
+
+}
+
+.password-section h2{
+
+font-size:28px;
+
+margin-bottom:25px;
+
+color:#fff;
+
+}
+
+#passwordForm{
+
+display:grid;
+
+grid-template-columns:repeat(auto-fit,minmax(300px,1fr));
+
+gap:20px;
+
+}
+
+.password-btn{
+
+margin-top:10px;
+
+padding:16px;
+
+border:none;
+
+border-radius:14px;
+
+background:linear-gradient(135deg,#f59e0b,#f97316);
+
+color:#fff;
+
+font-size:17px;
+
+font-weight:700;
+
+cursor:pointer;
+
+transition:.3s;
+
+box-shadow:0 12px 25px rgba(249,115,22,.35);
+
+}
+
+.password-btn:hover{
+
+background:linear-gradient(135deg,#dc2626,#b91c1c);
+
+transform:translateY(-3px);
+
+}
+
+/* ===========================
+   Quick Actions
+=========================== */
+
+.quick-actions{
+
+display:grid;
+
+grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+
+gap:20px;
+
+margin-bottom:30px;
+
+}
+
+.action-card{
+
+background:rgba(255,255,255,.12);
+
+backdrop-filter:blur(15px);
+
+padding:30px;
+
+border-radius:20px;
+
+text-align:center;
+
+box-shadow:0 12px 25px rgba(0,0,0,.20);
+
+transition:.35s;
+
+}
+
+.action-card:hover{
+
+transform:translateY(-8px);
+
+box-shadow:0 20px 35px rgba(37,99,235,.35);
+
+}
+
+.action-card i{
+
+font-size:42px;
+
+margin-bottom:15px;
+
+color:#38bdf8;
+
+}
+
+.action-card h3{
+
+font-size:22px;
+
+margin-bottom:15px;
+
+color:#fff;
+
+}
+
+.action-card a{
+
+display:inline-block;
+
+padding:12px 25px;
+
+border-radius:12px;
+
+background:#2563eb;
+
+color:#fff;
+
+text-decoration:none;
+
+font-weight:600;
+
+transition:.3s;
+
+}
+
+.action-card a:hover{
+
+background:#10b981;
+
+transform:scale(1.05);
+
+}
+
+/* ===========================
+   PROFILE CSS - PART 2
+=========================== */
+
+/* ===========================
+   Edit Profile
+=========================== */
+
+.edit-profile{
+
+background:rgba(255,255,255,.12);
+
+backdrop-filter:blur(15px);
+
+padding:30px;
+
+border-radius:20px;
+
+margin-bottom:30px;
+
+box-shadow:0 12px 25px rgba(0,0,0,.20);
+
+animation:fadeUp .6s ease;
+
+}
+
+.edit-profile h2{
+
+font-size:28px;
+
+margin-bottom:25px;
+
+color:#fff;
+
+}
+
+/* Form */
+
+#profileForm{
+
+display:grid;
+
+grid-template-columns:repeat(auto-fit,minmax(300px,1fr));
+
+gap:20px;
+
+}
+
+.input-group{
+
+display:flex;
+
+flex-direction:column;
+
+}
+
+.input-group label{
+
+font-size:15px;
+
+font-weight:600;
+
+margin-bottom:8px;
+
+color:#fff;
+
+}
+
+.input-group input,
+.input-group select,
+.input-group textarea{
+
+width:100%;
+
+padding:15px;
+
+border:none;
+
+outline:none;
+
+border-radius:14px;
+
+font-size:15px;
+
+background:#fff;
+
+color:#1e293b;
+
+transition:.3s;
+
+box-shadow:0 5px 15px rgba(0,0,0,.10);
+
+}
+
+.input-group textarea{
+
+resize:none;
+
+min-height:130px;
+
+}
+
+.input-group input:focus,
+.input-group select:focus,
+.input-group textarea:focus{
+
+transform:translateY(-2px);
+
+box-shadow:0 0 0 3px rgba(56,189,248,.35);
+
+}
+
+/* Save Button */
+
+.save-btn{
+
+margin-top:10px;
+
+padding:16px;
+
+border:none;
+
+border-radius:14px;
+
+background:linear-gradient(135deg,#2563eb,#38bdf8);
+
+color:#fff;
+
+font-size:17px;
+
+font-weight:700;
+
+cursor:pointer;
+
+transition:.3s;
+
+box-shadow:0 12px 25px rgba(37,99,235,.35);
+
+}
+
+.save-btn:hover{
+
+background:linear-gradient(135deg,#10b981,#059669);
+
+transform:translateY(-3px);
+
+}
+
+/* ===========================
+   Password Section
+=========================== */
+
+.password-section{
+
+background:rgba(255,255,255,.12);
+
+backdrop-filter:blur(15px);
+
+padding:30px;
+
+border-radius:20px;
+
+margin-bottom:30px;
+
+box-shadow:0 12px 25px rgba(0,0,0,.20);
+
+}
+
+.password-section h2{
+
+font-size:28px;
+
+margin-bottom:25px;
+
+color:#fff;
+
+}
+
+#passwordForm{
+
+display:grid;
+
+grid-template-columns:repeat(auto-fit,minmax(300px,1fr));
+
+gap:20px;
+
+}
+
+.password-btn{
+
+margin-top:10px;
+
+padding:16px;
+
+border:none;
+
+border-radius:14px;
+
+background:linear-gradient(135deg,#f59e0b,#f97316);
+
+color:#fff;
+
+font-size:17px;
+
+font-weight:700;
+
+cursor:pointer;
+
+transition:.3s;
+
+box-shadow:0 12px 25px rgba(249,115,22,.35);
+
+}
+
+.password-btn:hover{
+
+background:linear-gradient(135deg,#dc2626,#b91c1c);
+
+transform:translateY(-3px);
+
+}
+
+/* ===========================
+   Quick Actions
+=========================== */
+
+.quick-actions{
+
+display:grid;
+
+grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+
+gap:20px;
+
+margin-bottom:30px;
+
+}
+
+.action-card{
+
+background:rgba(255,255,255,.12);
+
+backdrop-filter:blur(15px);
+
+padding:30px;
+
+border-radius:20px;
+
+text-align:center;
+
+box-shadow:0 12px 25px rgba(0,0,0,.20);
+
+transition:.35s;
+
+}
+
+.action-card:hover{
+
+transform:translateY(-8px);
+
+box-shadow:0 20px 35px rgba(37,99,235,.35);
+
+}
+
+.action-card i{
+
+font-size:42px;
+
+margin-bottom:15px;
+
+color:#38bdf8;
+
+}
+
+.action-card h3{
+
+font-size:22px;
+
+margin-bottom:15px;
+
+color:#fff;
+
+}
+
+.action-card a{
+
+display:inline-block;
+
+padding:12px 25px;
+
+border-radius:12px;
+
+background:#2563eb;
+
+color:#fff;
+
+text-decoration:none;
+
+font-weight:600;
+
+transition:.3s;
+
+}
+
+.action-card a:hover{
+
+background:#10b981;
+
+transform:scale(1.05);
+
+}
