@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Profile | Money Vault</title>
+
+<link rel="stylesheet" href="css/profile.css">
+
+<link rel="stylesheet"
+href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+
+</head>
+
+<body>
+
+<!-- Sidebar -->
+
+<div class="sidebar" id="sidebar">
+
+<div class="logo">
+
+<h2>💰 Money Vault</h2>
+
+</div>
+
+<ul>
+
+<li>
+
+<a href="dashboard.html">
+
+<i class="fa-solid fa-house"></i>
+
+Dashboard
+
+</a>
+
+</li>
+
+<li>
+
+<a href="deposit.html">
+
+<i class="fa-solid fa-wallet"></i>
+
+Deposit
+
+</a>
+
+</li>
+
+<li>
+
+<a href="withdraw.html">
+
+<i class="fa-solid fa-money-bill-transfer"></i>
+
+Withdraw
+
+</a>
+
+</li>
+
+<li>
+
+<a href="transactions.html">
+
+<i class="fa-solid fa-clock-rotate-left"></i>
+
+Transactions
+
+</a>
+
+</li>
+
+<li>
+
+<a href="profile.html" class="active">
+
+<i class="fa-solid fa-user"></i>
+
+Profile
+
+</a>
+
+</li>
+
+<li>
+
+<a href="#" id="logoutBtn">
+
+<i class="fa-solid fa-right-from-bracket"></i>
+
+Logout
+
+</a>
+
+</li>
+
+</ul>
+
+</div>
+
+<!-- Main -->
+
+<div class="main">
+
+<header>
+
+<button id="menuBtn">
+
+<i class="fa-solid fa-bars"></i>
+
+</button>
+
+<h2>My Profile</h2>
+
+<i class="fa-solid fa-bell notification"></i>
+
+</header>
+
+<!-- Profile Card -->
+
+<section class="profile-card">
+
+<div class="profile-image">
+
+<img
+id="profilePhoto"
+
+src="https://via.placeholder.com/150"
+
+alt="Profile">
+
+<label for="photoInput" class="camera-btn">
+
+<i class="fa-solid fa-camera"></i>
+
+</label>
+
+<input
+
+type="file"
+
+id="photoInput"
+
+accept="image/*"
+
+hidden>
+
+</div>
+
+<div class="profile-info">
+
+<h2 id="fullName">
+
+Loading...
+
+</h2>
+
+<p id="userEmail">
+
+Loading...
+
+</p>
+
+<p id="userPhone">
+
++250********
+
+</p>
+
+<span class="vip-badge"
+
+id="vipStatus">
+
+VIP 0
+
+</span>
+
+</div>
+
+</section>
+
+<!-- Wallet Information -->
+
+<section class="wallet-section">
+
+<div class="wallet-card">
+
+<h3>
+
+💰 Available Balance
+
+</h3>
+
+<h1 id="balance">
+
+0 RWF
+
+</h1>
+
+</div>
+
+<div class="wallet-card">
+
+<h3>
+
+🎁 Bonus Balance
+
+</h3>
+
+<h1 id="bonus">
+
+0 RWF
+
+</h1>
+
+</div>
+
+<div class="wallet-card">
+
+<h3>
+
+👥 Referral Bonus
+
+</h3>
+
+<h1 id="referralBonus">
+
+0 RWF
+
+</h1>
+
+</div>
+
+<div class="wallet-card">
+
+<h3>
+
+⭐ VIP Level
+
+</h3>
+
+<h1 id="vipLevel">
+
+VIP 0
+
+</h1>
+
+</div>
+
+</section>
+
+  <!-- ===========================
+     Edit Profile
+=========================== -->
+
+<section class="edit-profile">
+
+<h2>
+
+✏️ Edit Profile
+
+</h2>
+
+<form id="profileForm">
+
+<div class="input-group">
+
+<label>
+
+Full Name
+
+</label>
+
+<input
+
+type="text"
+
+id="name"
+
+placeholder="Enter your full name"
+
+required>
+
+</div>
+
+<div class="input-group">
+
+<label>
+
+Phone Number
+
+</label>
+
+<input
+
+type="tel"
+
+id="phone"
+
+placeholder="07XXXXXXXX"
+
+required>
+
+</div>
+
+<div class="input-group">
+
+<label>
+
+Email Address
+
+</label>
+
+<input
+
+type="email"
+
+id="email"
+
+readonly>
+
+</div>
+
+<div class="input-group">
+
+<label>
+
+Country
+
+</label>
+
+<select id="country">
+
+<option value="Rwanda">
+
+🇷🇼 Rwanda
+
+</option>
+
+<option value="Uganda">
+
+🇺🇬 Uganda
+
+</option>
+
+<option value="Kenya">
+
+🇰🇪 Kenya
+
+</option>
+
+<option value="Tanzania">
+
+🇹🇿 Tanzania
+
+</option>
+
+<option value="Burundi">
+
+🇧🇮 Burundi
+
+</option>
+
+</select>
+
+</div>
+
+<div class="input-group">
+
+<label>
+
+Address
+
+</label>
+
+<textarea
+
+id="address"
+
+rows="4"
+
+placeholder="Enter your address">
+
+</textarea>
+
+</div>
+
+<button
+
+type="submit"
+
+class="save-btn">
+
+<i class="fa-solid fa-floppy-disk"></i>
+
+Save Changes
+
+</button>
+
+</form>
+
+</section>
+
+<!-- ===========================
+     Change Password
+=========================== -->
+
+<section class="password-section">
+
+<h2>
+
+🔒 Change Password
+
+</h2>
+
+<form id="passwordForm">
+
+<div class="input-group">
+
+<label>
+
+Current Password
+
+</label>
+
+<input
+
+type="password"
+
+id="currentPassword"
+
+placeholder="Current Password"
+
+required>
+
+</div>
+
+<div class="input-group">
+
+<label>
+
+New Password
+
+</label>
+
+<input
+
+type="password"
+
+id="newPassword"
+
+placeholder="New Password"
+
+required>
+
+</div>
+
+<div class="input-group">
+
+<label>
+
+Confirm Password
+
+</label>
+
+<input
+
+type="password"
+
+id="confirmPassword"
+
+placeholder="Confirm Password"
+
+required>
+
+</div>
+
+<button
+
+type="submit"
+
+class="password-btn">
+
+<i class="fa-solid fa-key"></i>
+
+Update Password
+
+</button>
+
+</form>
+
+</section>
+
+<!-- ===========================
+     Quick Actions
+=========================== -->
+
+<section class="quick-actions">
+
+<div class="action-card">
+
+<i class="fa-solid fa-wallet"></i>
+
+<h3>Deposit</h3>
+
+<a href="deposit.html">
+
+Open
+
+</a>
+
+</div>
+
+<div class="action-card">
+
+<i class="fa-solid fa-money-bill-transfer"></i>
+
+<h3>Withdraw</h3>
+
+<a href="withdraw.html">
+
+Open
+
+</a>
+
+</div>
+
+<div class="action-card">
+
+<i class="fa-solid fa-clock-rotate-left"></i>
+
+<h3>Transactions</h3>
+
+<a href="transactions.html">
+
+Open
+
+</a>
+
+</div>
+
+<div class="action-card">
+
+<i class="fa-solid fa-headset"></i>
+
+<h3>Support</h3>
+
+<a href="tel:+250788846187">
+
+Call
+
+</a>
+
+</div>
+
+</section>
+
+  <!-- ===========================
+     Security Settings
+=========================== -->
+
+<section class="security-section">
+
+<div class="security-card">
+
+<h2>
+
+🛡️ Security Settings
+
+</h2>
+
+<div class="setting-item">
+
+<span>
+
+Two-Factor Authentication
+
+</span>
+
+<label class="switch">
+
+<input type="checkbox" id="twoFactor">
+
+<span class="slider"></span>
+
+</label>
+
+</div>
+
+<div class="setting-item">
+
+<span>
+
+Login Notifications
+
+</span>
+
+<label class="switch">
+
+<input type="checkbox" id="loginNotification" checked>
+
+<span class="slider"></span>
+
+</label>
+
+</div>
+
+<div class="setting-item">
+
+<span>
+
+Email Notifications
+
+</span>
+
+<label class="switch">
+
+<input type="checkbox" id="emailNotification" checked>
+
+<span class="slider"></span>
+
+</label>
+
+</div>
+
+<div class="setting-item">
+
+<span>
+
+Dark Mode
+
+</span>
+
+<label class="switch">
+
+<input type="checkbox" id="darkMode">
+
+<span class="slider"></span>
+
+</label>
+
+</div>
+
+</div>
+
+</section>
+
+<!-- ===========================
+     Customer Support
+=========================== -->
+
+<section class="support-section">
+
+<div class="support-card">
+
+<h2>
+
+📞 Customer Support
+
+</h2>
+
+<p>
+
+Need help with your account? Contact our support team anytime.
+
+</p>
+
+<div class="support-buttons">
+
+<a href="tel:+250788846187" class="call-btn">
+
+<i class="fa-solid fa-phone"></i>
+
+Call Support
+
+</a>
+
+<a href="https://wa.me/250788846187"
+
+target="_blank"
+
+class="whatsapp-btn">
+
+<i class="fa-brands fa-whatsapp"></i>
+
+WhatsApp
+
+</a>
+
+</div>
+
+</div>
+
+</section>
+
+<!-- ===========================
+     Bottom Navigation
+=========================== -->
+
+<nav class="bottom-nav">
+
+<a href="dashboard.html">
+
+<i class="fa-solid fa-house"></i>
+
+<span>Home</span>
+
+</a>
+
+<a href="deposit.html">
+
+<i class="fa-solid fa-wallet"></i>
+
+<span>Deposit</span>
+
+</a>
+
+<a href="withdraw.html">
+
+<i class="fa-solid fa-money-bill-transfer"></i>
+
+<span>Withdraw</span>
+
+</a>
+
+<a href="transactions.html">
+
+<i class="fa-solid fa-clock-rotate-left"></i>
+
+<span>History</span>
+
+</a>
+
+<a href="profile.html" class="active">
+
+<i class="fa-solid fa-user"></i>
+
+<span>Profile</span>
+
+</a>
+
+</nav>
+
+<!-- ===========================
+     Footer
+=========================== -->
+
+<footer>
+
+<div class="footer-content">
+
+<h3>
+
+💰 Money Vault
+
+</h3>
+
+<p>
+
+Fast • Secure • Trusted
+
+</p>
+
+<p>
+
+© 2026 Money Vault. All Rights Reserved.
+
+</p>
+
+</div>
+
+</footer>
+
+<!-- ===========================
+     Loading Screen
+=========================== -->
+
+<div id="loadingScreen" class="loading-screen">
+
+<div class="loader"></div>
+
+<h3>
+
+Loading Profile...
+
+</h3>
+
+</div>
+
+<!-- ===========================
+     Scroll To Top
+=========================== -->
+
+<button id="scrollTopBtn">
+
+<i class="fa-solid fa-arrow-up"></i>
+
+</button>
+
+<!-- ===========================
+     JavaScript
+=========================== -->
+
+<script type="module" src="js/profile.js"></script>
+
+</div>
+
+<!-- End Main -->
+
+</body>
+
+  </html>
