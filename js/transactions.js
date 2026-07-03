@@ -787,3 +787,242 @@ ${item.status}
 }
 
 
+// ===============================
+// TRANSACTIONS.JS - PART 4
+// Final Functions
+// ===============================
+
+// Scroll To Top
+
+const scrollTopBtn =
+document.getElementById("scrollTopBtn");
+
+window.addEventListener("scroll",()=>{
+
+if(window.scrollY>300){
+
+scrollTopBtn.style.display="block";
+
+}else{
+
+scrollTopBtn.style.display="none";
+
+}
+
+});
+
+scrollTopBtn?.addEventListener("click",()=>{
+
+window.scrollTo({
+
+top:0,
+
+behavior:"smooth"
+
+});
+
+});
+
+// ===============================
+// Toast Notification
+// ===============================
+
+function showToast(message,color="#2563eb"){
+
+const toast=document.createElement("div");
+
+toast.innerHTML=message;
+
+toast.style.position="fixed";
+
+toast.style.top="20px";
+
+toast.style.right="20px";
+
+toast.style.padding="15px 22px";
+
+toast.style.background=color;
+
+toast.style.color="#fff";
+
+toast.style.borderRadius="12px";
+
+toast.style.fontWeight="600";
+
+toast.style.boxShadow="0 10px 25px rgba(0,0,0,.25)";
+
+toast.style.zIndex="99999";
+
+document.body.appendChild(toast);
+
+setTimeout(()=>{
+
+toast.remove();
+
+},3000);
+
+}
+
+// ===============================
+// Internet Status
+// ===============================
+
+window.addEventListener("online",()=>{
+
+showToast(
+
+"✅ Internet Connected",
+
+"#10b981"
+
+);
+
+});
+
+window.addEventListener("offline",()=>{
+
+showToast(
+
+"❌ Internet Disconnected",
+
+"#ef4444"
+
+);
+
+});
+
+// ===============================
+// Loading Screen
+// ===============================
+
+window.addEventListener("load",()=>{
+
+setTimeout(()=>{
+
+loadingScreen.style.opacity="0";
+
+setTimeout(()=>{
+
+loadingScreen.style.display="none";
+
+},500);
+
+},1000);
+
+});
+
+// ===============================
+// Page Animation
+// ===============================
+
+document.body.style.opacity="0";
+
+window.addEventListener("load",()=>{
+
+setTimeout(()=>{
+
+document.body.style.transition="opacity .5s";
+
+document.body.style.opacity="1";
+
+},200);
+
+});
+
+// ===============================
+// Auto Refresh
+// ===============================
+
+setInterval(()=>{
+
+const user=auth.currentUser;
+
+if(user){
+
+loadTransactions(user);
+
+}
+
+},60000);
+
+// ===============================
+// Welcome Notification
+// ===============================
+
+setTimeout(()=>{
+
+showToast(
+
+"📜 Transactions Loaded Successfully",
+
+"#2563eb"
+
+);
+
+},800);
+
+// ===============================
+// Logout Confirmation
+// ===============================
+
+logoutBtn?.addEventListener("click",async(e)=>{
+
+e.preventDefault();
+
+const ok=confirm(
+
+"Do you really want to logout?"
+
+);
+
+if(!ok) return;
+
+try{
+
+await signOut(auth);
+
+window.location.href="login.html";
+
+}catch(error){
+
+showToast(
+
+error.message,
+
+"#ef4444"
+
+);
+
+}
+
+});
+
+// ===============================
+// Console
+// ===============================
+
+console.log(`
+
+=====================================
+
+        MONEY VAULT PRO
+
+=====================================
+
+Transactions Module Loaded
+
+Firebase Connected
+
+Realtime Database Ready
+
+Search Enabled
+
+Filter Enabled
+
+Statistics Enabled
+
+Security Enabled
+
+=====================================
+
+`);
