@@ -121,3 +121,109 @@ loadingScreen.style.display="none";
 
     }
 
+// ======================================
+// LOAD USER PROFILE
+// ======================================
+
+async function loadProfile(user){
+
+try{
+
+const userRef = doc(db,"users",user.uid);
+
+const snap = await getDoc(userRef);
+
+if(!snap.exists()) return;
+
+const data = snap.data();
+
+// Header
+
+fullName.textContent =
+data.fullName || "Money Vault User";
+
+userEmail.textContent =
+user.email;
+
+// Wallet
+
+balance.textContent =
+Number(data.balance || 0).toLocaleString()+" RWF";
+
+bonus.textContent =
+Number(data.bonus || 0).toLocaleString()+" RWF";
+
+referralBonus.textContent =
+Number(data.referralBonus || 0).toLocaleString()+" RWF";
+
+// VIP
+
+vipLevel.textContent =
+data.vip || "VIP 0";
+
+vipCard.textContent =
+data.vip || "VIP 0";
+
+// Statistics
+
+totalDeposit.textContent =
+Number(data.totalDeposit || 0).toLocaleString()+" RWF";
+
+totalWithdraw.textContent =
+Number(data.totalWithdraw || 0).toLocaleString()+" RWF";
+
+totalTransactions.textContent =
+data.totalTransactions || 0;
+
+// Account
+
+accountId.textContent =
+user.uid.substring(0,12);
+
+if(user.metadata.creationTime){
+
+joinDate.textContent =
+new Date(
+user.metadata.creationTime
+).toLocaleDateString();
+
+}
+
+// Form
+
+nameInput.value =
+data.fullName || "";
+
+phoneInput.value =
+data.phone || "";
+
+emailInput.value =
+user.email;
+
+countryInput.value =
+data.country || "Rwanda";
+
+addressInput.value =
+data.address || "";
+
+// Photo
+
+if(data.photoURL){
+
+profilePhoto.src =
+data.photoURL;
+
+}
+
+}catch(error){
+
+console.error(error);
+
+alert("Failed to load profile.");
+
+}
+
+}
+
+console.log("Profile Part 1 Loaded");
+
