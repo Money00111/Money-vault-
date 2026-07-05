@@ -18,10 +18,139 @@
 =========================== */
 body{
     background: #f1f5f9;
+    font-family: 'Poppins', sans-serif;
     color: #0f172a;
-    display: flex;
 }
 
+/* ALL CARDS UNIFIED STYLE */
+.wallet-card,
+.action-card,
+.stat-card,
+.profile-info-card,
+.security-card,
+.support-card{
+    border-radius: 18px;
+    background: #fff;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+    transition: all 0.3s ease;
+}
+
+.wallet-card:hover,
+.action-card:hover,
+.stat-card:hover{
+    transform: translateY(-6px);
+    box-shadow: 0 15px 40px rgba(0,0,0,0.12);
+}
+
+/* SECTION SPACING */
+section{
+    margin-bottom: 30px;
+   }
+h1,h2,h3{
+    color: #0f172a;
+    letter-spacing: 0.3px;
+}
+
+p{
+    color: #64748b;
+   }
+.profile-hero{
+    background: linear-gradient(135deg, #2563eb, #1e40af);
+    padding: 25px;
+    border-radius: 20px;
+    color: white;
+    box-shadow: 0 15px 40px rgba(37,99,235,0.25);
+}
+
+.profile-details h1,
+.profile-details p{
+    color: white;
+}
+
+.vip{
+    background: #facc15;
+    color: #000;
+}
+
+.verified{
+    background: rgba(255,255,255,0.2);
+    color: white;
+   }
+/* Desktop */
+.wallet-grid{ grid-template-columns: repeat(4,1fr); }
+.action-grid{ grid-template-columns: repeat(4,1fr); }
+.account-stats{ grid-template-columns: repeat(4,1fr); }
+.security-grid{ grid-template-columns: repeat(3,1fr); }
+
+/* Tablet */
+@media(max-width: 992px){
+    .wallet-grid,
+    .action-grid,
+    .account-stats{
+        grid-template-columns: repeat(2,1fr);
+    }
+}
+
+/* Mobile */
+@media(max-width: 600px){
+    .wallet-grid,
+    .action-grid,
+    .account-stats,
+    .security-grid{
+        grid-template-columns: 1fr;
+    }
+   }n-bottom: 30px;
+             }
+.support-card{
+    background: linear-gradient(135deg, #2563eb, #1e40af);
+    color: white;
+    text-align: center;
+    padding: 25px;
+}
+
+.support-btn{
+    display: inline-block;
+    padding: 12px 18px;
+    margin: 8px;
+    border-radius: 12px;
+    font-weight: 500;
+    text-decoration: none;
+}
+
+.support-btn{
+    background: white;
+    color: #2563eb;
+}
+
+.support-btn.whatsapp{
+    background: #10b981;
+    color: white;
+}
+.support-card{
+    background: linear-gradient(135deg, #2563eb, #1e40af);
+    color: white;
+    text-align: center;
+    padding: 25px;
+}
+
+.support-btn{
+    display: inline-block;
+    padding: 12px 18px;
+    margin: 8px;
+    border-radius: 12px;
+    font-weight: 500;
+    text-decoration: none;
+}
+
+.support-btn{
+    background: white;
+    color: #2563eb;
+}
+
+.support-btn.whatsapp{
+    background: #10b981;
+    color: white;
+}
 /* ===========================
    SIDEBAR
 =========================== */
@@ -40,9 +169,12 @@ body{
 
 .sidebar .logo{
     text-align: center;
-    margin-bottom: 30px;
-}
-
+    margi.wallet-grid,
+.action-grid,
+.account-stats,
+.security-grid{
+    display: grid;
+    gap: 18px;
 .sidebar ul{
     list-style: none;
 }
