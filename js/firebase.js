@@ -205,4 +205,116 @@ alert("Failed to load profile.");
 
 console.log("Profile Loaded Successfully");
 
+// ======================================
+// PROFILE.JS - PART 2
+// Save Profile (Realtime Database)
+// ======================================
+
+import {
+ref,
+update
+} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
+
+// ======================================
+// SAVE PROFILE
+// ======================================
+
+const profileForm = document.getElementById("profileForm");
+
+profileForm?.addEventListener("submit", async (e)=>{
+
+e.preventDefault();
+
+const user = auth.currentUser;
+
+if(!user){
+
+alert("User not logged in.");
+
+return;
+
+}
+
+const fullName = nameInput.value.trim();
+
+const phone = phoneInput.value.trim();
+
+const country = countryInput.value;
+
+const address = addressInput.value.trim();
+
+// Validation
+
+if(fullName.length < 3){
+
+alert("Please enter your full name.");
+
+return;
+
+}
+
+if(phone.length < 10){
+
+alert("Enter a valid phone number.");
+
+return;
+
+}
+
+try{
+
+await update(ref(db,"users/"+user.uid),{
+
+fullName,
+
+phone,
+
+country,
+
+address,
+
+updatedAt:Date.now()
+
+});
+
+alert("Profile updated successfully.");
+
+}catch(error){
+
+console.error(error);
+
+alert(error.message);
+
+}
+
+});
+
+// ======================================
+// EDIT BUTTON
+// ======================================
+
+const editProfileBtn =
+document.getElementById("editProfileBtn");
+
+editProfileBtn?.addEventListener("click",()=>{
+
+nameInput.focus();
+
+});
+
+// ======================================
+// RESET FORM
+// ======================================
+
+const cancelBtn =
+document.querySelector(".cancel-btn");
+
+cancelBtn?.addEventListener("click",()=>{
+
+loadProfile(auth.currentUser);
+
+});
+
+console.log("Profile Part 2 Loaded");
+
 
