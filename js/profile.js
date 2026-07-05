@@ -1,197 +1,123 @@
-// ===========================
-// FIREBASE IMPORTS
-// ===========================
+// ======================================
+// PROFILE.JS - PART 1A
+// Firebase + Authentication
+// ======================================
+
 import { auth, db } from "./firebase.js";
+
 import {
-    onAuthStateChanged,
-    signOut,
-    updateProfile
+onAuthStateChanged,
+signOut
 } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-auth.js";
 
 import {
-    doc,
-    getDoc,
-    updateDoc
+doc,
+getDoc
 } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore.js";
 
-// ===========================
-// ELEMENTS
-// ===========================
-const fullName = document.getElementById("fullName");
-const userEmail = document.getElementById("userEmail");
-const balanceEl = document.getElementById("balance");
-const bonusEl = document.getElementById("bonus");
-const referralEl = document.getElementById("referralBonus");
-const vipLevelEl = document.getElementById("vipLevel");
-const vipCardEl = document.getElementById("vipCard");
-const profilePhoto = document.getElementById("profilePhoto");
-const photoInput = document.getElementById("photoInput");
+// ======================================
+// HTML ELEMENTS
+// ======================================
 
-const logoutBtn = document.getElementById("logoutBtn");
 const sidebar = document.getElementById("sidebar");
 const menuBtn = document.getElementById("menuBtn");
+const logoutBtn = document.getElementById("logoutBtn");
+const loadingScreen = document.getElementById("loadingScreen");
 
-// ===========================
-// RESPONSIVE SIDEBAR TOGGLE
-// ===========================
+const profilePhoto = document.getElementById("profilePhoto");
+
+const fullName = document.getElementById("fullName");
+const userEmail = document.getElementById("userEmail");
+
+const balance = document.getElementById("balance");
+const bonus = document.getElementById("bonus");
+const referralBonus = document.getElementById("referralBonus");
+
+const vipLevel = document.getElementById("vipLevel");
+const vipCard = document.getElementById("vipCard");
+
+const totalDeposit = document.getElementById("totalDeposit");
+const totalWithdraw = document.getElementById("totalWithdraw");
+const totalTransactions = document.getElementById("totalTransactions");
+
+const accountId = document.getElementById("accountId");
+const joinDate = document.getElementById("joinDate");
+
+const profileForm = document.getElementById("profileForm");
+
+const nameInput = document.getElementById("name");
+const phoneInput = document.getElementById("phone");
+const emailInput = document.getElementById("email");
+const countryInput = document.getElementById("country");
+const addressInput = document.getElementById("address");
+
+// ======================================
+// SIDEBAR
+// ======================================
+
 menuBtn?.addEventListener("click", () => {
-    sidebar.classList.toggle("active");
+
+sidebar.classList.toggle("active");
+
 });
 
-// ===========================
-// AUTH CHECK
-// ===========================
-onAuthStateChanged(auth, async (user) => {
-    if (!user) {
-        window.location.href = "login.html";
-        return;
-    }
-
-    userEmail.textContent = user.email;
-
-    const userRef = doc(db, "users", user.uid);
-    const userSnap = await getDoc(userRef);
-
-    if (userSnap.exists()) {
-        const data = userSnap.data();
-
-        // PROFILE DATA
-        fullName.textContent = data.fullName || "User";
-        balanceEl.textContent = (data.balance || 0) + " RWF";
-        bonusEl.textContent = (data.bonus || 0) + " RWF";
-        referralEl.textContent = (data.referralBonus || 0) + " RWF";
-
-        vipLevelEl.textContent = data.vipLevel || "VIP 0";
-        vipCardEl.textContent = data.vipLevel || "VIP 0";
-
-        // PROFILE IMAGE
-        if (data.photoURL) {
-            profilePhoto.src = data.photoURL;
-        }
-
-        // SETTINGS
-        document.getElementById("twoFA").checked = data.twoFA || false;
-        document.getElementById("notifications").checked = data.notifications ?? true;
-    }
-});
-
-// ===========================
-// PROFILE PHOTO UPLOAD (base64 simple version)
-// ===========================
-photoInput?.addEventListener("change", async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-
-    reader.onload = async () => {
-        const base64 = reader.result;
-        profilePhoto.src = base64;
-
-        const user = auth.currentUser;
-        if (!user) return;
-
-        const userRef = doc(db, "users", user.uid);
-
-        await updateDoc(userRef, {
-            photoURL: base64
-        });
-    };
-
-    reader.readAsDataURL(file);
-});
-
-// ===========================
+// ======================================
 // LOGOUT
-// ===========================
-logoutBtn?.addEventListener("click", async (e) => {
-    e.preventDefault();
+// ======================================
 
-    await signOut(auth);
-    window.location.href = "login.html";
-});
+logoutBtn?.addEventListener("click", async (e)=>{
 
-// ===========================
-// UPDATE PROFILE INFO
-// ===========================
-document.getElementById("profileForm")?.addEventListener("submit", async (e) => {
-    e.preventDefault();
+e.preventDefault();
 
-    const user = auth.currentUser;
-    if (!user) return;
+const ok = confirm("Logout from your account?");
 
-    const name = document.getElementById("name").value;
-    const phone = document.getElementById("phone").value;
-    const country = document.getElementById("country").value;
-    const address = document.getElementById("address").value;
+if(!ok) return;
 
-    const userRef = doc(db, "users", user.uid);
+try{
 
-    await updateDoc(userRef, {
-        fullName: name,
-        phone,
-        country,
-        address
-    });
+await signOut(auth);
 
-    alert("Profile updated successfully!");
-});
+window.location.href="login.html";
 
-// ===========================
-// SECURITY SETTINGS (TOGGLES)
-// ===========================
-document.getElementById("twoFA")?.addEventListener("change", async (e) => {
-    const user = auth.currentUser;
-    if (!user) return;
+}catch(error){
 
-    const userRef = doc(db, "users", user.uid);
+alert(error.message);
 
-    await updateDoc(userRef, {
-        twoFA: e.target.checked
-    });
-});
-
-document.getElementById("notifications")?.addEventListener("change", async (e) => {
-    const user = auth.currentUser;
-    if (!user) return;
-
-    const userRef = doc(db, "users", user.uid);
-
-    await updateDoc(userRef, {
-        notifications: e.target.checked
-    });
-});
-
-// ===========================
-// SCROLL TO TOP BUTTON
-// ===========================
-const scrollBtn = document.getElementById("scrollTop");
-
-window.addEventListener("scroll", () => {
-    if (window.scrollY > 200) {
-        scrollBtn.style.display = "flex";
-    } else {
-        scrollBtn.style.display = "none";
-    }
-});
-
-scrollBtn?.addEventListener("click", () => {
-    window.scrollTo({
-        top: 0,
-        behavior: "smooth"
-    });
-});
-
-// ===========================
-// SCREEN STABILITY FIX (IMPORTANT)
-// ===========================
-function fixLayout() {
-    const width = window.innerWidth;
-
-    if (width < 600) {
-        sidebar?.classList.remove("active");
-    }
 }
 
-window.addEventListener("resize", fixLayout);
-fixLayout();
+});
+
+// ======================================
+// AUTH CHECK
+// ======================================
+
+onAuthStateChanged(auth, async(user)=>{
+
+if(!user){
+
+window.location.href="login.html";
+
+return;
+
+}
+
+await loadProfile(user);
+
+hideLoading();
+
+});
+
+// ======================================
+// HIDE LOADING
+// ======================================
+
+function hideLoading(){
+
+setTimeout(()=>{
+
+loadingScreen.style.display="none";
+
+},800);
+
+    }
+
