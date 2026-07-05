@@ -1,22 +1,109 @@
-// js/firebase.js
+// ======================================
+// PROFILE.JS - PART 1A
+// Realtime Database Version
+// ======================================
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
-import { getAuth } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
-import { getDatabase } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
+import { auth, db } from "./firebase.js";
 
-const firebaseConfig = {
-  apiKey: "AIzaSyC0ugw0iH2h00bJxxHq7qMRBvYYmFjPqCU",
-  authDomain: "money-vault-c48d3.firebaseapp.com",
-  databaseURL: "https://money-vault-c48d3-default-rtdb.firebaseio.com",
-  projectId: "money-vault-c48d3",
-  storageBucket: "money-vault-c48d3.firebasestorage.app",
-  messagingSenderId: "1068478656241",
-  appId: "1:1068478656241:web:aacbcf12922a21fe784350"
-};
+import {
+onAuthStateChanged,
+signOut
+} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 
-const app = initializeApp(firebaseConfig);
+import {
+ref,
+get
+} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
 
-const auth = getAuth(app);
-const db = getDatabase(app);
+// ======================================
+// ELEMENTS
+// ======================================
 
-export { auth, db };
+const sidebar = document.getElementById("sidebar");
+const menuBtn = document.getElementById("menuBtn");
+const logoutBtn = document.getElementById("logoutBtn");
+const loadingScreen = document.getElementById("loadingScreen");
+
+const profilePhoto = document.getElementById("profilePhoto");
+
+const fullName = document.getElementById("fullName");
+const userEmail = document.getElementById("userEmail");
+
+const balance = document.getElementById("balance");
+const bonus = document.getElementById("bonus");
+const referralBonus = document.getElementById("referralBonus");
+
+const vipLevel = document.getElementById("vipLevel");
+const vipCard = document.getElementById("vipCard");
+
+const totalDeposit = document.getElementById("totalDeposit");
+const totalWithdraw = document.getElementById("totalWithdraw");
+const totalTransactions = document.getElementById("totalTransactions");
+
+const accountId = document.getElementById("accountId");
+const joinDate = document.getElementById("joinDate");
+
+const nameInput = document.getElementById("name");
+const phoneInput = document.getElementById("phone");
+const emailInput = document.getElementById("email");
+const countryInput = document.getElementById("country");
+const addressInput = document.getElementById("address");
+
+// ======================================
+// MENU
+// ======================================
+
+menuBtn?.addEventListener("click",()=>{
+
+sidebar.classList.toggle("active");
+
+});
+
+// ======================================
+// LOGOUT
+// ======================================
+
+logoutBtn?.addEventListener("click",async(e)=>{
+
+e.preventDefault();
+
+if(!confirm("Logout now?")) return;
+
+try{
+
+await signOut(auth);
+
+window.location.href="login.html";
+
+}catch(err){
+
+alert(err.message);
+
+}
+
+});
+
+// ======================================
+// AUTH
+// ======================================
+
+onAuthStateChanged(auth,async(user)=>{
+
+if(!user){
+
+window.location.href="login.html";
+
+return;
+
+}
+
+await loadProfile(user);
+
+setTimeout(()=>{
+
+loadingScreen.style.display="none";
+
+},800);
+
+});
+
