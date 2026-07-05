@@ -1,320 +1,66 @@
 // ======================================
-// PROFILE.JS - PART 1A
-// Realtime Database Version
+// FIREBASE CONFIG
+// firebase.js
 // ======================================
 
-import { auth, db } from "./firebase.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
 
-import {
-onAuthStateChanged,
-signOut
-} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+import { getAuth } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 
-import {
-ref,
-get
-} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
+import { getDatabase } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
+
+import { getStorage } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-storage.js";
 
 // ======================================
-// ELEMENTS
+// FIREBASE CONFIGURATION
 // ======================================
 
-const sidebar = document.getElementById("sidebar");
-const menuBtn = document.getElementById("menuBtn");
-const logoutBtn = document.getElementById("logoutBtn");
-const loadingScreen = document.getElementById("loadingScreen");
+const firebaseConfig = {
 
-const profilePhoto = document.getElementById("profilePhoto");
+apiKey: "AIzaSyC0ugw0iH2h00bJxxHq7qMRBvYYmFjPqCU",
 
-const fullName = document.getElementById("fullName");
-const userEmail = document.getElementById("userEmail");
+authDomain: "money-vault-c48d3.firebaseapp.com",
 
-const balance = document.getElementById("balance");
-const bonus = document.getElementById("bonus");
-const referralBonus = document.getElementById("referralBonus");
+databaseURL: "https://money-vault-c48d3-default-rtdb.firebaseio.com",
 
-const vipLevel = document.getElementById("vipLevel");
-const vipCard = document.getElementById("vipCard");
+projectId: "money-vault-c48d3",
 
-const totalDeposit = document.getElementById("totalDeposit");
-const totalWithdraw = document.getElementById("totalWithdraw");
-const totalTransactions = document.getElementById("totalTransactions");
+storageBucket: "money-vault-c48d3.firebasestorage.app",
 
-const accountId = document.getElementById("accountId");
-const joinDate = document.getElementById("joinDate");
+messagingSenderId: "1068478656241",
 
-const nameInput = document.getElementById("name");
-const phoneInput = document.getElementById("phone");
-const emailInput = document.getElementById("email");
-const countryInput = document.getElementById("country");
-const addressInput = document.getElementById("address");
+appId: "1:1068478656241:web:aacbcf12922a21fe784350"
+
+};
 
 // ======================================
-// MENU
+// INITIALIZE FIREBASE
 // ======================================
 
-menuBtn?.addEventListener("click",()=>{
-
-sidebar.classList.toggle("active");
-
-});
+const app = initializeApp(firebaseConfig);
 
 // ======================================
-// LOGOUT
+// SERVICES
 // ======================================
 
-logoutBtn?.addEventListener("click",async(e)=>{
+const auth = getAuth(app);
 
-e.preventDefault();
+const db = getDatabase(app);
 
-if(!confirm("Logout now?")) return;
-
-try{
-
-await signOut(auth);
-
-window.location.href="login.html";
-
-}catch(err){
-
-alert(err.message);
-
-}
-
-});
+const storage = getStorage(app);
 
 // ======================================
-// AUTH
+// EXPORT
 // ======================================
 
-onAuthStateChanged(auth,async(user)=>{
+export {
 
-if(!user){
+app,
 
-window.location.href="login.html";
+auth,
 
-return;
+db,
 
-}
+storage
 
-await loadProfile(user);
-
-setTimeout(()=>{
-
-loadingScreen.style.display="none";
-
-},800);
-
-});
-
-// ======================================
-// LOAD PROFILE
-// ======================================
-
-async function loadProfile(user){
-
-try{
-
-const snapshot = await get(ref(db,"users/"+user.uid));
-
-if(!snapshot.exists()) return;
-
-const data = snapshot.val();
-
-// Header
-
-fullName.textContent =
-data.fullName || "Money Vault User";
-
-userEmail.textContent =
-user.email;
-
-// Wallet
-
-balance.textContent =
-(Number(data.balance)||0).toLocaleString()+" RWF";
-
-bonus.textContent =
-(Number(data.bonus)||0).toLocaleString()+" RWF";
-
-referralBonus.textContent =
-(Number(data.referralBonus)||0).toLocaleString()+" RWF";
-
-// VIP
-
-vipLevel.textContent =
-data.vip || "VIP 0";
-
-vipCard.textContent =
-data.vip || "VIP 0";
-
-// Statistics
-
-totalDeposit.textContent =
-(Number(data.totalDeposit)||0).toLocaleString()+" RWF";
-
-totalWithdraw.textContent =
-(Number(data.totalWithdraw)||0).toLocaleString()+" RWF";
-
-totalTransactions.textContent =
-data.totalTransactions || 0;
-
-// Account
-
-accountId.textContent =
-user.uid.substring(0,12);
-
-joinDate.textContent =
-new Date(user.metadata.creationTime).toLocaleDateString();
-
-// Form
-
-nameInput.value =
-data.fullName || "";
-
-phoneInput.value =
-data.phone || "";
-
-emailInput.value =
-user.email;
-
-countryInput.value =
-data.country || "Rwanda";
-
-addressInput.value =
-data.address || "";
-
-// Photo
-
-if(data.photoURL){
-
-profilePhoto.src =
-data.photoURL;
-
-}
-
-}catch(error){
-
-console.error(error);
-
-alert("Failed to load profile.");
-
-}
-
-}
-
-console.log("Profile Loaded Successfully");
-
-// ======================================
-// PROFILE.JS - PART 2
-// Save Profile (Realtime Database)
-// ======================================
-
-import {
-ref,
-update
-} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
-
-// ======================================
-// SAVE PROFILE
-// ======================================
-
-const profileForm = document.getElementById("profileForm");
-
-profileForm?.addEventListener("submit", async (e)=>{
-
-e.preventDefault();
-
-const user = auth.currentUser;
-
-if(!user){
-
-alert("User not logged in.");
-
-return;
-
-}
-
-const fullName = nameInput.value.trim();
-
-const phone = phoneInput.value.trim();
-
-const country = countryInput.value;
-
-const address = addressInput.value.trim();
-
-// Validation
-
-if(fullName.length < 3){
-
-alert("Please enter your full name.");
-
-return;
-
-}
-
-if(phone.length < 10){
-
-alert("Enter a valid phone number.");
-
-return;
-
-}
-
-try{
-
-await update(ref(db,"users/"+user.uid),{
-
-fullName,
-
-phone,
-
-country,
-
-address,
-
-updatedAt:Date.now()
-
-});
-
-alert("Profile updated successfully.");
-
-}catch(error){
-
-console.error(error);
-
-alert(error.message);
-
-}
-
-});
-
-// ======================================
-// EDIT BUTTON
-// ======================================
-
-const editProfileBtn =
-document.getElementById("editProfileBtn");
-
-editProfileBtn?.addEventListener("click",()=>{
-
-nameInput.focus();
-
-});
-
-// ======================================
-// RESET FORM
-// ======================================
-
-const cancelBtn =
-document.querySelector(".cancel-btn");
-
-cancelBtn?.addEventListener("click",()=>{
-
-loadProfile(auth.currentUser);
-
-});
-
-console.log("Profile Part 2 Loaded");
-
-
+};
