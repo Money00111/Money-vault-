@@ -1,6 +1,6 @@
 // ======================================
 // PROFILE.JS - PART 1A
-// Firebase + Authentication
+// Realtime Database Version
 // ======================================
 
 import { auth, db } from "./firebase.js";
@@ -8,15 +8,15 @@ import { auth, db } from "./firebase.js";
 import {
 onAuthStateChanged,
 signOut
-} from "https://www.gstatic.com/firebasejs/11.9.1/firebase-auth.js";
+} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 
 import {
-doc,
-getDoc
-} from "https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore.js";
+ref,
+get
+} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
 
 // ======================================
-// HTML ELEMENTS
+// ELEMENTS
 // ======================================
 
 const sidebar = document.getElementById("sidebar");
@@ -43,8 +43,6 @@ const totalTransactions = document.getElementById("totalTransactions");
 const accountId = document.getElementById("accountId");
 const joinDate = document.getElementById("joinDate");
 
-const profileForm = document.getElementById("profileForm");
-
 const nameInput = document.getElementById("name");
 const phoneInput = document.getElementById("phone");
 const emailInput = document.getElementById("email");
@@ -52,10 +50,10 @@ const countryInput = document.getElementById("country");
 const addressInput = document.getElementById("address");
 
 // ======================================
-// SIDEBAR
+// MENU
 // ======================================
 
-menuBtn?.addEventListener("click", () => {
+menuBtn?.addEventListener("click",()=>{
 
 sidebar.classList.toggle("active");
 
@@ -65,13 +63,11 @@ sidebar.classList.toggle("active");
 // LOGOUT
 // ======================================
 
-logoutBtn?.addEventListener("click", async (e)=>{
+logoutBtn?.addEventListener("click",async(e)=>{
 
 e.preventDefault();
 
-const ok = confirm("Logout from your account?");
-
-if(!ok) return;
+if(!confirm("Logout now?")) return;
 
 try{
 
@@ -79,19 +75,19 @@ await signOut(auth);
 
 window.location.href="login.html";
 
-}catch(error){
+}catch(err){
 
-alert(error.message);
+alert(err.message);
 
 }
 
 });
 
 // ======================================
-// AUTH CHECK
+// AUTH
 // ======================================
 
-onAuthStateChanged(auth, async(user)=>{
+onAuthStateChanged(auth,async(user)=>{
 
 if(!user){
 
@@ -103,39 +99,27 @@ return;
 
 await loadProfile(user);
 
-hideLoading();
-
-});
-
-// ======================================
-// HIDE LOADING
-// ======================================
-
-function hideLoading(){
-
 setTimeout(()=>{
 
 loadingScreen.style.display="none";
 
 },800);
 
-    }
+});
 
 // ======================================
-// LOAD USER PROFILE
+// LOAD PROFILE
 // ======================================
 
 async function loadProfile(user){
 
 try{
 
-const userRef = doc(db,"users",user.uid);
+const snapshot = await get(ref(db,"users/"+user.uid));
 
-const snap = await getDoc(userRef);
+if(!snapshot.exists()) return;
 
-if(!snap.exists()) return;
-
-const data = snap.data();
+const data = snapshot.val();
 
 // Header
 
@@ -148,13 +132,13 @@ user.email;
 // Wallet
 
 balance.textContent =
-Number(data.balance || 0).toLocaleString()+" RWF";
+(Number(data.balance)||0).toLocaleString()+" RWF";
 
 bonus.textContent =
-Number(data.bonus || 0).toLocaleString()+" RWF";
+(Number(data.bonus)||0).toLocaleString()+" RWF";
 
 referralBonus.textContent =
-Number(data.referralBonus || 0).toLocaleString()+" RWF";
+(Number(data.referralBonus)||0).toLocaleString()+" RWF";
 
 // VIP
 
@@ -167,10 +151,10 @@ data.vip || "VIP 0";
 // Statistics
 
 totalDeposit.textContent =
-Number(data.totalDeposit || 0).toLocaleString()+" RWF";
+(Number(data.totalDeposit)||0).toLocaleString()+" RWF";
 
 totalWithdraw.textContent =
-Number(data.totalWithdraw || 0).toLocaleString()+" RWF";
+(Number(data.totalWithdraw)||0).toLocaleString()+" RWF";
 
 totalTransactions.textContent =
 data.totalTransactions || 0;
@@ -180,14 +164,8 @@ data.totalTransactions || 0;
 accountId.textContent =
 user.uid.substring(0,12);
 
-if(user.metadata.creationTime){
-
 joinDate.textContent =
-new Date(
-user.metadata.creationTime
-).toLocaleDateString();
-
-}
+new Date(user.metadata.creationTime).toLocaleDateString();
 
 // Form
 
@@ -225,5 +203,117 @@ alert("Failed to load profile.");
 
 }
 
-console.log("Profile Part 1 Loaded");
+console.log("Profile Loaded Successfully");
+
+// ======================================
+// PROFILE.JS - PART 2
+// Save Profile (Realtime Database)
+// ======================================
+
+import {
+ref,
+update
+} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
+
+// ======================================
+// SAVE PROFILE
+// ======================================
+
+const profileForm = document.getElementById("profileForm");
+
+profileForm?.addEventListener("submit", async (e)=>{
+
+e.preventDefault();
+
+const user = auth.currentUser;
+
+if(!user){
+
+alert("User not logged in.");
+
+return;
+
+}
+
+const fullName = nameInput.value.trim();
+
+const phone = phoneInput.value.trim();
+
+const country = countryInput.value;
+
+const address = addressInput.value.trim();
+
+// Validation
+
+if(fullName.length < 3){
+
+alert("Please enter your full name.");
+
+return;
+
+}
+
+if(phone.length < 10){
+
+alert("Enter a valid phone number.");
+
+return;
+
+}
+
+try{
+
+await update(ref(db,"users/"+user.uid),{
+
+fullName,
+
+phone,
+
+country,
+
+address,
+
+updatedAt:Date.now()
+
+});
+
+alert("Profile updated successfully.");
+
+}catch(error){
+
+console.error(error);
+
+alert(error.message);
+
+}
+
+});
+
+// ======================================
+// EDIT BUTTON
+// ======================================
+
+const editProfileBtn =
+document.getElementById("editProfileBtn");
+
+editProfileBtn?.addEventListener("click",()=>{
+
+nameInput.focus();
+
+});
+
+// ======================================
+// RESET FORM
+// ======================================
+
+const cancelBtn =
+document.querySelector(".cancel-btn");
+
+cancelBtn?.addEventListener("click",()=>{
+
+loadProfile(auth.currentUser);
+
+});
+
+console.log("Profile Part 2 Loaded");
 
