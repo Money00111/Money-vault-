@@ -1,34 +1,3 @@
-body{
-    background: #f1f5f9;
-    font-family: 'Poppins', sans-serif;
-    color: #0f172a;
-}
-
-/* ALL CARDS UNIFIED STYLE */
-.wallet-card,
-.action-card,
-.stat-card,
-.profile-info-card,
-.security-card,
-.support-card{
-    border-radius: 18px;
-    background: #fff;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.08);
-    transition: all 0.3s ease;
-}
-
-.wallet-card:hover,
-.action-card:hover,
-.stat-card:hover{
-    transform: translateY(-6px);
-    box-shadow: 0 15px 40px rgba(0,0,0,0.12);
-}
-
-/* SECTION SPACING */
-section{
-    margin-bottom: 30px;
-}
-
 /* ===========================
    GOOGLE FONT
 =========================== */
@@ -44,9 +13,12 @@ section{
     font-family: 'Poppins', sans-serif;
 }
 
+/* ===========================
+   ROOT BACKGROUND (FINTECH STYLE)
+=========================== */
 body{
-    background: #f8fafc;
-    color: #111827;
+    background: #f1f5f9;
+    color: #0f172a;
     display: flex;
 }
 
@@ -62,18 +34,13 @@ body{
     left: 0;
     top: 0;
     padding: 20px;
-    transition: 0.3s ease;
     overflow-y: auto;
+    transition: 0.3s ease;
 }
 
 .sidebar .logo{
     text-align: center;
     margin-bottom: 30px;
-}
-
-.sidebar .logo h2{
-    font-size: 20px;
-    font-weight: 700;
 }
 
 .sidebar ul{
@@ -88,12 +55,10 @@ body{
     text-decoration: none;
     color: white;
     display: flex;
-    align-items: center;
     gap: 10px;
     padding: 12px;
     border-radius: 10px;
     transition: 0.3s;
-    font-size: 15px;
 }
 
 .sidebar ul li a:hover,
@@ -103,7 +68,7 @@ body{
 }
 
 /* ===========================
-   MAIN CONTENT
+   MAIN
 =========================== */
 .main{
     margin-left: 260px;
@@ -115,78 +80,32 @@ body{
    HEADER
 =========================== */
 header{
-    background: white;
+    background: #fff;
     padding: 15px 20px;
     border-radius: 15px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.05);
-    margin-bottom: 25px;
-}
-
-header h2{
-    font-size: 18px;
-    font-weight: 600;
-}
-
-#menuBtn{
-    background: none;
-    border: none;
-    font-size: 20px;
-    cursor: pointer;
-}
-
-.header-right{
-    display: flex;
-    gap: 15px;
-    font-size: 18px;
-}
-
-.header-right i{
-    cursor: pointer;
-    transition: 0.3s;
-}
-
-.header-right i:hover{
-    color: #2563eb;
-    transform: scale(1.1);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.06);
+    margin-bottom: 20px;
 }
 
 /* ===========================
-   PROFILE HERO
+   PROFILE HERO (BANK STYLE)
 =========================== */
 .profile-hero{
     background: linear-gradient(135deg, #2563eb, #1e3a8a);
-    border-radius: 20px;
     padding: 25px;
+    border-radius: 20px;
     color: white;
-    position: relative;
-    overflow: hidden;
-    margin-bottom: 25px;
-}
-
-.profile-cover{
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    top: 0;
-    left: 0;
-    background: url("../images/bg-pattern.png");
-    opacity: 0.1;
+    margin-bottom: 20px;
+    box-shadow: 0 15px 40px rgba(37,99,235,0.25);
 }
 
 .profile-content{
     display: flex;
     align-items: center;
     gap: 20px;
-    position: relative;
-    z-index: 2;
-}
-
-/* PROFILE IMAGE */
-.profile-image{
-    position: relative;
 }
 
 .profile-image img{
@@ -197,38 +116,7 @@ header h2{
     object-fit: cover;
 }
 
-.profile-image label{
-    position: absolute;
-    bottom: 0;
-    right: 0;
-    background: white;
-    color: #2563eb;
-    width: 25px;
-    height: 25px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    font-size: 12px;
-}
-
-.profile-details h1{
-    font-size: 20px;
-    font-weight: 600;
-}
-
-.profile-details p{
-    font-size: 13px;
-    opacity: 0.9;
-}
-
-.profile-badges{
-    margin-top: 8px;
-    display: flex;
-    gap: 10px;
-}
-
+/* badges */
 .profile-badges span{
     padding: 5px 10px;
     border-radius: 20px;
@@ -236,7 +124,7 @@ header h2{
 }
 
 .vip{
-    background: gold;
+    background: #facc15;
     color: black;
     font-weight: bold;
 }
@@ -246,51 +134,165 @@ header h2{
 }
 
 /* ===========================
-   WALLET GRID
+   GRID SYSTEM (UNIFIED)
 =========================== */
-.wallet-grid{
+.wallet-grid,
+.action-grid,
+.account-stats,
+.security-grid{
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
     gap: 15px;
-    margin-bottom: 25px;
 }
 
-.wallet-card{
-    background: white;
-    padding: 15px;
-    border-radius: 15px;
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+/* desktop */
+.wallet-grid{ grid-template-columns: repeat(4,1fr); }
+.action-grid{ grid-template-columns: repeat(4,1fr); }
+.account-stats{ grid-template-columns: repeat(4,1fr); }
+.security-grid{ grid-template-columns: repeat(3,1fr); }
+
+/* ===========================
+   CARDS (UNIFIED DESIGN)
+=========================== */
+.wallet-card,
+.action-card,
+.stat-card,
+.profile-info-card,
+.security-card,
+.support-card{
+    background: #fff;
+    border-radius: 18px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.08);
     transition: 0.3s;
+    padding: 15px;
 }
 
-.wallet-card:hover{
-    transform: translateY(-5px);
-}
-
-.wallet-card .icon{
-    width: 45px;
-    height: 45px;
-    border-radius: 12px;
-    background: #2563eb;
-    color: white;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+.wallet-card:hover,
+.action-card:hover,
+.stat-card:hover{
+    transform: translateY(-6px);
 }
 
 /* ===========================
-   RESPONSIVE (BASIC)
+   QUICK ACTION ICONS
+=========================== */
+.action-icon{
+    width: 50px;
+    height: 50px;
+    margin: 0 auto 10px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+}
+
+.deposit{ background: #2563eb; }
+.withdraw{ background: #10b981; }
+.history{ background: #f59e0b; }
+.support{ background: #ef4444; }
+
+/* ===========================
+   FORMS
+=========================== */
+.form-grid{
+    display: grid;
+    grid-template-columns: repeat(2,1fr);
+    gap: 15px;
+}
+
+.input-box input,
+.input-box select,
+.input-box textarea{
+    padding: 10px;
+    border-radius: 10px;
+    border: 1px solid #e5e7eb;
+    outline: none;
+}
+
+.input-box input:focus{
+    border-color: #2563eb;
+}
+
+/* ===========================
+   BUTTONS
+=========================== */
+.save-btn{
+    background: #2563eb;
+    color: white;
+    padding: 10px 15px;
+    border-radius: 10px;
+    border: none;
+}
+
+.cancel-btn{
+    background: #f3f4f6;
+    padding: 10px 15px;
+    border-radius: 10px;
+    border: none;
+}
+
+/* ===========================
+   SUPPORT (FINTECH STYLE)
+=========================== */
+.support-card{
+    background: linear-gradient(135deg,#2563eb,#1e3a8a);
+    color: white;
+    text-align: center;
+}
+
+.support-btn{
+    background: white;
+    color: #2563eb;
+    padding: 10px 15px;
+    border-radius: 10px;
+    margin: 5px;
+    display: inline-block;
+}
+
+.whatsapp{
+    background: #10b981;
+    color: white;
+}
+
+/* ===========================
+   BOTTOM NAV
+=========================== */
+.bottom-nav{
+    position: fixed;
+    bottom: 0;
+    left: 260px;
+    right: 0;
+    background: white;
+    display: flex;
+    justify-content: space-around;
+    padding: 10px;
+    box-shadow: 0 -5px 20px rgba(0,0,0,0.05);
+}
+
+.bottom-nav a{
+    text-decoration: none;
+    color: #64748b;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.bottom-nav a.active{
+    color: #2563eb;
+}
+
+/* ===========================
+   RESPONSIVE
 =========================== */
 @media(max-width: 992px){
-    .wallet-grid{
-        grid-template-columns: repeat(2, 1fr);
+    .wallet-grid,
+    .action-grid,
+    .account-stats{
+        grid-template-columns: repeat(2,1fr);
     }
 
-    .sidebar{
-        width: 220px;
+    .security-grid{
+        grid-template-columns: repeat(2,1fr);
     }
 
     .main{
@@ -300,14 +302,16 @@ header h2{
 }
 
 @media(max-width: 600px){
-    .wallet-grid{
+    .wallet-grid,
+    .action-grid,
+    .account-stats,
+    .security-grid{
         grid-template-columns: 1fr;
     }
 
     .sidebar{
-        position: fixed;
         left: -100%;
-        transition: 0.3s;
+        position: fixed;
     }
 
     .sidebar.active{
@@ -324,510 +328,3 @@ header h2{
         text-align: center;
     }
 }
-
-/* ===========================
-   SECTION TITLES
-=========================== */
-.section-title{
-    margin-bottom: 15px;
-}
-
-.section-title h2{
-    font-size: 18px;
-    font-weight: 600;
-}
-
-.section-title p{
-    font-size: 13px;
-    color: #6b7280;
-}
-
-/* ===========================
-   QUICK ACTIONS
-=========================== */
-.quick-actions{
-    margin-bottom: 25px;
-}
-
-.action-grid{
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 15px;
-}
-
-.action-card{
-    background: white;
-    padding: 15px;
-    border-radius: 15px;
-    text-decoration: none;
-    color: #111827;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.05);
-    transition: 0.3s;
-    text-align: center;
-}
-
-.action-card:hover{
-    transform: translateY(-6px);
-    box-shadow: 0 10px 25px rgba(0,0,0,0.08);
-}
-
-.action-icon{
-    width: 50px;
-    height: 50px;
-    margin: 0 auto 10px;
-    border-radius: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-size: 18px;
-}
-
-.deposit{ background: #2563eb; }
-.withdraw{ background: #10b981; }
-.history{ background: #f59e0b; }
-.support{ background: #ef4444; }
-
-/* ===========================
-   PROFILE INFO CARD
-=========================== */
-.profile-info-card{
-    background: white;
-    padding: 20px;
-    border-radius: 15px;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.05);
-    margin-bottom: 25px;
-}
-
-.card-header{
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 15px;
-}
-
-.card-header h2{
-    font-size: 16px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-#editProfileBtn{
-    background: #2563eb;
-    color: white;
-    border: none;
-    padding: 8px 12px;
-    border-radius: 10px;
-    cursor: pointer;
-    transition: 0.3s;
-}
-
-#editProfileBtn:hover{
-    background: #1e3a8a;
-}
-
-/* ===========================
-   FORM GRID
-=========================== */
-.form-grid{
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 15px;
-}
-
-.input-box{
-    display: flex;
-    flex-direction: column;
-}
-
-.input-box label{
-    font-size: 13px;
-    margin-bottom: 5px;
-    color: #6b7280;
-}
-
-.input-box input,
-.input-box select,
-.input-box textarea{
-    padding: 10px;
-    border-radius: 10px;
-    border: 1px solid #e5e7eb;
-    outline: none;
-    transition: 0.3s;
-}
-
-.input-box input:focus,
-.input-box select:focus,
-.input-box textarea:focus{
-    border-color: #2563eb;
-    box-shadow: 0 0 5px rgba(37,99,235,0.2);
-}
-
-.full-width{
-    grid-column: span 2;
-}
-
-/* ===========================
-   FORM BUTTONS
-=========================== */
-.form-buttons{
-    margin-top: 15px;
-    display: flex;
-    justify-content: flex-end;
-    gap: 10px;
-}
-
-.cancel-btn{
-    background: #f3f4f6;
-    border: none;
-    padding: 10px 15px;
-    border-radius: 10px;
-    cursor: pointer;
-}
-
-.save-btn{
-    background: #2563eb;
-    color: white;
-    border: none;
-    padding: 10px 15px;
-    border-radius: 10px;
-    cursor: pointer;
-    transition: 0.3s;
-}
-
-.save-btn:hover{
-    background: #1e3a8a;
-}
-
-/* ===========================
-   ACCOUNT STATS
-=========================== */
-.account-stats{
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 15px;
-    margin-bottom: 25px;
-}
-
-.stat-card{
-    background: white;
-    padding: 15px;
-    border-radius: 15px;
-    text-align: center;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.05);
-    transition: 0.3s;
-}
-
-.stat-card:hover{
-    transform: translateY(-5px);
-}
-
-.stat-card i{
-    font-size: 20px;
-    color: #2563eb;
-    margin-bottom: 10px;
-}
-
-.stat-card h3{
-    font-size: 13px;
-    color: #6b7280;
-}
-
-.stat-card h2{
-    font-size: 16px;
-    font-weight: 600;
-}
-
-/* ===========================
-   RESPONSIVE
-=========================== */
-@media(max-width: 992px){
-    .action-grid{
-        grid-template-columns: repeat(2, 1fr);
-    }
-
-    .account-stats{
-        grid-template-columns: repeat(2, 1fr);
-    }
-
-    .form-grid{
-        grid-template-columns: 1fr;
-    }
-
-    .full-width{
-        grid-column: span 1;
-    }
-}
-
-@media(max-width: 600px){
-    .action-grid{
-        grid-template-columns: 1fr;
-    }
-
-    .account-stats{
-        grid-template-columns: 1fr;
-    }
-
-    .form-buttons{
-        flex-direction: column;
-    }
-}
-
-/* ===========================
-   SECURITY SECTION
-=========================== */
-.security-section{
-    margin-bottom: 25px;
-}
-
-.security-grid{
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 15px;
-}
-
-.security-card{
-    background: white;
-    padding: 15px;
-    border-radius: 15px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.05);
-    transition: 0.3s;
-}
-
-.security-card:hover{
-    transform: translateY(-5px);
-}
-
-.sec-icon{
-    width: 45px;
-    height: 45px;
-    background: #2563eb;
-    color: white;
-    border-radius: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-right: 10px;
-}
-
-.security-card h3{
-    font-size: 14px;
-}
-
-.security-card p{
-    font-size: 12px;
-    color: #6b7280;
-}
-
-/* ===========================
-   SWITCH TOGGLE
-=========================== */
-.switch{
-    position: relative;
-    display: inline-block;
-    width: 40px;
-    height: 20px;
-}
-
-.switch input{
-    opacity: 0;
-    width: 0;
-    height: 0;
-}
-
-.slider{
-    position: absolute;
-    cursor: pointer;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: #ccc;
-    transition: 0.4s;
-    border-radius: 20px;
-}
-
-.slider:before{
-    position: absolute;
-    content: "";
-    height: 14px;
-    width: 14px;
-    left: 3px;
-    bottom: 3px;
-    background-color: white;
-    transition: 0.4s;
-    border-radius: 50%;
-}
-
-.switch input:checked + .slider{
-    background-color: #2563eb;
-}
-
-.switch input:checked + .slider:before{
-    transform: translateX(20px);
-}
-
-/* ===========================
-   SUPPORT CARD
-=========================== */
-.support-card{
-    background: linear-gradient(135deg, #2563eb, #1e3a8a);
-    color: white;
-    padding: 20px;
-    border-radius: 15px;
-    text-align: center;
-    margin-bottom: 25px;
-}
-
-.support-card h2{
-    font-size: 18px;
-}
-
-.support-card p{
-    font-size: 13px;
-    margin-bottom: 15px;
-    opacity: 0.9;
-}
-
-.support-btn{
-    display: inline-block;
-    background: white;
-    color: #2563eb;
-    padding: 10px 15px;
-    border-radius: 10px;
-    text-decoration: none;
-    margin: 5px;
-    transition: 0.3s;
-}
-
-.support-btn:hover{
-    transform: scale(1.05);
-}
-
-.whatsapp{
-    background: #10b981;
-    color: white;
-}
-
-/* ===========================
-   BOTTOM NAVIGATION
-=========================== */
-.bottom-nav{
-    position: fixed;
-    bottom: 0;
-    left: 260px;
-    right: 0;
-    background: white;
-    display: flex;
-    justify-content: space-around;
-    padding: 10px 0;
-    box-shadow: 0 -5px 15px rgba(0,0,0,0.05);
-}
-
-.bottom-nav a{
-    text-decoration: none;
-    color: #6b7280;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    font-size: 12px;
-    transition: 0.3s;
-}
-
-.bottom-nav a i{
-    font-size: 16px;
-}
-
-.bottom-nav a.active,
-.bottom-nav a:hover{
-    color: #2563eb;
-}
-
-/* ===========================
-   SCROLL TO TOP
-=========================== */
-#scrollTop{
-    position: fixed;
-    bottom: 80px;
-    right: 20px;
-    background: #2563eb;
-    color: white;
-    border: none;
-    width: 45px;
-    height: 45px;
-    border-radius: 50%;
-    cursor: pointer;
-    display: none;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-    transition: 0.3s;
-}
-
-#scrollTop:hover{
-    transform: scale(1.1);
-}
-
-/* ===========================
-   FOOTER
-=========================== */
-footer{
-    text-align: center;
-    padding: 20px;
-    font-size: 13px;
-    color: #6b7280;
-    margin-top: 30px;
-}
-
-/* ===========================
-   SMALL ANIMATIONS
-=========================== */
-@keyframes fadeIn{
-    from{
-        opacity: 0;
-        transform: translateY(10px);
-    }
-    to{
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-.profile-hero,
-.wallet-card,
-.action-card,
-.stat-card,
-.profile-info-card{
-    animation: fadeIn 0.6s ease-in-out;
-}
-
-/* ===========================
-   RESPONSIVE FINAL
-=========================== */
-@media(max-width: 992px){
-    .security-grid{
-        grid-template-columns: repeat(2, 1fr);
-    }
-
-    .bottom-nav{
-        left: 220px;
-    }
-}
-
-@media(max-width: 600px){
-    .security-grid{
-        grid-template-columns: 1fr;
-    }
-
-    .bottom-nav{
-        left: 0;
-    }
-
-    .bottom-nav a span{
-        font-size: 10px;
-    }
-   }
