@@ -549,3 +549,206 @@ Verified
      </section>
 
      
+<!-- ===========================
+     Security & Settings
+=========================== -->
+
+<section class="settings-grid">
+
+<div class="settings-card">
+
+<h2>
+<i class="fa-solid fa-shield-halved"></i>
+Security
+</h2>
+
+<div class="setting-item">
+<span>🔒 Change Password</span>
+<button id="changePasswordBtn">Change</button>
+</div>
+
+<div class="setting-item">
+<span>🛡 Two Factor Authentication</span>
+<label class="switch">
+<input type="checkbox" id="twoFactor">
+<span class="slider"></span>
+</label>
+</div>
+
+<div class="setting-item">
+<span>📧 Email Notifications</span>
+<label class="switch">
+<input type="checkbox" checked>
+<span class="slider"></span>
+</label>
+</div>
+
+<div class="setting-item">
+<span>🌙 Dark Mode</span>
+<label class="switch">
+<input type="checkbox" id="darkMode">
+<span class="slider"></span>
+</label>
+</div>
+
+</div>
+
+<div class="settings-card">
+
+<h2>
+<i class="fa-solid fa-circle-info"></i>
+Account Information
+</h2>
+
+<div class="info-row">
+<span>Account ID</span>
+<strong id="accountId">Loading...</strong>
+</div>
+
+<div class="info-row">
+<span>Member Since</span>
+<strong id="joinDate">Loading...</strong>
+</div>
+
+<div class="info-row">
+<span>Last Login</span>
+<strong id="lastLogin">Today</strong>
+</div>
+
+<div class="info-row">
+<span>Account Status</span>
+<strong class="verified-text">Verified ✅</strong>
+</div>
+
+</div>
+
+</section>
+
+<!-- ===========================
+     Customer Support
+=========================== -->
+
+<section class="support-card">
+
+<h2>📞 Need Help?</h2>
+
+<p>
+Our support team is available every day to help you with deposits, withdrawals and account issues.
+</p>
+
+<div class="support-buttons">
+
+<a href="tel:+250788846187" class="call-btn">
+
+<i class="fa-solid fa-phone"></i>
+
+Call Support
+
+</a>
+
+<a href="https://wa.me/250788846187"
+
+target="_blank"
+
+class="whatsapp-btn">
+
+<i class="fa-brands fa-whatsapp"></i>
+
+WhatsApp
+
+</a>
+
+</div>
+
+</section>
+
+<!-- ===========================
+     Bottom Navigation
+=========================== -->
+
+<nav class="bottom-nav">
+
+<a href="dashboard.html">
+
+<i class="fa-solid fa-house"></i>
+
+<span>Home</span>
+
+</a>
+
+<a href="deposit.html">
+
+<i class="fa-solid fa-wallet"></i>
+
+<span>Deposit</span>
+
+</a>
+
+<a href="withdraw.html">
+
+<i class="fa-solid fa-money-bill-transfer"></i>
+
+<span>Withdraw</span>
+
+</a>
+
+<a href="transactions.html">
+
+<i class="fa-solid fa-clock-rotate-left"></i>
+
+<span>History</span>
+
+</a>
+
+<a href="profile.html" class="active">
+
+<i class="fa-solid fa-user"></i>
+
+<span>Profile</span>
+
+</a>
+
+</nav>
+
+<!-- Scroll Button -->
+
+<button id="scrollTopBtn">
+
+<i class="fa-solid fa-arrow-up"></i>
+
+</button>
+
+<!-- Loading -->
+
+<div class="loading-screen" id="loadingScreen">
+
+<div class="loader"></div>
+
+<h3>Loading Profile...</h3>
+
+</div>
+
+<!-- Footer -->
+
+<footer>
+
+<p>
+
+© 2026 <strong>Money Vault</strong>
+
+<br>
+
+Fast • Secure • Trusted
+
+</p>
+
+</footer>
+
+</div>
+
+<!-- Main End -->
+
+<script type="module" src="js/profile.js"></script>
+
+</body>
+</html>
