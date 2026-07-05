@@ -4,7 +4,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
 
 /* ===========================
-   GLOBAL RESET
+   RESET
 =========================== */
 *{
     margin: 0;
@@ -14,259 +14,15 @@
 }
 
 /* ===========================
-   ROOT BACKGROUND (FINTECH STYLE)
+   BODY (FINTECH BACKGROUND)
 =========================== */
 body{
     background: #f1f5f9;
-    font-family: 'Poppins', sans-serif;
     color: #0f172a;
 }
 
-/* ALL CARDS UNIFIED STYLE */
-.wallet-card,
-.action-card,
-.stat-card,
-.profile-info-card,
-.security-card,
-.support-card{
-    border-radius: 18px;
-    background: #fff;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.08);
-    transition: all 0.3s ease;
-}
-
-.wallet-card:hover,
-.action-card:hover,
-.stat-card:hover{
-    transform: translateY(-6px);
-    box-shadow: 0 15px 40px rgba(0,0,0,0.12);
-}
-
-/* SECTION SPACING */
-section{
-    margin-bottom: 30px;
-   }
-h1,h2,h3{
-    color: #0f172a;
-    letter-spacing: 0.3px;
-}
-
-p{
-    color: #64748b;
-   }
-.profile-hero{
-    background: linear-gradient(135deg, #2563eb, #1e40af);
-    padding: 25px;
-    border-radius: 20px;
-    color: white;
-    box-shadow: 0 15px 40px rgba(37,99,235,0.25);
-}
-
-.profile-details h1,
-.profile-details p{
-    color: white;
-}
-
-.vip{
-    background: #facc15;
-    color: #000;
-}
-
-.verified{
-    background: rgba(255,255,255,0.2);
-    color: white;
-   }
-/* Desktop */
-.wallet-grid{ grid-template-columns: repeat(4,1fr); }
-.action-grid{ grid-template-columns: repeat(4,1fr); }
-.account-stats{ grid-template-columns: repeat(4,1fr); }
-.security-grid{ grid-template-columns: repeat(3,1fr); }
-
-/* Tablet */
-@media(max-width: 992px){
-    .wallet-grid,
-    .action-grid,
-    .account-stats{
-        grid-template-columns: repeat(2,1fr);
-    }
-}
-
-/* Mobile */
-@media(max-width: 600px){
-    .wallet-grid,
-    .action-grid,
-    .account-stats,
-    .security-grid{
-        grid-template-columns: 1fr;
-    }
-   }n-bottom: 30px;
-             }
-.support-card{
-    background: linear-gradient(135deg, #2563eb, #1e40af);
-    color: white;
-    text-align: center;
-    padding: 25px;
-}
-
-.support-btn{
-    display: inline-block;
-    padding: 12px 18px;
-    margin: 8px;
-    border-radius: 12px;
-    font-weight: 500;
-    text-decoration: none;
-}
-
-.support-btn{
-    background: white;
-    color: #2563eb;
-}
-
-.support-btn.whatsapp{
-    background: #10b981;
-    color: white;
-}
-.support-card{
-    background: linear-gradient(135deg, #2563eb, #1e40af);
-    color: white;
-    text-align: center;
-    padding: 25px;
-}
-
-.support-btn{
-    display: inline-block;
-    padding: 12px 18px;
-    margin: 8px;
-    border-radius: 12px;
-    font-weight: 500;
-    text-decoration: none;
-}
-
-.support-btn{
-    background: white;
-    color: #2563eb;
-}
-
-.support-btn.whatsapp{
-    background: #10b981;
-    color: white;
-}
 /* ===========================
-   SIDEBAR
-=========================== */
-.sidebar{
-    width: 260px;
-    height: 100vh;
-    background: linear-gradient(180deg, #1e3a8a, #2563eb);
-    color: white;
-    position: fixed;
-    left: 0;
-    top: 0;
-    padding: 20px;
-    overflow-y: auto;
-    transition: 0.3s ease;
-}
-
-.sidebar .logo{
-    text-align: center;
-    margi.wallet-grid,
-.action-grid,
-.account-stats,
-.security-grid{
-    display: grid;
-    gap: 18px;
-.sidebar ul{
-    list-style: none;
-}
-
-.sidebar ul li{
-    margin: 15px 0;
-}
-
-.sidebar ul li a{
-    text-decoration: none;
-    color: white;
-    display: flex;
-    gap: 10px;
-    padding: 12px;
-    border-radius: 10px;
-    transition: 0.3s;
-}
-
-.sidebar ul li a:hover,
-.sidebar ul li a.active{
-    background: rgba(255,255,255,0.15);
-    transform: translateX(5px);
-}
-
-/* ===========================
-   MAIN
-=========================== */
-.main{
-    margin-left: 260px;
-    width: calc(100% - 260px);
-    padding: 20px;
-}
-
-/* ===========================
-   HEADER
-=========================== */
-header{
-    background: #fff;
-    padding: 15px 20px;
-    border-radius: 15px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.06);
-    margin-bottom: 20px;
-}
-
-/* ===========================
-   PROFILE HERO (BANK STYLE)
-=========================== */
-.profile-hero{
-    background: linear-gradient(135deg, #2563eb, #1e3a8a);
-    padding: 25px;
-    border-radius: 20px;
-    color: white;
-    margin-bottom: 20px;
-    box-shadow: 0 15px 40px rgba(37,99,235,0.25);
-}
-
-.profile-content{
-    display: flex;
-    align-items: center;
-    gap: 20px;
-}
-
-.profile-image img{
-    width: 90px;
-    height: 90px;
-    border-radius: 50%;
-    border: 3px solid white;
-    object-fit: cover;
-}
-
-/* badges */
-.profile-badges span{
-    padding: 5px 10px;
-    border-radius: 20px;
-    font-size: 12px;
-}
-
-.vip{
-    background: #facc15;
-    color: black;
-    font-weight: bold;
-}
-
-.verified{
-    background: rgba(255,255,255,0.2);
-}
-
-/* ===========================
-   GRID SYSTEM (UNIFIED)
+   GRID SYSTEM
 =========================== */
 .wallet-grid,
 .action-grid,
@@ -282,8 +38,30 @@ header{
 .account-stats{ grid-template-columns: repeat(4,1fr); }
 .security-grid{ grid-template-columns: repeat(3,1fr); }
 
+/* tablet */
+@media(max-width: 992px){
+    .wallet-grid,
+    .action-grid,
+    .account-stats{
+        grid-template-columns: repeat(2,1fr);
+    }
+    .security-grid{
+        grid-template-columns: repeat(2,1fr);
+    }
+}
+
+/* mobile */
+@media(max-width: 600px){
+    .wallet-grid,
+    .action-grid,
+    .account-stats,
+    .security-grid{
+        grid-template-columns: 1fr;
+    }
+}
+
 /* ===========================
-   CARDS (UNIFIED DESIGN)
+   CARDS (FIXED UNIFIED STYLE)
 =========================== */
 .wallet-card,
 .action-card,
@@ -294,8 +72,8 @@ header{
     background: #fff;
     border-radius: 18px;
     box-shadow: 0 10px 30px rgba(0,0,0,0.08);
-    transition: 0.3s;
     padding: 15px;
+    transition: 0.3s;
 }
 
 .wallet-card:hover,
@@ -305,66 +83,45 @@ header{
 }
 
 /* ===========================
-   QUICK ACTION ICONS
+   COLORS FIX (IMPORTANT)
 =========================== */
-.action-icon{
-    width: 50px;
-    height: 50px;
-    margin: 0 auto 10px;
-    border-radius: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+.action-icon.deposit{ background:#2563eb; }
+.action-icon.withdraw{ background:#10b981; }
+.action-icon.history{ background:#f59e0b; }
+.action-icon.support{ background:#ef4444; }
+
+/* ===========================
+   PROFILE HERO (WORKING COLORS)
+=========================== */
+.profile-hero{
+    background: linear-gradient(135deg,#2563eb,#1e3a8a);
+    color: white;
+    padding: 25px;
+    border-radius: 20px;
+    box-shadow: 0 15px 40px rgba(37,99,235,0.25);
+}
+
+.profile-details h1,
+.profile-details p{
     color: white;
 }
 
-.deposit{ background: #2563eb; }
-.withdraw{ background: #10b981; }
-.history{ background: #f59e0b; }
-.support{ background: #ef4444; }
-
-/* ===========================
-   FORMS
-=========================== */
-.form-grid{
-    display: grid;
-    grid-template-columns: repeat(2,1fr);
-    gap: 15px;
+.vip{
+    background: #facc15;
+    color: black;
+    padding: 4px 10px;
+    border-radius: 20px;
 }
 
-.input-box input,
-.input-box select,
-.input-box textarea{
-    padding: 10px;
-    border-radius: 10px;
-    border: 1px solid #e5e7eb;
-    outline: none;
-}
-
-.input-box input:focus{
-    border-color: #2563eb;
-}
-
-/* ===========================
-   BUTTONS
-=========================== */
-.save-btn{
-    background: #2563eb;
+.verified{
+    background: rgba(255,255,255,0.2);
     color: white;
-    padding: 10px 15px;
-    border-radius: 10px;
-    border: none;
-}
-
-.cancel-btn{
-    background: #f3f4f6;
-    padding: 10px 15px;
-    border-radius: 10px;
-    border: none;
+    padding: 4px 10px;
+    border-radius: 20px;
 }
 
 /* ===========================
-   SUPPORT (FINTECH STYLE)
+   SUPPORT CARD (FIXED)
 =========================== */
 .support-card{
     background: linear-gradient(135deg,#2563eb,#1e3a8a);
@@ -373,15 +130,16 @@ header{
 }
 
 .support-btn{
-    background: white;
-    color: #2563eb;
+    display: inline-block;
     padding: 10px 15px;
     border-radius: 10px;
     margin: 5px;
-    display: inline-block;
+    text-decoration: none;
+    background: white;
+    color: #2563eb;
 }
 
-.whatsapp{
+.support-btn.whatsapp{
     background: #10b981;
     color: white;
 }
@@ -411,52 +169,4 @@ header{
 
 .bottom-nav a.active{
     color: #2563eb;
-}
-
-/* ===========================
-   RESPONSIVE
-=========================== */
-@media(max-width: 992px){
-    .wallet-grid,
-    .action-grid,
-    .account-stats{
-        grid-template-columns: repeat(2,1fr);
-    }
-
-    .security-grid{
-        grid-template-columns: repeat(2,1fr);
-    }
-
-    .main{
-        margin-left: 220px;
-        width: calc(100% - 220px);
-    }
-}
-
-@media(max-width: 600px){
-    .wallet-grid,
-    .action-grid,
-    .account-stats,
-    .security-grid{
-        grid-template-columns: 1fr;
-    }
-
-    .sidebar{
-        left: -100%;
-        position: fixed;
-    }
-
-    .sidebar.active{
-        left: 0;
-    }
-
-    .main{
-        margin-left: 0;
-        width: 100%;
-    }
-
-    .profile-content{
-        flex-direction: column;
-        text-align: center;
-    }
 }
