@@ -1,90 +1,51 @@
-import {
-  ref,
-  get,
-  update
-} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
+.vip-section{
+  padding:20px;
+}
 
-import { auth, db } from "./firebase.js";
+.vip-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
+  gap:15px;
+}
 
-// ===============================
-// VIP PLANS
-// ===============================
-const vipPlans = {
-  "VIP 1": { price: 10000, daily: 500 },
-  "VIP 2": { price: 25000, daily: 1500 },
-  "VIP 3": { price: 50000, daily: 3500 },
-  "VIP 4": { price: 100000, daily: 8000 }
-};
+.vip-card{
+  padding:18px;
+  border-radius:16px;
+  color:white;
+  text-align:center;
+  cursor:pointer;
+  transition:0.3s;
 
-// ===============================
-// BUY VIP
-// ===============================
-window.buyVIP = async (vipName) => {
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
 
-  const user = auth.currentUser;
-  if (!user) return;
+  box-shadow:0 8px 20px rgba(0,0,0,0.3);
+}
 
-  const plan = vipPlans[vipName];
+.vip-card h3{
+  margin:5px 0;
+  font-size:18px;
+}
 
-  const userRef = ref(db, "users/" + user.uid);
-  const snap = await get(userRef);
+.vip-card .price{
+  font-size:16px;
+  font-weight:bold;
+  margin:5px 0;
+}
 
-  if (!snap.exists()) return;
+.vip-card .income{
+  font-size:14px;
+  opacity:0.9;
+}
 
-  const data = snap.val();
+.vip-card:hover{
+  transform:scale(1.05);
+}
 
-  if (data.balance < plan.price) {
-    alert("Not enough balance");
-    return;
-  }
-
-  const newBalance = data.balance - plan.price;
-
-  const expireTime = Date.now() + (30 * 24 * 60 * 60 * 1000);
-
-  await update(userRef, {
-    balance: newBalance,
-    vip: vipName,
-    vipActive: true,
-    dailyEarning: plan.daily,
-    vipExpire: expireTime
-  });
-
-  alert("VIP Activated Successfully!");
-};
-
-// ===============================
-// DAILY EARNINGS SYSTEM
-// ===============================
-setInterval(async () => {
-
-  const user = auth.currentUser;
-  if (!user) return;
-
-  const userRef = ref(db, "users/" + user.uid);
-  const snap = await get(userRef);
-
-  if (!snap.exists()) return;
-
-  const data = snap.val();
-
-  if (!data.vipActive) return;
-
-  const now = Date.now();
-
-  if (data.vipExpire && now > data.vipExpire) {
-    await update(userRef, {
-      vip: "VIP 0",
-      vipActive: false,
-      dailyEarning: 0
-    });
-    return;
-  }
-
-  const newBalance = (data.balance || 0) + (data.dailyEarning || 0);
-
-  await update(userRef, {
-    balance: newBalance
-  });
-
-}, 24 * 60 * 60 * 1000); // every day
+/* COLORS */
+.vip1{background:linear-gradient(135deg,#1e3a8a,#3b82f6);}
+.vip2{background:linear-gradient(135deg,#065f46,#10b981);}
+.vip3{background:linear-gradient(135deg,#7c2d12,#f97316);}
+.vip4{background:linear-gradient(135deg,#4c1d95,#a855f7);}
