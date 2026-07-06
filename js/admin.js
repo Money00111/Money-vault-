@@ -1,156 +1,230 @@
-import { db } from "./firebase.js";
-window.approveDep = async (id) => {
+import { auth, db } from "../firebase.js";
 
-  const depRef = ref(db, "depositRequests/" + id);
+import {
+  onAuthStateChanged,
+  signOut
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-  const snap = await get(depRef);
-  const data = snap.val();
+import {
+  collection,
+  query,
+  where,
+  getDocs,
+  updateDoc,
+  doc,
+  getDoc
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-  if (!data) return;
+const content = document.getElementById("content");
+const title = document.getElementById("title");
 
-  // 1. mark approved
-  await update(depRef, {
-    status: "approved"
+// =======================
+// ADMIN CHECK
+// =======================
+onAuthStateChanged(auth, async (user) => {
+
+  if (!user) {
+    window.location.href = "../login.html";
+    return;
+  }
+
+  // 👉 SIMPLE ADMIN CHECK (change email)
+  if (user.email !== "admin@moneyvault.com") {
+    alert("Not admin");
+    await signOut(auth);
+    return;
+  }
+
+  loadDeposits();
+});
+
+// =======================
+// TABS
+// =======================
+document.querySelectorAll(".tab-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+
+    document.querySelectorAll(".tab-btn")
+    .forEach(b => b.classList.remove("active"));
+
+    btn.classList.add("active");
+
+    const tab = btn.dataset.tab;
+
+    if (tab === "deposits") loadDeposits();
+    if (tab === "withdraws") loadWithdraws();
+    if (tab === "users") loadUsers();
+
   });
+});
 
-  // 2. add balance to user
-  const userRef = ref(db, "users/" + data.uid);
+// =======================
+// DEPOSITS
+// =======================
+async function loadDeposits() {
 
-  const userSnap = await get(userRef);
-  const userData = userSnap.val();
+  title.innerText = "Deposits";
 
-  const currentBalance = userData?.balance || 0;
+  const q = query(collection(db, "deposits"));
 
-  await update(userRef, {
-    balance: currentBalance + data.amount
-  });
+  const snap = await getDocs(q);
 
-  alert("Deposit approved + balance updated");
-};
-const depositRef = ref(db, "depositRequests");
+  content.innerHTML = "";
 
-onValue(depositRef, (snapshot) => {
-  const data = snapshot.val();
-  const list = document.getElementById("depositList");
+  snap.forEach(docSnap => {
 
-  list.innerHTML = "";
+    const d = docSnap.data();
 
-  for (let id in data) {
-    const d = data[id];
-
-    list.innerHTML += `
-      <div style="border:1px solid #ccc; padding:10px; margin:10px;">
+    content.innerHTML += `
+      <div class="card">
+        <p>User: ${d.userId}</p>
         <p>Amount: ${d.amount}</p>
-        <p>Number: ${d.number}</p>
-        <p>Method: ${d.method}</p>
         <p>Status: ${d.status}</p>
 
-        <button onclick="approveDeposit('${id}')">Approve</button>
-        <button onclick="rejectDeposit('${id}')">Reject</button>
+        <button onclick="approveDeposit('${docSnap.id}','${d.userId}',${d.amount})">
+          Approve
+        </button>
+
+        <button onclick="rejectDeposit('${docSnap.id}')">
+          Reject
+        </button>
       </div>
     `;
-  }
   });
-  const withdrawRef = ref(db, "withdrawRequests");
+}
 
-onValue(withdrawRef, (snapshot) => {
-  const data = snapshot.val();
-  const list = document.getElementById("withdrawList");
+// =======================
+// WITHDRAWS
+// =======================
+async function loadWithdraws() {
 
-  list.innerHTML = "";
+  title.innerText = "Withdraws";
 
-  for (let id in data) {
-    const w = data[id];
+  const q = query(collection(db, "withdraws"));
 
-    list.innerHTML += `
-      <div style="border:1px solid #ccc; padding:10px; margin:10px;">
-        <p>Amount: ${w.amount}</p>
-        <p>Number: ${w.number}</p>
-        <p>Method: ${w.method}</p>
-        <p>Status: ${w.status}</p>
+  const snap = await getDocs(q);
 
-        <button onclick="approveWithdraw('${id}')">Approve</button>
-        <button onclick="rejectWithdraw('${id}')">Reject</button>
+  content.innerHTML = "";
+
+  snap.forEach(docSnap => {
+
+    const d = docSnap.data();
+
+    content.innerHTML += `
+      <div class="card">
+        <p>User: ${d.userId}</p>
+        <p>Amount: ${d.amount}</p>
+        <p>Status: ${d.status}</p>
+
+        <button onclick="approveWithdraw('${docSnap.id}','${d.userId}',${d.amount})">
+          Approve
+        </button>
+
+        <button onclick="rejectWithdraw('${docSnap.id}')">
+          Reject
+        </button>
       </div>
     `;
-  }
-});
-  window.approveDeposit = async function(id){
-  await update(ref(db, "depositRequests/" + id), {
-    status: "approved"
   });
-};
-window.approveW = async (id) => {
+}
 
-  const wRef = ref(db, "withdrawRequests/" + id);
+// =======================
+// USERS
+// =======================
+async function loadUsers() {
 
-  const snap = await get(wRef);
-  const data = snap.val();
+  title.innerText = "Users";
 
-  if (!data) return;
+  const q = query(collection(db, "users"));
 
-  // 1. mark approved
-  await update(wRef, {
-    status: "approved"
+  const snap = await getDocs(q);
+
+  content.innerHTML = "";
+
+  snap.forEach(docSnap => {
+
+    const u = docSnap.data();
+
+    content.innerHTML += `
+      <div class="card">
+        <p>Name: ${u.fullName}</p>
+        <p>Balance: ${u.balance}</p>
+        <p>VIP: ${u.vip}</p>
+      </div>
+    `;
   });
+}
 
-  // 2. reduce user balance
-  const userRef = ref(db, "users/" + data.uid);
+// =======================
+// APPROVE DEPOSIT
+// =======================
+window.approveDeposit = async (id, userId, amount) => {
 
-  const userSnap = await get(userRef);
-  const userData = userSnap.val();
-
-  const currentBalance = userData?.balance || 0;
-
-  await update(userRef, {
-    balance: currentBalance - data.amount
-  });
-
-  alert("Withdraw approved + balance updated");
-};
-window.rejectDeposit = async function(id){
-  await update(ref(db, "depositRequests/" + id), {
-    status: "rejected"
-  });
-};
-
-window.approveWithdraw = async function(id){
-  await update(ref(db, "withdrawRequests/" + id), {
-    status: "approved"
-  });
-};
-
-window.rejectWithdraw = async function(id){
-  await update(ref(db, "withdrawRequests/" + id), {
-    status: "rejected"
-  });
-};
-window.approveW = async (id) => {
-
-  const wRef = ref(db, "withdrawRequests/" + id);
-
-  const snap = await get(wRef);
-  const data = snap.val();
-
-  if (!data) return;
-
-  // 1. mark approved
-  await update(wRef, {
-    status: "approved"
+  await updateDoc(doc(db, "deposits", id), {
+    status: "Approved"
   });
 
-  // 2. reduce user balance
-  const userRef = ref(db, "users/" + data.uid);
+  const userRef = doc(db, "users", userId);
+  const userSnap = await getDoc(userRef);
 
-  const userSnap = await get(userRef);
-  const userData = userSnap.val();
+  const current = userSnap.data().balance || 0;
 
-  const currentBalance = userData?.balance || 0;
-
-  await update(userRef, {
-    balance: currentBalance - data.amount
+  await updateDoc(userRef, {
+    balance: current + Number(amount)
   });
 
-  alert("Withdraw approved + balance updated");
+  alert("Deposit Approved");
 };
 
+// =======================
+// REJECT DEPOSIT
+// =======================
+window.rejectDeposit = async (id) => {
+
+  await updateDoc(doc(db, "deposits", id), {
+    status: "Rejected"
+  });
+
+  alert("Deposit Rejected");
+};
+
+// =======================
+// APPROVE WITHDRAW
+// =======================
+window.approveWithdraw = async (id, userId, amount) => {
+
+  await updateDoc(doc(db, "withdraws", id), {
+    status: "Approved"
+  });
+
+  const userRef = doc(db, "users", userId);
+  const userSnap = await getDoc(userRef);
+
+  const current = userSnap.data().balance || 0;
+
+  await updateDoc(userRef, {
+    balance: current - Number(amount)
+  });
+
+  alert("Withdraw Approved");
+};
+
+// =======================
+// REJECT WITHDRAW
+// =======================
+window.rejectWithdraw = async (id) => {
+
+  await updateDoc(doc(db, "withdraws", id), {
+    status: "Rejected"
+  });
+
+  alert("Withdraw Rejected");
+};
+
+// =======================
+// LOGOUT
+// =======================
+document.getElementById("logoutBtn").onclick = async () => {
+  await signOut(auth);
+  window.location.href = "../login.html";
+};
