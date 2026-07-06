@@ -215,4 +215,234 @@ USERS TABLE
 
              </section>
 
-  
+  <!-- ===========================
+DEPOSITS
+=========================== -->
+
+<section id="deposits" class="table-section">
+
+<h2>Deposit Requests</h2>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>User</th>
+
+<th>Amount</th>
+
+<th>Method</th>
+
+<th>Date</th>
+
+<th>Status</th>
+
+<th>Action</th>
+
+</tr>
+
+</thead>
+
+<tbody id="depositTable">
+
+<!-- JavaScript -->
+
+</tbody>
+
+</table>
+
+</section>
+
+<!-- ===========================
+WITHDRAW REQUESTS
+=========================== -->
+
+<section id="withdraws" class="table-section">
+
+<h2>Withdrawal Requests</h2>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>User</th>
+
+<th>Amount</th>
+
+<th>Method</th>
+
+<th>Date</th>
+
+<th>Status</th>
+
+<th>Action</th>
+
+</tr>
+
+</thead>
+
+<tbody id="withdrawTable">
+
+<!-- JavaScript -->
+
+</tbody>
+
+</table>
+
+</section>
+
+<!-- ===========================
+VIP MANAGEMENT
+=========================== -->
+
+<section id="vip" class="table-section">
+
+<h2>VIP Members</h2>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>User</th>
+
+<th>VIP Level</th>
+
+<th>Balance</th>
+
+<th>Purchase Date</th>
+
+<th>Action</th>
+
+</tr>
+
+</thead>
+
+<tbody id="vipTable">
+
+<!-- JavaScript -->
+
+</tbody>
+
+</table>
+
+</section>
+
+<!-- ===========================
+ANNOUNCEMENT
+=========================== -->
+
+<section id="announcement" class="table-section">
+
+<h2>Send Announcement</h2>
+
+<form id="announcementForm">
+
+<textarea
+id="announcementText"
+placeholder="Write announcement here..."
+required>
+</textarea>
+
+<button type="submit">
+
+<i class="fas fa-paper-plane"></i>
+
+Send Announcement
+
+</button>
+
+</form>
+
+</section>
+
+<!-- ===========================
+SETTINGS
+=========================== -->
+
+<section id="settings" class="table-section">
+
+<h2>System Settings</h2>
+
+<div class="settings-grid">
+
+<div class="setting-card">
+
+<h3>Deposit Number</h3>
+
+<input
+type="text"
+id="depositNumber"
+placeholder="078xxxxxxx">
+
+<button id="saveDeposit">
+
+Save
+
+</button>
+
+</div>
+
+<div class="setting-card">
+
+<h3>Withdraw Fee (%)</h3>
+
+<input
+type="number"
+id="withdrawFee"
+placeholder="10">
+
+<button id="saveFee">
+
+Save
+
+</button>
+
+</div>
+
+<div class="setting-card">
+
+<h3>Minimum Withdraw</h3>
+
+<input
+type="number"
+id="minimumWithdraw"
+placeholder="5000">
+
+<button id="saveMinimum">
+
+Save
+
+</button>
+
+</div>
+
+</div>
+
+</section>
+
+<!-- ===========================
+FOOTER
+=========================== -->
+
+<footer>
+
+<p>
+
+© 2026 Money Vault Admin Panel
+
+</p>
+
+</footer>
+
+</div>
+
+<script type="module" src="js/admin.js"></script>
+
+</body>
+</html>
