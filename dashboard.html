@@ -6,519 +6,79 @@
 <title>Money Vault Dashboard</title>
 
 <link rel="stylesheet" href="css/dashboard.css">
+<link rel="stylesheet" href="css/vip.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-
 </head>
 
 <body>
 
-<!-- Sidebar -->
-
+<!-- SIDEBAR -->
 <div id="sidebar" class="sidebar">
-
-<div class="logo">
-<h2>💰 Money Vault</h2>
+  <h2>💰 Money Vault</h2>
+  <a href="dashboard.html">Dashboard</a>
+  <a href="deposit.html">Deposit</a>
+  <a href="withdraw.html">Withdraw</a>
+  <a href="vip.html">VIP</a>
+  <a href="#" id="logoutBtn">Logout</a>
 </div>
 
-<ul>
-
-<li><a href="dashboard.html"><i class="fa fa-home"></i> Dashboard</a></li>
-
-<li><a href="deposit.html"><i class="fa fa-wallet"></i> Deposit</a></li>
-
-<li><a href="withdraw.html"><i class="fa fa-money-bill"></i> Withdraw</a></li>
-
-<li><a href="vip.html"><i class="fa fa-crown"></i> VIP Plans</a></li>
-
-<li><a href="referral.html"><i class="fa fa-users"></i> Referral</a></li>
-
-<li><a href="transactions.html"><i class="fa fa-list"></i> Transactions</a></li>
-
-<li><a href="profile.html"><i class="fa fa-user"></i> Profile</a></li>
-
-<li><a href="settings.html"><i class="fa fa-gear"></i> Settings</a></li>
-
-<li><a href="#" id="logoutBtn"><i class="fa fa-right-from-bracket"></i> Logout</a></li>
-
-</ul>
-
-</div>
-
-<!-- Main -->
-
+<!-- MAIN -->
 <div class="main">
 
-<!-- Header -->
-
 <header>
-
-<button id="menuBtn">
-<i class="fa fa-bars"></i>
-</button>
-
-<h2>Dashboard</h2>
-
-<div class="header-right">
-
-<i class="fa fa-bell notification"></i>
-
-<img src="assets/images/user.png" class="profile">
-
-</div>
-
+  <button id="menuBtn"><i class="fa fa-bars"></i></button>
+  <h2>Dashboard</h2>
 </header>
 
-<!-- Welcome -->
-
 <section class="welcome">
-
-<h3>Welcome Back 👋</h3>
-
-<p id="username">Loading...</p>
-
+  <h3>Welcome 👋</h3>
+  <p id="username">Loading...</p>
 </section>
 
-<!-- Wallet Card -->
-
+<!-- BALANCE -->
 <section class="wallet-card">
+  <h1 id="balanceBox">0 RWF</h1>
+  <p id="vipStatus">Inactive</p>
+</section>
 
-<h2>Total Balance</h2>
-
-<h1 id="balanceBox">0 RWF</h1>
-
-<div class="wallet-grid">
-
-<div>
-<h4>VIP</h4>
-<p id="vipLevel">VIP 0</p>
-</div>
-
-<div>
-<h4>Referral</h4>
-<p id="refBonus">0 RWF</p>
-</div>
-
-<div>
-<h4>Deposit</h4>
-<p id="depositTotal">0 RWF</p>
-</div>
-
-<div>
-<h4>Withdraw</h4>
-<p id="withdrawTotal">0 RWF</p>
-</div>
-
-</div>
-<!-- ========================= VIP PLANS ========================= -->
+<!-- VIP PLANS -->
 <section class="vip-section">
-
-  <h2>💎 VIP Plans</h2>
+  <h2>VIP Plans</h2>
 
   <div class="vip-grid">
 
     <div class="vip-card vip1" onclick="buyVIP('VIP 1')">
-      <h3>VIP 1</h3>
-      <p>💰 10,000 RWF</p>
-      <p>📈 +500 / day</p>
+      VIP 1<br>10,000 RWF<br>+500/day
     </div>
 
     <div class="vip-card vip2" onclick="buyVIP('VIP 2')">
-      <h3>VIP 2</h3>
-      <p>💰 25,000 RWF</p>
-      <p>📈 +1,500 / day</p>
+      VIP 2<br>25,000 RWF<br>+1500/day
     </div>
 
     <div class="vip-card vip3" onclick="buyVIP('VIP 3')">
-      <h3>VIP 3</h3>
-      <p>💰 50,000 RWF</p>
-      <p>📈 +3,500 / day</p>
+      VIP 3<br>50,000 RWF<br>+3500/day
     </div>
 
     <div class="vip-card vip4" onclick="buyVIP('VIP 4')">
-      <h3>VIP 4</h3>
-      <p>💰 100,000 RWF</p>
-      <p>📈 +8,000 / day</p>
+      VIP 4<br>100,000 RWF<br>+8000/day
     </div>
 
   </div>
-
-                       </section>
-
-  </div>
-
-   </section>me 
-
 </section>
 
-<!-- Quick Actions -->
-
-<section class="actions">
-
-<a href="deposit.html" class="action">
-<i class="fa fa-wallet"></i>
-<span>Deposit</span>
-</a>
-
-<a href="withdraw.html" class="action">
-<i class="fa fa-money-bill-transfer"></i>
-<span>Withdraw</span>
-</a>
-
-<a href="vip.html" class="action">
-<i class="fa fa-crown"></i>
-<span>VIP</span>
-</a>
-
-<a href="referral.html" class="action">
-<i class="fa fa-user-group"></i>
-<span>Referral</span>
-</a>
-
-<a href="transactions.html" class="action">
-<i class="fa fa-clock-rotate-left"></i>
-<span>History</span>
-</a>
-
-<a href="profile.html" class="action">
-<i class="fa fa-user"></i>
-<span>Profile</span>
-</a>
-
-   <!-- Announcement -->
-
-<section class="announcement">
-
-<div class="announce-card">
-
-<h3>📢 Announcement</h3>
-
-<p>
-Welcome to <strong>Money Vault</strong>.<br>
-Buy at least <strong>VIP 1</strong> to unlock Withdraw.
-Minimum withdraw balance is <strong>2,000 RWF</strong>.
-</p>
-
-</div>
-
+<!-- STATS -->
+<section>
+  <p>Deposit: <span id="depositTotal">0</span></p>
+  <p>Withdraw: <span id="withdrawTotal">0</span></p>
+  <p>Referral: <span id="refBonus">0</span></p>
+  <p>Earnings: <span id="earningsBox">0</span></p>
 </section>
 
-
-<!-- VIP Plans Preview -->
-
-<section class="vip-section">
-
-<h2>👑 VIP Plans</h2>
-
-<div class="vip-container">
-
-<div class="vip-card">
-
-<h3>VIP 1</h3>
-
-<p class="price">5,000 RWF</p>
-
-<p>Daily Income</p>
-
-<h4>300 RWF</h4>
-
-<button id="vip1Btn">Buy Now</button>
+<!-- NOTIFICATIONS -->
+<div id="notificationList"></div>
 
 </div>
-
-
-<div class="vip-card">
-
-<h3>VIP 2</h3>
-
-<p class="price">10,000 RWF</p>
-
-<p>Daily Income</p>
-
-<h4>650 RWF</h4>
-
-<button id="vip2Btn">Buy Now</button>
-
-</div>
-
-
-<div class="vip-card">
-
-<h3>VIP 3</h3>
-
-<p class="price">20,000 RWF</p>
-
-<p>Daily Income</p>
-
-<h4>1,400 RWF</h4>
-
-<button id="vip3Btn">Buy Now</button>
-
-</div>
-
-</div>
-
-<div class="view-all">
-
-<a href="vip.html">
-
-View All VIP Plans →
-
-</a>
-
-</div>
-
-</section>
-
-
-
-<!-- Recent Transactions -->
-
-<section class="transactions">
-
-<h2>📜 Recent Transactions</h2>
-
-<div id="transactionList">
-
-<div class="transaction">
-
-<div>
-
-<h4>Registration Bonus</h4>
-
-<p>+500 RWF</p>
-
-</div>
-
-<span class="success">
-
-Completed
-
-</span>
-
-</div>
-
-
-<div class="transaction">
-
-<div>
-
-<h4>Deposit</h4>
-
-<p>Pending</p>
-
-</div>
-
-<span class="pending">
-
-Pending
-
-</span>
-
-</div>
-
-
-<div class="transaction">
-
-<div>
-
-<h4>Withdraw</h4>
-
-<p>No Request</p>
-
-</div>
-
-<span class="waiting">
-
-Waiting
-
-</span>
-
-</div>
-
-</div>
-
-</section>
-
-
-
-<!-- Statistics -->
-
-<section class="stats">
-
-<div class="stat-card">
-
-<h3>Total Earnings</h3>
-
-<h2 id="earningsBox">
-
-500 RWF
-
-</h2>
-
-</div>
-
-
-<div class="stat-card">
-
-<h3>Referral Bonus</h3>
-
-<h2 id="referralBox">
-
-0 RWF
-
-</h2>
-
-</div>
-
-
-<div class="stat-card">
-
-<h3>VIP Status</h3>
-
-<h2 id="vipStatus">
-
-Inactive
-
-</h2>
-
-</div>
-
-</section>                                                                      </section>
-
-   <!-- Referral Preview -->
-
-<section class="referral-section">
-
-<div class="referral-card">
-
-<h2>👥 Referral Program</h2>
-
-<p>Invite friends and earn <strong>50 RWF</strong> after they buy VIP 1.</p>
-
-<div class="referral-info">
-
-<div>
-<h3 id="refCount">0</h3>
-<p>Friends</p>
-</div>
-
-<div>
-<h3 id="refBonusAmount">0 RWF</h3>
-<p>Bonus</p>
-</div>
-
-</div>
-
-<a href="referral.html" class="primary-btn">
-Invite Friends
-</a>
-
-</div>
-
-</section>
-
-
-<!-- Notifications -->
-
-<section class="notification-section">
-
-<h2>🔔 Notifications</h2>
-
-<div id="notificationList">
-
-<div class="notification-card">
-✅ Welcome to Money Vault
-</div>
-
-<div class="notification-card">
-🎁 Registration Bonus: 500 RWF
-</div>
-
-<div class="notification-card">
-👑 Buy VIP 1 to unlock Withdraw.
-</div>
-
-</div>
-
-</section>
-
-
-<!-- Support -->
-
-<section class="support-section">
-
-<div class="support-card">
-
-<h2>📞 Customer Support</h2>
-
-<p>Need help? Contact our support team anytime.</p>
-
-<a href="support.html" class="primary-btn">
-
-Contact Support
-
-</a>
-
-</div>
-
-</section>
-
-
-<!-- Bottom Navigation -->
-
-<nav class="bottom-nav">
-
-<a href="dashboard.html" class="active">
-
-<i class="fa fa-house"></i>
-
-<span>Home</span>
-
-</a>
-
-
-<a href="wallet.html">
-
-<i class="fa fa-wallet"></i>
-
-<span>Wallet</span>
-
-</a>
-
-
-<a href="vip.html">
-
-<i class="fa fa-crown"></i>
-
-<span>VIP</span>
-
-</a>
-
-
-<a href="team.html">
-
-<i class="fa fa-users"></i>
-
-<span>Team</span>
-
-</a>
-
-
-<a href="profile.html">
-
-<i class="fa fa-user"></i>
-
-<span>Profile</span>
-
-</a>
-
-</nav>
-
 
 <script type="module" src="js/dashboard.js"></script>
-
-</div>
-<!-- End Main -->
-
 </body>
-   </html>
+  </html>
