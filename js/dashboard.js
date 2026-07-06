@@ -16,6 +16,110 @@ import {
   getDoc
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
+import { auth, db } from "./firebase.js";
+
+import {
+  ref,
+  get,
+  update
+} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
+
+// ===============================
+// VIP PLANS
+// ===============================
+const vipPlans = {
+  "VIP 1": { price: 10000, daily: 500 },
+  "VIP 2": { price: 25000, daily: 1500 },
+  "VIP 3": { price: 50000, daily: 3500 },
+  "VIP 4": { price: 100000, daily: 8000 }
+};
+
+// ===============================
+// BUY VIP FUNCTION
+// ===============================
+window.buyVIP = async (vipName) => {
+
+  const user = auth.currentUser;
+
+  if (!user) {
+    alert("Login first");
+    return;
+  }
+
+  const plan = vipPlans[vipName];
+  const userRef = ref(db, "users/" + user.uid);
+
+  const snap = await get(userRef);
+
+  if (!snap.exists()) {
+    alert("User not found");
+    return;
+  }
+
+  const data = snap.val();
+
+  // ❌ CHECK BALANCE
+  if ((data.balance || 0) < plan.price) {
+    alert("❌ Not enough balance");
+    return;
+  }
+
+  // 💰 NEW BALANCE
+  const newBalance = (data.balance || 0) - plan.price;
+
+  // ⏳ VIP ACTIVE (30 days)
+  const expire = Date.now() + 30 * 24 * 60 * 60 * 1000;
+
+  await update(userRef, {
+    balance: newBalance,
+    vip: vipName,
+    vipActive: true,
+    dailyEarning: plan.daily,
+    vipExpire: expire
+  });
+
+  alert("💎 VIP Activated Successfully!");
+};
+
+// ===============================
+// DAILY EARNING SYSTEM
+// ===============================
+setInterval(async () => {
+
+  const user = auth.currentUser;
+  if (!user) return;
+
+  const userRef = ref(db, "users/" + user.uid);
+  const snap = await get(userRef);
+
+  if (!snap.exists()) return;
+
+  const data = snap.val();
+
+  if (!data.vipActive) return;
+
+  // ❌ EXPIRED VIP CHECK
+  if (data.vipExpire && Date.now() > data.vipExpire) {
+
+    await update(userRef, {
+      vip: "VIP 0",
+      vipActive: false,
+      dailyEarning: 0
+    });
+
+    alert("VIP expired");
+    return;
+  }
+
+  // 💰 ADD DAILY MONEY
+  const newBalance =
+    (data.balance || 0) + (data.dailyEarning || 0);
+
+  await update(userRef, {
+    balance: newBalance
+  });
+
+}, 60000); // test every 1 min (for testing)
 // Firebase Config
 // Shyiramo config yawe hano niba utarayishyira muri firebase.js
 import { app } from "./firebase.js";
