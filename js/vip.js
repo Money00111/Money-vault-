@@ -347,3 +347,135 @@ onAuthStateChanged(auth,(user)=>{
 console.log("VIP Part 3 Loaded");
 
 
+// ======================================
+// VIP.JS - PART 4
+// COMPLETE VIP SYSTEM
+// ======================================
+
+// VIP Levels
+const vipLevels = {
+
+    "VIP 1":1,
+    "VIP 2":2,
+    "VIP 3":3,
+    "VIP 4":4,
+    "VIP 5":5
+
+};
+
+// Daily Income
+const vipReward = {
+
+    "VIP 1":600,
+    "VIP 2":1700,
+    "VIP 3":3600,
+    "VIP 4":7500,
+    "VIP 5":20000
+
+};
+
+// ======================================
+// CHECK VIP LEVEL
+// ======================================
+
+function canBuyVip(currentVip,newVip){
+
+    const currentLevel = vipLevels[currentVip] || 0;
+
+    const newLevel = vipLevels[newVip] || 0;
+
+    return newLevel > currentLevel;
+
+}
+
+// ======================================
+// AFTER BUY SUCCESS
+// ======================================
+
+async function activateVip(user,vipName,price,balance){
+
+    const userRef = ref(db,"users/"+user.uid);
+
+    await update(userRef,{
+
+        vip:vipName,
+
+        balance:balance-price,
+
+        vipLevel:vipLevels[vipName],
+
+        vipIncome:vipReward[vipName],
+
+        vipPurchaseDate:Date.now(),
+
+        lastDailyReward:0
+
+    });
+
+    showToast(
+
+        vipName+" Activated Successfully 👑"
+
+    );
+
+}
+
+// ======================================
+// DAILY REWARD
+// ======================================
+
+async function claimDailyReward(user){
+
+    const userRef = ref(db,"users/"+user.uid);
+
+    const snap = await get(userRef);
+
+    if(!snap.exists()) return;
+
+    const data = snap.val();
+
+    if(!data.vip) return;
+
+    const reward = vipReward[data.vip] || 0;
+
+    const last = data.lastDailyReward || 0;
+
+    const now = Date.now();
+
+    const oneDay = 86400000;
+
+    if(now-last >= oneDay){
+
+        await update(userRef,{
+
+            balance:Number(data.balance||0)+reward,
+
+            lastDailyReward:now
+
+        });
+
+        showToast(
+
+            reward.toLocaleString()+" RWF Daily Income Added"
+
+        );
+
+    }
+
+}
+
+// ======================================
+// AUTO CLAIM
+// ======================================
+
+onAuthStateChanged(auth,(user)=>{
+
+    if(user){
+
+        claimDailyReward(user);
+
+    }
+
+});
+
+console.log("VIP System Ready");
