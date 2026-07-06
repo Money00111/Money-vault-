@@ -1,94 +1,199 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
+
 <meta charset="UTF-8">
+
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Money Vault Dashboard</title>
+
+<title>Money Vault | Dashboard</title>
 
 <link rel="stylesheet" href="css/dashboard.css">
-<link rel="stylesheet" href="css/vip.css">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+
+<link rel="stylesheet"
+href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+
 </head>
 
 <body>
 
-<!-- SIDEBAR -->
-<div id="sidebar" class="sidebar">
-  <h2>💰 Money Vault</h2>
-  <a href="dashboard.html">Dashboard</a>
-  <a href="deposit.html">Deposit</a>
-  <a href="withdraw.html">Withdraw</a>
-  <a href="vip.html">VIP</a>
-  <a href="#" id="logoutBtn">Logout</a>
+<!-- ===========================
+LOADING SCREEN
+=========================== -->
+
+<div id="loadingScreen" class="loading-screen">
+
+<div class="loader"></div>
+
+<h2>Money Vault</h2>
+
+<p>Loading Dashboard...</p>
+
 </div>
 
-<!-- MAIN -->
+<!-- ===========================
+SIDEBAR
+=========================== -->
+
+<aside class="sidebar" id="sidebar">
+
+<div class="logo">
+
+<h2>💎 Money Vault</h2>
+
+</div>
+
+<ul>
+
+<li>
+
+<a href="dashboard.html" class="active">
+
+<i class="fas fa-home"></i>
+
+Dashboard
+
+</a>
+
+</li>
+
+<li>
+
+<a href="deposit.html">
+
+<i class="fas fa-wallet"></i>
+
+Deposit
+
+</a>
+
+</li>
+
+<li>
+
+<a href="withdraw.html">
+
+<i class="fas fa-money-bill-wave"></i>
+
+Withdraw
+
+</a>
+
+</li>
+
+<li>
+
+<a href="transactions.html">
+
+<i class="fas fa-list"></i>
+
+Transactions
+
+</a>
+
+</li>
+
+<li>
+
+<a href="vip.html">
+
+<i class="fas fa-crown"></i>
+
+VIP Plans
+
+</a>
+
+</li>
+
+<li>
+
+<a href="profile.html">
+
+<i class="fas fa-user"></i>
+
+Profile
+
+</a>
+
+</li>
+
+<li>
+
+<a href="#" id="logoutBtn">
+
+<i class="fas fa-sign-out-alt"></i>
+
+Logout
+
+</a>
+
+</li>
+
+</ul>
+
+</aside>
+
+<!-- ===========================
+MAIN
+=========================== -->
+
 <div class="main">
 
 <header>
-  <button id="menuBtn"><i class="fa fa-bars"></i></button>
-  <h2>Dashboard</h2>
-</header>
 
-<section class="welcome">
-  <h3>Welcome 👋</h3>
-  <p id="username">Loading...</p>
-</section>
+<button id="menuBtn">
 
-<!-- BALANCE -->
-<section class="wallet-card">
-  <h1 id="balanceBox">0 RWF</h1>
-  <p id="vipStatus">Inactive</p>
-</section>
+<i class="fas fa-bars"></i>
 
-<!-- VIP PLANS -->
-<section class="vip-section">
+</button>
 
-  <h2>VIP Plans</h2>
+<h2>Dashboard</h2>
 
-  <div class="vip-grid">
+<div class="header-right">
 
-    <div class="vip-card vip1" onclick="buyVIP('VIP 1')">
-      <h3>VIP 1</h3>
-      <p>10,000 RWF</p>
-      <span>+500 / day</span>
-    </div>
+<div class="balance-box">
 
-    <div class="vip-card vip2" onclick="buyVIP('VIP 2')">
-      <h3>VIP 2</h3>
-      <p>25,000 RWF</p>
-      <span>+1500 / day</span>
-    </div>
+<p>Available Balance</p>
 
-    <div class="vip-card vip3" onclick="buyVIP('VIP 3')">
-      <h3>VIP 3</h3>
-      <p>50,000 RWF</p>
-      <span>+3500 / day</span>
-    </div>
-
-    <div class="vip-card vip4" onclick="buyVIP('VIP 4')">
-      <h3>VIP 4</h3>
-      <p>100,000 RWF</p>
-      <span>+8000 / day</span>
-    </div>
-
-  </div>
-
-  </section>
-
-<!-- STATS -->
-<section>
-  <p>Deposit: <span id="depositTotal">0</span></p>
-  <p>Withdraw: <span id="withdrawTotal">0</span></p>
-  <p>Referral: <span id="refBonus">0</span></p>
-  <p>Earnings: <span id="earningsBox">0</span></p>
-</section>
-
-<!-- NOTIFICATIONS -->
-<div id="notificationList"></div>
+<h3 id="balance">0 RWF</h3>
 
 </div>
 
-<script type="module" src="js/dashboard.js"></script>
-</body>
-  </html>
+</div>
+
+</header>
+
+<!-- ===========================
+WELCOME CARD
+=========================== -->
+
+<section class="welcome-card">
+
+<h1>
+
+Welcome,
+
+<span id="userName">
+
+User
+
+</span>
+
+👋
+
+</h1>
+
+<p>
+
+Manage your account, deposit, withdraw and monitor your earnings from one secure dashboard.
+
+</p>
+
+</section>
+
+<!-- ===========================
+QUICK ACTIONS
+=========================== -->
+
+<section class="action-grid">
