@@ -1,22 +1,9 @@
-// ===============================
-// DASHBOARD.JS - PART 1
-// ===============================
-
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { auth, db } from "./firebase.js";
 
 import {
-  getAuth,
   onAuthStateChanged,
   signOut
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-
-import {
-  getFirestore,
-  doc,
-  getDoc
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
-import { auth, db } from "./firebase.js";
+} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 
 import {
   ref,
@@ -35,39 +22,77 @@ const vipPlans = {
 };
 
 // ===============================
-// BUY VIP FUNCTION
+// NOTIFICATIONS
+// ===============================
+function showNotification(msg) {
+  const list = document.getElementById("notificationList");
+  if (!list) return;
+
+  const div = document.createElement("div");
+  div.className = "notification-card";
+  div.textContent = "🔔 " + msg;
+
+  list.prepend(div);
+  setTimeout(() => div.remove(), 5000);
+}
+
+// ===============================
+// LOAD DASHBOARD
+// ===============================
+async function loadDashboard(user) {
+  const userRef = ref(db, "users/" + user.uid);
+  const snap = await get(userRef);
+
+  if (!snap.exists()) return;
+
+  const data = snap.val();
+
+  document.getElementById("balanceBox").textContent =
+    `${(data.balance || 0).toLocaleString()} RWF`;
+
+  document.getElementById("vipLevel").textContent =
+    data.vip || "VIP 0";
+
+  document.getElementById("vipStatus").textContent =
+    data.vipActive ? "Active" : "Inactive";
+
+  document.getElementById("depositTotal").textContent =
+    `${(data.deposit || 0).toLocaleString()} RWF`;
+
+  document.getElementById("withdrawTotal").textContent =
+    `${(data.withdraw || 0).toLocaleString()} RWF`;
+
+  document.getElementById("refBonus").textContent =
+    `${(data.referralBonus || 0).toLocaleString()} RWF`;
+
+  document.getElementById("earningsBox").textContent =
+    `${(data.earnings || 0).toLocaleString()} RWF`;
+
+  document.getElementById("username").textContent =
+    data.name || user.email;
+}
+
+// ===============================
+// VIP BUY (FIXED)
 // ===============================
 window.buyVIP = async (vipName) => {
-
   const user = auth.currentUser;
-
-  if (!user) {
-    alert("Login first");
-    return;
-  }
+  if (!user) return alert("Login first");
 
   const plan = vipPlans[vipName];
   const userRef = ref(db, "users/" + user.uid);
 
   const snap = await get(userRef);
-
-  if (!snap.exists()) {
-    alert("User not found");
-    return;
-  }
+  if (!snap.exists()) return alert("User not found");
 
   const data = snap.val();
 
-  // ❌ CHECK BALANCE
   if ((data.balance || 0) < plan.price) {
-    alert("❌ Not enough balance");
-    return;
+    return alert("❌ Not enough balance");
   }
 
-  // 💰 NEW BALANCE
   const newBalance = (data.balance || 0) - plan.price;
 
-  // ⏳ VIP ACTIVE (30 days)
   const expire = Date.now() + 30 * 24 * 60 * 60 * 1000;
 
   await update(userRef, {
@@ -78,14 +103,14 @@ window.buyVIP = async (vipName) => {
     vipExpire: expire
   });
 
-  alert("💎 VIP Activated Successfully!");
+  showNotification("💎 VIP Activated!");
+  loadDashboard(user);
 };
 
 // ===============================
-// DAILY EARNING SYSTEM
+// DAILY EARNING (FIXED)
 // ===============================
 setInterval(async () => {
-
   const user = auth.currentUser;
   if (!user) return;
 
@@ -98,479 +123,42 @@ setInterval(async () => {
 
   if (!data.vipActive) return;
 
-  // ❌ EXPIRED VIP CHECK
   if (data.vipExpire && Date.now() > data.vipExpire) {
-
     await update(userRef, {
       vip: "VIP 0",
       vipActive: false,
       dailyEarning: 0
     });
 
-    alert("VIP expired");
+    showNotification("VIP expired");
     return;
   }
 
-  // 💰 ADD DAILY MONEY
-  const newBalance =
-    (data.balance || 0) + (data.dailyEarning || 0);
-
   await update(userRef, {
-    balance: newBalance
+    balance: (data.balance || 0) + (data.dailyEarning || 0)
   });
 
-}, 60000); // test every 1 min (for testing)
-// Firebase Config
-// Shyiramo config yawe hano niba utarayishyira muri firebase.js
-import { app } from "./firebase.js";
-
-const auth = getAuth(app);
-const db = getFirestore(app);
+}, 60000);
 
 // ===============================
-// HTML Elements
+// AUTH STATE (ONLY ONCE - FIXED)
 // ===============================
-
-const username = document.getElementById("username");
-const menuBtn = document.getElementById("menuBtn");
-const sidebar = document.getElementById("sidebar");
-const logoutBtn = document.getElementById("logoutBtn");
-
-// ===============================
-// Sidebar Toggle
-// ===============================
-
-menuBtn.addEventListener("click", () => {
-    sidebar.classList.toggle("active");
-});
-
-// ===============================
-// Authentication
-// ===============================
-
 onAuthStateChanged(auth, async (user) => {
+  if (!user) {
+    window.location.href = "login.html";
+    return;
+  }
 
-    if (!user) {
-        window.location.href = "login.html";
-        return;
-    }
+  await loadDashboard(user);
 
-    try {
-
-        const userRef = doc(db, "users", user.uid);
-        const snap = await getDoc(userRef);
-
-        if (snap.exists()) {
-
-            const data = snap.data();
-
-            username.textContent =
-                `Welcome, ${data.name || user.email}`;
-          
-          await loadDashboard(user);
-
-        } else {
-
-            username.textContent =
-                user.email;
-
-        }
-
-    } catch (error) {
-
-        console.error(error);
-
-        username.textContent =
-            user.email;
-
-    }
-
+  setInterval(() => loadDashboard(user), 30000);
 });
 
 // ===============================
-// Logout
+// LOGOUT
 // ===============================
-
-logoutBtn.addEventListener("click", async (e) => {
-
-    e.preventDefault();
-
-    const ok = confirm("Do you want to logout?");
-
-    if (!ok) return;
-
-    try {
-
-        await signOut(auth);
-
-        window.location.href = "login.html";
-
-    } catch (error) {
-
-        alert(error.message);
-
-    }
-
+document.getElementById("logoutBtn")?.addEventListener("click", async (e) => {
+  e.preventDefault();
+  await signOut(auth);
+  window.location.href = "login.html";
 });
-
-// ===============================
-// DASHBOARD.JS - PART 2
-// Balance + User Data
-// ===============================
-
-// HTML Elements
-const balanceBox = document.getElementById("balanceBox");
-const vipLevel = document.getElementById("vipLevel");
-const depositTotal = document.getElementById("depositTotal");
-const withdrawTotal = document.getElementById("withdrawTotal");
-const refBonus = document.getElementById("refBonus");
-
-const earningsBox = document.getElementById("earningsBox");
-const referralBox = document.getElementById("referralBox");
-const vipStatus = document.getElementById("vipStatus");
-
-// ===============================
-// Load Dashboard Data
-// ===============================
-
-async function loadDashboard(user){
-
-    try{
-
-        const userRef = doc(db,"users",user.uid);
-        const snap = await getDoc(userRef);
-
-        if(!snap.exists()){
-            console.log("User document not found");
-            return;
-        }
-
-        const data = snap.data();
-
-        // Balance
-        balanceBox.textContent =
-        `${Number(data.balance || 0).toLocaleString()} RWF`;
-
-        // VIP
-        vipLevel.textContent =
-        data.vip || "VIP 0";
-
-        vipStatus.textContent =
-        data.vip || "Inactive";
-
-        // Deposit
-        depositTotal.textContent =
-        `${Number(data.deposit || 0).toLocaleString()} RWF`;
-
-        // Withdraw
-        withdrawTotal.textContent =
-        `${Number(data.withdraw || 0).toLocaleString()} RWF`;
-
-        // Referral
-        refBonus.textContent =
-        `${Number(data.referralBonus || 0).toLocaleString()} RWF`;
-
-        referralBox.textContent =
-        `${Number(data.referralBonus || 0).toLocaleString()} RWF`;
-
-        // Earnings
-        earningsBox.textContent =
-        `${Number(data.earnings || 0).toLocaleString()} RWF`;
-
-    }catch(error){
-
-        console.error("Dashboard Error:",error);
-
-    }
-
-}
-
-// ===============================
-// Call Dashboard Loader
-// ===============================
-
-onAuthStateChanged(auth, async(user)=>{
-
-    if(!user) return;
-
-    await loadDashboard(user);
-
-});
-
-// ===============================
-// DASHBOARD.JS - PART 3
-// ===============================
-
-// ---------- Notifications ----------
-
-function showNotification(message){
-
-    const list = document.getElementById("notificationList");
-
-    if(!list) return;
-
-    const card = document.createElement("div");
-
-    card.className = "notification-card";
-
-    card.innerHTML = `
-        🔔 ${message}
-    `;
-
-    list.prepend(card);
-
-    setTimeout(()=>{
-        card.remove();
-    },6000);
-
-}
-
-// ---------- VIP Buy Buttons ----------
-
-const vip1Btn = document.getElementById("vip1Btn");
-const vip2Btn = document.getElementById("vip2Btn");
-const vip3Btn = document.getElementById("vip3Btn");
-
-if(vip1Btn){
-
-vip1Btn.addEventListener("click",()=>{
-
-showNotification("Redirecting to VIP 1 purchase...");
-
-setTimeout(()=>{
-
-window.location.href="vip.html";
-
-},800);
-
-});
-
-}
-
-if(vip2Btn){
-
-vip2Btn.addEventListener("click",()=>{
-
-showNotification("Redirecting to VIP 2 purchase...");
-
-setTimeout(()=>{
-
-window.location.href="vip.html";
-
-},800);
-
-});
-
-}
-
-if(vip3Btn){
-
-vip3Btn.addEventListener("click",()=>{
-
-showNotification("Redirecting to VIP 3 purchase...");
-
-setTimeout(()=>{
-
-window.location.href="vip.html";
-
-},800);
-
-});
-
-}
-
-// ---------- Quick Actions ----------
-
-document.querySelectorAll(".action").forEach(action=>{
-
-action.addEventListener("click",()=>{
-
-showNotification("Loading page...");
-
-});
-
-});
-
-// ---------- Recent Transactions ----------
-
-function loadRecentTransactions(){
-
-const transactionList=document.getElementById("transactionList");
-
-if(!transactionList) return;
-
-const transactions=[
-
-{
-title:"Registration Bonus",
-amount:"+500 RWF",
-status:"Completed",
-className:"success"
-},
-
-{
-title:"Deposit",
-amount:"Pending",
-status:"Pending",
-className:"pending"
-},
-
-{
-title:"Withdraw",
-amount:"No Request",
-status:"Waiting",
-className:"waiting"
-}
-
-];
-
-transactionList.innerHTML="";
-
-transactions.forEach(item=>{
-
-transactionList.innerHTML+=`
-
-<div class="transaction">
-
-<div>
-
-<h4>${item.title}</h4>
-
-<p>${item.amount}</p>
-
-</div>
-
-<span class="${item.className}">
-${item.status}
-</span>
-
-</div>
-
-`;
-
-});
-
-}
-
-loadRecentTransactions();
-
-// ---------- Welcome Notification ----------
-
-setTimeout(()=>{
-
-showNotification("Welcome to Money Vault Dashboard 🎉");
-
-},1000);
-
-// ===============================
-// DASHBOARD.JS - PART 4
-// Final Initialization
-// ===============================
-
-// ---------- Online / Offline ----------
-
-window.addEventListener("online", () => {
-    showNotification("✅ Internet Connected");
-});
-
-window.addEventListener("offline", () => {
-    showNotification("❌ No Internet Connection");
-});
-
-// ---------- Auto Refresh Dashboard ----------
-
-function startAutoRefresh(user){
-
-    setInterval(async()=>{
-
-        try{
-
-            await loadDashboard(user);
-
-        }catch(error){
-
-            console.error(error);
-
-        }
-
-    },30000); // Refresh every 30 seconds
-
-}
-
-// ---------- Initialize Dashboard ----------
-
-onAuthStateChanged(auth, async(user)=>{
-
-    if(!user){
-
-        window.location.href="login.html";
-        return;
-
-    }
-
-    try{
-
-        await loadDashboard(user);
-
-        loadRecentTransactions();
-
-        startAutoRefresh(user);
-
-        console.log("Dashboard Loaded Successfully");
-
-    }catch(error){
-
-        console.error(error);
-
-        showNotification("Dashboard failed to load.");
-
-    }
-
-});
-
-// ---------- Page Loader ----------
-
-window.addEventListener("load",()=>{
-
-    document.body.style.opacity="0";
-
-    setTimeout(()=>{
-
-        document.body.style.transition="opacity .5s";
-
-        document.body.style.opacity="1";
-
-    },100);
-
-});
-
-// ---------- Prevent Multiple Clicks ----------
-
-document.querySelectorAll("button").forEach(btn=>{
-
-    btn.addEventListener("click",()=>{
-
-        btn.disabled=true;
-
-        setTimeout(()=>{
-
-            btn.disabled=false;
-
-        },1000);
-
-    });
-
-});
-
-// ---------- Console Message ----------
-
-console.log(`
-====================================
-        MONEY VAULT PRO
-====================================
-Dashboard Ready
-Firebase Connected
-Responsive UI Enabled
-Developed Successfully
-====================================
-`);
