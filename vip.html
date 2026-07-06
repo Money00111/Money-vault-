@@ -1,17 +1,17 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
 
 <meta charset="UTF-8">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Money Vault | VIP Plans</title>
+<title>Money Vault | Admin Panel</title>
 
-<link rel="stylesheet" href="css/vip.css">
+<link rel="stylesheet" href="css/admin.css">
 
-<link
-rel="stylesheet"
+<link rel="stylesheet"
 href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 
 </head>
@@ -19,7 +19,7 @@ href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
 <body>
 
 <!-- ===========================
-LOADING
+LOADING SCREEN
 =========================== -->
 
 <div id="loadingScreen" class="loading-screen">
@@ -28,7 +28,7 @@ LOADING
 
 <h2>Money Vault</h2>
 
-<p>Loading VIP Plans...</p>
+<p>Loading Admin Panel...</p>
 
 </div>
 
@@ -40,51 +40,58 @@ SIDEBAR
 
 <div class="logo">
 
-<h2>💎 Money Vault</h2>
+<h2>👑 ADMIN</h2>
 
 </div>
 
 <ul>
 
 <li>
-<a href="dashboard.html">
-<i class="fas fa-home"></i>
+<a href="admin.html" class="active">
+<i class="fas fa-chart-line"></i>
 Dashboard
 </a>
 </li>
 
 <li>
-<a href="deposit.html">
+<a href="#users">
+<i class="fas fa-users"></i>
+Users
+</a>
+</li>
+
+<li>
+<a href="#deposits">
 <i class="fas fa-wallet"></i>
-Deposit
+Deposits
 </a>
 </li>
 
 <li>
-<a href="withdraw.html">
+<a href="#withdraws">
 <i class="fas fa-money-bill-wave"></i>
-Withdraw
+Withdraws
 </a>
 </li>
 
 <li>
-<a href="transactions.html">
-<i class="fas fa-receipt"></i>
-Transactions
-</a>
-</li>
-
-<li>
-<a href="vip.html" class="active">
+<a href="#vip">
 <i class="fas fa-crown"></i>
 VIP Plans
 </a>
 </li>
 
 <li>
-<a href="profile.html">
-<i class="fas fa-user"></i>
-Profile
+<a href="#settings">
+<i class="fas fa-cog"></i>
+Settings
+</a>
+</li>
+
+<li>
+<a href="#" id="logoutBtn">
+<i class="fas fa-sign-out-alt"></i>
+Logout
 </a>
 </li>
 
@@ -101,287 +108,111 @@ MAIN
 <header>
 
 <button id="menuBtn">
+
 <i class="fas fa-bars"></i>
+
 </button>
 
-<h2>VIP Membership</h2>
+<h2>Admin Dashboard</h2>
 
-<div class="header-right">
+<div class="admin-info">
 
-<div class="balance-box">
+<span id="adminName">
 
-<p>Balance</p>
+Administrator
 
-<h3 id="userBalance">0 RWF</h3>
-
-</div>
+</span>
 
 </div>
 
 </header>
 
 <!-- ===========================
-WELCOME
+SUMMARY CARDS
 =========================== -->
 
-<section class="vip-banner">
+<section class="summary-grid">
 
-<h1>👑 Upgrade Your Account</h1>
+<div class="summary-card">
 
-<p>
-Choose a VIP plan to unlock higher earnings,
-exclusive rewards and premium features.
-</p>
+<i class="fas fa-users"></i>
 
-</section>
+<h3 id="totalUsers">0</h3>
 
-<!-- ===========================
-VIP PLANS
-=========================== -->
-
-<section class="vip-grid">
-
-  <!-- ===========================
-VIP 1
-=========================== -->
-
-<div class="vip-card bronze">
-
-<div class="vip-top">
-
-<h2>🥉 VIP 1</h2>
-
-<span class="price">10,000 RWF</span>
+<p>Total Users</p>
 
 </div>
 
-<ul>
+<div class="summary-card">
 
-<li><i class="fas fa-check-circle"></i> Daily Income: <b>600 RWF</b></li>
+<i class="fas fa-wallet"></i>
 
-<li><i class="fas fa-check-circle"></i> Monthly Income: <b>18,000 RWF</b></li>
+<h3 id="totalDeposits">0 RWF</h3>
 
-<li><i class="fas fa-check-circle"></i> Referral Bonus: <b>500 RWF</b></li>
-
-<li><i class="fas fa-check-circle"></i> Withdraw Anytime</li>
-
-</ul>
-
-<button
-class="buyVipBtn"
-data-vip="VIP 1"
-data-price="10000">
-
-Buy VIP 1
-
-</button>
+<p>Total Deposits</p>
 
 </div>
 
-<!-- ===========================
-VIP 2
-=========================== -->
+<div class="summary-card">
 
-<div class="vip-card silver">
+<i class="fas fa-money-bill-wave"></i>
 
-<div class="vip-top">
+<h3 id="totalWithdraws">0 RWF</h3>
 
-<h2>🥈 VIP 2</h2>
-
-<span class="price">25,000 RWF</span>
+<p>Total Withdrawals</p>
 
 </div>
 
-<ul>
+<div class="summary-card">
 
-<li><i class="fas fa-check-circle"></i> Daily Income: <b>1,700 RWF</b></li>
+<i class="fas fa-crown"></i>
 
-<li><i class="fas fa-check-circle"></i> Monthly Income: <b>51,000 RWF</b></li>
+<h3 id="totalVip">0</h3>
 
-<li><i class="fas fa-check-circle"></i> Referral Bonus: <b>1,000 RWF</b></li>
-
-<li><i class="fas fa-check-circle"></i> VIP Support</li>
-
-</ul>
-
-<button
-class="buyVipBtn"
-data-vip="VIP 2"
-data-price="25000">
-
-Buy VIP 2
-
-</button>
-
-</div>
-
-<!-- ===========================
-VIP 3
-=========================== -->
-
-<div class="vip-card gold">
-
-<div class="vip-top">
-
-<h2>🥇 VIP 3</h2>
-
-<span class="price">50,000 RWF</span>
-
-</div>
-
-<ul>
-
-<li><i class="fas fa-check-circle"></i> Daily Income: <b>3,600 RWF</b></li>
-
-<li><i class="fas fa-check-circle"></i> Monthly Income: <b>108,000 RWF</b></li>
-
-<li><i class="fas fa-check-circle"></i> Referral Bonus: <b>2,000 RWF</b></li>
-
-<li><i class="fas fa-check-circle"></i> Priority Withdraw</li>
-
-</ul>
-
-<button
-class="buyVipBtn"
-data-vip="VIP 3"
-data-price="50000">
-
-Buy VIP 3
-
-</button>
-
-</div>
-
-<!-- ===========================
-VIP 4
-=========================== -->
-
-<div class="vip-card diamond">
-
-<div class="vip-top">
-
-<h2>💎 VIP 4</h2>
-
-<span class="price">100,000 RWF</span>
-
-</div>
-
-<ul>
-
-<li><i class="fas fa-check-circle"></i> Daily Income: <b>7,500 RWF</b></li>
-
-<li><i class="fas fa-check-circle"></i> Monthly Income: <b>225,000 RWF</b></li>
-
-<li><i class="fas fa-check-circle"></i> Referral Bonus: <b>5,000 RWF</b></li>
-
-<li><i class="fas fa-check-circle"></i> Premium Support</li>
-
-</ul>
-
-<button
-class="buyVipBtn"
-data-vip="VIP 4"
-data-price="100000">
-
-Buy VIP 4
-
-</button>
-
-</div>
-
- <!-- ===========================
-VIP 5
-=========================== -->
-
-<div class="vip-card platinum">
-
-    <div class="vip-top">
-        <h2>👑 VIP 5</h2>
-        <span class="price">250,000 RWF</span>
-    </div>
-
-    <ul>
-
-        <li><i class="fas fa-check-circle"></i> Daily Income: <b>20,000 RWF</b></li>
-
-        <li><i class="fas fa-check-circle"></i> Monthly Income: <b>600,000 RWF</b></li>
-
-        <li><i class="fas fa-check-circle"></i> Referral Bonus: <b>10,000 RWF</b></li>
-
-        <li><i class="fas fa-check-circle"></i> Premium Support 24/7</li>
-
-    </ul>
-
-    <button
-        class="buyVipBtn"
-        data-vip="VIP 5"
-        data-price="250000">
-
-        Buy VIP 5
-
-    </button>
+<p>VIP Members</p>
 
 </div>
 
 </section>
 
 <!-- ===========================
-VIP BENEFITS
+USERS TABLE
 =========================== -->
 
-<section class="vip-benefits">
+<section id="users" class="table-section">
 
-    <h2>✨ VIP Benefits</h2>
+<h2>Registered Users</h2>
 
-    <div class="benefit-grid">
+<table>
 
-        <div class="benefit-card">
-            <i class="fas fa-coins"></i>
-            <h3>Daily Earnings</h3>
-            <p>Receive daily income based on your VIP plan.</p>
-        </div>
+<thead>
 
-        <div class="benefit-card">
-            <i class="fas fa-users"></i>
-            <h3>Referral Rewards</h3>
-            <p>Earn extra bonuses when inviting new members.</p>
-        </div>
+<tr>
 
-        <div class="benefit-card">
-            <i class="fas fa-bolt"></i>
-            <h3>Fast Withdrawals</h3>
-            <p>VIP members enjoy faster withdrawal processing.</p>
-        </div>
+<th>Name</th>
 
-        <div class="benefit-card">
-            <i class="fas fa-headset"></i>
-            <h3>Priority Support</h3>
-            <p>Get quick assistance from our support team.</p>
-        </div>
+<th>Phone</th>
 
-    </div>
+<th>Balance</th>
 
-</section>
+<th>VIP</th>
 
-<!-- ===========================
-FOOTER
-=========================== -->
+<th>Status</th>
 
-<footer>
+<th>Action</th>
 
-    <p>
-        © 2026 Money Vault. All Rights Reserved.
-    </p>
+</tr>
 
-</footer>
+</thead>
 
-</div>
+<tbody id="usersTable">
 
-<!-- ===========================
-JAVASCRIPT
-=========================== -->
+<!-- JavaScript izashyiramo users -->
 
-<script type="module" src="js/vip.js"></script>
+</tbody>
 
-</body>
-  </html> 
+</table>
+
+             </section>
+
+  
