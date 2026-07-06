@@ -1,30 +1,38 @@
 // ======================================
-// PROFILE.JS - PART 1A
-// Realtime Database Version
+// PROFILE.JS - FULL CLEAN VERSION
+// Firebase Auth + RTDB + Storage + UI
 // ======================================
 
-import { auth, db } from "./firebase.js";
+import { auth, db, storage } from "./firebase.js";
 
 import {
-onAuthStateChanged,
-signOut
+  onAuthStateChanged,
+  signOut,
+  updateProfile
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 
 import {
-ref,
-get
+  ref,
+  get,
+  update
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
+
+import {
+  ref as sRef,
+  uploadBytesResumable,
+  getDownloadURL
+} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-storage.js";
 
 // ======================================
 // ELEMENTS
 // ======================================
-
 const sidebar = document.getElementById("sidebar");
 const menuBtn = document.getElementById("menuBtn");
 const logoutBtn = document.getElementById("logoutBtn");
 const loadingScreen = document.getElementById("loadingScreen");
 
 const profilePhoto = document.getElementById("profilePhoto");
+const photoInput = document.getElementById("photoInput");
 
 const fullName = document.getElementById("fullName");
 const userEmail = document.getElementById("userEmail");
@@ -49,271 +57,199 @@ const emailInput = document.getElementById("email");
 const countryInput = document.getElementById("country");
 const addressInput = document.getElementById("address");
 
+const darkModeToggle = document.getElementById("darkMode");
+
 // ======================================
-// MENU
+// SIDEBAR TOGGLE
 // ======================================
-
-menuBtn?.addEventListener("click",()=>{
-
-sidebar.classList.toggle("active");
-
+menuBtn?.addEventListener("click", () => {
+  sidebar.classList.toggle("active");
 });
 
 // ======================================
 // LOGOUT
 // ======================================
+logoutBtn?.addEventListener("click", async (e) => {
+  e.preventDefault();
 
-logoutBtn?.addEventListener("click",async(e)=>{
+  if (!confirm("Urashaka gusohoka?")) return;
 
-e.preventDefault();
-
-if(!confirm("Logout now?")) return;
-
-try{
-
-await signOut(auth);
-
-window.location.href="login.html";
-
-}catch(err){
-
-alert(err.message);
-
-}
-
+  try {
+    await signOut(auth);
+    window.location.href = "login.html";
+  } catch (err) {
+    alert(err.message);
+  }
 });
 
 // ======================================
-// AUTH
+// AUTH STATE
 // ======================================
+onAuthStateChanged(auth, async (user) => {
+  if (!user) {
+    window.location.href = "login.html";
+    return;
+  }
 
-onAuthStateChanged(auth,async(user)=>{
+  await loadProfile(user);
 
-if(!user){
-
-window.location.href="login.html";
-
-return;
-
-}
-
-await loadProfile(user);
-
-setTimeout(()=>{
-
-loadingScreen.style.display="none";
-
-},800);
-
+  setTimeout(() => {
+    loadingScreen.style.display = "none";
+  }, 700);
 });
 
 // ======================================
 // LOAD PROFILE
 // ======================================
+async function loadProfile(user) {
+  try {
+    const snap = await get(ref(db, "users/" + user.uid));
 
-async function loadProfile(user){
+    if (!snap.exists()) return;
 
-try{
+    const data = snap.val();
 
-const snapshot = await get(ref(db,"users/"+user.uid));
+    // Header
+    fullName.textContent = data.fullName || "User";
+    userEmail.textContent = user.email;
 
-if(!snapshot.exists()) return;
+    // Wallet
+    balance.textContent = (data.balance || 0).toLocaleString() + " RWF";
+    bonus.textContent = (data.bonus || 0).toLocaleString() + " RWF";
+    referralBonus.textContent = (data.referralBonus || 0).toLocaleString() + " RWF";
 
-const data = snapshot.val();
+    // VIP
+    vipLevel.textContent = data.vip || "VIP 0";
+    vipCard.textContent = data.vip || "VIP 0";
 
-// Header
+    // Stats
+    totalDeposit.textContent = (data.totalDeposit || 0).toLocaleString() + " RWF";
+    totalWithdraw.textContent = (data.totalWithdraw || 0).toLocaleString() + " RWF";
+    totalTransactions.textContent = data.totalTransactions || 0;
 
-fullName.textContent =
-data.fullName || "Money Vault User";
+    // Account
+    accountId.textContent = user.uid.slice(0, 12);
+    joinDate.textContent = new Date(user.metadata.creationTime).toLocaleDateString();
 
-userEmail.textContent =
-user.email;
+    // Form
+    nameInput.value = data.fullName || "";
+    phoneInput.value = data.phone || "";
+    emailInput.value = user.email;
+    countryInput.value = data.country || "Rwanda";
+    addressInput.value = data.address || "";
 
-// Wallet
+    // Photo
+    if (data.photoURL) {
+      profilePhoto.src = data.photoURL;
+    }
 
-balance.textContent =
-(Number(data.balance)||0).toLocaleString()+" RWF";
-
-bonus.textContent =
-(Number(data.bonus)||0).toLocaleString()+" RWF";
-
-referralBonus.textContent =
-(Number(data.referralBonus)||0).toLocaleString()+" RWF";
-
-// VIP
-
-vipLevel.textContent =
-data.vip || "VIP 0";
-
-vipCard.textContent =
-data.vip || "VIP 0";
-
-// Statistics
-
-totalDeposit.textContent =
-(Number(data.totalDeposit)||0).toLocaleString()+" RWF";
-
-totalWithdraw.textContent =
-(Number(data.totalWithdraw)||0).toLocaleString()+" RWF";
-
-totalTransactions.textContent =
-data.totalTransactions || 0;
-
-// Account
-
-accountId.textContent =
-user.uid.substring(0,12);
-
-joinDate.textContent =
-new Date(user.metadata.creationTime).toLocaleDateString();
-
-// Form
-
-nameInput.value =
-data.fullName || "";
-
-phoneInput.value =
-data.phone || "";
-
-emailInput.value =
-user.email;
-
-countryInput.value =
-data.country || "Rwanda";
-
-addressInput.value =
-data.address || "";
-
-// Photo
-
-if(data.photoURL){
-
-profilePhoto.src =
-data.photoURL;
-
+  } catch (err) {
+    console.error(err);
+    alert("Ntibishobotse gupakira profile.");
+  }
 }
-
-}catch(error){
-
-console.error(error);
-
-alert("Failed to load profile.");
-
-}
-
-}
-
-console.log("Profile Loaded Successfully");
-
-// ======================================
-// PROFILE.JS - PART 2
-// Save Profile (Realtime Database)
-// ======================================
-
-import {
-ref,
-update
-} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
 
 // ======================================
 // SAVE PROFILE
 // ======================================
-
 const profileForm = document.getElementById("profileForm");
 
-profileForm?.addEventListener("submit", async (e)=>{
+profileForm?.addEventListener("submit", async (e) => {
+  e.preventDefault();
 
-e.preventDefault();
+  const user = auth.currentUser;
+  if (!user) return;
 
-const user = auth.currentUser;
+  const fullNameVal = nameInput.value.trim();
+  const phone = phoneInput.value.trim();
 
-if(!user){
+  if (fullNameVal.length < 3) {
+    return alert("Andika amazina yuzuye neza.");
+  }
 
-alert("User not logged in.");
+  if (phone.length < 10) {
+    return alert("Nimero ya telephone siyo.");
+  }
 
-return;
+  try {
+    await update(ref(db, "users/" + user.uid), {
+      fullName: fullNameVal,
+      phone,
+      country: countryInput.value,
+      address: addressInput.value.trim(),
+      updatedAt: Date.now()
+    });
 
-}
-
-const fullName = nameInput.value.trim();
-
-const phone = phoneInput.value.trim();
-
-const country = countryInput.value;
-
-const address = addressInput.value.trim();
-
-// Validation
-
-if(fullName.length < 3){
-
-alert("Please enter your full name.");
-
-return;
-
-}
-
-if(phone.length < 10){
-
-alert("Enter a valid phone number.");
-
-return;
-
-}
-
-try{
-
-await update(ref(db,"users/"+user.uid),{
-
-fullName,
-
-phone,
-
-country,
-
-address,
-
-updatedAt:Date.now()
-
+    alert("Profile yavuguruwe neza!");
+  } catch (err) {
+    alert(err.message);
+  }
 });
 
-alert("Profile updated successfully.");
+// ======================================
+// PROFILE PHOTO UPLOAD (FIREBASE STORAGE)
+// ======================================
+photoInput?.addEventListener("change", async (e) => {
+  const file = e.target.files[0];
+  const user = auth.currentUser;
 
-}catch(error){
+  if (!file || !user) return;
 
-console.error(error);
+  const storageRef = sRef(storage, "profilePhotos/" + user.uid);
 
-alert(error.message);
+  const uploadTask = uploadBytesResumable(storageRef, file);
 
-}
+  uploadTask.on(
+    "state_changed",
+    null,
+    (error) => {
+      console.error(error);
+      alert("Upload yanze.");
+    },
+    async () => {
+      const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
 
+      profilePhoto.src = downloadURL;
+
+      await update(ref(db, "users/" + user.uid), {
+        photoURL: downloadURL
+      });
+
+      alert("Ifoto ya profile yashyizweho!");
+    }
+  );
 });
+
+// ======================================
+// DARK MODE
+// ======================================
+darkModeToggle?.addEventListener("change", () => {
+  document.body.classList.toggle("dark");
+
+  localStorage.setItem(
+    "darkMode",
+    document.body.classList.contains("dark")
+  );
+});
+
+// Load saved dark mode
+if (localStorage.getItem("darkMode") === "true") {
+  document.body.classList.add("dark");
+  if (darkModeToggle) darkModeToggle.checked = true;
+}
 
 // ======================================
 // EDIT BUTTON
 // ======================================
-
-const editProfileBtn =
-document.getElementById("editProfileBtn");
-
-editProfileBtn?.addEventListener("click",()=>{
-
-nameInput.focus();
-
+document.getElementById("editProfileBtn")?.addEventListener("click", () => {
+  nameInput.focus();
 });
 
 // ======================================
-// RESET FORM
+// CANCEL BUTTON
 // ======================================
-
-const cancelBtn =
-document.querySelector(".cancel-btn");
-
-cancelBtn?.addEventListener("click",()=>{
-
-loadProfile(auth.currentUser);
-
+document.querySelector(".cancel-btn")?.addEventListener("click", () => {
+  location.reload();
 });
 
-console.log("Profile Part 2 Loaded");
-
+console.log("✅ Profile JS Loaded Successfully");
