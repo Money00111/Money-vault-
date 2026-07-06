@@ -226,3 +226,124 @@ vipButtons.forEach(button => {
 });
 
 console.log("VIP Part 2 Loaded");
+
+// ======================================
+// VIP.JS - PART 3
+// REALTIME + TOAST
+// ======================================
+
+// Daily income for each VIP
+const vipIncome = {
+    "VIP 1": 600,
+    "VIP 2": 1700,
+    "VIP 3": 3600,
+    "VIP 4": 7500,
+    "VIP 5": 20000
+};
+
+// ======================================
+// SHOW ACTIVE VIP
+// ======================================
+
+function updateVipUI(currentVip){
+
+    vipButtons.forEach(btn=>{
+
+        btn.disabled = false;
+        btn.classList.remove("activeVip");
+        btn.innerHTML = "Buy " + btn.dataset.vip;
+
+        if(btn.dataset.vip === currentVip){
+
+            btn.disabled = true;
+            btn.classList.add("activeVip");
+            btn.innerHTML = "✅ ACTIVE";
+
+        }
+
+    });
+
+}
+
+// ======================================
+// TOAST MESSAGE
+// ======================================
+
+function showToast(message,color="#10b981"){
+
+    let toast=document.getElementById("toast");
+
+    if(!toast){
+
+        toast=document.createElement("div");
+
+        toast.id="toast";
+
+        document.body.appendChild(toast);
+
+    }
+
+    toast.innerHTML=message;
+
+    toast.style.background=color;
+
+    toast.style.position="fixed";
+
+    toast.style.top="20px";
+
+    toast.style.right="20px";
+
+    toast.style.padding="15px 20px";
+
+    toast.style.color="#fff";
+
+    toast.style.borderRadius="12px";
+
+    toast.style.fontWeight="600";
+
+    toast.style.zIndex="99999";
+
+    toast.style.boxShadow="0 10px 25px rgba(0,0,0,.25)";
+
+    toast.style.opacity="1";
+
+    setTimeout(()=>{
+
+        toast.style.opacity="0";
+
+    },3000);
+
+}
+
+// ======================================
+// LISTEN USER DATA
+// ======================================
+
+onAuthStateChanged(auth,(user)=>{
+
+    if(!user) return;
+
+    const userRef=ref(db,"users/"+user.uid);
+
+    onValue(userRef,(snapshot)=>{
+
+        if(!snapshot.exists()) return;
+
+        const data=snapshot.val();
+
+        userBalance.textContent =
+        Number(data.balance||0).toLocaleString()+" RWF";
+
+        updateVipUI(data.vip||"");
+
+        const income = vipIncome[data.vip] || 0;
+
+        console.log("Daily Income:",income,"RWF");
+
+    });
+
+});
+
+console.log("VIP Part 3 Loaded");
+
+
