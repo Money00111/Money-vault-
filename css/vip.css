@@ -1,29 +1,914 @@
-.vip-section{
-  padding:20px;
+/* ======================================
+   VIP.CSS - PART 1
+   Money Vault
+====================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
+
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+font-family:'Poppins',sans-serif;
 }
 
+body{
+
+background:linear-gradient(135deg,#071426,#0f172a,#1e3a8a);
+
+color:#fff;
+
+min-height:100vh;
+
+overflow-x:hidden;
+
+}
+
+/* ===========================
+LOADING
+=========================== */
+
+.loading-screen{
+
+position:fixed;
+
+top:0;
+
+left:0;
+
+width:100%;
+
+height:100%;
+
+background:#071426;
+
+display:flex;
+
+flex-direction:column;
+
+justify-content:center;
+
+align-items:center;
+
+z-index:99999;
+
+}
+
+.loader{
+
+width:65px;
+
+height:65px;
+
+border:6px solid rgba(255,255,255,.15);
+
+border-top:6px solid #38bdf8;
+
+border-radius:50%;
+
+animation:spin 1s linear infinite;
+
+margin-bottom:20px;
+
+}
+
+@keyframes spin{
+
+100%{
+
+transform:rotate(360deg);
+
+}
+
+}
+
+/* ===========================
+SIDEBAR
+=========================== */
+
+.sidebar{
+
+position:fixed;
+
+top:0;
+
+left:0;
+
+width:260px;
+
+height:100%;
+
+background:#081120;
+
+padding:25px;
+
+box-shadow:5px 0 20px rgba(0,0,0,.35);
+
+z-index:1000;
+
+}
+
+.logo{
+
+text-align:center;
+
+margin-bottom:35px;
+
+}
+
+.logo h2{
+
+font-size:26px;
+
+color:#38bdf8;
+
+}
+
+.sidebar ul{
+
+list-style:none;
+
+}
+
+.sidebar ul li{
+
+margin:15px 0;
+
+}
+
+.sidebar ul li a{
+
+display:flex;
+
+align-items:center;
+
+gap:12px;
+
+padding:14px 18px;
+
+text-decoration:none;
+
+color:#dbeafe;
+
+border-radius:12px;
+
+transition:.3s;
+
+font-size:16px;
+
+font-weight:500;
+
+}
+
+.sidebar ul li a:hover,
+
+.sidebar ul li a.active{
+
+background:#2563eb;
+
+color:#fff;
+
+}
+
+/* ===========================
+MAIN
+=========================== */
+
+.main{
+
+margin-left:260px;
+
+padding:30px;
+
+}
+
+/* ===========================
+HEADER
+=========================== */
+
+header{
+
+display:flex;
+
+justify-content:space-between;
+
+align-items:center;
+
+margin-bottom:30px;
+
+}
+
+#menuBtn{
+
+display:none;
+
+background:#2563eb;
+
+color:#fff;
+
+border:none;
+
+width:45px;
+
+height:45px;
+
+border-radius:10px;
+
+font-size:20px;
+
+cursor:pointer;
+
+}
+
+.header-right{
+
+display:flex;
+
+align-items:center;
+
+gap:20px;
+
+}
+
+.balance-box{
+
+background:rgba(255,255,255,.10);
+
+padding:15px 25px;
+
+border-radius:16px;
+
+backdrop-filter:blur(15px);
+
+text-align:center;
+
+}
+
+.balance-box p{
+
+font-size:14px;
+
+color:#cbd5e1;
+
+}
+
+.balance-box h3{
+
+font-size:22px;
+
+margin-top:6px;
+
+color:#38bdf8;
+
+}
+
+/* ===========================
+VIP BANNER
+=========================== */
+
+.vip-banner{
+
+background:linear-gradient(135deg,#2563eb,#38bdf8);
+
+padding:40px;
+
+border-radius:22px;
+
+text-align:center;
+
+margin-bottom:35px;
+
+box-shadow:0 15px 35px rgba(0,0,0,.30);
+
+}
+
+.vip-banner h1{
+
+font-size:38px;
+
+margin-bottom:15px;
+
+}
+
+.vip-banner p{
+
+font-size:18px;
+
+line-height:1.8;
+
+color:#eff6ff;
+
+  }
+
+/* ======================================
+   VIP.CSS - PART 1
+   Money Vault
+====================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
+
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+font-family:'Poppins',sans-serif;
+}
+
+body{
+
+background:linear-gradient(135deg,#071426,#0f172a,#1e3a8a);
+
+color:#fff;
+
+min-height:100vh;
+
+overflow-x:hidden;
+
+}
+
+/* ===========================
+LOADING
+=========================== */
+
+.loading-screen{
+
+position:fixed;
+
+top:0;
+
+left:0;
+
+width:100%;
+
+height:100%;
+
+background:#071426;
+
+display:flex;
+
+flex-direction:column;
+
+justify-content:center;
+
+align-items:center;
+
+z-index:99999;
+
+}
+
+.loader{
+
+width:65px;
+
+height:65px;
+
+border:6px solid rgba(255,255,255,.15);
+
+border-top:6px solid #38bdf8;
+
+border-radius:50%;
+
+animation:spin 1s linear infinite;
+
+margin-bottom:20px;
+
+}
+
+@keyframes spin{
+
+100%{
+
+transform:rotate(360deg);
+
+}
+
+}
+
+/* ===========================
+SIDEBAR
+=========================== */
+
+.sidebar{
+
+position:fixed;
+
+top:0;
+
+left:0;
+
+width:260px;
+
+height:100%;
+
+background:#081120;
+
+padding:25px;
+
+box-shadow:5px 0 20px rgba(0,0,0,.35);
+
+z-index:1000;
+
+}
+
+.logo{
+
+text-align:center;
+
+margin-bottom:35px;
+
+}
+
+.logo h2{
+
+font-size:26px;
+
+color:#38bdf8;
+
+}
+
+.sidebar ul{
+
+list-style:none;
+
+}
+
+.sidebar ul li{
+
+margin:15px 0;
+
+}
+
+.sidebar ul li a{
+
+display:flex;
+
+align-items:center;
+
+gap:12px;
+
+padding:14px 18px;
+
+text-decoration:none;
+
+color:#dbeafe;
+
+border-radius:12px;
+
+transition:.3s;
+
+font-size:16px;
+
+font-weight:500;
+
+}
+
+.sidebar ul li a:hover,
+
+.sidebar ul li a.active{
+
+background:#2563eb;
+
+color:#fff;
+
+}
+
+/* ===========================
+MAIN
+=========================== */
+
+.main{
+
+margin-left:260px;
+
+padding:30px;
+
+}
+
+/* ===========================
+HEADER
+=========================== */
+
+header{
+
+display:flex;
+
+justify-content:space-between;
+
+align-items:center;
+
+margin-bottom:30px;
+
+}
+
+#menuBtn{
+
+display:none;
+
+background:#2563eb;
+
+color:#fff;
+
+border:none;
+
+width:45px;
+
+height:45px;
+
+border-radius:10px;
+
+font-size:20px;
+
+cursor:pointer;
+
+}
+
+.header-right{
+
+display:flex;
+
+align-items:center;
+
+gap:20px;
+
+}
+
+.balance-box{
+
+background:rgba(255,255,255,.10);
+
+padding:15px 25px;
+
+border-radius:16px;
+
+backdrop-filter:blur(15px);
+
+text-align:center;
+
+}
+
+.balance-box p{
+
+font-size:14px;
+
+color:#cbd5e1;
+
+}
+
+.balance-box h3{
+
+font-size:22px;
+
+margin-top:6px;
+
+color:#38bdf8;
+
+}
+
+/* ===========================
+VIP BANNER
+=========================== */
+
+.vip-banner{
+
+background:linear-gradient(135deg,#2563eb,#38bdf8);
+
+padding:40px;
+
+border-radius:22px;
+
+text-align:center;
+
+margin-bottom:35px;
+
+box-shadow:0 15px 35px rgba(0,0,0,.30);
+
+}
+
+.vip-banner h1{
+
+font-size:38px;
+
+margin-bottom:15px;
+
+}
+
+.vip-banner p{
+
+font-size:18px;
+
+line-height:1.8;
+
+color:#eff6ff;
+
+}
+
+/* ===========================
+   VIP BENEFITS
+=========================== */
+
+.vip-benefits{
+
+margin-top:50px;
+
+}
+
+.vip-benefits h2{
+
+text-align:center;
+
+font-size:34px;
+
+margin-bottom:35px;
+
+font-weight:700;
+
+color:#fff;
+
+}
+
+.benefit-grid{
+
+display:grid;
+
+grid-template-columns:repeat(auto-fit,minmax(250px,1fr));
+
+gap:25px;
+
+}
+
+.benefit-card{
+
+background:rgba(255,255,255,.10);
+
+backdrop-filter:blur(15px);
+
+padding:30px;
+
+border-radius:20px;
+
+text-align:center;
+
+transition:.35s;
+
+box-shadow:0 10px 25px rgba(0,0,0,.25);
+
+}
+
+.benefit-card:hover{
+
+transform:translateY(-8px);
+
+background:rgba(255,255,255,.15);
+
+}
+
+.benefit-card i{
+
+font-size:45px;
+
+color:#38bdf8;
+
+margin-bottom:18px;
+
+}
+
+.benefit-card h3{
+
+font-size:22px;
+
+margin-bottom:12px;
+
+}
+
+.benefit-card p{
+
+font-size:15px;
+
+line-height:1.7;
+
+color:#dbeafe;
+
+}
+
+/* ===========================
+   FOOTER
+=========================== */
+
+footer{
+
+margin-top:60px;
+
+padding:30px;
+
+text-align:center;
+
+font-size:15px;
+
+color:#cbd5e1;
+
+border-top:1px solid rgba(255,255,255,.10);
+
+}
+
+/* ===========================
+   SCROLLBAR
+=========================== */
+
+::-webkit-scrollbar{
+
+width:8px;
+
+}
+
+::-webkit-scrollbar-track{
+
+background:#0f172a;
+
+}
+
+::-webkit-scrollbar-thumb{
+
+background:#38bdf8;
+
+border-radius:10px;
+
+}
+
+::-webkit-scrollbar-thumb:hover{
+
+background:#2563eb;
+
+}
+
+/* ===========================
+   RESPONSIVE
+=========================== */
+
+@media(max-width:992px){
+
+.main{
+
+margin-left:0;
+
+padding:20px;
+
+}
+
+.sidebar{
+
+left:-270px;
+
+transition:.35s;
+
+}
+
+.sidebar.active{
+
+left:0;
+
+}
+
+#menuBtn{
+
+display:block;
+
+}
+
+header{
+
+gap:15px;
+
+flex-wrap:wrap;
+
+}
+
+.vip-banner h1{
+
+font-size:30px;
+
+}
+
+}
+
+@media(max-width:768px){
+
 .vip-grid{
-  display:grid;
-  grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
-  gap:15px;
+
+grid-template-columns:1fr;
+
+}
+
+.benefit-grid{
+
+grid-template-columns:1fr;
+
+}
+
+.balance-box{
+
+width:100%;
+
+}
+
+.vip-top{
+
+flex-direction:column;
+
+gap:10px;
+
+text-align:center;
+
+}
+
+.vip-top h2{
+
+font-size:28px;
+
+}
+
+.price{
+
+font-size:18px;
+
+}
+
+}
+
+@media(max-width:480px){
+
+.main{
+
+padding:15px;
+
+}
+
+.vip-banner{
+
+padding:25px;
+
+}
+
+.vip-banner h1{
+
+font-size:24px;
+
+}
+
+.vip-banner p{
+
+font-size:15px;
+
+}
+
+.buyVipBtn{
+
+font-size:15px;
+
+padding:14px;
+
+}
+
+footer{
+
+font-size:13px;
+
+}
+
+}
+
+/* ===========================
+   ANIMATIONS
+=========================== */
+
+@keyframes fadeUp{
+
+from{
+
+opacity:0;
+
+transform:translateY(30px);
+
+}
+
+to{
+
+opacity:1;
+
+transform:translateY(0);
+
+}
+
 }
 
 .vip-card{
-  padding:20px;
-  border-radius:15px;
-  color:white;
-  text-align:center;
-  cursor:pointer;
-  transition:0.3s;
-  font-weight:bold;
-  box-shadow:0 10px 20px rgba(0,0,0,0.3);
+
+animation:fadeUp .6s ease;
+
 }
 
-.vip-card:hover{
-  transform:scale(1.07);
-}
+.benefit-card{
 
-.vip1{background:linear-gradient(135deg,#1e3a8a,#3b82f6);}
-.vip2{background:linear-gradient(135deg,#065f46,#10b981);}
-.vip3{background:linear-gradient(135deg,#7c2d12,#f97316);}
-.vip4{background:linear-gradient(135deg,#4c1d95,#a855f7);}
+animation:fadeUp .8s ease;
+
+}
+  
