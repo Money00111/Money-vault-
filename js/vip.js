@@ -1,51 +1,96 @@
-.vip-section{
-  padding:20px;
+// ======================================
+// VIP.JS - PART 1
+// Money Vault
+// ======================================
+
+import { auth, db } from "./firebase.js";
+
+import {
+    onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+
+import {
+    ref,
+    onValue
+} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
+
+// ======================================
+// ELEMENTS
+// ======================================
+
+const menuBtn = document.getElementById("menuBtn");
+const sidebar = document.getElementById("sidebar");
+const loadingScreen = document.getElementById("loadingScreen");
+const userBalance = document.getElementById("userBalance");
+
+const vipButtons = document.querySelectorAll(".buyVipBtn");
+
+// ======================================
+// SIDEBAR
+// ======================================
+
+menuBtn?.addEventListener("click", () => {
+
+    sidebar.classList.toggle("active");
+
+});
+
+// ======================================
+// AUTH
+// ======================================
+
+onAuthStateChanged(auth, (user) => {
+
+    if (!user) {
+
+        window.location.href = "login.html";
+        return;
+
+    }
+
+    loadUser(user);
+
+});
+
+// ======================================
+// LOAD USER DATA
+// ======================================
+
+function loadUser(user){
+
+const userRef = ref(db,"users/"+user.uid);
+
+onValue(userRef,(snapshot)=>{
+
+if(!snapshot.exists()) return;
+
+const data = snapshot.val();
+
+const balance = Number(data.balance || 0);
+
+userBalance.textContent =
+balance.toLocaleString()+" RWF";
+
+const currentVip = data.vip || "";
+
+vipButtons.forEach(btn=>{
+
+if(btn.dataset.vip === currentVip){
+
+btn.innerHTML="✅ ACTIVE";
+
+btn.disabled=true;
+
+btn.classList.add("activeVip");
+
 }
 
-.vip-grid{
-  display:grid;
-  grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
-  gap:15px;
+});
+
+loadingScreen.style.display="none";
+
+});
+
 }
 
-.vip-card{
-  padding:18px;
-  border-radius:16px;
-  color:white;
-  text-align:center;
-  cursor:pointer;
-  transition:0.3s;
-
-  display:flex;
-  flex-direction:column;
-  justify-content:center;
-  align-items:center;
-
-  box-shadow:0 8px 20px rgba(0,0,0,0.3);
-}
-
-.vip-card h3{
-  margin:5px 0;
-  font-size:18px;
-}
-
-.vip-card .price{
-  font-size:16px;
-  font-weight:bold;
-  margin:5px 0;
-}
-
-.vip-card .income{
-  font-size:14px;
-  opacity:0.9;
-}
-
-.vip-card:hover{
-  transform:scale(1.05);
-}
-
-/* COLORS */
-.vip1{background:linear-gradient(135deg,#1e3a8a,#3b82f6);}
-.vip2{background:linear-gradient(135deg,#065f46,#10b981);}
-.vip3{background:linear-gradient(135deg,#7c2d12,#f97316);}
-.vip4{background:linear-gradient(135deg,#4c1d95,#a855f7);}
+console.log("VIP Part 1 Loaded");
