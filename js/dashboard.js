@@ -162,13 +162,6 @@ console.log("Dashboard Part 1 Ready");
 // PART 2
 // ======================================
 
-import {
-    ref,
-    query,
-    limitToLast,
-    onValue
-} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
-
 // ======================================
 // ELEMENTS
 // ======================================
