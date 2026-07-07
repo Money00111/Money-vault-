@@ -7,9 +7,9 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Money Vault | Admin Panel</title>
+<title>Money Vault | VIP Plans</title>
 
-<link rel="stylesheet" href="css/admin.css">
+<link rel="stylesheet" href="css/vip.css">
 
 <link rel="stylesheet"
 href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
@@ -28,7 +28,7 @@ LOADING SCREEN
 
 <h2>Money Vault</h2>
 
-<p>Loading Admin Panel...</p>
+<p>Loading VIP Plans...</p>
 
 </div>
 
@@ -40,59 +40,96 @@ SIDEBAR
 
 <div class="logo">
 
-<h2>👑 ADMIN</h2>
+<i class="fas fa-gem"></i>
+
+<h2>Money Vault</h2>
 
 </div>
 
 <ul>
 
 <li>
-<a href="admin.html" class="active">
-<i class="fas fa-chart-line"></i>
-Dashboard
+
+<a href="dashboard.html">
+
+<i class="fas fa-house"></i>
+
+<span>Dashboard</span>
+
 </a>
+
 </li>
 
 <li>
-<a href="#users">
-<i class="fas fa-users"></i>
-Users
-</a>
-</li>
 
-<li>
-<a href="#deposits">
+<a href="deposit.html">
+
 <i class="fas fa-wallet"></i>
-Deposits
+
+<span>Deposit</span>
+
 </a>
+
 </li>
 
 <li>
-<a href="#withdraws">
+
+<a href="withdraw.html">
+
 <i class="fas fa-money-bill-wave"></i>
-Withdraws
+
+<span>Withdraw</span>
+
 </a>
+
 </li>
 
 <li>
-<a href="#vip">
+
+<a href="transactions.html">
+
+<i class="fas fa-list"></i>
+
+<span>Transactions</span>
+
+</a>
+
+</li>
+
+<li>
+
+<a href="vip.html" class="active">
+
 <i class="fas fa-crown"></i>
-VIP Plans
+
+<span>VIP Plans</span>
+
 </a>
+
 </li>
 
 <li>
-<a href="#settings">
-<i class="fas fa-cog"></i>
-Settings
+
+<a href="profile.html">
+
+<i class="fas fa-user"></i>
+
+<span>Profile</span>
+
 </a>
+
 </li>
 
 <li>
+
 <a href="#" id="logoutBtn">
-<i class="fas fa-sign-out-alt"></i>
-Logout
+
+<i class="fas fa-right-from-bracket"></i>
+
+<span>Logout</span>
+
 </a>
+
 </li>
 
 </ul>
@@ -103,9 +140,9 @@ Logout
 MAIN
 =========================== -->
 
-<div class="main">
+<main class="main">
 
-<header>
+<header class="topbar">
 
 <button id="menuBtn">
 
@@ -113,336 +150,235 @@ MAIN
 
 </button>
 
-<h2>Admin Dashboard</h2>
+<h2>VIP Membership</h2>
 
-<div class="admin-info">
+<div class="balance-box">
 
-<span id="adminName">
+<p>Your Balance</p>
 
-Administrator
-
-</span>
+<h2 id="balance">0 RWF</h2>
 
 </div>
 
 </header>
 
 <!-- ===========================
-SUMMARY CARDS
+VIP HERO
 =========================== -->
 
-<section class="summary-grid">
+<section class="vip-hero">
 
-<div class="summary-card">
+<div class="hero-left">
 
-<i class="fas fa-users"></i>
-
-<h3 id="totalUsers">0</h3>
-
-<p>Total Users</p>
-
-</div>
-
-<div class="summary-card">
-
-<i class="fas fa-wallet"></i>
-
-<h3 id="totalDeposits">0 RWF</h3>
-
-<p>Total Deposits</p>
-
-</div>
-
-<div class="summary-card">
-
-<i class="fas fa-money-bill-wave"></i>
-
-<h3 id="totalWithdraws">0 RWF</h3>
-
-<p>Total Withdrawals</p>
-
-</div>
-
-<div class="summary-card">
+<h1>
 
 <i class="fas fa-crown"></i>
 
-<h3 id="totalVip">0</h3>
+Upgrade Your Account
 
-<p>VIP Members</p>
-
-</div>
-
-</section>
-
-<!-- ===========================
-USERS TABLE
-=========================== -->
-
-<section id="users" class="table-section">
-
-<h2>Registered Users</h2>
-
-<table>
-
-<thead>
-
-<tr>
-
-<th>Name</th>
-
-<th>Phone</th>
-
-<th>Balance</th>
-
-<th>VIP</th>
-
-<th>Status</th>
-
-<th>Action</th>
-
-</tr>
-
-</thead>
-
-<tbody id="usersTable">
-
-<!-- JavaScript izashyiramo users -->
-
-</tbody>
-
-</table>
-
-             </section>
-
-  <!-- ===========================
-DEPOSITS
-=========================== -->
-
-<section id="deposits" class="table-section">
-
-<h2>Deposit Requests</h2>
-
-<table>
-
-<thead>
-
-<tr>
-
-<th>User</th>
-
-<th>Amount</th>
-
-<th>Method</th>
-
-<th>Date</th>
-
-<th>Status</th>
-
-<th>Action</th>
-
-</tr>
-
-</thead>
-
-<tbody id="depositTable">
-
-<!-- JavaScript -->
-
-</tbody>
-
-</table>
-
-</section>
-
-<!-- ===========================
-WITHDRAW REQUESTS
-=========================== -->
-
-<section id="withdraws" class="table-section">
-
-<h2>Withdrawal Requests</h2>
-
-<table>
-
-<thead>
-
-<tr>
-
-<th>User</th>
-
-<th>Amount</th>
-
-<th>Method</th>
-
-<th>Date</th>
-
-<th>Status</th>
-
-<th>Action</th>
-
-</tr>
-
-</thead>
-
-<tbody id="withdrawTable">
-
-<!-- JavaScript -->
-
-</tbody>
-
-</table>
-
-</section>
-
-<!-- ===========================
-VIP MANAGEMENT
-=========================== -->
-
-<section id="vip" class="table-section">
-
-<h2>VIP Members</h2>
-
-<table>
-
-<thead>
-
-<tr>
-
-<th>User</th>
-
-<th>VIP Level</th>
-
-<th>Balance</th>
-
-<th>Purchase Date</th>
-
-<th>Action</th>
-
-</tr>
-
-</thead>
-
-<tbody id="vipTable">
-
-<!-- JavaScript -->
-
-</tbody>
-
-</table>
-
-</section>
-
-<!-- ===========================
-ANNOUNCEMENT
-=========================== -->
-
-<section id="announcement" class="table-section">
-
-<h2>Send Announcement</h2>
-
-<form id="announcementForm">
-
-<textarea
-id="announcementText"
-placeholder="Write announcement here..."
-required>
-</textarea>
-
-<button type="submit">
-
-<i class="fas fa-paper-plane"></i>
-
-Send Announcement
-
-</button>
-
-</form>
-
-</section>
-
-<!-- ===========================
-SETTINGS
-=========================== -->
-
-<section id="settings" class="table-section">
-
-<h2>System Settings</h2>
-
-<div class="settings-grid">
-
-<div class="setting-card">
-
-<h3>Deposit Number</h3>
-
-<input
-type="text"
-id="depositNumber"
-placeholder="078xxxxxxx">
-
-<button id="saveDeposit">
-
-Save
-
-</button>
-
-</div>
-
-<div class="setting-card">
-
-<h3>Withdraw Fee (%)</h3>
-
-<input
-type="number"
-id="withdrawFee"
-placeholder="10">
-
-<button id="saveFee">
-
-Save
-
-</button>
-
-</div>
-
-<div class="setting-card">
-
-<h3>Minimum Withdraw</h3>
-
-<input
-type="number"
-id="minimumWithdraw"
-placeholder="5000">
-
-<button id="saveMinimum">
-
-Save
-
-</button>
-
-</div>
-
-</div>
-
-</section>
-
-<!-- ===========================
-FOOTER
-=========================== -->
-
-<footer>
+</h1>
 
 <p>
 
-© 2026 Money Vault Admin Panel
+Choose a VIP Plan and start earning daily income with Money Vault.
 
 </p>
 
-</footer>
+<div class="hero-info">
+
+<div class="info-box">
+
+<h3 id="currentVip">
+
+VIP 0
+
+</h3>
+
+<p>Current VIP</p>
 
 </div>
 
-<script type="module" src="js/admin.js"></script>
+<div class="info-box">
 
-</body>
-</html>
+<h3 id="dailyIncome">
+
+0 RWF
+
+</h3>
+
+<p>Daily Income</p>
+
+</div>
+
+<div class="info-box">
+
+<h3 id="totalProfit">
+
+0 RWF
+
+</h3>
+
+<p>Total Profit</p>
+
+</div>
+
+</div>
+
+</div>
+
+<div class="hero-right">
+
+<i class="fas fa-gem hero-icon"></i>
+
+</div>
+
+</section>
+
+<!-- ===========================
+VIP PLANS
+=========================== -->
+
+<section class="vip-grid">
+<!-- ===========================
+VIP 1
+=========================== -->
+
+<div class="vip-card bronze">
+
+<div class="vip-badge">
+
+VIP 1
+
+</div>
+
+<i class="fas fa-medal vip-icon"></i>
+
+<h2>Bronze Plan</h2>
+
+<h1>5,000 RWF</h1>
+
+<ul>
+
+<li><i class="fas fa-check"></i> Daily Income: <b>500 RWF</b></li>
+
+<li><i class="fas fa-check"></i> Duration: <b>30 Days</b></li>
+
+<li><i class="fas fa-check"></i> Total Profit: <b>15,000 RWF</b></li>
+
+<li><i class="fas fa-check"></i> Instant Activation</li>
+
+</ul>
+
+<button
+
+class="buyVipBtn"
+
+data-vip="VIP 1"
+
+data-price="5000"
+
+data-daily="500"
+
+data-profit="15000">
+
+Buy Now
+
+</button>
+
+</div>
+
+<!-- ===========================
+VIP 2
+=========================== -->
+
+<div class="vip-card silver">
+
+<div class="vip-badge">
+
+VIP 2
+
+</div>
+
+<i class="fas fa-crown vip-icon"></i>
+
+<h2>Silver Plan</h2>
+
+<h1>10,000 RWF</h1>
+
+<ul>
+
+<li><i class="fas fa-check"></i> Daily Income: <b>1,200 RWF</b></li>
+
+<li><i class="fas fa-check"></i> Duration: <b>30 Days</b></li>
+
+<li><i class="fas fa-check"></i> Total Profit: <b>36,000 RWF</b></li>
+
+<li><i class="fas fa-check"></i> Priority Support</li>
+
+</ul>
+
+<button
+
+class="buyVipBtn"
+
+data-vip="VIP 2"
+
+data-price="10000"
+
+data-daily="1200"
+
+data-profit="36000">
+
+Buy Now
+
+</button>
+
+</div>
+
+<!-- ===========================
+VIP 3
+=========================== -->
+
+<div class="vip-card gold">
+
+<div class="vip-badge">
+
+VIP 3
+
+</div>
+
+<i class="fas fa-gem vip-icon"></i>
+
+<h2>Gold Plan</h2>
+
+<h1>20,000 RWF</h1>
+
+<ul>
+
+<li><i class="fas fa-check"></i> Daily Income: <b>2,500 RWF</b></li>
+
+<li><i class="fas fa-check"></i> Duration: <b>30 Days</b></li>
+
+<li><i class="fas fa-check"></i> Total Profit: <b>75,000 RWF</b></li>
+
+<li><i class="fas fa-check"></i> VIP Rewards</li>
+
+</ul>
+
+<button
+
+class="buyVipBtn"
+
+data-vip="VIP 3"
+
+data-price="20000"
+
+data-daily="2500"
+
+data-profit="75000">
+
+Buy Now
+
+</button>
+
+</div>
