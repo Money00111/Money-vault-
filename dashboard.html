@@ -40,94 +40,61 @@ SIDEBAR
 
 <div class="logo">
 
-<h2>💎 Money Vault</h2>
+<i class="fas fa-gem"></i>
+
+<h2>Money Vault</h2>
 
 </div>
 
 <ul>
 
 <li>
-
 <a href="dashboard.html" class="active">
-
-<i class="fas fa-home"></i>
-
-Dashboard
-
+<i class="fas fa-house"></i>
+<span>Dashboard</span>
 </a>
-
 </li>
 
 <li>
-
 <a href="deposit.html">
-
 <i class="fas fa-wallet"></i>
-
-Deposit
-
+<span>Deposit</span>
 </a>
-
 </li>
 
 <li>
-
 <a href="withdraw.html">
-
 <i class="fas fa-money-bill-wave"></i>
-
-Withdraw
-
+<span>Withdraw</span>
 </a>
-
 </li>
 
 <li>
-
 <a href="transactions.html">
-
-<i class="fas fa-list"></i>
-
-Transactions
-
+<i class="fas fa-clock-rotate-left"></i>
+<span>Transactions</span>
 </a>
-
 </li>
 
 <li>
-
 <a href="vip.html">
-
 <i class="fas fa-crown"></i>
-
-VIP Plans
-
+<span>VIP Plans</span>
 </a>
-
 </li>
 
 <li>
-
 <a href="profile.html">
-
 <i class="fas fa-user"></i>
-
-Profile
-
+<span>Profile</span>
 </a>
-
 </li>
 
 <li>
-
 <a href="#" id="logoutBtn">
-
-<i class="fas fa-sign-out-alt"></i>
-
-Logout
-
+<i class="fas fa-right-from-bracket"></i>
+<span>Logout</span>
 </a>
-
 </li>
 
 </ul>
@@ -138,9 +105,11 @@ Logout
 MAIN
 =========================== -->
 
-<div class="main">
+<main class="main">
 
-<header>
+<!-- HEADER -->
+
+<header class="topbar">
 
 <button id="menuBtn">
 
@@ -148,27 +117,29 @@ MAIN
 
 </button>
 
+<div class="top-title">
+
 <h2>Dashboard</h2>
 
-<div class="header-right">
+<p>Welcome back 👋</p>
+
+</div>
 
 <div class="balance-box">
 
 <p>Available Balance</p>
 
-<h3 id="balance">0 RWF</h3>
-
-</div>
+<h2 id="balance">0 RWF</h2>
 
 </div>
 
 </header>
 
-<!-- ===========================
-WELCOME CARD
-=========================== -->
+<!-- HERO -->
 
-<section class="welcome-card">
+<section class="hero-card">
+
+<div class="hero-left">
 
 <h1>
 
@@ -186,67 +157,45 @@ User
 
 <p>
 
-Manage your account, deposit, withdraw and monitor your earnings from one secure dashboard.
+Manage your deposits, withdrawals, VIP earnings and account securely from one place.
 
 </p>
 
-</section>
+<div class="hero-buttons">
 
-<!-- ===========================
-QUICK ACTIONS
-=========================== -->
+<a href="deposit.html" class="hero-btn">
 
-<section class="action-grid">
+<i class="fas fa-plus-circle"></i>
 
-  <!-- ===========================
-QUICK ACTIONS
-=========================== -->
-
-<a href="deposit.html" class="action-card">
-
-    <i class="fas fa-wallet"></i>
-
-    <h3>Deposit</h3>
-
-    <p>Add money to your account.</p>
+Deposit
 
 </a>
 
-<a href="withdraw.html" class="action-card">
+<a href="withdraw.html" class="hero-btn secondary">
 
-    <i class="fas fa-money-bill-wave"></i>
+<i class="fas fa-paper-plane"></i>
 
-    <h3>Withdraw</h3>
-
-    <p>Withdraw your available balance.</p>
+Withdraw
 
 </a>
 
-<a href="transactions.html" class="action-card">
+</div>
 
-    <i class="fas fa-list"></i>
+</div>
 
-    <h3>Transactions</h3>
+<div class="hero-right">
 
-    <p>View all your transaction history.</p>
+<div class="hero-circle">
 
-</a>
+<i class="fas fa-wallet"></i>
 
-<a href="vip.html" class="action-card">
+</div>
 
-    <i class="fas fa-crown"></i>
-
-    <h3>VIP Plans</h3>
-
-    <p>Upgrade your account and earn daily income.</p>
-
-</a>
+</div>
 
 </section>
 
-<!-- ===========================
-ACCOUNT SUMMARY
-=========================== -->
+<!-- ACCOUNT OVERVIEW -->
 
 <section class="summary-grid">
 
@@ -254,7 +203,7 @@ ACCOUNT SUMMARY
 
 <i class="fas fa-wallet"></i>
 
-<h4>Available Balance</h4>
+<h4>Balance</h4>
 
 <h2 id="summaryBalance">
 
@@ -280,9 +229,9 @@ ACCOUNT SUMMARY
 
 <div class="summary-card">
 
-<i class="fas fa-user-friends"></i>
+<i class="fas fa-user-group"></i>
 
-<h4>Referral Bonus</h4>
+<h4>Referral</h4>
 
 <h2 id="referralBonus">
 
@@ -296,7 +245,7 @@ ACCOUNT SUMMARY
 
 <i class="fas fa-crown"></i>
 
-<h4>Current VIP</h4>
+<h4>VIP Level</h4>
 
 <h2 id="currentVip">
 
@@ -306,179 +255,191 @@ VIP 0
 
 </div>
 
-</section>
-
+  </section>
 <!-- ===========================
-LATEST ACTIVITY
+QUICK ACTIONS
 =========================== -->
 
-<section class="activity-section">
+<section class="quick-actions">
 
-<h2>
+<div class="section-title">
 
-Recent Transactions
+<h2>Quick Actions</h2>
 
-</h2>
-
-<div id="recentTransactions">
-
-<p class="empty-text">
-
-No recent transactions.
-
-</p>
+<p>Access your most used services instantly.</p>
 
 </div>
 
-</section>
+<div class="action-grid">
 
-<!-- ===========================
-QUICK INFO
-=========================== -->
+<a href="deposit.html" class="action-card">
 
-<section class="info-section">
+<div class="action-icon">
 
-<div class="info-card">
-
-<i class="fas fa-shield-alt"></i>
-
-<h3>Secure Wallet</h3>
-
-<p>
-
-Your account is protected using Firebase Authentication and secure database storage.
-
-</p>
+<i class="fas fa-wallet"></i>
 
 </div>
 
-<div class="info-card">
+<h3>Deposit</h3>
 
-<i class="fas fa-clock"></i>
-
-<h3>24/7 Service</h3>
-
-<p>
-
-Deposit, Withdraw and VIP services are available anytime.
-
-</p>
-
-</div>
-
-<div class="info-card">
-
-<i class="fas fa-headset"></i>
-
-<h3>Support</h3>
-
-<p>
-
-Need help? Contact our customer support anytime.
-
-</p>
-
-</div>
-
-</section>
-  
-<!-- ===========================
-NOTIFICATIONS
-=========================== -->
-
-<section class="notification-section">
-
-<h2>Notifications</h2>
-
-<div id="notificationList">
-
-<div class="notification-card">
-
-<i class="fas fa-bell"></i>
-
-<div>
-
-<h4>Welcome to Money Vault</h4>
-
-<p>
-Thank you for joining Money Vault. Enjoy secure deposits, withdrawals and VIP rewards.
-</p>
-
-</div>
-
-</div>
-
-</div>
-
-</section>
-
-<!-- ===========================
-REFERRAL
-=========================== -->
-
-<section class="referral-card">
-
-<h2>Invite Friends</h2>
-
-<p>
-
-Share your referral link and earn bonus rewards for every successful signup.
-
-</p>
-
-<div class="referral-box">
-
-<input
-type="text"
-id="referralLink"
-readonly
-value="Loading...">
-
-<button id="copyReferral">
-
-<i class="fas fa-copy"></i>
-
-Copy
-
-</button>
-
-</div>
-
-</section>
-
-<!-- ===========================
-FLOATING SUPPORT BUTTON
-=========================== -->
-
-<a
-href="tel:+250788846187"
-class="support-btn">
-
-<i class="fas fa-headset"></i>
+<p>Add funds to your account securely.</p>
 
 </a>
 
+<a href="withdraw.html" class="action-card">
+
+<div class="action-icon">
+
+<i class="fas fa-money-bill-wave"></i>
+
+</div>
+
+<h3>Withdraw</h3>
+
+<p>Withdraw your available balance.</p>
+
+</a>
+
+<a href="transactions.html" class="action-card">
+
+<div class="action-icon">
+
+<i class="fas fa-list"></i>
+
+</div>
+
+<h3>Transactions</h3>
+
+<p>View all payment history.</p>
+
+</a>
+
+<a href="vip.html" class="action-card">
+
+<div class="action-icon">
+
+<i class="fas fa-crown"></i>
+
+</div>
+
+<h3>VIP Plans</h3>
+
+<p>Upgrade and earn daily income.</p>
+
+</a>
+
+<a href="profile.html" class="action-card">
+
+<div class="action-icon">
+
+<i class="fas fa-user"></i>
+
+</div>
+
+<h3>Profile</h3>
+
+<p>Manage your personal information.</p>
+
+</a>
+
+<a href="admin.html" class="action-card">
+
+<div class="action-icon">
+
+<i class="fas fa-user-shield"></i>
+
+</div>
+
+<h3>Admin Panel</h3>
+
+<p>Administrator dashboard.</p>
+
+</a>
+
+</div>
+
+</section>
+
 <!-- ===========================
-FOOTER
+RECENT TRANSACTIONS
 =========================== -->
 
-<footer>
+<section class="dashboard-row">
 
-<p>
+<div class="transactions-box">
 
-© 2026 Money Vault. All Rights Reserved.
+<div class="section-title">
 
-</p>
+<h2>Recent Transactions</h2>
 
-</footer>
+</div>
+
+<div id="recentTransactions">
+
+<div class="transaction-card">
+
+<div>
+
+<h4>No Transactions</h4>
+
+<p>Your recent activity will appear here.</p>
+
+</div>
+
+<span>0 RWF</span>
+
+</div>
+
+</div>
 
 </div>
 
 <!-- ===========================
-JAVASCRIPT
+ACCOUNT STATUS
 =========================== -->
 
-<script type="module" src="js/dashboard.js"></script>
+<div class="status-box">
 
-</body>
-  </html>
+<div class="section-title">
+
+<h2>Account Status</h2>
+
+</div>
+
+<div class="status-card">
+
+<i class="fas fa-circle-check"></i>
+
+<h3>Account Active</h3>
+
+<p>Your Money Vault account is active.</p>
+
+</div>
+
+<div class="status-card">
+
+<i class="fas fa-shield-halved"></i>
+
+<h3>Security</h3>
+
+<p>Protected by Firebase Authentication.</p>
+
+</div>
+
+<div class="status-card">
+
+<i class="fas fa-crown"></i>
+
+<h3>VIP Status</h3>
+
+<p id="currentVipStatus">
+
+VIP 0 Member
+
+</p>
+
+</div>
+
+</div>
+
+</section>
