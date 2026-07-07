@@ -1,6 +1,6 @@
 // ======================================
-// DASHBOARD.JS - PART 1
-// Money Vault
+// dashboard.js
+// CLEAN VERSION - PART 1
 // ======================================
 
 import { auth, db } from "./firebase.js";
@@ -12,27 +12,45 @@ import {
 
 import {
     ref,
-    onValue
+    onValue,
+    query,
+    limitToLast
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
 
 // ======================================
 // ELEMENTS
 // ======================================
 
-const menuBtn = document.getElementById("menuBtn");
-const sidebar = document.getElementById("sidebar");
 const loadingScreen = document.getElementById("loadingScreen");
+
+const sidebar = document.getElementById("sidebar");
+
+const menuBtn = document.getElementById("menuBtn");
+
 const logoutBtn = document.getElementById("logoutBtn");
 
 const userName = document.getElementById("userName");
+
 const balance = document.getElementById("balance");
+
 const summaryBalance = document.getElementById("summaryBalance");
+
 const bonus = document.getElementById("bonus");
+
 const referralBonus = document.getElementById("referralBonus");
+
 const currentVip = document.getElementById("currentVip");
 
+const recentTransactions = document.getElementById("recentTransactions");
+
+const referralLink = document.getElementById("referralLink");
+
+const copyReferral = document.getElementById("copyReferral");
+
+const notificationList = document.getElementById("notificationList");
+
 // ======================================
-// SIDEBAR
+// MENU
 // ======================================
 
 menuBtn?.addEventListener("click", () => {
@@ -47,13 +65,11 @@ menuBtn?.addEventListener("click", () => {
 
 logoutBtn?.addEventListener("click", async () => {
 
-    if (!confirm("Are you sure you want to logout?")) return;
-
     try {
 
         await signOut(auth);
 
-        window.location.href = "login.html";
+        location.href = "login.html";
 
     } catch (error) {
 
@@ -71,26 +87,41 @@ onAuthStateChanged(auth, (user) => {
 
     if (!user) {
 
-        window.location.href = "login.html";
+        location.href = "login.html";
+
         return;
 
     }
 
-    loadDashboard(user);
+    loadUser(user);
+
+    loadTransactions(user);
+
+    createReferral(user);
+
+    loadAnnouncements();
 
 });
 
 // ======================================
-// LOAD USER DATA
+// USER DATA
 // ======================================
 
-function loadDashboard(user) {
+function loadUser(user) {
 
     const userRef = ref(db, "users/" + user.uid);
 
     onValue(userRef, (snapshot) => {
 
-        if (!snapshot.exists()) return;
+        loadingScreen.style.display = "none";
+
+        if (!snapshot.exists()) {
+
+            console.log("User data not found.");
+
+            return;
+
+        }
 
         const data = snapshot.val();
 
@@ -108,109 +139,93 @@ function loadDashboard(user) {
         referralBonus.textContent =
             Number(data.referralBonus || 0).toLocaleString() + " RWF";
 
-        currentVip.textContent = data.vip || "VIP 0";
-
-        loadingScreen.style.display = "none";
+        currentVip.textContent =
+            data.vip || "VIP 0";
 
     });
 
 }
 
-console.log("Dashboard Part 1 Loaded Successfully");
+console.log("Dashboard Part 1 Loaded");
 
 // ======================================
-// DASHBOARD.JS - PART 2
-// TRANSACTIONS + REFERRAL
+// dashboard.js
+// CLEAN VERSION - PART 2
 // ======================================
-
-import {
-    ref,
-    query,
-    limitToLast,
-    onValue
-} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
-
-// ======================================
-// ELEMENTS
-// ======================================
-
-const recentTransactions =
-document.getElementById("recentTransactions");
-
-const referralLink =
-document.getElementById("referralLink");
-
-const copyReferral =
-document.getElementById("copyReferral");
-
-const notificationList =
-document.getElementById("notificationList");
 
 // ======================================
 // LOAD TRANSACTIONS
 // ======================================
 
-function loadTransactions(user){
+function loadTransactions(user) {
 
-const txRef=query(
+    const txRef = query(
 
-ref(db,"transactions/"+user.uid),
+        ref(db, "transactions/" + user.uid),
 
-limitToLast(5)
+        limitToLast(10)
 
-);
+    );
 
-onValue(txRef,(snapshot)=>{
+    onValue(txRef, (snapshot) => {
 
-recentTransactions.innerHTML="";
+        if (!recentTransactions) return;
 
-if(!snapshot.exists()){
+        recentTransactions.innerHTML = "";
 
-recentTransactions.innerHTML=
+        if (!snapshot.exists()) {
 
-`<p class="empty-text">
-No recent transactions.
-</p>`;
+            recentTransactions.innerHTML = `
 
-return;
+            <div class="transaction-card">
 
-}
+                <h4>No Transactions</h4>
 
-const transactions=[];
+                <p>Your transaction history is empty.</p>
 
-snapshot.forEach(item=>{
+            </div>
 
-transactions.unshift(item.val());
+            `;
 
-});
+            return;
 
-transactions.forEach(tx=>{
+        }
 
-recentTransactions.innerHTML+=`
+        const list = [];
 
-<div class="transaction-card">
+        snapshot.forEach((item) => {
 
-<div>
+            list.unshift(item.val());
 
-<h4>${tx.type}</h4>
+        });
 
-<p>${tx.date}</p>
+        list.forEach((tx) => {
 
-</div>
+            recentTransactions.innerHTML += `
 
-<h3>
+            <div class="transaction-card">
 
-${Number(tx.amount).toLocaleString()} RWF
+                <div>
 
-</h3>
+                    <h4>${tx.type || "Transaction"}</h4>
 
-</div>
+                    <p>${tx.date || ""}</p>
 
-`;
+                </div>
 
-});
+                <h3>
 
-});
+                    ${Number(tx.amount || 0).toLocaleString()} RWF
+
+                </h3>
+
+            </div>
+
+            `;
+
+        });
+
+    });
 
 }
 
@@ -218,136 +233,85 @@ ${Number(tx.amount).toLocaleString()} RWF
 // REFERRAL LINK
 // ======================================
 
-function createReferral(user){
+function createReferral(user) {
 
-const link=
+    if (!referralLink) return;
 
-window.location.origin+
+    referralLink.value =
 
-"/register.html?ref="+
+        window.location.origin +
 
-user.uid;
+        "/register.html?ref=" +
 
-referralLink.value=link;
-
-}
-
-// ======================================
-// COPY LINK
-// ======================================
-
-copyReferral?.addEventListener("click",()=>{
-
-navigator.clipboard.writeText(
-
-referralLink.value
-
-);
-
-alert("Referral Link Copied");
-
-});
-
-// ======================================
-// NOTIFICATION
-// ======================================
-
-function addNotification(title,message){
-
-notificationList.innerHTML=`
-
-<div class="notification-card">
-
-<i class="fas fa-bell"></i>
-
-<div>
-
-<h4>${title}</h4>
-
-<p>${message}</p>
-
-</div>
-
-</div>
-
-`;
+        user.uid;
 
 }
 
 // ======================================
-// UPDATE DASHBOARD
+// COPY REFERRAL
 // ======================================
 
-onAuthStateChanged(auth,(user)=>{
+copyReferral?.addEventListener("click", async () => {
 
-if(!user) return;
+    try {
 
-loadTransactions(user);
+        await navigator.clipboard.writeText(
 
-createReferral(user);
+            referralLink.value
 
-addNotification(
+        );
 
-"Welcome",
+        showToast("Referral link copied.");
 
-"Manage your Money Vault account securely."
+    } catch (error) {
 
-);
+        alert(error.message);
+
+    }
 
 });
 
-console.log("Dashboard Part 2 Loaded");
 // ======================================
-// DASHBOARD.JS - PART 3
-// VIP + ANNOUNCEMENTS + SUPPORT
+// ANNOUNCEMENTS
 // ======================================
 
-import {
-    ref,
-    onValue
-} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
+function loadAnnouncements() {
 
-// ======================================
-// VIP STATUS
-// ======================================
+    if (!notificationList) return;
 
-function updateVipStatus(user){
+    const announceRef = ref(db, "announcements");
 
-    const vipRef = ref(db,"users/"+user.uid+"/vip");
+    onValue(announceRef, (snapshot) => {
 
-    onValue(vipRef,(snapshot)=>{
+        notificationList.innerHTML = "";
 
-        if(snapshot.exists()){
+        if (!snapshot.exists()) {
 
-            currentVip.textContent = snapshot.val();
+            notificationList.innerHTML = `
 
-        }else{
+            <div class="notification-card">
 
-            currentVip.textContent = "VIP 0";
+                <i class="fas fa-bell"></i>
+
+                <div>
+
+                    <h4>Welcome</h4>
+
+                    <p>Welcome to Money Vault.</p>
+
+                </div>
+
+            </div>
+
+            `;
+
+            return;
 
         }
 
-    });
+        snapshot.forEach((item) => {
 
-}
-
-// ======================================
-// ADMIN ANNOUNCEMENTS
-// ======================================
-
-function loadAnnouncements(){
-
-    const announceRef = ref(db,"announcements");
-
-    onValue(announceRef,(snapshot)=>{
-
-        if(!snapshot.exists()) return;
-
-        notificationList.innerHTML="";
-
-        snapshot.forEach(item=>{
-
-            const data=item.val();
+            const data = item.val();
 
             notificationList.innerHTML += `
 
@@ -359,7 +323,7 @@ function loadAnnouncements(){
 
                     <h4>${data.title || "Announcement"}</h4>
 
-                    <p>${data.message}</p>
+                    <p>${data.message || ""}</p>
 
                 </div>
 
@@ -373,72 +337,101 @@ function loadAnnouncements(){
 
 }
 
+console.log("Dashboard Part 2 Loaded");
+
+// ======================================
+// dashboard.js
+// CLEAN VERSION - PART 3
+// ======================================
+
+// ======================================
+// TOAST MESSAGE
+// ======================================
+
+function showToast(message) {
+
+    let toast = document.querySelector(".toast");
+
+    if (!toast) {
+
+        toast = document.createElement("div");
+        toast.className = "toast";
+
+        toast.style.position = "fixed";
+        toast.style.bottom = "20px";
+        toast.style.right = "20px";
+        toast.style.padding = "15px 20px";
+        toast.style.background = "#2563eb";
+        toast.style.color = "#fff";
+        toast.style.borderRadius = "10px";
+        toast.style.zIndex = "99999";
+        toast.style.fontWeight = "600";
+
+        document.body.appendChild(toast);
+
+    }
+
+    toast.textContent = message;
+    toast.style.display = "block";
+
+    setTimeout(() => {
+
+        toast.style.display = "none";
+
+    }, 3000);
+
+}
+
 // ======================================
 // SUPPORT BUTTON
 // ======================================
 
 const supportBtn = document.querySelector(".support-btn");
 
-supportBtn?.addEventListener("click",(e)=>{
+supportBtn?.addEventListener("click", (e) => {
 
     e.preventDefault();
 
-    window.location.href="tel:+250788846187";
+    window.open("https://wa.me/250788846187", "_blank");
 
 });
 
 // ======================================
-// LOGOUT SUCCESS
+// HIDE LOADING IF STILL VISIBLE
 // ======================================
 
-function showToast(message){
+window.addEventListener("load", () => {
 
-    const toast=document.createElement("div");
+    if (loadingScreen) {
 
-    toast.className="toast";
+        setTimeout(() => {
 
-    toast.innerText=message;
+            loadingScreen.style.display = "none";
 
-    document.body.appendChild(toast);
+        }, 800);
 
-    setTimeout(()=>{
-
-        toast.classList.add("show");
-
-    },100);
-
-    setTimeout(()=>{
-
-        toast.remove();
-
-    },3000);
-
-}
-
-// ======================================
-// START DASHBOARD
-// ======================================
-
-onAuthStateChanged(auth,(user)=>{
-
-    if(!user) return;
-
-    updateVipStatus(user);
-
-    loadAnnouncements();
+    }
 
 });
 
 // ======================================
-// COPY REFERRAL SUCCESS
+// GLOBAL ERROR HANDLER
 // ======================================
 
-copyReferral?.addEventListener("click",()=>{
+window.addEventListener("error", (event) => {
 
-    navigator.clipboard.writeText(referralLink.value);
+    console.error("Dashboard Error:", event.error);
 
-    showToast("Referral link copied successfully.");
+    if (loadingScreen) {
+
+        loadingScreen.style.display = "none";
+
+    }
 
 });
 
-console.log("Dashboard Ready Successfully");
+// ======================================
+// FINISH
+// ======================================
+
+console.log("Money Vault Dashboard Ready");
