@@ -1,111 +1,444 @@
+// ======================================
+// DASHBOARD.JS - PART 1
+// Money Vault
+// ======================================
+
 import { auth, db } from "./firebase.js";
 
 import {
-  onAuthStateChanged,
-  signOut
+    onAuthStateChanged,
+    signOut
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 
 import {
-  ref,
-  get,
-  update
+    ref,
+    onValue
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
 
-// ================= VIP PLANS =================
-const vipPlans = {
-  "VIP 1": { price: 10000, daily: 500 },
-  "VIP 2": { price: 25000, daily: 1500 },
-  "VIP 3": { price: 50000, daily: 3500 },
-  "VIP 4": { price: 100000, daily: 8000 }
-};
+// ======================================
+// ELEMENTS
+// ======================================
 
-// ================= LOAD DASHBOARD =================
-async function loadDashboard(user){
-  const snap = await get(ref(db, "users/" + user.uid));
-  if(!snap.exists()) return;
+const menuBtn = document.getElementById("menuBtn");
+const sidebar = document.getElementById("sidebar");
+const loadingScreen = document.getElementById("loadingScreen");
+const logoutBtn = document.getElementById("logoutBtn");
 
-  const data = snap.val();
+const userName = document.getElementById("userName");
+const balance = document.getElementById("balance");
+const summaryBalance = document.getElementById("summaryBalance");
+const bonus = document.getElementById("bonus");
+const referralBonus = document.getElementById("referralBonus");
+const currentVip = document.getElementById("currentVip");
 
-  document.getElementById("balanceBox").textContent =
-    (data.balance || 0).toLocaleString() + " RWF";
+// ======================================
+// SIDEBAR
+// ======================================
 
-  document.getElementById("vipLevel").textContent =
-    data.vip || "VIP 0";
+menuBtn?.addEventListener("click", () => {
 
-  document.getElementById("vipStatus").textContent =
-    data.vipActive ? "ACTIVE" : "INACTIVE";
+    sidebar.classList.toggle("active");
+
+});
+
+// ======================================
+// LOGOUT
+// ======================================
+
+logoutBtn?.addEventListener("click", async () => {
+
+    if (!confirm("Are you sure you want to logout?")) return;
+
+    try {
+
+        await signOut(auth);
+
+        window.location.href = "login.html";
+
+    } catch (error) {
+
+        alert(error.message);
+
+    }
+
+});
+
+// ======================================
+// AUTH
+// ======================================
+
+onAuthStateChanged(auth, (user) => {
+
+    if (!user) {
+
+        window.location.href = "login.html";
+        return;
+
+    }
+
+    loadDashboard(user);
+
+});
+
+// ======================================
+// LOAD USER DATA
+// ======================================
+
+function loadDashboard(user) {
+
+    const userRef = ref(db, "users/" + user.uid);
+
+    onValue(userRef, (snapshot) => {
+
+        if (!snapshot.exists()) return;
+
+        const data = snapshot.val();
+
+        userName.textContent = data.fullName || "Money Vault User";
+
+        balance.textContent =
+            Number(data.balance || 0).toLocaleString() + " RWF";
+
+        summaryBalance.textContent =
+            Number(data.balance || 0).toLocaleString() + " RWF";
+
+        bonus.textContent =
+            Number(data.bonus || 0).toLocaleString() + " RWF";
+
+        referralBonus.textContent =
+            Number(data.referralBonus || 0).toLocaleString() + " RWF";
+
+        currentVip.textContent = data.vip || "VIP 0";
+
+        loadingScreen.style.display = "none";
+
+    });
+
 }
 
-// ================= BUY VIP =================
-window.buyVIP = async (vipName) => {
-  const user = auth.currentUser;
-  if(!user) return alert("Login first");
+console.log("Dashboard Part 1 Loaded Successfully");
 
-  const plan = vipPlans[vipName];
-  const userRef = ref(db, "users/" + user.uid);
+// ======================================
+// DASHBOARD.JS - PART 2
+// TRANSACTIONS + REFERRAL
+// ======================================
 
-  const snap = await get(userRef);
-  if(!snap.exists()) return alert("User not found");
+import {
+    ref,
+    query,
+    limitToLast,
+    onValue
+} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
 
-  const data = snap.val();
+// ======================================
+// ELEMENTS
+// ======================================
 
-  if((data.balance || 0) < plan.price){
-    return alert("Not enough balance");
-  }
+const recentTransactions =
+document.getElementById("recentTransactions");
 
-  await update(userRef, {
-    balance: (data.balance || 0) - plan.price,
-    vip: vipName,
-    vipActive: true,
-    dailyEarning: plan.daily,
-    vipExpire: Date.now() + 30*24*60*60*1000
-  });
+const referralLink =
+document.getElementById("referralLink");
 
-  alert("VIP Activated!");
-  loadDashboard(user);
-};
+const copyReferral =
+document.getElementById("copyReferral");
 
-// ================= DAILY EARNINGS =================
-setInterval(async () => {
-  const user = auth.currentUser;
-  if(!user) return;
+const notificationList =
+document.getElementById("notificationList");
 
-  const userRef = ref(db, "users/" + user.uid);
-  const snap = await get(userRef);
-  if(!snap.exists()) return;
+// ======================================
+// LOAD TRANSACTIONS
+// ======================================
 
-  const data = snap.val();
+function loadTransactions(user){
 
-  if(!data.vipActive) return;
+const txRef=query(
 
-  if(data.vipExpire && Date.now() > data.vipExpire){
-    await update(userRef, {
-      vip: "VIP 0",
-      vipActive: false,
-      dailyEarning: 0
+ref(db,"transactions/"+user.uid),
+
+limitToLast(5)
+
+);
+
+onValue(txRef,(snapshot)=>{
+
+recentTransactions.innerHTML="";
+
+if(!snapshot.exists()){
+
+recentTransactions.innerHTML=
+
+`<p class="empty-text">
+No recent transactions.
+</p>`;
+
+return;
+
+}
+
+const transactions=[];
+
+snapshot.forEach(item=>{
+
+transactions.unshift(item.val());
+
+});
+
+transactions.forEach(tx=>{
+
+recentTransactions.innerHTML+=`
+
+<div class="transaction-card">
+
+<div>
+
+<h4>${tx.type}</h4>
+
+<p>${tx.date}</p>
+
+</div>
+
+<h3>
+
+${Number(tx.amount).toLocaleString()} RWF
+
+</h3>
+
+</div>
+
+`;
+
+});
+
+});
+
+}
+
+// ======================================
+// REFERRAL LINK
+// ======================================
+
+function createReferral(user){
+
+const link=
+
+window.location.origin+
+
+"/register.html?ref="+
+
+user.uid;
+
+referralLink.value=link;
+
+}
+
+// ======================================
+// COPY LINK
+// ======================================
+
+copyReferral?.addEventListener("click",()=>{
+
+navigator.clipboard.writeText(
+
+referralLink.value
+
+);
+
+alert("Referral Link Copied");
+
+});
+
+// ======================================
+// NOTIFICATION
+// ======================================
+
+function addNotification(title,message){
+
+notificationList.innerHTML=`
+
+<div class="notification-card">
+
+<i class="fas fa-bell"></i>
+
+<div>
+
+<h4>${title}</h4>
+
+<p>${message}</p>
+
+</div>
+
+</div>
+
+`;
+
+}
+
+// ======================================
+// UPDATE DASHBOARD
+// ======================================
+
+onAuthStateChanged(auth,(user)=>{
+
+if(!user) return;
+
+loadTransactions(user);
+
+createReferral(user);
+
+addNotification(
+
+"Welcome",
+
+"Manage your Money Vault account securely."
+
+);
+
+});
+
+console.log("Dashboard Part 2 Loaded");
+// ======================================
+// DASHBOARD.JS - PART 3
+// VIP + ANNOUNCEMENTS + SUPPORT
+// ======================================
+
+import {
+    ref,
+    onValue
+} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
+
+// ======================================
+// VIP STATUS
+// ======================================
+
+function updateVipStatus(user){
+
+    const vipRef = ref(db,"users/"+user.uid+"/vip");
+
+    onValue(vipRef,(snapshot)=>{
+
+        if(snapshot.exists()){
+
+            currentVip.textContent = snapshot.val();
+
+        }else{
+
+            currentVip.textContent = "VIP 0";
+
+        }
+
     });
-    return;
-  }
 
-  await update(userRef, {
-    balance: (data.balance || 0) + (data.dailyEarning || 0)
-  });
+}
 
-}, 60000);
+// ======================================
+// ADMIN ANNOUNCEMENTS
+// ======================================
 
-// ================= AUTH =================
-onAuthStateChanged(auth, async(user)=>{
-  if(!user){
-    window.location.href = "login.html";
-    return;
-  }
+function loadAnnouncements(){
 
-  await loadDashboard(user);
+    const announceRef = ref(db,"announcements");
+
+    onValue(announceRef,(snapshot)=>{
+
+        if(!snapshot.exists()) return;
+
+        notificationList.innerHTML="";
+
+        snapshot.forEach(item=>{
+
+            const data=item.val();
+
+            notificationList.innerHTML += `
+
+            <div class="notification-card">
+
+                <i class="fas fa-bullhorn"></i>
+
+                <div>
+
+                    <h4>${data.title || "Announcement"}</h4>
+
+                    <p>${data.message}</p>
+
+                </div>
+
+            </div>
+
+            `;
+
+        });
+
+    });
+
+}
+
+// ======================================
+// SUPPORT BUTTON
+// ======================================
+
+const supportBtn = document.querySelector(".support-btn");
+
+supportBtn?.addEventListener("click",(e)=>{
+
+    e.preventDefault();
+
+    window.location.href="tel:+250788846187";
+
 });
 
-// ================= LOGOUT =================
-document.getElementById("logoutBtn")?.addEventListener("click", async(e)=>{
-  e.preventDefault();
-  await signOut(auth);
-  window.location.href = "login.html";
+// ======================================
+// LOGOUT SUCCESS
+// ======================================
+
+function showToast(message){
+
+    const toast=document.createElement("div");
+
+    toast.className="toast";
+
+    toast.innerText=message;
+
+    document.body.appendChild(toast);
+
+    setTimeout(()=>{
+
+        toast.classList.add("show");
+
+    },100);
+
+    setTimeout(()=>{
+
+        toast.remove();
+
+    },3000);
+
+}
+
+// ======================================
+// START DASHBOARD
+// ======================================
+
+onAuthStateChanged(auth,(user)=>{
+
+    if(!user) return;
+
+    updateVipStatus(user);
+
+    loadAnnouncements();
+
 });
+
+// ======================================
+// COPY REFERRAL SUCCESS
+// ======================================
+
+copyReferral?.addEventListener("click",()=>{
+
+    navigator.clipboard.writeText(referralLink.value);
+
+    showToast("Referral link copied successfully.");
+
+});
+
+console.log("Dashboard Ready Successfully");
