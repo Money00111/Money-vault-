@@ -368,23 +368,7 @@ function loadNotifications(){
 
 }
 
-// ======================================
-// START FUNCTIONS
-// ======================================
-
-onAuthStateChanged(auth,(user)=>{
-
-    if(!user) return;
-
-    loadTransactions(user);
-
-    createReferral(user);
-
-    loadNotifications();
-
-});
-
-console.log("Dashboard Part 2 Ready");
+        
 
       // ======================================
 // dashboard.js
@@ -494,21 +478,6 @@ window.addEventListener("error", (event) => {
 
 });
 
-// ======================================
-// START EXTRA FEATURES
-// ======================================
-
-onAuthStateChanged(auth, (user) => {
-
-    if (!user) return;
-
-    loadTransactions(user);
-
-    createReferral(user);
-
-    loadNotifications();
-
-});
 
 // ======================================
 // READY
