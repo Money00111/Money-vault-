@@ -131,11 +131,6 @@ console.log("VIP Part 1 Loaded");
 // BUY VIP PLAN
 // ======================================
 
-import {
-    update,
-    push
-} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
-
 // ======================================
 // VIP BUTTONS
 // ======================================
