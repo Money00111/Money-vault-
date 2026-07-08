@@ -139,3 +139,121 @@ onAuthStateChanged(auth, async (user) => {
 });
 
 console.log("Profile Part 1 Loaded");
+
+// ======================================
+// PROFILE.JS - PART 2
+// LOAD PROFILE
+// ======================================
+
+async function loadProfile(user) {
+
+    const userRef = ref(db, "users/" + user.uid);
+
+    const snapshot = await get(userRef);
+
+    if (!snapshot.exists()) {
+
+        throw new Error("User profile not found.");
+
+    }
+
+    userData = snapshot.val();
+
+    // ==========================
+    // HEADER
+    // ==========================
+
+    if (fullName)
+        fullName.textContent = userData.fullName || "Money Vault User";
+
+    if (userEmail)
+        userEmail.textContent = user.email || "";
+
+    // ==========================
+    // WALLET
+    // ==========================
+
+    if (balance)
+        balance.textContent =
+            Number(userData.balance || 0).toLocaleString() + " RWF";
+
+    if (bonus)
+        bonus.textContent =
+            Number(userData.bonus || 0).toLocaleString() + " RWF";
+
+    if (referralBonus)
+        referralBonus.textContent =
+            Number(userData.referralBonus || 0).toLocaleString() + " RWF";
+
+    // ==========================
+    // VIP
+    // ==========================
+
+    const vip = userData.vip || "VIP 0";
+
+    if (vipLevel)
+        vipLevel.textContent = vip;
+
+    if (vipCard)
+        vipCard.textContent = vip;
+
+    // ==========================
+    // ACCOUNT STATS
+    // ==========================
+
+    if (totalDeposit)
+        totalDeposit.textContent =
+            Number(userData.totalDeposit || 0).toLocaleString() + " RWF";
+
+    if (totalWithdraw)
+        totalWithdraw.textContent =
+            Number(userData.totalWithdraw || 0).toLocaleString() + " RWF";
+
+    if (totalTransactions)
+        totalTransactions.textContent =
+            Number(userData.totalTransactions || 0);
+
+    // ==========================
+    // ACCOUNT INFO
+    // ==========================
+
+    if (accountId)
+        accountId.textContent = user.uid.substring(0, 12);
+
+    if (joinDate)
+        joinDate.textContent =
+            new Date(user.metadata.creationTime).toLocaleDateString();
+
+    // ==========================
+    // FORM
+    // ==========================
+
+    if (nameInput)
+        nameInput.value = userData.fullName || "";
+
+    if (phoneInput)
+        phoneInput.value = userData.phone || "";
+
+    if (emailInput)
+        emailInput.value = user.email || "";
+
+    if (countryInput)
+        countryInput.value = userData.country || "🇷🇼 Rwanda";
+
+    if (addressInput)
+        addressInput.value = userData.address || "";
+
+    // ==========================
+    // PROFILE PHOTO
+    // ==========================
+
+    if (profilePhoto && userData.photoURL) {
+
+        profilePhoto.src = userData.photoURL;
+
+    }
+
+}
+
+console.log("Profile Part 2 Loaded Successfully");
+
