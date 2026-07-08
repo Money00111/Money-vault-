@@ -310,3 +310,410 @@ color:#e5e7eb;
 
    }
 
+/* ==========================
+VIP GRID
+========================== */
+
+.vip-grid{
+
+display:grid;
+
+grid-template-columns:repeat(auto-fit,minmax(300px,1fr));
+
+gap:30px;
+
+margin-top:30px;
+
+}
+
+/* ==========================
+VIP CARD
+========================== */
+
+.vip-card{
+
+position:relative;
+
+background:#1e293b;
+
+border-radius:25px;
+
+padding:30px;
+
+overflow:hidden;
+
+transition:.4s;
+
+border:2px solid rgba(255,255,255,.08);
+
+box-shadow:0 10px 30px rgba(0,0,0,.35);
+
+}
+
+.vip-card:hover{
+
+transform:translateY(-10px);
+
+box-shadow:0 20px 40px rgba(0,0,0,.45);
+
+}
+
+.vip-badge{
+
+position:absolute;
+
+top:20px;
+
+right:-45px;
+
+width:170px;
+
+text-align:center;
+
+padding:8px;
+
+font-weight:700;
+
+transform:rotate(45deg);
+
+color:#fff;
+
+}
+
+.vip-icon{
+
+font-size:65px;
+
+margin:25px 0;
+
+display:block;
+
+text-align:center;
+
+}
+
+.vip-card h2{
+
+text-align:center;
+
+margin-bottom:15px;
+
+font-size:28px;
+
+}
+
+.vip-card h1{
+
+text-align:center;
+
+font-size:38px;
+
+margin-bottom:25px;
+
+color:#fff;
+
+}
+
+.vip-card ul{
+
+list-style:none;
+
+margin-bottom:30px;
+
+}
+
+.vip-card ul li{
+
+padding:10px 0;
+
+font-size:15px;
+
+display:flex;
+
+align-items:center;
+
+gap:10px;
+
+border-bottom:1px solid rgba(255,255,255,.08);
+
+}
+
+.vip-card ul li:last-child{
+
+border-bottom:none;
+
+}
+
+.vip-card ul li i{
+
+color:#22c55e;
+
+}
+
+/* ==========================
+BUY BUTTON
+========================== */
+
+.buyVipBtn{
+
+width:100%;
+
+padding:15px;
+
+border:none;
+
+border-radius:15px;
+
+font-size:17px;
+
+font-weight:700;
+
+cursor:pointer;
+
+transition:.3s;
+
+background:#2563eb;
+
+color:#fff;
+
+}
+
+.buyVipBtn:hover{
+
+transform:scale(1.03);
+
+background:#1d4ed8;
+
+}
+
+.buyVipBtn:active{
+
+transform:scale(.98);
+
+}
+
+   /* =====================================
+   VIP.CSS - PART 2
+   VIP COLORS & EFFECTS
+===================================== */
+
+/* ==========================
+VIP 1 - BRONZE
+========================== */
+
+.bronze{
+
+background:linear-gradient(135deg,#5b3a29,#8B4513);
+
+border-color:#CD7F32;
+
+}
+
+.bronze .vip-badge{
+
+background:#CD7F32;
+
+}
+
+.bronze .vip-icon{
+
+color:#CD7F32;
+
+}
+
+.bronze .buyVipBtn{
+
+background:#CD7F32;
+
+}
+
+.bronze .buyVipBtn:hover{
+
+background:#b56b24;
+
+}
+
+/* ==========================
+VIP 2 - SILVER
+========================== */
+
+.silver{
+
+background:linear-gradient(135deg,#374151,#9ca3af);
+
+border-color:#C0C0C0;
+
+}
+
+.silver .vip-badge{
+
+background:#C0C0C0;
+
+color:#111;
+
+}
+
+.silver .vip-icon{
+
+color:#E5E7EB;
+
+}
+
+.silver .buyVipBtn{
+
+background:#9CA3AF;
+
+color:#111;
+
+}
+
+.silver .buyVipBtn:hover{
+
+background:#D1D5DB;
+
+}
+
+/* ==========================
+VIP 3 - GOLD
+========================== */
+
+.gold{
+
+background:linear-gradient(135deg,#7c5a00,#f59e0b);
+
+border-color:#FFD700;
+
+}
+
+.gold .vip-badge{
+
+background:#FFD700;
+
+color:#111;
+
+}
+
+.gold .vip-icon{
+
+color:#FFD700;
+
+}
+
+.gold .buyVipBtn{
+
+background:#FFD700;
+
+color:#111;
+
+}
+
+.gold .buyVipBtn:hover{
+
+background:#FFC107;
+
+}
+
+/* ==========================
+VIP 4 - DIAMOND
+========================== */
+
+.diamond{
+
+background:linear-gradient(135deg,#0c4a6e,#06b6d4);
+
+border-color:#38BDF8;
+
+}
+
+.diamond .vip-badge{
+
+background:#38BDF8;
+
+}
+
+.diamond .vip-icon{
+
+color:#7DD3FC;
+
+}
+
+.diamond .buyVipBtn{
+
+background:#0EA5E9;
+
+}
+
+.diamond .buyVipBtn:hover{
+
+background:#0284C7;
+
+}
+
+/* ==========================
+VIP 5 - PLATINUM
+========================== */
+
+.platinum{
+
+background:linear-gradient(135deg,#4c1d95,#7c3aed);
+
+border-color:#A855F7;
+
+}
+
+.platinum .vip-badge{
+
+background:#A855F7;
+
+}
+
+.platinum .vip-icon{
+
+color:#C084FC;
+
+}
+
+.platinum .buyVipBtn{
+
+background:#7C3AED;
+
+}
+
+.platinum .buyVipBtn:hover{
+
+background:#6D28D9;
+
+}
+
+/* ==========================
+PREMIUM HOVER
+========================== */
+
+.vip-card:hover{
+
+transform:translateY(-12px) scale(1.02);
+
+box-shadow:0 20px 50px rgba(0,0,0,.45);
+
+}
+
+/* ==========================
+ACTIVE VIP
+========================== */
+
+.vip-card.active{
+
+border:3px solid #22c55e;
+
+box-shadow:0 0 30px rgba(34,197,94,.45);
+
+}
+
+.vip-card.active .buyVipBtn{
+
+background:#22c55e;
+
+cursor:default;
+
+}
+
