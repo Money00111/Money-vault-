@@ -124,7 +124,13 @@ onAuthStateChanged(auth, async (user) => {
 
         console.error("Profile Error:", error);
 
-        alert("Failed to load profile.");
+        catch (error) {
+
+    console.error(error);
+
+    alert(error.message);
+
+}
 
     } finally {
 
