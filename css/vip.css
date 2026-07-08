@@ -717,3 +717,388 @@ cursor:default;
 
 }
 
+/* =====================================
+   VIP.CSS - PART 3
+   RESPONSIVE + FOOTER + SUPPORT
+===================================== */
+
+/* ==========================
+VIP BENEFITS
+========================== */
+
+.vip-benefits{
+
+margin-top:50px;
+
+}
+
+.vip-benefits h2{
+
+text-align:center;
+
+font-size:32px;
+
+margin-bottom:30px;
+
+color:#FFD700;
+
+}
+
+.benefits-grid{
+
+display:grid;
+
+grid-template-columns:repeat(auto-fit,minmax(250px,1fr));
+
+gap:25px;
+
+}
+
+.benefit-card{
+
+background:#1e293b;
+
+padding:30px;
+
+border-radius:20px;
+
+text-align:center;
+
+transition:.35s;
+
+border:1px solid rgba(255,255,255,.08);
+
+}
+
+.benefit-card:hover{
+
+transform:translateY(-8px);
+
+background:#273549;
+
+}
+
+.benefit-card i{
+
+font-size:50px;
+
+color:#FFD700;
+
+margin-bottom:20px;
+
+}
+
+.benefit-card h3{
+
+margin-bottom:12px;
+
+font-size:22px;
+
+}
+
+.benefit-card p{
+
+color:#cbd5e1;
+
+line-height:1.7;
+
+}
+
+/* ==========================
+SUPPORT BUTTON
+========================== */
+
+.support-btn{
+
+position:fixed;
+
+right:20px;
+
+bottom:20px;
+
+width:65px;
+
+height:65px;
+
+border-radius:50%;
+
+background:#25D366;
+
+display:flex;
+
+align-items:center;
+
+justify-content:center;
+
+text-decoration:none;
+
+font-size:30px;
+
+color:#fff;
+
+box-shadow:0 10px 25px rgba(0,0,0,.35);
+
+transition:.3s;
+
+z-index:1000;
+
+}
+
+.support-btn:hover{
+
+transform:scale(1.1);
+
+}
+
+/* ==========================
+FOOTER
+========================== */
+
+footer{
+
+margin-top:60px;
+
+padding:35px 20px;
+
+text-align:center;
+
+color:#cbd5e1;
+
+border-top:1px solid rgba(255,255,255,.08);
+
+}
+
+footer h2{
+
+color:#FFD700;
+
+margin-bottom:10px;
+
+}
+
+footer p{
+
+margin-top:8px;
+
+}
+
+/* ==========================
+LOADING SCREEN
+========================== */
+
+.loading-screen{
+
+position:fixed;
+
+top:0;
+
+left:0;
+
+width:100%;
+
+height:100%;
+
+background:#0f172a;
+
+display:flex;
+
+flex-direction:column;
+
+justify-content:center;
+
+align-items:center;
+
+z-index:99999;
+
+}
+
+.loader{
+
+width:70px;
+
+height:70px;
+
+border:6px solid rgba(255,255,255,.2);
+
+border-top:6px solid #FFD700;
+
+border-radius:50%;
+
+animation:spin 1s linear infinite;
+
+margin-bottom:20px;
+
+}
+
+@keyframes spin{
+
+0%{
+
+transform:rotate(0deg);
+
+}
+
+100%{
+
+transform:rotate(360deg);
+
+}
+
+}
+
+/* ==========================
+TOAST
+========================== */
+
+.toast{
+
+position:fixed;
+
+top:20px;
+
+right:20px;
+
+background:#22c55e;
+
+color:#fff;
+
+padding:15px 22px;
+
+border-radius:12px;
+
+font-weight:600;
+
+opacity:0;
+
+transform:translateY(-20px);
+
+transition:.3s;
+
+z-index:99999;
+
+}
+
+.toast.show{
+
+opacity:1;
+
+transform:translateY(0);
+
+}
+
+/* ==========================
+RESPONSIVE
+========================== */
+
+@media(max-width:900px){
+
+.sidebar{
+
+left:-260px;
+
+transition:.35s;
+
+}
+
+.sidebar.active{
+
+left:0;
+
+}
+
+.main{
+
+margin-left:0;
+
+width:100%;
+
+padding:20px;
+
+}
+
+#menuBtn{
+
+display:block;
+
+}
+
+.topbar{
+
+flex-wrap:wrap;
+
+gap:15px;
+
+}
+
+.vip-hero{
+
+flex-direction:column;
+
+text-align:center;
+
+}
+
+.hero-right{
+
+margin-top:25px;
+
+font-size:90px;
+
+}
+
+.hero-info{
+
+justify-content:center;
+
+}
+
+.balance-box{
+
+width:100%;
+
+text-align:center;
+
+}
+
+}
+
+@media(max-width:600px){
+
+.vip-grid{
+
+grid-template-columns:1fr;
+
+}
+
+.benefits-grid{
+
+grid-template-columns:1fr;
+
+}
+
+.hero-left h1{
+
+font-size:28px;
+
+}
+
+.balance-box h2{
+
+font-size:22px;
+
+}
+
+.vip-card h1{
+
+font-size:30px;
+
+}
+
+.vip-icon{
+
+font-size:55px;
+
+}
+
+                           }
+
