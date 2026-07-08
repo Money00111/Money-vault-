@@ -26,7 +26,6 @@ import { getStorage } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-
 const auth = getAuth(app);
 const db = getDatabase(app);
 const storage = getStorage(app);
-
 export { app, auth, db, storage };
 // ======================================
 // ELEMENTS
