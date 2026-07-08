@@ -401,94 +401,79 @@ margin-bottom:15px;
 font-size:28px;
 
 }
+/* VIP GRID */
+
+.vip-grid{
+
+display:grid;
+
+grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+
+gap:20px;
+
+margin-top:25px;
+
+}
+
+/* VIP CARD */
+
+.vip-card{
+
+padding:20px;
+
+border-radius:18px;
+
+}
+
+/* ICON */
+
+.vip-icon{
+
+font-size:45px;
+
+margin:15px 0;
+
+}
+
+/* PLAN NAME */
+
+.vip-card h2{
+
+font-size:22px;
+
+margin-bottom:10px;
+
+}
+
+/* PRICE */
 
 .vip-card h1{
 
-text-align:center;
+font-size:30px;
 
-font-size:38px;
-
-margin-bottom:25px;
-
-color:#fff;
+margin-bottom:18px;
 
 }
 
-.vip-card ul{
-
-list-style:none;
-
-margin-bottom:30px;
-
-}
+/* FEATURES */
 
 .vip-card ul li{
 
-padding:10px 0;
+font-size:14px;
 
-font-size:15px;
-
-display:flex;
-
-align-items:center;
-
-gap:10px;
-
-border-bottom:1px solid rgba(255,255,255,.08);
+padding:8px 0;
 
 }
 
-.vip-card ul li:last-child{
-
-border-bottom:none;
-
-}
-
-.vip-card ul li i{
-
-color:#22c55e;
-
-}
-
-/* ==========================
-BUY BUTTON
-========================== */
+/* BUTTON */
 
 .buyVipBtn{
 
-width:100%;
+padding:12px;
 
-padding:15px;
+font-size:15px;
 
-border:none;
-
-border-radius:15px;
-
-font-size:17px;
-
-font-weight:700;
-
-cursor:pointer;
-
-transition:.3s;
-
-background:#2563eb;
-
-color:#fff;
-
-}
-
-.buyVipBtn:hover{
-
-transform:scale(1.03);
-
-background:#1d4ed8;
-
-}
-
-.buyVipBtn:active{
-
-transform:scale(.98);
+border-radius:12px;
 
 }
 
