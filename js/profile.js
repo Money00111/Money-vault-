@@ -119,28 +119,21 @@ onAuthStateChanged(auth, async (user) => {
     try {
 
         await loadProfile(user);
+} catch (error) {
 
-    } catch (error) {
-
-        console.error("Profile Error:", error);
-
-        catch (error) {
-
-    console.error(error);
+    console.error("Profile Error:", error);
 
     alert(error.message);
 
-}
+} finally {
 
-    } finally {
+    if (loadingScreen) {
 
-        if (loadingScreen) {
-
-            loadingScreen.style.display = "none";
-            console.log("Profile Loaded");
-        }
+        loadingScreen.style.display = "none";
 
     }
+
+}
 
 });
 
