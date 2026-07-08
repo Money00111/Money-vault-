@@ -131,7 +131,7 @@ onAuthStateChanged(auth, async (user) => {
         if (loadingScreen) {
 
             loadingScreen.style.display = "none";
-
+            console.log("Profile Loaded");
         }
 
     }
@@ -151,11 +151,16 @@ async function loadProfile(user) {
 
     const snapshot = await get(userRef);
 
-    if (!snapshot.exists()) {
+if (!snapshot.exists()) {
 
-        throw new Error("User profile not found.");
-
+    if (loadingScreen) {
+        loadingScreen.style.display = "none";
     }
+
+    alert("User profile not found.");
+
+    return;
+}
 
     userData = snapshot.val();
 
