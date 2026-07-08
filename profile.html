@@ -257,3 +257,291 @@ async function loadProfile(user) {
 
 console.log("Profile Part 2 Loaded Successfully");
 
+// ======================================
+// PROFILE.JS - PART 3
+// SAVE PROFILE + PHOTO + DARK MODE
+// ======================================
+
+// ======================================
+// SAVE PROFILE
+// ======================================
+
+profileForm?.addEventListener("submit", async (e) => {
+
+    e.preventDefault();
+
+    if (!currentUser) return;
+
+    const fullNameValue = nameInput.value.trim();
+    const phoneValue = phoneInput.value.trim();
+
+    if (fullNameValue.length < 3) {
+
+        alert("Enter your full name.");
+
+        return;
+
+    }
+
+    try {
+
+        await update(ref(db, "users/" + currentUser.uid), {
+
+            fullName: fullNameValue,
+            phone: phoneValue,
+            country: countryInput.value,
+            address: addressInput.value.trim(),
+            updatedAt: Date.now()
+
+        });
+
+        if (fullName)
+            fullName.textContent = fullNameValue;
+
+        alert("Profile updated successfully.");
+
+    } catch (error) {
+
+        console.error(error);
+
+        alert(error.message);
+
+    }
+
+});
+
+// ======================================
+// PROFILE PHOTO
+// ======================================
+
+photoInput?.addEventListener("change", (e) => {
+
+    const file = e.target.files[0];
+
+    if (!file || !currentUser) return;
+
+    const fileRef = storageRef(
+        storage,
+        "profilePhotos/" + currentUser.uid
+    );
+
+    const uploadTask = uploadBytesResumable(fileRef, file);
+
+    uploadTask.on(
+
+        "state_changed",
+
+        null,
+
+        (error) => {
+
+            console.error(error);
+
+            alert("Photo upload failed.");
+
+        },
+
+        async () => {
+
+            const url = await getDownloadURL(uploadTask.snapshot.ref);
+
+            await update(
+                ref(db, "users/" + currentUser.uid),
+                {
+                    photoURL: url
+                }
+            );
+
+            if (profilePhoto)
+                profilePhoto.src = url;
+
+            alert("Profile photo updated.");
+
+        }
+
+    );
+
+});
+
+// ======================================
+// DARK MODE
+// ======================================
+
+if (localStorage.getItem("darkMode") === "true") {
+
+    document.body.classList.add("dark");
+
+    if (darkModeToggle)
+        darkModeToggle.checked = true;
+
+}
+
+darkModeToggle?.addEventListener("change", () => {
+
+    document.body.classList.toggle("dark");
+
+    localStorage.setItem(
+        "darkMode",
+        document.body.classList.contains("dark")
+    );
+
+});
+
+// ======================================
+// EDIT BUTTON
+// ======================================
+
+document.getElementById("editProfileBtn")
+?.addEventListener("click", () => {
+
+    nameInput?.focus();
+
+});
+
+// ======================================
+// CANCEL
+// ======================================
+
+document.querySelector(".cancel-btn")
+?.addEventListener("click", () => {
+
+    loadProfile(currentUser);
+
+});
+
+// ======================================
+// SCROLL TO TOP
+// ======================================
+
+const scrollBtn = document.getElementById("scrollTopBtn");
+
+window.addEventListener("scroll", () => {
+
+    if (!scrollBtn) return;
+
+    if (window.scrollY > 300) {
+
+        scrollBtn.style.display = "flex";
+
+    } else {
+
+        scrollBtn.style.display = "none";
+
+    }
+
+});
+
+scrollBtn?.addEventListener("click", () => {
+
+    window.scrollTo({
+
+        top: 0,
+        behavior: "smooth"
+
+    });
+
+});
+
+console.log("✅ Profile Part 3 Loaded Successfully");
+
+        // ======================================
+// PROFILE.JS - PART 4
+// REFERRAL SYSTEM
+// ======================================
+
+// ELEMENTS
+
+const referralCode = document.getElementById("referralCode");
+const referralLink = document.getElementById("referralLink");
+const copyReferralBtn = document.getElementById("copyReferralBtn");
+const totalReferrals = document.getElementById("totalReferrals");
+const shareWhatsappBtn = document.getElementById("shareWhatsappBtn");
+
+// ======================================
+// LOAD REFERRAL
+// ======================================
+
+function loadReferralData() {
+
+    if (!userData) return;
+
+    const code = userData.referralCode || "";
+
+    if (referralCode) {
+
+        referralCode.textContent = code;
+
+    }
+
+    if (referralLink) {
+
+        referralLink.value =
+            window.location.origin +
+            "/register.html?ref=" +
+            code;
+
+    }
+
+    if (totalReferrals) {
+
+        totalReferrals.textContent =
+            Number(userData.referralCount || 0);
+
+    }
+
+}
+
+// ======================================
+// COPY REFERRAL
+// ======================================
+
+copyReferralBtn?.addEventListener("click", async () => {
+
+    try {
+
+        await navigator.clipboard.writeText(
+            referralLink.value
+        );
+
+        alert("Referral link copied successfully.");
+
+    } catch (error) {
+
+        alert("Copy failed.");
+
+    }
+
+});
+
+// ======================================
+// SHARE WHATSAPP
+// ======================================
+
+shareWhatsappBtn?.addEventListener("click", () => {
+
+    const text =
+
+`Join Money Vault using my referral link:
+
+${referralLink.value}
+
+Earn rewards after registration.`;
+
+    window.open(
+
+        "https://wa.me/?text=" +
+        encodeURIComponent(text),
+
+        "_blank"
+
+    );
+
+});
+
+// ======================================
+// REFRESH REFERRAL
+// ======================================
+
+loadReferralData();
+
+console.log("Referral System Ready");
