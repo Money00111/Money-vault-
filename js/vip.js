@@ -126,3 +126,141 @@ function loadUserData() {
 
 console.log("VIP Part 1 Loaded");
 
+// ======================================
+// VIP.JS - PART 2
+// BUY VIP PLAN
+// ======================================
+
+import {
+    update,
+    push
+} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
+
+// ======================================
+// VIP BUTTONS
+// ======================================
+
+const buyButtons = document.querySelectorAll(".buyVipBtn");
+
+// ======================================
+// BUY VIP
+// ======================================
+
+buyButtons.forEach(button => {
+
+    button.addEventListener("click", () => {
+
+        buyVip(button);
+
+    });
+
+});
+
+// ======================================
+// BUY FUNCTION
+// ======================================
+
+async function buyVip(button){
+
+    if(!currentUser) return;
+
+    const vipName = button.dataset.vip;
+
+    const price = Number(button.dataset.price);
+
+    const daily = Number(button.dataset.daily);
+
+    const profit = Number(button.dataset.profit);
+
+    const balanceNow = Number(userData.balance || 0);
+
+    // CHECK BALANCE
+
+    if(balanceNow < price){
+
+        alert("Insufficient Balance.");
+
+        return;
+
+    }
+
+    // CHECK CURRENT VIP
+
+    if(userData.vip === vipName){
+
+        alert("You already own this VIP Plan.");
+
+        return;
+
+    }
+
+    // CONFIRM
+
+    const ok = confirm(
+
+        `Buy ${vipName} for ${price.toLocaleString()} RWF ?`
+
+    );
+
+    if(!ok) return;
+
+    try{
+
+        const newBalance = balanceNow - price;
+
+        // UPDATE USER
+
+        await update(
+
+            ref(db,"users/" + currentUser.uid),
+
+            {
+
+                balance:newBalance,
+
+                vip:vipName,
+
+                dailyIncome:daily,
+
+                totalProfit:profit,
+
+                vipPurchaseDate:Date.now()
+
+            }
+
+        );
+
+        // SAVE TRANSACTION
+
+        await push(
+
+            ref(db,"transactions/" + currentUser.uid),
+
+            {
+
+                type:"VIP Purchase",
+
+                amount:price,
+
+                date:new Date().toLocaleString(),
+
+                status:"Completed"
+
+            }
+
+        );
+
+        alert(vipName + " Activated Successfully.");
+
+    }
+
+    catch(error){
+
+        alert(error.message);
+
+    }
+
+}
+
+console.log("VIP Part 2 Loaded");
+
