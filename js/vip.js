@@ -264,3 +264,166 @@ async function buyVip(button){
 
 console.log("VIP Part 2 Loaded");
 
+// ======================================
+// VIP.JS - PART 3
+// FINAL
+// ======================================
+
+// ======================================
+// UPDATE ACTIVE VIP BUTTON
+// ======================================
+
+function updateVipButtons() {
+
+    document.querySelectorAll(".buyVipBtn").forEach(button => {
+
+        const vip = button.dataset.vip;
+
+        if (userData.vip === vip) {
+
+            button.innerHTML = `
+            <i class="fas fa-check-circle"></i>
+            Current Plan
+            `;
+
+            button.disabled = true;
+
+            button.classList.add("activeVip");
+
+        } else {
+
+            button.disabled = false;
+
+            button.classList.remove("activeVip");
+
+            button.innerHTML = `
+            <i class="fas fa-crown"></i>
+            Buy Now
+            `;
+
+        }
+
+    });
+
+}
+
+// ======================================
+// TOAST MESSAGE
+// ======================================
+
+function showToast(message) {
+
+    let toast = document.querySelector(".toast");
+
+    if (!toast) {
+
+        toast = document.createElement("div");
+
+        toast.className = "toast";
+
+        document.body.appendChild(toast);
+
+    }
+
+    toast.textContent = message;
+
+    toast.classList.add("show");
+
+    setTimeout(() => {
+
+        toast.classList.remove("show");
+
+    }, 3000);
+
+}
+
+// ======================================
+// UPDATE USER INTERFACE
+// ======================================
+
+function refreshVipInfo() {
+
+    balance.textContent =
+        Number(userData.balance || 0).toLocaleString() + " RWF";
+
+    currentVip.textContent =
+        userData.vip || "VIP 0";
+
+    dailyIncome.textContent =
+        Number(userData.dailyIncome || 0).toLocaleString() + " RWF";
+
+    totalProfit.textContent =
+        Number(userData.totalProfit || 0).toLocaleString() + " RWF";
+
+    updateVipButtons();
+
+}
+
+// ======================================
+// HIDE LOADING
+// ======================================
+
+window.addEventListener("load", () => {
+
+    setTimeout(() => {
+
+        if (loadingScreen) {
+
+            loadingScreen.style.display = "none";
+
+        }
+
+    }, 800);
+
+});
+
+// ======================================
+// WATCH USER CHANGES
+// ======================================
+
+if (currentUser) {
+
+    const userRef = ref(db, "users/" + currentUser.uid);
+
+    onValue(userRef, (snapshot) => {
+
+        if (!snapshot.exists()) return;
+
+        userData = snapshot.val();
+
+        refreshVipInfo();
+
+    });
+
+}
+
+// ======================================
+// SUPPORT BUTTON
+// ======================================
+
+const supportBtn = document.querySelector(".support-btn");
+
+supportBtn?.addEventListener("click", (e) => {
+
+    e.preventDefault();
+
+    window.open(
+        "https://wa.me/250788846187",
+        "_blank"
+    );
+
+});
+
+// ======================================
+// READY
+// ======================================
+
+console.log("==================================");
+
+console.log(" Money Vault VIP Ready ");
+
+console.log(" VIP Purchase System Active ");
+
+console.log(" Firebase Connected ");
+
+console.log("==================================");
