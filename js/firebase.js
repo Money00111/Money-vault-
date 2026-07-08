@@ -12,6 +12,15 @@ import {
   getDatabase
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
 
+import { getStorage } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-storage.js";
+
+const app = initializeApp(firebaseConfig);
+
+const auth = getAuth(app);
+const db = getDatabase(app);
+const storage = getStorage(app);
+
+export { app, auth, db, storage };
 // ======================================
 // CONFIG
 // ======================================
