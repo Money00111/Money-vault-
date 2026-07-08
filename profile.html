@@ -1,547 +1,780 @@
-// ======================================
-// PROFILE.JS - PART 1
-// Money Vault
-// ======================================
+<!DOCTYPE html>
+<html lang="en">
 
-import { auth, db, storage } from "./firebase.js";
+<head>
 
-import {
-    onAuthStateChanged,
-    signOut
-} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+<meta charset="UTF-8">
 
-import {
-    ref,
-    get,
-    update
-} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-import {
-    ref as storageRef,
-    uploadBytesResumable,
-    getDownloadURL
-} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-storage.js";
+<title>My Profile | Money Vault</title>
 
-// ======================================
-// ELEMENTS
-// ======================================
+<link rel="stylesheet" href="css/profile.css">
 
-const sidebar = document.getElementById("sidebar");
-const menuBtn = document.getElementById("menuBtn");
-const logoutBtn = document.getElementById("logoutBtn");
-const loadingScreen = document.getElementById("loadingScreen");
+<link rel="stylesheet"
+href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.1/css/all.min.css">
 
-const profilePhoto = document.getElementById("profilePhoto");
-const photoInput = document.getElementById("photoInput");
+</head>
 
-const fullName = document.getElementById("fullName");
-const userEmail = document.getElementById("userEmail");
+<body>
 
-const balance = document.getElementById("balance");
-const bonus = document.getElementById("bonus");
-const referralBonus = document.getElementById("referralBonus");
+<!-- ===========================
+     Sidebar
+=========================== -->
 
-const vipLevel = document.getElementById("vipLevel");
-const vipCard = document.getElementById("vipCard");
+<div class="sidebar" id="sidebar">
 
-const totalDeposit = document.getElementById("totalDeposit");
-const totalWithdraw = document.getElementById("totalWithdraw");
-const totalTransactions = document.getElementById("totalTransactions");
+<div class="logo">
 
-const accountId = document.getElementById("accountId");
-const joinDate = document.getElementById("joinDate");
+<h2>💰 Money Vault</h2>
 
-const nameInput = document.getElementById("name");
-const phoneInput = document.getElementById("phone");
-const emailInput = document.getElementById("email");
-const countryInput = document.getElementById("country");
-const addressInput = document.getElementById("address");
+</div>
 
-const profileForm = document.getElementById("profileForm");
-const darkModeToggle = document.getElementById("darkMode");
+<ul>
 
-// ======================================
-// USER
-// ======================================
+<li>
+<a href="dashboard.html">
+<i class="fa-solid fa-house"></i>
+<span>Dashboard</span>
+</a>
+</li>
 
-let currentUser = null;
-let userData = {};
+<li>
+<a href="deposit.html">
+<i class="fa-solid fa-wallet"></i>
+<span>Deposit</span>
+</a>
+</li>
 
-// ======================================
-// SIDEBAR
-// ======================================
+<li>
+<a href="withdraw.html">
+<i class="fa-solid fa-money-bill-transfer"></i>
+<span>Withdraw</span>
+</a>
+</li>
 
-menuBtn?.addEventListener("click", () => {
+<li>
+<a href="transactions.html">
+<i class="fa-solid fa-clock-rotate-left"></i>
+<span>Transactions</span>
+</a>
+</li>
 
-    sidebar?.classList.toggle("active");
+<li>
+<a href="profile.html" class="active">
+<i class="fa-solid fa-user"></i>
+<span>Profile</span>
+</a>
+</li>
 
-});
+<li>
+<a href="#" id="logoutBtn">
+<i class="fa-solid fa-right-from-bracket"></i>
+<span>Logout</span>
+</a>
+</li>
 
-// ======================================
-// LOGOUT
-// ======================================
+</ul>
 
-logoutBtn?.addEventListener("click", async (e) => {
+</div>
 
-    e.preventDefault();
+<!-- ===========================
+     Main Content
+=========================== -->
 
-    if (!confirm("Are you sure you want to logout?")) return;
+<div class="main">
 
-    try {
+<header>
 
-        await signOut(auth);
+<button id="menuBtn">
 
-        window.location.href = "login.html";
+<i class="fa-solid fa-bars"></i>
 
-    } catch (error) {
+</button>
 
-        alert(error.message);
+<h2>👤 My Profile</h2>
 
-    }
+<div class="header-right">
 
-});
+<i class="fa-solid fa-bell"></i>
 
-// ======================================
-// AUTH
-// ======================================
+<i class="fa-solid fa-gear"></i>
 
-onAuthStateChanged(auth, async (user) => {
+</div>
 
-    if (!user) {
+</header>
 
-        window.location.href = "login.html";
-        return;
+<!-- ===========================
+     Profile Hero Card
+=========================== -->
 
-    }
+<section class="profile-hero">
 
-    currentUser = user;
+<div class="profile-cover"></div>
 
-    try {
+<div class="profile-content">
 
-        await loadProfile(user);
+<div class="profile-image">
 
-    } catch (error) {
+<img
 
-        console.error("Profile Error:", error);
+id="profilePhoto"
 
-        alert("Failed to load profile.");
+src="images/user.png"
 
-    } finally {
+alt="Profile">
 
-        if (loadingScreen) {
+<label for="photoInput">
 
-            loadingScreen.style.display = "none";
+<i class="fa-solid fa-camera"></i>
 
-        }
+</label>
 
-    }
+<input
 
-});
+type="file"
 
-console.log("Profile Part 1 Loaded");
+id="photoInput"
 
-// ======================================
-// PROFILE.JS - PART 2
-// LOAD PROFILE
-// ======================================
+accept="image/*"
 
-async function loadProfile(user) {
+hidden>
 
-    const userRef = ref(db, "users/" + user.uid);
+</div>
 
-    const snapshot = await get(userRef);
+<div class="profile-details">
 
-    if (!snapshot.exists()) {
+<h1 id="fullName">
 
-        throw new Error("User profile not found.");
+Loading...
 
-    }
+</h1>
 
-    userData = snapshot.val();
+<p id="userEmail">
 
-    // ==========================
-    // HEADER
-    // ==========================
+Loading...
 
-    if (fullName)
-        fullName.textContent = userData.fullName || "Money Vault User";
+</p>
 
-    if (userEmail)
-        userEmail.textContent = user.email || "";
+<div class="profile-badges">
 
-    // ==========================
-    // WALLET
-    // ==========================
+<span class="vip">
 
-    if (balance)
-        balance.textContent =
-            Number(userData.balance || 0).toLocaleString() + " RWF";
+⭐ <span id="vipLevel">
 
-    if (bonus)
-        bonus.textContent =
-            Number(userData.bonus || 0).toLocaleString() + " RWF";
+VIP 0
 
-    if (referralBonus)
-        referralBonus.textContent =
-            Number(userData.referralBonus || 0).toLocaleString() + " RWF";
+</span>
 
-    // ==========================
-    // VIP
-    // ==========================
+</span>
 
-    const vip = userData.vip || "VIP 0";
+<span class="verified">
 
-    if (vipLevel)
-        vipLevel.textContent = vip;
+<i class="fa-solid fa-circle-check"></i>
 
-    if (vipCard)
-        vipCard.textContent = vip;
+Verified
 
-    // ==========================
-    // ACCOUNT STATS
-    // ==========================
+</span>
 
-    if (totalDeposit)
-        totalDeposit.textContent =
-            Number(userData.totalDeposit || 0).toLocaleString() + " RWF";
+</div>
 
-    if (totalWithdraw)
-        totalWithdraw.textContent =
-            Number(userData.totalWithdraw || 0).toLocaleString() + " RWF";
+</div>
 
-    if (totalTransactions)
-        totalTransactions.textContent =
-            Number(userData.totalTransactions || 0);
+</div>
 
-    // ==========================
-    // ACCOUNT INFO
-    // ==========================
+</section>
 
-    if (accountId)
-        accountId.textContent = user.uid.substring(0, 12);
+<!-- ===========================
+     Wallet Cards
+=========================== -->
 
-    if (joinDate)
-        joinDate.textContent =
-            new Date(user.metadata.creationTime).toLocaleDateString();
+<section class="wallet-grid">
 
-    // ==========================
-    // FORM
-    // ==========================
+<div class="wallet-card">
 
-    if (nameInput)
-        nameInput.value = userData.fullName || "";
+<div class="icon">
 
-    if (phoneInput)
-        phoneInput.value = userData.phone || "";
+<i class="fa-solid fa-wallet"></i>
 
-    if (emailInput)
-        emailInput.value = user.email || "";
+</div>
 
-    if (countryInput)
-        countryInput.value = userData.country || "🇷🇼 Rwanda";
+<div>
 
-    if (addressInput)
-        addressInput.value = userData.address || "";
+<h3>Balance</h3>
 
-    // ==========================
-    // PROFILE PHOTO
-    // ==========================
+<h2 id="balance">
 
-    if (profilePhoto && userData.photoURL) {
+0 RWF
 
-        profilePhoto.src = userData.photoURL;
+</h2>
 
-    }
+</div>
 
-}
+</div>
 
-console.log("Profile Part 2 Loaded Successfully");
+<div class="wallet-card">
 
-// ======================================
-// PROFILE.JS - PART 3
-// SAVE PROFILE + PHOTO + DARK MODE
-// ======================================
+<div class="icon">
 
-// ======================================
-// SAVE PROFILE
-// ======================================
+<i class="fa-solid fa-gift"></i>
 
-profileForm?.addEventListener("submit", async (e) => {
+</div>
 
-    e.preventDefault();
+<div>
 
-    if (!currentUser) return;
+<h3>Bonus</h3>
 
-    const fullNameValue = nameInput.value.trim();
-    const phoneValue = phoneInput.value.trim();
+<h2 id="bonus">
 
-    if (fullNameValue.length < 3) {
+0 RWF
 
-        alert("Enter your full name.");
+</h2>
 
-        return;
+</div>
 
-    }
+</div>
 
-    try {
+<div class="wallet-card">
 
-        await update(ref(db, "users/" + currentUser.uid), {
+<div class="icon">
 
-            fullName: fullNameValue,
-            phone: phoneValue,
-            country: countryInput.value,
-            address: addressInput.value.trim(),
-            updatedAt: Date.now()
+<i class="fa-solid fa-users"></i>
 
-        });
+</div>
 
-        if (fullName)
-            fullName.textContent = fullNameValue;
+<div>
 
-        alert("Profile updated successfully.");
+<h3>Referral</h3>
 
-    } catch (error) {
+<h2 id="referralBonus">
 
-        console.error(error);
+0 RWF
 
-        alert(error.message);
+</h2>
 
-    }
+</div>
 
-});
+</div>
 
-// ======================================
-// PROFILE PHOTO
-// ======================================
+<div class="wallet-card">
 
-photoInput?.addEventListener("change", (e) => {
+<div class="icon">
 
-    const file = e.target.files[0];
+<i class="fa-solid fa-crown"></i>
 
-    if (!file || !currentUser) return;
+</div>
 
-    const fileRef = storageRef(
-        storage,
-        "profilePhotos/" + currentUser.uid
-    );
+<div>
 
-    const uploadTask = uploadBytesResumable(fileRef, file);
+<h3>VIP Level</h3>
 
-    uploadTask.on(
+<h2 id="vipCard">
 
-        "state_changed",
+VIP 0
 
-        null,
+</h2>
 
-        (error) => {
+</div>
 
-            console.error(error);
+</div>
 
-            alert("Photo upload failed.");
+     </section>
+     <!-- ===========================
+     Quick Actions
+=========================== -->
 
-        },
+<section class="quick-actions">
 
-        async () => {
+<div class="section-title">
 
-            const url = await getDownloadURL(uploadTask.snapshot.ref);
+<h2>⚡ Quick Actions</h2>
 
-            await update(
-                ref(db, "users/" + currentUser.uid),
-                {
-                    photoURL: url
-                }
-            );
+<p>Access your account faster</p>
 
-            if (profilePhoto)
-                profilePhoto.src = url;
+</div>
 
-            alert("Profile photo updated.");
+<div class="action-grid">
 
-        }
+<a href="deposit.html" class="action-card">
 
-    );
+<div class="action-icon deposit">
 
-});
+<i class="fa-solid fa-wallet"></i>
 
-// ======================================
-// DARK MODE
-// ======================================
+</div>
 
-if (localStorage.getItem("darkMode") === "true") {
+<h3>Deposit</h3>
 
-    document.body.classList.add("dark");
+<p>Add money to your wallet</p>
 
-    if (darkModeToggle)
-        darkModeToggle.checked = true;
+</a>
 
-}
+<a href="withdraw.html" class="action-card">
 
-darkModeToggle?.addEventListener("change", () => {
+<div class="action-icon withdraw">
 
-    document.body.classList.toggle("dark");
+<i class="fa-solid fa-money-bill-transfer"></i>
 
-    localStorage.setItem(
-        "darkMode",
-        document.body.classList.contains("dark")
-    );
+</div>
 
-});
+<h3>Withdraw</h3>
 
-// ======================================
-// EDIT BUTTON
-// ======================================
+<p>Withdraw your balance</p>
 
-document.getElementById("editProfileBtn")
-?.addEventListener("click", () => {
+</a>
 
-    nameInput?.focus();
+<a href="transactions.html" class="action-card">
 
-});
+<div class="action-icon history">
 
-// ======================================
-// CANCEL
-// ======================================
+<i class="fa-solid fa-clock-rotate-left"></i>
 
-document.querySelector(".cancel-btn")
-?.addEventListener("click", () => {
+</div>
 
-    loadProfile(currentUser);
+<h3>History</h3>
 
-});
+<p>View all transactions</p>
 
-// ======================================
-// SCROLL TO TOP
-// ======================================
+</a>
 
-const scrollBtn = document.getElementById("scrollTopBtn");
+<a href="tel:+250788846187" class="action-card">
 
-window.addEventListener("scroll", () => {
+<div class="action-icon support">
 
-    if (!scrollBtn) return;
+<i class="fa-solid fa-headset"></i>
 
-    if (window.scrollY > 300) {
+</div>
 
-        scrollBtn.style.display = "flex";
+<h3>Support</h3>
 
-    } else {
+<p>24/7 Customer Care</p>
 
-        scrollBtn.style.display = "none";
+</a>
 
-    }
+</div>
 
-});
+</section>
 
-scrollBtn?.addEventListener("click", () => {
+<!-- ===========================
+     Personal Information
+=========================== -->
 
-    window.scrollTo({
+<section class="profile-info-card">
 
-        top: 0,
-        behavior: "smooth"
+<div class="card-header">
 
-    });
+<h2>
 
-});
+<i class="fa-solid fa-id-card"></i>
 
-console.log("✅ Profile Part 3 Loaded Successfully");
+Personal Information
 
-        // ======================================
-// PROFILE.JS - PART 4
-// REFERRAL SYSTEM
-// ======================================
+</h2>
 
-// ELEMENTS
+<button id="editProfileBtn">
 
-const referralCode = document.getElementById("referralCode");
-const referralLink = document.getElementById("referralLink");
-const copyReferralBtn = document.getElementById("copyReferralBtn");
-const totalReferrals = document.getElementById("totalReferrals");
-const shareWhatsappBtn = document.getElementById("shareWhatsappBtn");
+<i class="fa-solid fa-pen"></i>
 
-// ======================================
-// LOAD REFERRAL
-// ======================================
+Edit
 
-function loadReferralData() {
+</button>
 
-    if (!userData) return;
+</div>
 
-    const code = userData.referralCode || "";
+<form id="profileForm">
 
-    if (referralCode) {
+<div class="form-grid">
 
-        referralCode.textContent = code;
+<div class="input-box">
 
-    }
+<label>Full Name</label>
 
-    if (referralLink) {
+<input
+type="text"
+id="name"
+placeholder="Enter your full name">
 
-        referralLink.value =
-            window.location.origin +
-            "/register.html?ref=" +
-            code;
+</div>
 
-    }
+<div class="input-box">
 
-    if (totalReferrals) {
+<label>Phone Number</label>
 
-        totalReferrals.textContent =
-            Number(userData.referralCount || 0);
+<input
+type="tel"
+id="phone"
+placeholder="07XXXXXXXX">
 
-    }
+</div>
 
-}
+<div class="input-box">
 
-// ======================================
-// COPY REFERRAL
-// ======================================
+<label>Email Address</label>
 
-copyReferralBtn?.addEventListener("click", async () => {
+<input
+type="email"
+id="email"
+readonly>
 
-    try {
+</div>
 
-        await navigator.clipboard.writeText(
-            referralLink.value
-        );
+<div class="input-box">
 
-        alert("Referral link copied successfully.");
+<label>Country</label>
 
-    } catch (error) {
+<select id="country">
 
-        alert("Copy failed.");
+<option>🇷🇼 Rwanda</option>
 
-    }
+<option>🇺🇬 Uganda</option>
 
-});
+<option>🇰🇪 Kenya</option>
 
-// ======================================
-// SHARE WHATSAPP
-// ======================================
+<option>🇹🇿 Tanzania</option>
 
-shareWhatsappBtn?.addEventListener("click", () => {
+<option>🇧🇮 Burundi</option>
 
-    const text =
+</select>
 
-`Join Money Vault using my referral link:
+</div>
 
-${referralLink.value}
+<div class="input-box full-width">
 
-Earn rewards after registration.`;
+<label>Address</label>
 
-    window.open(
+<textarea
 
-        "https://wa.me/?text=" +
-        encodeURIComponent(text),
+id="address"
 
-        "_blank"
+rows="4"
 
-    );
+placeholder="Enter your address">
 
-});
+</textarea>
 
-// ======================================
-// REFRESH REFERRAL
-// ======================================
+</div>
 
-loadReferralData();
+</div>
 
-console.log("Referral System Ready");
+<div class="form-buttons">
+
+<button
+type="reset"
+class="cancel-btn">
+
+<i class="fa-solid fa-xmark"></i>
+
+Cancel
+
+</button>
+
+<button
+type="submit"
+class="save-btn">
+
+<i class="fa-solid fa-floppy-disk"></i>
+
+Save Changes
+
+</button>
+
+</div>
+
+</form>
+
+</section>
+
+<!-- ===========================
+     Account Statistics
+=========================== -->
+
+<section class="account-stats">
+
+<div class="stat-card">
+
+<i class="fa-solid fa-money-bill-trend-up"></i>
+
+<h3>Total Deposits</h3>
+
+<h2 id="totalDeposit">
+
+0 RWF
+
+</h2>
+
+</div>
+
+<div class="stat-card">
+
+<i class="fa-solid fa-money-bill-wave"></i>
+
+<h3>Total Withdraws</h3>
+
+<h2 id="totalWithdraw">
+
+0 RWF
+
+</h2>
+
+</div>
+
+<div class="stat-card">
+
+<i class="fa-solid fa-list-check"></i>
+
+<h3>Transactions</h3>
+
+<h2 id="totalTransactions">
+
+0
+
+</h2>
+
+</div>
+
+<div class="stat-card">
+
+<i class="fa-solid fa-award"></i>
+
+<h3>Account Status</h3>
+
+<h2 class="verified-status">
+
+Verified
+
+</h2>
+
+</div>
+    
+<div class="referral-card">
+
+<h3>Referral Code</h3>
+
+<h2 id="referralCode">Loading...</h2>
+
+<input
+type="text"
+id="referralLink"
+readonly>
+
+<button id="copyReferralBtn">
+Copy Link
+</button>
+
+<button id="shareWhatsappBtn">
+Share WhatsApp
+</button>
+
+<p>
+Total Referrals:
+<span id="totalReferrals">0</span>
+</p>
+
+</div>
+    
+     </section>
+
+     
+<!-- ===========================
+     Security & Settings
+=========================== -->
+
+<section class="settings-grid">
+
+<div class="settings-card">
+
+<h2>
+<i class="fa-solid fa-shield-halved"></i>
+Security
+</h2>
+
+<div class="setting-item">
+<span>🔒 Change Password</span>
+<button id="changePasswordBtn">Change</button>
+</div>
+
+<div class="setting-item">
+<span>🛡 Two Factor Authentication</span>
+<label class="switch">
+<input type="checkbox" id="twoFactor">
+<span class="slider"></span>
+</label>
+</div>
+
+<div class="setting-item">
+<span>📧 Email Notifications</span>
+<label class="switch">
+<input type="checkbox" checked>
+<span class="slider"></span>
+</label>
+</div>
+
+<div class="setting-item">
+<span>🌙 Dark Mode</span>
+<label class="switch">
+<input type="checkbox" id="darkMode">
+<span class="slider"></span>
+</label>
+</div>
+
+</div>
+
+<div class="settings-card">
+
+<h2>
+<i class="fa-solid fa-circle-info"></i>
+Account Information
+</h2>
+
+<div class="info-row">
+<span>Account ID</span>
+<strong id="accountId">Loading...</strong>
+</div>
+
+<div class="info-row">
+<span>Member Since</span>
+<strong id="joinDate">Loading...</strong>
+</div>
+
+<div class="info-row">
+<span>Last Login</span>
+<strong id="lastLogin">Today</strong>
+</div>
+
+<div class="info-row">
+<span>Account Status</span>
+<strong class="verified-text">Verified ✅</strong>
+</div>
+
+</div>
+
+</section>
+
+<!-- ===========================
+     Customer Support
+=========================== -->
+
+<section class="support-card">
+
+<h2>📞 Need Help?</h2>
+
+<p>
+Our support team is available every day to help you with deposits, withdrawals and account issues.
+</p>
+
+<div class="support-buttons">
+
+<a href="tel:+250788846187" class="call-btn">
+
+<i class="fa-solid fa-phone"></i>
+
+Call Support
+
+</a>
+
+<a href="https://wa.me/250788846187"
+
+target="_blank"
+
+class="whatsapp-btn">
+
+<i class="fa-brands fa-whatsapp"></i>
+
+WhatsApp
+
+</a>
+
+</div>
+
+</section>
+
+<!-- ===========================
+     Bottom Navigation
+=========================== -->
+
+<nav class="bottom-nav">
+
+<a href="dashboard.html">
+
+<i class="fa-solid fa-house"></i>
+
+<span>Home</span>
+
+</a>
+
+<a href="deposit.html">
+
+<i class="fa-solid fa-wallet"></i>
+
+<span>Deposit</span>
+
+</a>
+
+<a href="withdraw.html">
+
+<i class="fa-solid fa-money-bill-transfer"></i>
+
+<span>Withdraw</span>
+
+</a>
+
+<a href="transactions.html">
+
+<i class="fa-solid fa-clock-rotate-left"></i>
+
+<span>History</span>
+
+</a>
+
+<a href="profile.html" class="active">
+
+<i class="fa-solid fa-user"></i>
+
+<span>Profile</span>
+
+</a>
+
+</nav>
+
+<!-- Scroll Button -->
+
+<button id="scrollTopBtn">
+
+<i class="fa-solid fa-arrow-up"></i>
+
+</button>
+
+<!-- Loading -->
+
+<div class="loading-screen" id="loadingScreen">
+
+<div class="loader"></div>
+
+<h3>Loading Profile...</h3>
+
+</div>
+
+<!-- Footer -->
+
+<footer>
+
+<p>
+
+© 2026 <strong>Money Vault</strong>
+
+<br>
+
+Fast • Secure • Trusted
+
+</p>
+
+</footer>
+
+</div>
+
+<!-- Main End -->
+
+<script type="module" src="js/profile.js"></script>
+
+</body>
+</html>
