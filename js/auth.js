@@ -28,6 +28,10 @@ export async function registerUser(
   email,
   password,
   referralCode
+  address: "",
+  country: "Rwanda",
+  photoURL: "",
+  
 ) {
 
   try {
