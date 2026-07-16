@@ -173,3 +173,155 @@ if (paymentDate) {
 }
 
 console.log("✅ Deposit Part 1 Loaded");
+// ======================================
+// DEPOSIT.JS - PART 2
+// SUBMIT DEPOSIT
+// Realtime Database
+// ======================================
+
+depositForm?.addEventListener("submit", async (e) => {
+
+    e.preventDefault();
+
+    if (!currentUser) {
+        alert("Please login first.");
+        return;
+    }
+
+    const amount =
+        Number(document.getElementById("amount").value);
+
+    const paymentMethod =
+        document.getElementById("paymentMethod").value;
+
+    const senderPhone =
+        document.getElementById("senderPhone").value.trim();
+
+    const transactionId =
+        document.getElementById("transactionId").value.trim();
+
+    const paymentDate =
+        document.getElementById("paymentDate").value;
+
+    const note =
+        document.getElementById("note").value.trim();
+
+    const file =
+        paymentProof.files[0];
+
+    if (amount < 1000) {
+
+        alert("Minimum deposit is 1,000 RWF.");
+
+        return;
+
+    }
+
+    if (!file) {
+
+        alert("Upload payment screenshot.");
+
+        return;
+
+    }
+
+    const submitBtn =
+        document.querySelector(".submit-btn");
+
+    try {
+
+        submitBtn.disabled = true;
+
+        submitBtn.innerHTML = "Uploading...";
+
+        // ==========================
+        // Upload Image
+        // ==========================
+
+        const imageRef = storageRef(
+
+            storage,
+
+            "depositProofs/" +
+
+            currentUser.uid +
+
+            "/" +
+
+            Date.now() +
+
+            "_" +
+
+            file.name
+
+        );
+
+        await uploadBytes(imageRef, file);
+
+        const imageUrl =
+            await getDownloadURL(imageRef);
+
+        // ==========================
+        // Save Deposit
+        // ==========================
+
+        const depositRef =
+            push(ref(db, "depositRequests"));
+
+        await set(depositRef, {
+
+            id: depositRef.key,
+
+            uid: currentUser.uid,
+
+            email: currentUser.email,
+
+            amount: amount,
+
+            paymentMethod: paymentMethod,
+
+            senderPhone: senderPhone,
+
+            transactionId: transactionId,
+
+            paymentDate: paymentDate,
+
+            note: note,
+
+            proofImage: imageUrl,
+
+            status: "Pending",
+
+            createdAt: Date.now()
+
+        });
+
+        alert("Deposit request submitted successfully.");
+
+        depositForm.reset();
+
+        imagePreview.style.display = "none";
+
+        submitBtn.disabled = false;
+
+        submitBtn.innerHTML =
+            "Submit Deposit Request";
+
+    }
+
+    catch (error) {
+
+        console.error(error);
+
+        alert(error.message);
+
+        submitBtn.disabled = false;
+
+        submitBtn.innerHTML =
+            "Submit Deposit Request";
+
+    }
+
+});
+
+console.log("✅ Deposit Part 2 Loaded");
