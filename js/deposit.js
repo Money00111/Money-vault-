@@ -325,3 +325,143 @@ depositForm?.addEventListener("submit", async (e) => {
 });
 
 console.log("✅ Deposit Part 2 Loaded");
+
+// ======================================
+// DEPOSIT.JS - PART 3
+// DEPOSIT HISTORY
+// Realtime Database
+// ======================================
+
+const historyList = document.getElementById("historyList");
+const depositStatus = document.getElementById("depositStatus");
+
+// ======================================
+// LOAD DEPOSIT HISTORY
+// ======================================
+
+function loadDepositHistory(user) {
+
+    const depositsRef = ref(db, "depositRequests");
+
+    onValue(depositsRef, (snapshot) => {
+
+        if (!historyList) return;
+
+        historyList.innerHTML = "";
+
+        if (!snapshot.exists()) {
+
+            historyList.innerHTML = `
+                <div class="history-card">
+                    <div>
+                        <h3>No Deposits Yet</h3>
+                        <p>Your deposit history will appear here.</p>
+                    </div>
+                </div>
+            `;
+
+            if (depositStatus) {
+                depositStatus.textContent = "No Deposit Request";
+            }
+
+            return;
+        }
+
+        const deposits = [];
+
+        snapshot.forEach((child) => {
+
+            const data = child.val();
+
+            if (data.uid === user.uid) {
+                deposits.unshift(data);
+            }
+
+        });
+
+        if (deposits.length === 0) {
+
+            historyList.innerHTML = `
+                <div class="history-card">
+                    <div>
+                        <h3>No Deposits Yet</h3>
+                        <p>Your deposit history will appear here.</p>
+                    </div>
+                </div>
+            `;
+
+            if (depositStatus) {
+                depositStatus.textContent = "No Deposit Request";
+            }
+
+            return;
+        }
+
+        deposits.forEach((data) => {
+
+            let badge = "pending";
+
+            if (data.status === "Approved") {
+                badge = "approved";
+            }
+
+            if (data.status === "Rejected") {
+                badge = "rejected";
+            }
+
+            const date = new Date(
+                data.createdAt || Date.now()
+            ).toLocaleString();
+
+            historyList.innerHTML += `
+
+            <div class="history-card">
+
+                <div>
+
+                    <h3>${Number(data.amount).toLocaleString()} RWF</h3>
+
+                    <p><strong>Method:</strong> ${data.paymentMethod}</p>
+
+                    <p><strong>Sender:</strong> ${data.senderPhone}</p>
+
+                    <p><strong>Transaction ID:</strong> ${data.transactionId}</p>
+
+                    <p><strong>Date:</strong> ${date}</p>
+
+                </div>
+
+                <span class="${badge}">
+                    ${data.status}
+                </span>
+
+            </div>
+
+            `;
+
+        });
+
+        if (depositStatus) {
+            depositStatus.innerHTML =
+                `<strong>${deposits[0].status}</strong>`;
+        }
+
+    });
+
+}
+
+// ======================================
+// START HISTORY
+// ======================================
+
+onAuthStateChanged(auth, (user) => {
+
+    if (user) {
+
+        loadDepositHistory(user);
+
+    }
+
+});
+
+console.log("✅ Deposit Part 3 Loaded Successfully");
