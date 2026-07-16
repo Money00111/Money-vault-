@@ -1,182 +1,211 @@
-// ===============================
-// Money Vault Pro
-// File: js/auth.js
-// PART 1 - REGISTER
-// ===============================
+// ======================================
+// auth.js - PART 1
+// REGISTER USER
+// ======================================
 
 import { auth, db } from "./firebase.js";
 
 import {
-  createUserWithEmailAndPassword
+    createUserWithEmailAndPassword
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 
 import {
-  ref,
-  set,
-  get,
-  update
+    ref,
+    set,
+    get,
+    update
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
-
 
 // ======================================
 // REGISTER USER
 // ======================================
 
 export async function registerUser(
-  fullName,
-  phone,
-  email,
-  password,
-  referralCode
-  address: "",
-  country: "Rwanda",
-  photoURL: "",
-  
+    fullName,
+    phone,
+    email,
+    password,
+    referralCode
 ) {
 
-  try {
+    try {
 
-    // Create Firebase Auth Account
-    const userCredential =
-      await createUserWithEmailAndPassword(
-        auth,
-        email,
-        password
-      );
-
-    const user = userCredential.user;
-
-    // Registration Bonus
-    const registrationBonus = 500;
-
-    // Generate Referral Code
-    const myReferralCode =
-      "MV" + user.uid.substring(0, 6).toUpperCase();
-
-    // Save User
-    await set(ref(db, "users/" + user.uid), {
-
-      uid: user.uid,
-
-      fullName: fullName,
-
-      phone: phone,
-
-      email: email,
-
-      balance: registrationBonus,
-
-      bonus: registrationBonus,
-
-      totalDeposit: 0,
-
-      totalWithdraw: 0,
-      
-      totalTransactions: 0,
-      
-      totalEarnings: registrationBonus,
-
-      vip: "VIP 0",
-      vipActive: false,
-      
-      referralCode: myReferralCode,
-
-      referredBy: "",
-
-      referralBonus: 0,
-
-      referralCount: 0,
-
-      createdAt: Date.now()
-
-    });
-
-
-    // ==========================
-    // Referral (Option B)
-    // ==========================
-
-    if (referralCode !== "") {
-
-      const usersRef = ref(db, "users");
-
-      const snapshot = await get(usersRef);
-
-      if (snapshot.exists()) {
-
-        snapshot.forEach((child) => {
-
-          const data = child.val();
-
-          if (data.referralCode === referralCode) {
-
-            update(
-              ref(db, "users/" + user.uid),
-              {
-                referredBy: child.key
-
-                referralCount
-                referralBonus
-                balance
-              }
+        const userCredential =
+            await createUserWithEmailAndPassword(
+                auth,
+                email,
+                password
             );
 
-          }
+        const user = userCredential.user;
+
+        const registrationBonus = 500;
+
+        const myReferralCode =
+            "MV" +
+            user.uid.substring(0, 6).toUpperCase();
+
+        await set(ref(db, "users/" + user.uid), {
+
+            uid: user.uid,
+
+            fullName: fullName,
+
+            phone: phone,
+
+            email: email,
+
+            balance: registrationBonus,
+
+            bonus: registrationBonus,
+
+            referralBonus: 0,
+
+            totalDeposit: 0,
+
+            totalWithdraw: 0,
+
+            totalTransactions: 0,
+
+            totalEarnings: registrationBonus,
+
+            vip: "VIP 0",
+
+            vipActive: false,
+
+            referralCode: myReferralCode,
+
+            referredBy: "",
+
+            referralCount: 0,
+
+            country: "Rwanda",
+
+            address: "",
+
+            photoURL: "",
+
+            createdAt: Date.now()
 
         });
 
-      }
+        // ==========================
+        // REFERRAL
+        // ==========================
+
+        if (referralCode.trim() !== "") {
+
+            const usersRef = ref(db, "users");
+
+            const snapshot = await get(usersRef);
+
+            if (snapshot.exists()) {
+
+                snapshot.forEach(async (child) => {
+
+                    const data = child.val();
+
+                    if (data.referralCode === referralCode) {
+
+                        await update(
+                            ref(db, "users/" + user.uid),
+                            {
+                                referredBy: child.key
+                            }
+                        );
+
+                        await update(
+                            ref(db, "users/" + child.key),
+                            {
+                                referralCount:
+                                    Number(data.referralCount || 0) + 1,
+
+                                referralBonus:
+                                    Number(data.referralBonus || 0) + 500
+                            }
+                        );
+
+                    }
+
+                });
+
+            }
+
+        }
+
+        alert("Registration Successful!\n500 RWF Bonus Added.");
+
+        return true;
+
+    } catch (error) {
+
+        alert(error.message);
+
+        return false;
 
     }
 
-    alert("Registration Successful!\n\n500 RWF Bonus Added.");
-
-    return true;
-
   }
+// ======================================
+// auth.js - PART 2
+// LOGIN • LOGOUT • RESET PASSWORD
+// ======================================
 
-  catch (error) {
+import {
+    signInWithEmailAndPassword,
+    signOut,
+    sendPasswordResetEmail
+} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 
-    alert(error.message);
-
-    return false;
-
-  }
-
-      }
+import {
+    ref,
+    get
+} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
 
 // ======================================
 // LOGIN USER
 // ======================================
 
-const credential = await signInWithEmailAndPassword(auth, email, password);
-
-window.location.href = "dashboard.html";
 export async function loginUser(email, password) {
 
-  try {
+    try {
 
-    await signInWithEmailAndPassword(
-      auth,
-      email,
-      password
-    );
+        const credential =
+            await signInWithEmailAndPassword(
+                auth,
+                email,
+                password
+            );
 
-    alert("Login Successful!");
+        const user = credential.user;
 
-    window.location.href = "dashboard.html";
+        const snapshot = await get(
+            ref(db, "users/" + user.uid)
+        );
 
-  } catch (error) {
+        if (!snapshot.exists()) {
 
-    alert(error.message);
+            alert("User account not found.");
 
-    return false;
+            await signOut(auth);
 
-  }
+            return false;
+
+        }
+
+        window.location.href = "dashboard.html";
+
+        return true;
+
+    } catch (error) {
+
+        alert(error.message);
+
+        return false;
+
+    }
 
 }
-
-
 
 // ======================================
 // LOGOUT USER
@@ -184,21 +213,19 @@ export async function loginUser(email, password) {
 
 export async function logoutUser() {
 
-  try {
+    try {
 
-    await signOut(auth);
+        await signOut(auth);
 
-    window.location.href = "login.html";
+        window.location.href = "login.html";
 
-  } catch (error) {
+    } catch (error) {
 
-    alert(error.message);
+        alert(error.message);
 
-  }
+    }
 
 }
-
-
 
 // ======================================
 // RESET PASSWORD
@@ -206,16 +233,24 @@ export async function logoutUser() {
 
 export async function resetPassword(email) {
 
-  try {
+    try {
 
-    await sendPasswordResetEmail(auth, email);
+        await sendPasswordResetEmail(
+            auth,
+            email
+        );
 
-    alert("Password reset email sent successfully.");
+        alert("Password reset email sent.");
 
-  } catch (error) {
+    } catch (error) {
 
-    alert(error.message);
+        alert(error.message);
 
-  }
+    }
 
-      }
+}
+
+
+
+console.log("Auth Part 2 Loaded Successfully");
+  
