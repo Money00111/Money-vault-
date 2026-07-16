@@ -76,17 +76,22 @@ logoutBtn?.addEventListener("click", async (e) => {
 // AUTH
 // ======================================
 
-onAuthStateChanged(auth, (user) => {
+onAuthStateChanged(auth,(user)=>{
 
-    if (!user) {
+    if(!user){
 
-        location.href = "login.html";
-
+        location.href="login.html";
         return;
 
     }
 
     loadUser(user);
+
+    loadTransactions(user);
+
+    createReferral(user);
+
+    loadNotifications();
 
 });
 
@@ -165,7 +170,12 @@ console.log("Dashboard Part 1 Ready");
 // ======================================
 // ELEMENTS
 // ======================================
-
+import {
+    ref,
+    onValue,
+    query,
+    limitToLast
+} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
 const recentTransactions = document.getElementById("recentTransactions");
 
 const referralLink = document.getElementById("referralLink");
