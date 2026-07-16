@@ -254,3 +254,73 @@ export async function resetPassword(email) {
 
 console.log("Auth Part 2 Loaded Successfully");
   
+// ======================================
+// auth.js - PART 3
+// CURRENT USER & AUTH STATE
+// ======================================
+
+import {
+    onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+
+// ======================================
+// GET CURRENT USER
+// ======================================
+
+export function getCurrentUser() {
+
+    return auth.currentUser;
+
+}
+
+// ======================================
+// AUTH STATE LISTENER
+// ======================================
+
+export function checkAuth(callback) {
+
+    onAuthStateChanged(auth, (user) => {
+
+        if (user) {
+
+            callback(user);
+
+        } else {
+
+            window.location.href = "login.html";
+
+        }
+
+    });
+
+}
+
+// ======================================
+// REQUIRE LOGIN
+// ======================================
+
+export function requireLogin() {
+
+    onAuthStateChanged(auth, (user) => {
+
+        if (!user) {
+
+            window.location.href = "login.html";
+
+        }
+
+    });
+
+}
+
+// ======================================
+// CHECK LOGIN STATUS
+// ======================================
+
+export function isLoggedIn() {
+
+    return auth.currentUser !== null;
+
+}
+
+console.log("Auth Part 3 Loaded Successfully");
