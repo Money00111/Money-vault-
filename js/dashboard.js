@@ -122,7 +122,9 @@ function loadUser(user) {
         }
 
         const data = snapshot.val();
-
+        
+        createReferral(data);
+        
         userName.textContent =
             data.fullName || "Money Vault User";
 
