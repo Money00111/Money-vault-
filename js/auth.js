@@ -62,16 +62,17 @@ export async function registerUser(
 
       balance: registrationBonus,
 
+      bonus: registrationBonus,
+
       totalDeposit: 0,
 
       totalWithdraw: 0,
 
       totalEarnings: registrationBonus,
 
-      vipLevel: 0,
-
+      vip: "VIP 0",
       vipActive: false,
-
+      
       referralCode: myReferralCode,
 
       referredBy: "",
@@ -107,6 +108,10 @@ export async function registerUser(
               ref(db, "users/" + user.uid),
               {
                 referredBy: child.key
+
+                referralCount
+                referralBonus
+                balance
               }
             );
 
