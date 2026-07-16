@@ -67,7 +67,9 @@ export async function registerUser(
       totalDeposit: 0,
 
       totalWithdraw: 0,
-
+      
+      totalTransactions: 0,
+      
       totalEarnings: registrationBonus,
 
       vip: "VIP 0",
