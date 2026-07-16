@@ -10,9 +10,11 @@ import {
     signOut
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 
-import {
+ import {
     ref,
-    onValue
+    onValue,
+    query,
+    limitToLast
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
 
 // ======================================
@@ -170,12 +172,7 @@ console.log("Dashboard Part 1 Ready");
 // ======================================
 // ELEMENTS
 // ======================================
-import {
-    ref,
-    onValue,
-    query,
-    limitToLast
-} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
+
 const recentTransactions = document.getElementById("recentTransactions");
 
 const referralLink = document.getElementById("referralLink");
