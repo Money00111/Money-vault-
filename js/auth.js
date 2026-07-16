@@ -151,16 +151,6 @@ export async function registerUser(
 // LOGIN • LOGOUT • RESET PASSWORD
 // ======================================
 
-import {
-    signInWithEmailAndPassword,
-    signOut,
-    sendPasswordResetEmail
-} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
-
-import {
-    ref,
-    get
-} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
 
 // ======================================
 // LOGIN USER
@@ -258,10 +248,6 @@ console.log("Auth Part 2 Loaded Successfully");
 // auth.js - PART 3
 // CURRENT USER & AUTH STATE
 // ======================================
-
-import {
-    onAuthStateChanged
-} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 
 // ======================================
 // GET CURRENT USER
