@@ -149,12 +149,6 @@ export async function registerUser(
 // LOGIN USER
 // ======================================
 
-import {
-  signInWithEmailAndPassword,
-  signOut,
-  sendPasswordResetEmail
-} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
-
 const credential = await signInWithEmailAndPassword(auth, email, password);
 
 window.location.href = "dashboard.html";
