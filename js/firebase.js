@@ -1,12 +1,14 @@
 // ======================================
 // FIREBASE CONFIG
+// Money Vault
+// Realtime Database Version
 // ======================================
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
 
 import { getAuth } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 
-import { getFirestore } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+import { getDatabase } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
 
 import { getStorage } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-storage.js";
 
@@ -16,39 +18,50 @@ import { getStorage } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-
 
 const firebaseConfig = {
 
-  apiKey: "AIzaSyC0ugw0iH2h00bJxxHq7qMRBvYYmFjPqCU",
+    apiKey: "AIzaSyC0ugw0iH2h00bJxxHq7qMRBvYYmFjPqCU",
 
-  authDomain: "money-vault-c48d3.firebaseapp.com",
+    authDomain: "money-vault-c48d3.firebaseapp.com",
 
-  projectId: "money-vault-c48d3",
+    databaseURL: "https://money-vault-c48d3-default-rtdb.firebaseio.com",
 
-  storageBucket: "money-vault-c48d3.appspot.com",
+    projectId: "money-vault-c48d3",
 
-  messagingSenderId: "1068478656241",
+    storageBucket: "money-vault-c48d3.appspot.com",
 
-  appId: "1:1068478656241:web:aacbcf12922a21fe784350"
+    messagingSenderId: "1068478656241",
+
+    appId: "1:1068478656241:web:aacbcf12922a21fe784350"
 
 };
 
 // ======================================
-// INIT FIREBASE
+// INITIALIZE
 // ======================================
 
 const app = initializeApp(firebaseConfig);
 
+// ======================================
+// SERVICES
+// ======================================
+
 const auth = getAuth(app);
 
-const db = getFirestore(app);
+const db = getDatabase(app);
 
 const storage = getStorage(app);
 
 // ======================================
-// EXPORT
+// EXPORTS
 // ======================================
 
 export {
-  app,
-  auth,
-  db,
-  storage
+
+    app,
+
+    auth,
+
+    db,
+
+    storage
+
 };
