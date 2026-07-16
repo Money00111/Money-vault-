@@ -267,16 +267,15 @@ function loadTransactions(user){
 // ======================================
 // REFERRAL LINK
 // ======================================
+function createReferral(data){
 
-function createReferral(user){
+    referralLink.value=
 
-    referralLink.value =
+    window.location.origin+
 
-    window.location.origin +
+    "/register.html?ref="+
 
-    "/register.html?ref=" +
-
-    user.uid;
+    data.referralCode;
 
 }
 
