@@ -503,31 +503,6 @@ function showToast(message, color = "#2563eb") {
 }
 
 // ======================================
-// VALIDATION
-// ======================================
-
-depositForm?.addEventListener("submit", (e) => {
-
-    const amount = Number(
-        document.getElementById("amount").value
-    );
-
-    if (amount < 1000) {
-
-        e.preventDefault();
-
-        showToast(
-            "Minimum Deposit is 1,000 RWF",
-            "#ef4444"
-        );
-
-        return;
-
-    }
-
-});
-
-// ======================================
 // ONLINE
 // ======================================
 
