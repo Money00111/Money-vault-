@@ -13,9 +13,10 @@ import {
 
 import {
     ref,
+    push,
+    set,
     onValue
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
-
 import {
     ref as storageRef,
     uploadBytes,
@@ -313,34 +314,33 @@ depositForm?.addEventListener("submit", async (e) => {
         // ==========================
         const depositRef =
 push(ref(db, "depositRequests"));
+await set(depositRef, {
 
-        await set(id: depositRef.key,{
+    id: depositRef.key,
 
-            id: depositRef.key || Date.now(),
+    uid: currentUser.uid,
 
-            uid: currentUser.uid,
+    email: currentUser.email,
 
-            email: currentUser.email,
+    amount: amount,
 
-            amount: amount,
+    paymentMethod: paymentMethod,
 
-            paymentMethod: paymentMethod,
+    senderPhone: senderPhone,
 
-            senderPhone: senderPhone,
+    transactionId: transactionId,
 
-            transactionId: transactionId,
+    paymentDate: paymentDate,
 
-            paymentDate: paymentDate,
+    note: note,
 
-            note: note,
+    proofImage: proofImage,
 
-            proofImage: proofImage,
+    status: "Pending",
 
-            status: "Pending",
+    createdAt: Date.now()
 
-            createdAt: Date.now()
-
-        });
+});
 
         alert(
             "Deposit request submitted successfully."
