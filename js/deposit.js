@@ -208,7 +208,15 @@ depositForm?.addEventListener("submit", async (e) => {
 
     const file =
         paymentProof.files[0];
+    
+const now = new Date();
 
+const local = new Date(
+    now.getTime() - now.getTimezoneOffset() * 60000
+);
+
+document.getElementById("paymentDate").value =
+local.toISOString().slice(0,16);
     if (amount < 1000) {
 
         alert("Minimum deposit is 1,000 RWF.");
