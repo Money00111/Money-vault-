@@ -311,14 +311,10 @@ depositForm?.addEventListener("submit", async (e) => {
         // ==========================
         // Save Request
         // ==========================
-
         const depositRef =
-            ref(db,
-                "depositRequests/" +
-                Date.now()
-            );
+push(ref(db, "depositRequests"));
 
-        await set(depositRef, {
+        await set(id: depositRef.key,{
 
             id: depositRef.key || Date.now(),
 
