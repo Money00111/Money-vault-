@@ -195,3 +195,283 @@ console.log(" Admin Email Verified ");
 console.log(" Realtime Database Connected ");
 console.log("=================================");
 
+// ======================================
+// ADMIN.JS - PART 2
+// LOAD DEPOSITS + APPROVE + REJECT
+// ======================================
+
+import {
+    ref,
+    onValue,
+    update,
+    get
+} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
+
+// ======================================
+// ELEMENTS
+// ======================================
+
+const depositRequests =
+document.getElementById("depositRequests");
+
+// ======================================
+// LOAD DEPOSITS
+// ======================================
+
+function loadDeposits() {
+
+    const depositsRef =
+    ref(db, "depositRequests");
+
+    onValue(depositsRef, (snapshot) => {
+
+        if (!depositRequests) return;
+
+        depositRequests.innerHTML = "";
+
+        if (!snapshot.exists()) {
+
+            depositRequests.innerHTML = `
+
+            <div class="empty-card">
+
+                <h3>No Deposit Requests</h3>
+
+            </div>
+
+            `;
+
+            return;
+
+        }
+
+        const deposits = [];
+
+        snapshot.forEach((child) => {
+
+            deposits.unshift({
+                key: child.key,
+                ...child.val()
+            });
+
+        });
+
+        deposits.forEach((data) => {
+
+            depositRequests.innerHTML += `
+
+            <div class="request-card">
+
+                <h3>
+                ${Number(data.amount).toLocaleString()} RWF
+                </h3>
+
+                <p>
+                Email:
+                ${data.email}
+                </p>
+
+                <p>
+                Phone:
+                ${data.senderPhone}
+                </p>
+
+                <p>
+                Transaction:
+                ${data.transactionId}
+                </p>
+
+                <p>
+                Status:
+                <strong>${data.status}</strong>
+                </p>
+
+                <div class="action-buttons">
+
+                    <button
+                    class="approveBtn"
+                    data-id="${data.key}">
+                    Approve
+                    </button>
+
+                    <button
+                    class="rejectBtn"
+                    data-id="${data.key}">
+                    Reject
+                    </button>
+
+                </div>
+
+            </div>
+
+            `;
+
+        });
+
+        activateButtons();
+
+    });
+
+}
+
+// ======================================
+// APPROVE
+// ======================================
+
+async function approveDeposit(id) {
+
+    try {
+
+        const depositRef =
+        ref(db, "depositRequests/" + id);
+
+        const snap =
+        await get(depositRef);
+
+        if (!snap.exists()) return;
+
+        const deposit =
+        snap.val();
+
+        if (deposit.status === "Approved") {
+
+            alert("Already Approved");
+
+            return;
+
+        }
+
+        // USER BALANCE
+
+        const userRef =
+        ref(db, "users/" + deposit.uid);
+
+        const userSnap =
+        await get(userRef);
+
+        if (!userSnap.exists()) return;
+
+        const user =
+        userSnap.val();
+
+        const currentBalance =
+        Number(user.balance || 0);
+
+        const newBalance =
+        currentBalance +
+        Number(deposit.amount);
+
+        // UPDATE USER
+
+        await update(userRef, {
+
+            balance: newBalance
+
+        });
+
+        // UPDATE DEPOSIT
+
+        await update(depositRef, {
+
+            status: "Approved",
+
+            approvedAt: Date.now()
+
+        });
+
+        alert("Deposit Approved");
+
+    }
+
+    catch (error) {
+
+        console.error(error);
+
+        alert(error.message);
+
+    }
+
+}
+
+// ======================================
+// REJECT
+// ======================================
+
+async function rejectDeposit(id) {
+
+    try {
+
+        await update(
+
+            ref(db, "depositRequests/" + id),
+
+            {
+
+                status: "Rejected",
+
+                rejectedAt: Date.now()
+
+            }
+
+        );
+
+        alert("Deposit Rejected");
+
+    }
+
+    catch (error) {
+
+        console.error(error);
+
+        alert(error.message);
+
+    }
+
+}
+
+// ======================================
+// BUTTONS
+// ======================================
+
+function activateButtons() {
+
+    document
+    .querySelectorAll(".approveBtn")
+    .forEach((btn) => {
+
+        btn.onclick = () => {
+
+            const id =
+            btn.dataset.id;
+
+            approveDeposit(id);
+
+        };
+
+    });
+
+    document
+    .querySelectorAll(".rejectBtn")
+    .forEach((btn) => {
+
+        btn.onclick = () => {
+
+            const id =
+            btn.dataset.id;
+
+            rejectDeposit(id);
+
+        };
+
+    });
+
+}
+
+// ======================================
+// START
+// ======================================
+
+loadDeposits();
+
+console.log("✅ Admin Part 2 Loaded");
+
