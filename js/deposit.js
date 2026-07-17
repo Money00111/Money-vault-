@@ -312,8 +312,8 @@ depositForm?.addEventListener("submit", async (e) => {
         // ==========================
         // Save Request
         // ==========================
-        const depositRef =
-push(ref(db, "depositRequests"));
+        const depositRef = push(ref(db, "depositRequests"));
+
 await set(depositRef, {
 
     id: depositRef.key,
@@ -322,19 +322,19 @@ await set(depositRef, {
 
     email: currentUser.email,
 
-    amount: amount,
+    amount,
 
-    paymentMethod: paymentMethod,
+    paymentMethod,
 
-    senderPhone: senderPhone,
+    senderPhone,
 
-    transactionId: transactionId,
+    transactionId,
 
-    paymentDate: paymentDate,
+    paymentDate,
 
-    note: note,
+    note,
 
-    proofImage: proofImage,
+    proofImage,
 
     status: "Pending",
 
