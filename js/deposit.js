@@ -238,10 +238,67 @@ local.toISOString().slice(0,16);
 
     try {
 
-        submitBtn.disabled = true;
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = "Uploading...";
 
-        submitBtn.innerHTML = "Uploading...";
+    // Upload image
 
+    const imageRef = storageRef(
+        storage,
+        "depositProofs/" +
+        currentUser.uid +
+        "/" +
+        Date.now() +
+        "_" +
+        file.name
+    );
+
+    await uploadBytes(imageRef, file);
+
+    const imageUrl = await getDownloadURL(imageRef);
+
+    // Save deposit
+
+    const depositRef = push(ref(db, "depositRequests"));
+
+    await set(depositRef, {
+
+        id: depositRef.key,
+        uid: currentUser.uid,
+        email: currentUser.email,
+        amount,
+        paymentMethod,
+        senderPhone,
+        transactionId,
+        paymentDate,
+        note,
+        proofImage: imageUrl,
+        status: "Pending",
+        createdAt: Date.now()
+
+    });
+
+    alert("Deposit request submitted successfully.");
+
+    depositForm.reset();
+
+    imagePreview.style.display = "none";
+
+}
+catch (error) {
+
+    console.error(error);
+
+    alert(error.message);
+
+}
+finally {
+
+    submitBtn.disabled = false;
+
+    submitBtn.innerHTML = "Submit Deposit Request";
+
+}
         // ==========================
         // Upload Image
         // ==========================
