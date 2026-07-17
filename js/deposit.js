@@ -563,3 +563,125 @@ onAuthStateChanged(auth, (user) => {
 });
 
 console.log("✅ Deposit Part 3 Loaded Successfully");
+
+// ======================================
+// DEPOSIT.JS - PART 4
+// FINAL FUNCTIONS
+// ======================================
+
+// ======================================
+// TOAST MESSAGE
+// ======================================
+
+function showToast(message, color = "#2563eb") {
+
+    const toast = document.createElement("div");
+
+    toast.textContent = message;
+
+    toast.style.position = "fixed";
+    toast.style.top = "20px";
+    toast.style.right = "20px";
+    toast.style.background = color;
+    toast.style.color = "#fff";
+    toast.style.padding = "15px 20px";
+    toast.style.borderRadius = "10px";
+    toast.style.fontWeight = "600";
+    toast.style.zIndex = "99999";
+
+    document.body.appendChild(toast);
+
+    setTimeout(() => {
+
+        toast.remove();
+
+    }, 3000);
+
+}
+
+// ======================================
+// ONLINE / OFFLINE
+// ======================================
+
+window.addEventListener("online", () => {
+
+    showToast(
+        "Internet Connected",
+        "#10b981"
+    );
+
+});
+
+window.addEventListener("offline", () => {
+
+    showToast(
+        "No Internet Connection",
+        "#ef4444"
+    );
+
+});
+
+// ======================================
+// PAGE ANIMATION
+// ======================================
+
+window.addEventListener("load", () => {
+
+    document.body.style.opacity = "0";
+
+    setTimeout(() => {
+
+        document.body.style.transition = "opacity .4s";
+
+        document.body.style.opacity = "1";
+
+    }, 100);
+
+});
+
+// ======================================
+// HIDE LOADING
+// ======================================
+
+window.addEventListener("load", () => {
+
+    setTimeout(() => {
+
+        if (loadingScreen) {
+
+            loadingScreen.style.display = "none";
+
+        }
+
+    }, 800);
+
+});
+
+// ======================================
+// GLOBAL ERROR
+// ======================================
+
+window.addEventListener("error", (event) => {
+
+    console.error(event.error);
+
+    if (loadingScreen) {
+
+        loadingScreen.style.display = "none";
+
+    }
+
+});
+
+// ======================================
+// READY
+// ======================================
+
+console.log("=================================");
+console.log(" Money Vault Deposit Ready ");
+console.log(" Authentication Connected ");
+console.log(" Realtime Database Connected ");
+console.log(" Firebase Storage Connected ");
+console.log(" Deposit History Ready ");
+console.log(" Deposit Upload Ready ");
+console.log("=================================");
