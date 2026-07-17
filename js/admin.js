@@ -1,230 +1,197 @@
-import { auth, db } from "../firebase.js";
+// ======================================
+// ADMIN.JS - PART 1
+// AUTHENTICATION + SETUP
+// Money Vault
+// ======================================
+
+import { auth, db } from "./firebase.js";
 
 import {
-  onAuthStateChanged,
-  signOut
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    onAuthStateChanged,
+    signOut
+} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 
 import {
-  collection,
-  query,
-  where,
-  getDocs,
-  updateDoc,
-  doc,
-  getDoc
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    ref,
+    get
+} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
 
-const content = document.getElementById("content");
-const title = document.getElementById("title");
+// ======================================
+// ADMIN EMAIL
+// ======================================
+const ADMIN_EMAIL = "Niyigenaepizo9@gmail.com";
 
-// =======================
-// ADMIN CHECK
-// =======================
+
+// ======================================
+// CURRENT ADMIN
+// ======================================
+
+let currentAdmin = null;
+
+// ======================================
+// ELEMENTS
+// ======================================
+
+const loadingScreen = document.getElementById("loadingScreen");
+
+const sidebar = document.getElementById("sidebar");
+const menuBtn = document.getElementById("menuBtn");
+const logoutBtn = document.getElementById("logoutBtn");
+
+const adminName = document.getElementById("adminName");
+
+// ======================================
+// AUTHENTICATION
+// ======================================
+
 onAuthStateChanged(auth, async (user) => {
 
-  if (!user) {
-    window.location.href = "../login.html";
-    return;
-  }
+    if (!user) {
 
-  // 👉 SIMPLE ADMIN CHECK (change email)
-  if (user.email !== "admin@moneyvault.com") {
-    alert("Not admin");
-    await signOut(auth);
-    return;
-  }
+        window.location.href = "login.html";
 
-  loadDeposits();
+        return;
+
+    }
+
+    // Admin Email Check
+    if (user.email !== ADMIN_EMAIL) {
+
+        alert("Access Denied!");
+
+        await signOut(auth);
+
+        window.location.href = "dashboard.html";
+
+        return;
+
+    }
+
+    currentAdmin = user;
+
+    try {
+
+        const snapshot = await get(
+            ref(db, "users/" + user.uid)
+        );
+
+        if (snapshot.exists()) {
+
+            const data = snapshot.val();
+
+            if (adminName) {
+
+                adminName.textContent =
+                    data.fullName || "Administrator";
+
+            }
+
+        } else {
+
+            if (adminName) {
+
+                adminName.textContent = "Administrator";
+
+            }
+
+        }
+
+    } catch (error) {
+
+        console.error(error);
+
+    }
+
+    if (loadingScreen) {
+
+        loadingScreen.style.display = "none";
+
+    }
+
+    console.log("✅ Admin Logged In");
+
 });
 
-// =======================
-// TABS
-// =======================
-document.querySelectorAll(".tab-btn").forEach(btn => {
-  btn.addEventListener("click", () => {
+// ======================================
+// SIDEBAR
+// ======================================
 
-    document.querySelectorAll(".tab-btn")
-    .forEach(b => b.classList.remove("active"));
+menuBtn?.addEventListener("click", () => {
 
-    btn.classList.add("active");
+    sidebar?.classList.toggle("active");
 
-    const tab = btn.dataset.tab;
-
-    if (tab === "deposits") loadDeposits();
-    if (tab === "withdraws") loadWithdraws();
-    if (tab === "users") loadUsers();
-
-  });
 });
 
-// =======================
-// DEPOSITS
-// =======================
-async function loadDeposits() {
-
-  title.innerText = "Deposits";
-
-  const q = query(collection(db, "deposits"));
-
-  const snap = await getDocs(q);
-
-  content.innerHTML = "";
-
-  snap.forEach(docSnap => {
-
-    const d = docSnap.data();
-
-    content.innerHTML += `
-      <div class="card">
-        <p>User: ${d.userId}</p>
-        <p>Amount: ${d.amount}</p>
-        <p>Status: ${d.status}</p>
-
-        <button onclick="approveDeposit('${docSnap.id}','${d.userId}',${d.amount})">
-          Approve
-        </button>
-
-        <button onclick="rejectDeposit('${docSnap.id}')">
-          Reject
-        </button>
-      </div>
-    `;
-  });
-}
-
-// =======================
-// WITHDRAWS
-// =======================
-async function loadWithdraws() {
-
-  title.innerText = "Withdraws";
-
-  const q = query(collection(db, "withdraws"));
-
-  const snap = await getDocs(q);
-
-  content.innerHTML = "";
-
-  snap.forEach(docSnap => {
-
-    const d = docSnap.data();
-
-    content.innerHTML += `
-      <div class="card">
-        <p>User: ${d.userId}</p>
-        <p>Amount: ${d.amount}</p>
-        <p>Status: ${d.status}</p>
-
-        <button onclick="approveWithdraw('${docSnap.id}','${d.userId}',${d.amount})">
-          Approve
-        </button>
-
-        <button onclick="rejectWithdraw('${docSnap.id}')">
-          Reject
-        </button>
-      </div>
-    `;
-  });
-}
-
-// =======================
-// USERS
-// =======================
-async function loadUsers() {
-
-  title.innerText = "Users";
-
-  const q = query(collection(db, "users"));
-
-  const snap = await getDocs(q);
-
-  content.innerHTML = "";
-
-  snap.forEach(docSnap => {
-
-    const u = docSnap.data();
-
-    content.innerHTML += `
-      <div class="card">
-        <p>Name: ${u.fullName}</p>
-        <p>Balance: ${u.balance}</p>
-        <p>VIP: ${u.vip}</p>
-      </div>
-    `;
-  });
-}
-
-// =======================
-// APPROVE DEPOSIT
-// =======================
-window.approveDeposit = async (id, userId, amount) => {
-
-  await updateDoc(doc(db, "deposits", id), {
-    status: "Approved"
-  });
-
-  const userRef = doc(db, "users", userId);
-  const userSnap = await getDoc(userRef);
-
-  const current = userSnap.data().balance || 0;
-
-  await updateDoc(userRef, {
-    balance: current + Number(amount)
-  });
-
-  alert("Deposit Approved");
-};
-
-// =======================
-// REJECT DEPOSIT
-// =======================
-window.rejectDeposit = async (id) => {
-
-  await updateDoc(doc(db, "deposits", id), {
-    status: "Rejected"
-  });
-
-  alert("Deposit Rejected");
-};
-
-// =======================
-// APPROVE WITHDRAW
-// =======================
-window.approveWithdraw = async (id, userId, amount) => {
-
-  await updateDoc(doc(db, "withdraws", id), {
-    status: "Approved"
-  });
-
-  const userRef = doc(db, "users", userId);
-  const userSnap = await getDoc(userRef);
-
-  const current = userSnap.data().balance || 0;
-
-  await updateDoc(userRef, {
-    balance: current - Number(amount)
-  });
-
-  alert("Withdraw Approved");
-};
-
-// =======================
-// REJECT WITHDRAW
-// =======================
-window.rejectWithdraw = async (id) => {
-
-  await updateDoc(doc(db, "withdraws", id), {
-    status: "Rejected"
-  });
-
-  alert("Withdraw Rejected");
-};
-
-// =======================
+// ======================================
 // LOGOUT
-// =======================
-document.getElementById("logoutBtn").onclick = async () => {
-  await signOut(auth);
-  window.location.href = "../login.html";
-};
+// ======================================
+
+logoutBtn?.addEventListener("click", async (e) => {
+
+    e.preventDefault();
+
+    const ok = confirm("Logout from Admin Panel?");
+
+    if (!ok) return;
+
+    try {
+
+        await signOut(auth);
+
+        window.location.href = "login.html";
+
+    } catch (error) {
+
+        alert(error.message);
+
+    }
+
+});
+
+// ======================================
+// PAGE ANIMATION
+// ======================================
+
+window.addEventListener("load", () => {
+
+    document.body.style.opacity = "0";
+
+    setTimeout(() => {
+
+        document.body.style.transition = "opacity .4s";
+
+        document.body.style.opacity = "1";
+
+    }, 100);
+
+});
+
+// ======================================
+// HIDE LOADING
+// ======================================
+
+window.addEventListener("load", () => {
+
+    setTimeout(() => {
+
+        if (loadingScreen) {
+
+            loadingScreen.style.display = "none";
+
+        }
+
+    }, 800);
+
+});
+
+// ======================================
+// READY
+// ======================================
+
+console.log("=================================");
+console.log(" Money Vault Admin Ready ");
+console.log(" Authentication Connected ");
+console.log(" Admin Email Verified ");
+console.log(" Realtime Database Connected ");
+console.log("=================================");
+
