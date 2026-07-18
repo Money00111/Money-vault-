@@ -480,3 +480,137 @@ loadDeposits();
 
 console.log("✅ Admin Part 2 Loaded");
 
+// ======================================
+// ADMIN.JS - PART 3
+// DASHBOARD STATISTICS
+// ======================================
+
+// ======================================
+// ELEMENTS
+// ======================================
+
+const totalUsers = document.getElementById("totalUsers");
+const totalDeposits = document.getElementById("totalDeposits");
+const totalPending = document.getElementById("totalPending");
+const totalApproved = document.getElementById("totalApproved");
+const totalRejected = document.getElementById("totalRejected");
+const totalAmount = document.getElementById("totalAmount");
+
+// ======================================
+// LOAD STATISTICS
+// ======================================
+
+function loadStatistics() {
+
+    // USERS
+    onValue(ref(db, "users"), (snapshot) => {
+
+        let users = 0;
+
+        if (snapshot.exists()) {
+
+            snapshot.forEach(() => {
+
+                users++;
+
+            });
+
+        }
+
+        if (totalUsers) {
+
+            totalUsers.textContent =
+                users.toLocaleString();
+
+        }
+
+    });
+
+    // DEPOSITS
+    onValue(ref(db, "depositRequests"), (snapshot) => {
+
+        let deposits = 0;
+        let pending = 0;
+        let approved = 0;
+        let rejected = 0;
+        let amount = 0;
+
+        if (snapshot.exists()) {
+
+            snapshot.forEach((child) => {
+
+                const data = child.val();
+
+                deposits++;
+
+                amount += Number(data.amount || 0);
+
+                if (data.status === "Pending") {
+
+                    pending++;
+
+                }
+
+                if (data.status === "Approved") {
+
+                    approved++;
+
+                }
+
+                if (data.status === "Rejected") {
+
+                    rejected++;
+
+                }
+
+            });
+
+        }
+
+        if (totalDeposits) {
+
+            totalDeposits.textContent =
+                deposits.toLocaleString();
+
+        }
+
+        if (totalPending) {
+
+            totalPending.textContent =
+                pending.toLocaleString();
+
+        }
+
+        if (totalApproved) {
+
+            totalApproved.textContent =
+                approved.toLocaleString();
+
+        }
+
+        if (totalRejected) {
+
+            totalRejected.textContent =
+                rejected.toLocaleString();
+
+        }
+
+        if (totalAmount) {
+
+            totalAmount.textContent =
+                amount.toLocaleString() + " RWF";
+
+        }
+
+    });
+
+}
+
+// ======================================
+// START
+// ======================================
+
+loadStatistics();
+
+console.log("✅ Admin Part 3 Loaded");
+
