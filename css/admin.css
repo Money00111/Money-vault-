@@ -375,3 +375,231 @@ REQUESTS
     .requests-grid{
         grid-template-columns:repeat(auto-fit,minmax(300px,1fr));
    
+/* ======================================
+   ADMIN.CSS - PART 3
+   RESPONSIVE + FINAL DESIGN
+====================================== */
+
+/* Tablet */
+
+@media (max-width:992px){
+
+.dashboard-cards{
+grid-template-columns:repeat(2,1fr);
+}
+
+.requests-grid{
+grid-template-columns:repeat(2,1fr);
+}
+
+.sidebar{
+width:240px;
+left:-240px;
+}
+
+.sidebar.active{
+left:0;
+}
+
+.main{
+margin-left:0;
+width:100%;
+}
+
+}
+
+/* Mobile */
+
+@media (max-width:768px){
+
+header{
+padding:15px;
+flex-wrap:wrap;
+gap:10px;
+}
+
+header h2{
+font-size:20px;
+}
+
+.dashboard-cards{
+grid-template-columns:1fr;
+}
+
+.requests-grid{
+grid-template-columns:1fr;
+}
+
+.request-card{
+padding:18px;
+}
+
+.action-buttons{
+flex-direction:column;
+}
+
+.action-buttons button{
+width:100%;
+}
+
+.stats-card h2{
+font-size:28px;
+}
+
+.stats-card h4{
+font-size:15px;
+}
+
+}
+
+/* Small Phones */
+
+@media (max-width:480px){
+
+body{
+font-size:14px;
+}
+
+header{
+padding:12px;
+}
+
+.sidebar{
+width:220px;
+left:-220px;
+}
+
+.sidebar.active{
+left:0;
+}
+
+.main{
+padding:15px;
+}
+
+.request-card h3{
+font-size:18px;
+}
+
+.request-card p{
+font-size:14px;
+}
+
+.stats-card{
+padding:18px;
+}
+
+.stats-card h2{
+font-size:24px;
+}
+
+}
+
+/* Status Colors */
+
+.pending{
+background:#f59e0b;
+color:#fff;
+padding:6px 12px;
+border-radius:20px;
+font-size:13px;
+font-weight:700;
+display:inline-block;
+}
+
+.approved{
+background:#16a34a;
+color:#fff;
+padding:6px 12px;
+border-radius:20px;
+font-size:13px;
+font-weight:700;
+display:inline-block;
+}
+
+.rejected{
+background:#dc2626;
+color:#fff;
+padding:6px 12px;
+border-radius:20px;
+font-size:13px;
+font-weight:700;
+display:inline-block;
+}
+
+/* Empty Card */
+
+.empty-card{
+background:#1e293b;
+padding:40px;
+border-radius:16px;
+text-align:center;
+border:1px solid rgba(255,255,255,.08);
+}
+
+.empty-card h3{
+color:#fff;
+font-size:22px;
+}
+
+/* Loading */
+
+.loading{
+display:flex;
+justify-content:center;
+align-items:center;
+padding:40px;
+font-size:18px;
+font-weight:700;
+color:#38bdf8;
+}
+
+/* Scrollbar */
+
+::-webkit-scrollbar{
+width:8px;
+}
+
+::-webkit-scrollbar-track{
+background:#0f172a;
+}
+
+::-webkit-scrollbar-thumb{
+background:#334155;
+border-radius:20px;
+}
+
+::-webkit-scrollbar-thumb:hover{
+background:#475569;
+}
+
+/* Animation */
+
+.request-card,
+.stats-card{
+animation:fadeUp .35s ease;
+}
+
+@keyframes fadeUp{
+
+from{
+opacity:0;
+transform:translateY(20px);
+}
+
+to{
+opacity:1;
+transform:translateY(0);
+}
+
+}
+
+/* Footer */
+
+footer{
+margin-top:40px;
+text-align:center;
+padding:20px;
+color:#94a3b8;
+font-size:14px;
+}
