@@ -335,7 +335,9 @@ Copy Transaction ID
 // ======================================
 
 async function approveDeposit(id) {
-
+if (!confirm("Approve this deposit?")) {
+    return;
+}
     try {
 
         const depositRef =
