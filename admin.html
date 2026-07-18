@@ -2,35 +2,417 @@
 <html lang="en">
 
 <head>
+
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<meta
+name="viewport"
+content="width=device-width, initial-scale=1.0">
 
 <title>Admin Panel | Money Vault</title>
 
-<link rel="stylesheet" href="admin.css">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+<link rel="stylesheet" href="css/admin.css">
+
+<link rel="stylesheet"
+href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+
 </head>
 
 <body>
 
-<div class="sidebar">
-  <h2>💰 Admin Panel</h2>
+<!-- ==========================
+LOADING SCREEN
+========================== -->
 
-  <button class="tab-btn active" data-tab="deposits">Deposits</button>
-  <button class="tab-btn" data-tab="withdraws">Withdraws</button>
-  <button class="tab-btn" data-tab="users">Users</button>
+<div id="loadingScreen" class="loading-screen">
 
-  <button id="logoutBtn">Logout</button>
+<div class="loader"></div>
+
+<h2>Loading Admin Panel...</h2>
+
 </div>
+
+<!-- ==========================
+SIDEBAR
+========================== -->
+
+<div id="sidebar" class="sidebar">
+
+<div class="logo">
+
+<h2>
+💰 Money Vault
+</h2>
+
+<p>
+
+Administrator
+
+</p>
+
+</div>
+
+<ul>
+
+<li>
+
+<a
+href="admin.html"
+class="active">
+
+<i class="fa fa-gauge"></i>
+
+Dashboard
+
+</a>
+
+</li>
+
+<li>
+
+<a href="#depositSection">
+
+<i class="fa fa-wallet"></i>
+
+Deposits
+
+</a>
+
+</li>
+
+<li>
+
+<a href="withdraw-admin.html">
+
+<i class="fa fa-money-bill-transfer"></i>
+
+Withdraws
+
+</a>
+
+</li>
+
+<li>
+
+<a href="users.html">
+
+<i class="fa fa-users"></i>
+
+Users
+
+</a>
+
+</li>
+
+<li>
+
+<a href="transactions.html">
+
+<i class="fa fa-clock-rotate-left"></i>
+
+Transactions
+
+</a>
+
+</li>
+
+<li>
+
+<a href="settings.html">
+
+<i class="fa fa-gear"></i>
+
+Settings
+
+</a>
+
+</li>
+
+<li>
+
+<a
+href="#"
+id="logoutBtn">
+
+<i class="fa fa-right-from-bracket"></i>
+
+Logout
+
+</a>
+
+</li>
+
+</ul>
+
+</div>
+
+<!-- ==========================
+MAIN CONTENT
+========================== -->
 
 <div class="main">
 
-  <h1 id="title">Deposits</h1>
+<!-- ==========================
+HEADER
+========================== -->
 
-  <div id="content"></div>
+<header>
+
+<button id="menuBtn">
+
+<i class="fa fa-bars"></i>
+
+</button>
+
+<h2>
+
+Admin Dashboard
+
+</h2>
+
+<div class="admin-info">
+
+<i class="fa fa-user-shield"></i>
+
+<span id="adminName">
+
+Administrator
+
+</span>
 
 </div>
 
-<script type="module" src="admin.js"></script>
+</header>
+
+<!-- ==========================
+STATISTICS
+========================== -->
+
+<section class="statistics">
+
+<div class="stat-card">
+
+<i class="fa fa-users"></i>
+
+<h2 id="totalUsers">
+
+0
+
+</h2>
+
+<p>Total Users</p>
+
+</div>
+
+<div class="stat-card">
+
+<i class="fa fa-wallet"></i>
+
+<h2 id="totalDeposits">
+
+0
+
+</h2>
+
+<p>Total Deposits</p>
+
+</div>
+
+<div class="stat-card">
+
+<i class="fa fa-hourglass-half"></i>
+
+<h2 id="totalPending">
+
+0
+
+</h2>
+
+<p>Pending</p>
+
+</div>
+
+<div class="stat-card">
+
+<i class="fa fa-circle-check"></i>
+
+<h2 id="totalApproved">
+
+0
+
+</h2>
+
+<p>Approved</p>
+
+</div>
+
+<div class="stat-card">
+
+<i class="fa fa-circle-xmark"></i>
+
+<h2 id="totalRejected">
+
+0
+
+</h2>
+
+<p>Rejected</p>
+
+</div>
+
+<div class="stat-card">
+
+<i class="fa fa-money-bill-wave"></i>
+
+<h2 id="totalAmount">
+
+0 RWF
+
+</h2>
+
+<p>Total Amount</p>
+
+</div>
+
+</section>
+
+<!-- ==========================
+SEARCH & FILTER
+========================== -->
+
+<section class="search-box">
+
+<input
+
+type="text"
+
+id="searchInput"
+
+placeholder="Search email, phone or transaction ID...">
+
+<select id="filterStatus">
+
+<option value="All">
+
+All Status
+
+</option>
+
+<option value="Pending">
+
+Pending
+
+</option>
+
+<option value="Approved">
+
+Approved
+
+</option>
+
+<option value="Rejected">
+
+Rejected
+
+</option>
+
+</select>
+
+</section>
+
+<!-- ==========================
+DEPOSIT REQUESTS
+========================== -->
+
+<section
+id="depositSection"
+class="deposit-section">
+
+<h2>
+
+📥 Deposit Requests
+
+</h2>
+
+<div id="depositRequests">
+
+<!-- JavaScript izashyiramo requests -->
+
+</div>
+
+</section>
+
+  <!-- ==========================
+BOTTOM NAVIGATION
+========================== -->
+
+<nav class="bottom-nav">
+
+<a href="admin.html" class="active">
+
+<i class="fa fa-gauge"></i>
+
+<span>Dashboard</span>
+
+</a>
+
+<a href="#depositSection">
+
+<i class="fa fa-wallet"></i>
+
+<span>Deposits</span>
+
+</a>
+
+<a href="withdraw-admin.html">
+
+<i class="fa fa-money-bill-transfer"></i>
+
+<span>Withdraws</span>
+
+</a>
+
+<a href="users.html">
+
+<i class="fa fa-users"></i>
+
+<span>Users</span>
+
+</a>
+
+<a href="settings.html">
+
+<i class="fa fa-gear"></i>
+
+<span>Settings</span>
+
+</a>
+
+</nav>
+
+<!-- ==========================
+FOOTER
+========================== -->
+
+<footer>
+
+<p>
+
+© 2026 Money Vault Admin Panel
+
+</p>
+
+</footer>
+
+</div>
+<!-- END MAIN -->
+
+<!-- ==========================
+SCRIPTS
+========================== -->
+
+<script type="module" src="js/admin.js"></script>
+
 </body>
+
 </html>
