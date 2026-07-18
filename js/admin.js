@@ -199,12 +199,9 @@ console.log("=================================");
 // ADMIN.JS - PART 2
 // LOAD DEPOSITS + APPROVE + REJECT
 // ======================================
-
 import {
-    ref,
     onValue,
-    update,
-    get
+    update
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
 
 // ======================================
@@ -218,7 +215,11 @@ document.getElementById("depositRequests");
 // LOAD DEPOSITS
 // ======================================
 
-function loadDeposits() {
+function loadDeposits() 
+if (!confirm("Approve this deposit?")) {
+    return;
+}
+{
 
     const depositsRef =
     ref(db, "depositRequests");
@@ -362,13 +363,14 @@ async function approveDeposit(id) {
         Number(deposit.amount);
 
         // UPDATE USER
-
+        
         await update(userRef, {
-
-            balance: newBalance
-
-        });
-
+    balance: newBalance,
+    totalDeposits:
+        Number(user.totalDeposits || 0) + Number(deposit.amount),
+    totalTransactions:
+        Number(user.totalTransactions || 0) + 1
+});
         // UPDATE DEPOSIT
 
         await update(depositRef, {
@@ -400,6 +402,9 @@ async function approveDeposit(id) {
 async function rejectDeposit(id) {
 
     try {
+        if (!confirm("Reject this deposit?")) {
+    return;
+}
 
         await update(
 
