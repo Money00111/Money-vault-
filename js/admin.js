@@ -296,6 +296,18 @@ if (!confirm("Approve this deposit?")) {
                     </button>
 
                     <button
+class="viewProof"
+data-image="${data.proofImage}">
+View Screenshot
+</button>
+
+<button
+class="copyTransaction"
+data-transaction="${data.transactionId}">
+Copy Transaction ID
+</button>
+
+                    <button
                     class="rejectBtn"
                     data-id="${data.key}">
                     Reject
@@ -614,3 +626,136 @@ loadStatistics();
 
 console.log("✅ Admin Part 3 Loaded");
 
+// ======================================
+// ADMIN.JS - PART 4
+// SEARCH + FILTER + VIEW PROOF
+// ======================================
+
+// ======================================
+// ELEMENTS
+// ======================================
+
+const searchInput =
+document.getElementById("searchInput");
+
+const filterStatus =
+document.getElementById("filterStatus");
+
+// ======================================
+// SEARCH
+// ======================================
+
+searchInput?.addEventListener("keyup", () => {
+
+    const keyword =
+    searchInput.value.toLowerCase();
+
+    const cards =
+    document.querySelectorAll(".request-card");
+
+    cards.forEach((card) => {
+
+        if (
+            card.innerText
+            .toLowerCase()
+            .includes(keyword)
+        ) {
+
+            card.style.display = "block";
+
+        } else {
+
+            card.style.display = "none";
+
+        }
+
+    });
+
+});
+
+// ======================================
+// FILTER STATUS
+// ======================================
+
+filterStatus?.addEventListener("change", () => {
+
+    const value = filterStatus.value;
+
+    const cards =
+    document.querySelectorAll(".request-card");
+
+    cards.forEach((card) => {
+
+        const status =
+        card.querySelector("strong").innerText;
+
+        if (
+            value === "All" ||
+            status === value
+        ) {
+
+            card.style.display = "block";
+
+        } else {
+
+            card.style.display = "none";
+
+        }
+
+    });
+
+});
+
+// ======================================
+// VIEW SCREENSHOT
+// ======================================
+
+document.addEventListener("click", (e) => {
+
+    if (
+        e.target.classList.contains("viewProof")
+    ) {
+
+        const image =
+        e.target.dataset.image;
+
+        if (!image) {
+
+            alert("Screenshot not found.");
+
+            return;
+
+        }
+
+        window.open(image, "_blank");
+
+    }
+
+});
+
+// ======================================
+// COPY TRANSACTION ID
+// ======================================
+
+document.addEventListener("click", async (e) => {
+
+    if (
+        e.target.classList.contains("copyTransaction")
+    ) {
+
+        const id =
+        e.target.dataset.transaction;
+
+        await navigator.clipboard.writeText(id);
+
+        alert("Transaction ID Copied");
+
+    }
+
+});
+
+// ======================================
+// READY
+// ======================================
+
+console.log("✅ Admin Part 4 Loaded");
