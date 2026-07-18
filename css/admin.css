@@ -1163,3 +1163,250 @@ tbody td{
 }
 
 }
+
+   /* =========================================
+   ADMIN.CSS - PART 4
+   LOADING • TOAST • FOOTER • ANIMATIONS
+========================================= */
+
+/* ========= LOADING ========= */
+
+.loading-screen{
+    position:fixed;
+    inset:0;
+    background:#0f172a;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    flex-direction:column;
+    z-index:99999;
+}
+
+.loader{
+    width:70px;
+    height:70px;
+    border:6px solid rgba(255,255,255,.2);
+    border-top:6px solid #3b82f6;
+    border-radius:50%;
+    animation:spin 1s linear infinite;
+}
+
+.loading-text{
+    color:#fff;
+    margin-top:20px;
+    font-size:18px;
+    font-weight:bold;
+    letter-spacing:1px;
+}
+
+@keyframes spin{
+
+    0%{
+        transform:rotate(0deg);
+    }
+
+    100%{
+        transform:rotate(360deg);
+    }
+
+}
+
+/* ========= TOAST ========= */
+
+.toast{
+
+    position:fixed;
+
+    top:20px;
+    right:20px;
+
+    min-width:250px;
+
+    padding:15px 20px;
+
+    border-radius:12px;
+
+    color:#fff;
+
+    font-weight:600;
+
+    z-index:9999;
+
+    animation:toastIn .35s ease;
+
+}
+
+.toast.success{
+
+    background:#16a34a;
+
+}
+
+.toast.error{
+
+    background:#dc2626;
+
+}
+
+.toast.warning{
+
+    background:#f59e0b;
+
+}
+
+.toast.info{
+
+    background:#2563eb;
+
+}
+
+@keyframes toastIn{
+
+    from{
+
+        transform:translateX(120%);
+        opacity:0;
+
+    }
+
+    to{
+
+        transform:translateX(0);
+        opacity:1;
+
+    }
+
+}
+
+/* ========= FOOTER ========= */
+
+.footer{
+
+    margin-top:40px;
+
+    text-align:center;
+
+    padding:20px;
+
+    color:#94a3b8;
+
+    border-top:1px solid #334155;
+
+    font-size:14px;
+
+}
+
+/* ========= SCROLLBAR ========= */
+
+::-webkit-scrollbar{
+
+    width:8px;
+    height:8px;
+
+}
+
+::-webkit-scrollbar-track{
+
+    background:#111827;
+
+}
+
+::-webkit-scrollbar-thumb{
+
+    background:#3b82f6;
+    border-radius:10px;
+
+}
+
+::-webkit-scrollbar-thumb:hover{
+
+    background:#2563eb;
+
+}
+
+/* ========= FADE ========= */
+
+.fade-in{
+
+    animation:fadeIn .4s ease;
+
+}
+
+@keyframes fadeIn{
+
+    from{
+
+        opacity:0;
+        transform:translateY(15px);
+
+    }
+
+    to{
+
+        opacity:1;
+        transform:translateY(0);
+
+    }
+
+}
+
+/* ========= SCALE ========= */
+
+.scale{
+
+    transition:.3s;
+
+}
+
+.scale:hover{
+
+    transform:scale(1.03);
+
+}
+
+/* ========= RESPONSIVE ========= */
+
+@media(max-width:992px){
+
+    .main-content{
+
+        padding:18px;
+
+    }
+
+}
+
+@media(max-width:768px){
+
+    .footer{
+
+        font-size:13px;
+
+    }
+
+    .loading-text{
+
+        font-size:16px;
+
+    }
+
+}
+
+@media(max-width:480px){
+
+    .toast{
+
+        left:10px;
+        right:10px;
+        min-width:auto;
+
+    }
+
+    .loader{
+
+        width:55px;
+        height:55px;
+
+    }
+
+}
