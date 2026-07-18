@@ -12,6 +12,8 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 
 import {
+    ref,
+    get,
     onValue,
     update
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
