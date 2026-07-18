@@ -222,30 +222,15 @@ function loadDeposits() {
 
         depositRequests.innerHTML = "";
 
-        // code yose isigaye...
-
-    });
-
-}
-
-        if (!depositRequests) return;
-
-        depositRequests.innerHTML = "";
-
         if (!snapshot.exists()) {
 
             depositRequests.innerHTML = `
-
             <div class="empty-card">
-
                 <h3>No Deposit Requests</h3>
-
             </div>
-
             `;
 
             return;
-
         }
 
         const deposits = [];
@@ -258,6 +243,8 @@ function loadDeposits() {
             });
 
         });
+
+        
 
         deposits.forEach((data) => {
 
