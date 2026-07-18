@@ -12,8 +12,8 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 
 import {
-    ref,
-    get
+    onValue,
+    update
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
 
 // ======================================
@@ -199,10 +199,6 @@ console.log("=================================");
 // ADMIN.JS - PART 2
 // LOAD DEPOSITS + APPROVE + REJECT
 // ======================================
-import {
-    onValue,
-    update
-} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
 
 // ======================================
 // ELEMENTS
