@@ -272,3 +272,264 @@ function loadDeposits() {
 
     }
 
+// ======================================
+// ADMIN.JS - PART 3
+// DASHBOARD STATISTICS
+// ======================================
+
+// ======================================
+// ELEMENTS
+// ======================================
+
+const totalUsers = document.getElementById("totalUsers");
+const totalDeposits = document.getElementById("totalDeposits");
+const totalPending = document.getElementById("totalPending");
+const totalApproved = document.getElementById("totalApproved");
+const totalRejected = document.getElementById("totalRejected");
+const totalAmount = document.getElementById("totalAmount");
+
+// ======================================
+// LOAD STATISTICS
+// ======================================
+
+function loadStatistics() {
+
+    // USERS
+    onValue(ref(db, "users"), (snapshot) => {
+
+        let users = 0;
+
+        if (snapshot.exists()) {
+            snapshot.forEach(() => {
+                users++;
+            });
+        }
+
+        if (totalUsers) {
+            totalUsers.textContent = users.toLocaleString();
+        }
+
+    });
+
+    // DEPOSITS
+    onValue(ref(db, "depositRequests"), (snapshot) => {
+
+        let deposits = 0;
+        let pending = 0;
+        let approved = 0;
+        let rejected = 0;
+        let amount = 0;
+
+        if (snapshot.exists()) {
+
+            snapshot.forEach((child) => {
+
+                const data = child.val();
+
+                deposits++;
+
+                amount += Number(data.amount || 0);
+
+                switch (data.status) {
+
+                    case "Pending":
+                        pending++;
+                        break;
+
+                    case "Approved":
+                        approved++;
+                        break;
+
+                    case "Rejected":
+                        rejected++;
+                        break;
+                }
+
+            });
+
+        }
+
+        if (totalDeposits) {
+            totalDeposits.textContent = deposits.toLocaleString();
+        }
+
+        if (totalPending) {
+            totalPending.textContent = pending.toLocaleString();
+        }
+
+        if (totalApproved) {
+            totalApproved.textContent = approved.toLocaleString();
+        }
+
+        if (totalRejected) {
+            totalRejected.textContent = rejected.toLocaleString();
+        }
+
+        if (totalAmount) {
+            totalAmount.textContent =
+                amount.toLocaleString() + " RWF";
+        }
+
+    });
+
+}
+
+// ======================================
+// START STATISTICS
+// ======================================
+
+loadStatistics();
+
+console.log("✅ Admin Part 3 Loaded Successfully");
+
+// ======================================
+// ADMIN.JS - PART 4
+// SEARCH + FILTER + VIEW SCREENSHOT
+// Money Vault
+// ======================================
+
+// ======================================
+// ELEMENTS
+// ======================================
+
+const searchInput = document.getElementById("searchInput");
+const filterStatus = document.getElementById("filterStatus");
+
+// ======================================
+// SEARCH REQUESTS
+// ======================================
+
+if (searchInput) {
+
+    searchInput.addEventListener("input", () => {
+
+        const keyword = searchInput.value.toLowerCase();
+
+        document.querySelectorAll(".request-card").forEach((card) => {
+
+            const text = card.textContent.toLowerCase();
+
+            card.style.display =
+                text.includes(keyword) ? "block" : "none";
+
+        });
+
+    });
+
+}
+
+// ======================================
+// FILTER STATUS
+// ======================================
+
+if (filterStatus) {
+
+    filterStatus.addEventListener("change", () => {
+
+        const value = filterStatus.value;
+
+        document.querySelectorAll(".request-card").forEach((card) => {
+
+            const statusElement = card.querySelector(".status-text");
+
+            if (!statusElement) return;
+
+            const status = statusElement.textContent.trim();
+
+            if (value === "All" || value === status) {
+
+                card.style.display = "block";
+
+            } else {
+
+                card.style.display = "none";
+
+            }
+
+        });
+
+    });
+
+}
+
+// ======================================
+// GLOBAL BUTTON EVENTS
+// ======================================
+
+document.addEventListener("click", async (e) => {
+
+    // ===========================
+    // VIEW SCREENSHOT
+    // ===========================
+
+    if (e.target.classList.contains("viewProof")) {
+
+        const image = e.target.dataset.image;
+
+        if (!image) {
+
+            alert("Screenshot not found.");
+
+            return;
+
+        }
+
+        window.open(image, "_blank");
+
+    }
+
+    // ===========================
+    // COPY TRANSACTION ID
+    // ===========================
+
+    if (e.target.classList.contains("copyTransaction")) {
+
+        const id = e.target.dataset.transaction;
+
+        if (!id) {
+
+            alert("Transaction ID not found.");
+
+            return;
+
+        }
+
+        try {
+
+            await navigator.clipboard.writeText(id);
+
+            alert("Transaction ID Copied");
+
+        } catch (error) {
+
+            console.error(error);
+
+            alert("Failed to copy.");
+
+        }
+
+    }
+
+});
+
+// ======================================
+// PAGE READY
+// ======================================
+
+window.addEventListener("load", () => {
+
+    if (loadingScreen) {
+
+        loadingScreen.style.display = "none";
+
+    }
+
+    console.log("=================================");
+    console.log(" Admin Panel Ready");
+    console.log(" Search Ready");
+    console.log(" Filter Ready");
+    console.log(" View Screenshot Ready");
+    console.log(" Copy Transaction Ready");
+    console.log("=================================");
+
+});
