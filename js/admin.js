@@ -222,7 +222,8 @@ function loadDeposits() {
 
     });
 
-            }
+ }
+
     const depositsRef =
     ref(db, "depositRequests");
 
