@@ -212,13 +212,17 @@ document.getElementById("depositRequests");
 // ======================================
 // LOAD DEPOSITS
 // ======================================
+function loadDeposits() {
 
-function loadDeposits() 
-if (!confirm("Approve this deposit?")) {
-    return;
-}
-{
+    const depositsRef = ref(db, "depositRequests");
 
+    onValue(depositsRef, (snapshot) => {
+
+        ...
+
+    });
+
+            }
     const depositsRef =
     ref(db, "depositRequests");
 
