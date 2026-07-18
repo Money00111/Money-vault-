@@ -13,12 +13,19 @@
 
 html,
 body{
-    width:100%;
-    min-height:100vh;
-    background:#f4f7fb;
-    color:#222;
-    overflow-x:hidden;
+
+background:linear-gradient(135deg,#0f172a,#1d4ed8,#38bdf8);
+
+background-attachment:fixed;
+
+min-height:100vh;
+
+color:#fff;
+
+overflow-x:hidden;
+
 }
+
 
 /* ===== APP ===== */
 
