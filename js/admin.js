@@ -218,16 +218,15 @@ function loadDeposits() {
 
     onValue(depositsRef, (snapshot) => {
 
-        ...
+        if (!depositRequests) return;
+
+        depositRequests.innerHTML = "";
+
+        // code yose isigaye...
 
     });
 
- }
-
-    const depositsRef =
-    ref(db, "depositRequests");
-
-    onValue(depositsRef, (snapshot) => {
+}
 
         if (!depositRequests) return;
 
