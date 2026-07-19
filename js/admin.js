@@ -10,10 +10,11 @@ import {
     onAuthStateChanged,
     signOut
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
-
 import {
+    onValue,
     ref,
-    get
+    get,
+    update
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
 
 // ======================================
@@ -395,175 +396,228 @@ loadDeposits();
 console.log("✅ Deposits Loaded");
 
 // ======================================
-// ADMIN.JS PART 2
-// LOAD DEPOSIT REQUESTS
+// ADMIN.JS - PART 3
+// DASHBOARD + NAVIGATION
 // ======================================
 
-const depositContainer =
-document.getElementById("depositRequests");
+// ---------- Dashboard Elements ----------
 
-function loadDeposits() {
+const totalUsers = document.getElementById("totalUsers");
+const totalDeposits = document.getElementById("totalDeposits");
+const totalPending = document.getElementById("totalPending");
+const totalApproved = document.getElementById("totalApproved");
+const totalRejected = document.getElementById("totalRejected");
+const totalAmount = document.getElementById("totalAmount");
 
-    const depositsRef = ref(db, "depositRequests");
+// ---------- Load Dashboard Statistics ----------
 
-    onValue(depositsRef, (snapshot) => {
+function loadDashboardStats() {
 
-        if (!depositContainer) return;
+    // USERS
 
-        depositContainer.innerHTML = "";
+    onValue(ref(db, "users"), (snapshot) => {
 
-        if (!snapshot.exists()) {
+        let count = 0;
 
-            depositContainer.innerHTML = `
+        if (snapshot.exists()) {
 
-            <div class="empty-card">
+            snapshot.forEach(() => {
 
-                <i class="fa-solid fa-wallet"></i>
-
-                <h3>No Deposit Requests</h3>
-
-            </div>
-
-            `;
-
-            return;
-        }
-
-        const list = [];
-
-        snapshot.forEach((child) => {
-
-            list.unshift({
-
-                id: child.key,
-
-                ...child.val()
+                count++;
 
             });
 
-        });
+        }
 
-        list.forEach((data) => {
+        if (totalUsers) {
 
-            depositContainer.innerHTML += `
+            totalUsers.textContent = count;
 
-            <div class="request-card">
+        }
 
-                <div class="request-top">
+    });
 
-                    <h3>${Number(data.amount || 0).toLocaleString()} RWF</h3>
+    // DEPOSITS
 
-                    <span class="status ${String(data.status).toLowerCase()}">
+    onValue(ref(db, "depositRequests"), (snapshot) => {
 
-                        ${data.status || "Pending"}
+        let deposits = 0;
+        let pending = 0;
+        let approved = 0;
+        let rejected = 0;
+        let amount = 0;
 
-                    </span>
+        if (snapshot.exists()) {
 
-                </div>
+            snapshot.forEach((child) => {
 
-                <p>
+                const data = child.val();
 
-                    <strong>Name:</strong>
+                deposits++;
 
-                    ${data.fullName || "-"}
+                amount += Number(data.amount || 0);
 
-                </p>
+                if (data.status === "Pending") pending++;
 
-                <p>
+                if (data.status === "Approved") approved++;
 
-                    <strong>Email:</strong>
+                if (data.status === "Rejected") rejected++;
 
-                    ${data.email || "-"}
+            });
 
-                </p>
+        }
 
-                <p>
+        if (totalDeposits) totalDeposits.textContent = deposits;
 
-                    <strong>Phone:</strong>
+        if (totalPending) totalPending.textContent = pending;
 
-                    ${data.senderPhone || "-"}
+        if (totalApproved) totalApproved.textContent = approved;
 
-                </p>
+        if (totalRejected) totalRejected.textContent = rejected;
 
-                <p>
+        if (totalAmount) {
 
-                    <strong>Transaction ID:</strong>
+            totalAmount.textContent =
+                amount.toLocaleString() + " RWF";
 
-                    ${data.transactionId || "-"}
-
-                </p>
-
-                <div class="action-buttons">
-
-                    <button
-                    class="approveBtn"
-                    data-id="${data.id}">
-
-                        <i class="fa fa-check"></i>
-
-                        Approve
-
-                    </button>
-
-                    <button
-                    class="rejectBtn"
-                    data-id="${data.id}">
-
-                        <i class="fa fa-times"></i>
-
-                        Reject
-
-                    </button>
-
-                    <button
-                    class="viewProof"
-                    data-image="${data.proofImage || ""}">
-
-                        <i class="fa fa-image"></i>
-
-                        Screenshot
-
-                    </button>
-
-                    <button
-                    class="copyTransaction"
-                    data-id="${data.transactionId || ""}">
-
-                        <i class="fa fa-copy"></i>
-
-                        Copy ID
-
-                    </button>
-
-                </div>
-
-            </div>
-
-            `;
-
-        });
-
-        activateButtons();
+        }
 
     });
 
 }
 
-loadDeposits();
+loadDashboardStats();
 
-console.log("✅ Deposits Loaded");
+// ======================================
+// PAGE NAVIGATION
+// ======================================
 
+const pages = document.querySelectorAll(".page-section");
+
+const menuLinks = document.querySelectorAll(".menu-link");
+
+function openPage(pageId) {
+
+    pages.forEach(section => {
+
+        section.style.display = "none";
+
+    });
+
+    menuLinks.forEach(link => {
+
+        link.classList.remove("active");
+
+    });
+
+    if (pageId === "dashboard") {
+
+        document.getElementById("dashboardSection").style.display = "block";
+
+    }
+
+    if (pageId === "deposits") {
+
+        document.getElementById("depositSection").style.display = "block";
+
+    }
+
+    if (pageId === "withdraws") {
+
+        document.getElementById("withdrawSection").style.display = "block";
+
+    }
+
+    if (pageId === "users") {
+
+        document.getElementById("usersSection").style.display = "block";
+
+    }
+
+    if (pageId === "transactions") {
+
+        document.getElementById("transactionsSection").style.display = "block";
+
+    }
+
+    if (pageId === "settings") {
+
+        document.getElementById("settingsSection").style.display = "block";
+
+    }
+
+    document
+        .querySelector(`[data-page="${pageId}"]`)
+        ?.classList.add("active");
+
+}
+
+// ======================================
+// MENU LINKS
+// ======================================
+
+menuLinks.forEach(link => {
+
+    link.addEventListener("click", (e) => {
+
+        e.preventDefault();
+
+        openPage(link.dataset.page);
+
+    });
+
+});
+
+// ======================================
+// QUICK ACTION BUTTONS
+// ======================================
+
+document.getElementById("openDeposits")?.addEventListener("click", () => {
+
+    openPage("deposits");
+
+});
+
+document.getElementById("openWithdraws")?.addEventListener("click", () => {
+
+    openPage("withdraws");
+
+});
+
+document.getElementById("openUsers")?.addEventListener("click", () => {
+
+    openPage("users");
+
+});
+
+document.getElementById("openSettings")?.addEventListener("click", () => {
+
+    openPage("settings");
+
+});
+
+// ======================================
+// MOBILE MENU
+// ======================================
+
+menuBtn?.addEventListener("click", () => {
+
+    sidebar.classList.toggle("show");
+
+});
+
+// ======================================
+// START PAGE
+// ======================================
+
+openPage("dashboard");
+
+console.log("✅ Admin Part 3 Loaded");
 // ======================================
 // ADMIN.JS - PART 4
 // WITHDRAW REQUESTS
 // ======================================
 
-import {
-    onValue,
-    ref,
-    get,
-    update
-} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
 
 // ======================================
 // ELEMENTS
