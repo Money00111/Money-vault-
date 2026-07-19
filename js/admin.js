@@ -3274,4 +3274,244 @@ loadNotifications();
 
 console.log("✅ Admin Part 17 Loaded");
 
+ // ======================================
+// ADMIN.JS - PART 18
+// BROWSER NOTIFICATIONS + HISTORY
+// ======================================
+
+// ======================================
+// REQUEST PERMISSION
+// ======================================
+
+async function requestNotificationPermission() {
+
+    if (!("Notification" in window)) {
+
+        console.log("Browser Notifications Not Supported");
+
+        return;
+
+    }
+
+    if (Notification.permission === "default") {
+
+        await Notification.requestPermission();
+
+    }
+
+}
+
+requestNotificationPermission();
+
+// ======================================
+// SHOW NOTIFICATION
+// ======================================
+
+function showBrowserNotification(title, body) {
+
+    if (Notification.permission !== "granted") return;
+
+    new Notification(title, {
+
+        body: body,
+
+        icon: "images/logo.png",
+
+        badge: "images/logo.png"
+
+    });
+
+}
+
+// ======================================
+// SAVE NOTIFICATION
+// ======================================
+
+async function saveNotification(type, message) {
+
+    try {
+
+        const id = Date.now().toString();
+
+        await update(
+
+            ref(db, "notifications/" + id),
+
+            {
+
+                type: type,
+
+                message: message,
+
+                createdAt: Date.now(),
+
+                admin: currentAdmin.email
+
+            }
+
+        );
+
+    }
+
+    catch (error) {
+
+        console.error(error);
+
+    }
+
+}
+
+// ======================================
+// WATCH NEW DEPOSITS
+// ======================================
+
+let depositCounter = 0;
+
+onValue(ref(db, "depositRequests"), (snapshot) => {
+
+    if (!snapshot.exists()) return;
+
+    if (snapshot.size > depositCounter && depositCounter !== 0) {
+
+        showBrowserNotification(
+
+            "New Deposit",
+
+            "A new deposit request has been received."
+
+        );
+
+        saveNotification(
+
+            "Deposit",
+
+            "New Deposit Request"
+
+        );
+
+    }
+
+    depositCounter = snapshot.size;
+
+});
+
+// ======================================
+// WATCH NEW WITHDRAWS
+// ======================================
+
+let withdrawCounter = 0;
+
+onValue(ref(db, "withdrawRequests"), (snapshot) => {
+
+    if (!snapshot.exists()) return;
+
+    if (snapshot.size > withdrawCounter && withdrawCounter !== 0) {
+
+        showBrowserNotification(
+
+            "New Withdraw",
+
+            "A new withdraw request has been received."
+
+        );
+
+        saveNotification(
+
+            "Withdraw",
+
+            "New Withdraw Request"
+
+        );
+
+    }
+
+    withdrawCounter = snapshot.size;
+
+});
+
+// ======================================
+// LOAD NOTIFICATION HISTORY
+// ======================================
+
+function loadNotificationHistory() {
+
+    if (!notificationList) return;
+
+    onValue(
+
+        ref(db, "notifications"),
+
+        (snapshot) => {
+
+            notificationList.innerHTML = "";
+
+            if (!snapshot.exists()) {
+
+                notificationList.innerHTML = `
+
+                <div class="empty-card">
+
+                    No Notifications
+
+                </div>
+
+                `;
+
+                return;
+
+            }
+
+            const notifications = [];
+
+            snapshot.forEach((child) => {
+
+                notifications.unshift(child.val());
+
+            });
+
+            notifications.forEach((item) => {
+
+                notificationList.innerHTML += `
+
+                <div class="notification-item">
+
+                    <strong>
+
+                        ${item.type}
+
+                    </strong>
+
+                    <p>
+
+                        ${item.message}
+
+                    </p>
+
+                    <small>
+
+                        ${new Date(item.createdAt)
+                        .toLocaleString()}
+
+                    </small>
+
+                </div>
+
+                `;
+
+            });
+
+        }
+
+    );
+
+}
+
+// ======================================
+// START
+// ======================================
+
+loadNotificationHistory();
+
+console.log("✅ Admin Part 18 Loaded"); 
+
     
