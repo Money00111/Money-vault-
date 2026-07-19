@@ -10,6 +10,12 @@ import {
     onAuthStateChanged,
     signOut
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+
+import {
+    updatePassword
+}
+from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+
 import {
     ref,
     get,
@@ -2708,10 +2714,6 @@ document.getElementById("changePassword");
 // IMPORT
 // ======================================
 
-import {
-    updatePassword
-}
-from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 
 // ======================================
 // LOAD PROFILE
