@@ -1005,3 +1005,102 @@ showPage("dashboard");
 console.log("✅ Admin Part 5 Loaded");
 
                           
+// ======================================
+// ADMIN.JS - PART 6
+// PAGE NAVIGATION
+// ======================================
+
+const menuLinks = document.querySelectorAll(".menu-link");
+const sections = document.querySelectorAll(".page-section");
+
+// Function yo kwerekana page imwe
+function showSection(sectionId) {
+
+    sections.forEach(section => {
+        section.style.display = "none";
+        section.classList.remove("active");
+    });
+
+    const selected = document.getElementById(sectionId);
+
+    if (selected) {
+        selected.style.display = "block";
+        selected.classList.add("active");
+    }
+
+    menuLinks.forEach(link => {
+        link.classList.remove("active");
+    });
+
+}
+
+// Sidebar Navigation
+menuLinks.forEach(link => {
+
+    link.addEventListener("click", (e) => {
+
+        e.preventDefault();
+
+        const page = link.dataset.page;
+
+        link.classList.add("active");
+
+        switch (page) {
+
+            case "dashboard":
+                showSection("dashboardSection");
+                break;
+
+            case "deposits":
+                showSection("depositSection");
+                break;
+
+            case "withdraws":
+                showSection("withdrawSection");
+                break;
+
+            case "users":
+                showSection("usersSection");
+                break;
+
+            case "transactions":
+                showSection("transactionsSection");
+                break;
+
+            case "settings":
+                showSection("settingsSection");
+                break;
+
+        }
+
+        // Mobile sidebar ifunge nyuma yo gukanda
+        if (window.innerWidth < 900) {
+            sidebar?.classList.remove("active");
+        }
+
+    });
+
+});
+
+// Quick Action Buttons
+document.getElementById("openDeposits")?.addEventListener("click", () => {
+    showSection("depositSection");
+});
+
+document.getElementById("openWithdraws")?.addEventListener("click", () => {
+    showSection("withdrawSection");
+});
+
+document.getElementById("openUsers")?.addEventListener("click", () => {
+    showSection("usersSection");
+});
+
+document.getElementById("openSettings")?.addEventListener("click", () => {
+    showSection("settingsSection");
+});
+
+// Default Page
+showSection("dashboardSection");
+
+console.log("✅ Admin Part 6 Loaded");
+
