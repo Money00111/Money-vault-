@@ -1104,3 +1104,186 @@ showSection("dashboardSection");
 
 console.log("✅ Admin Part 6 Loaded");
 
+// ======================================
+// ADMIN.JS - PART 7
+// USERS MANAGEMENT
+// ======================================
+
+// ---------- ELEMENTS ----------
+
+const usersContainer =
+document.getElementById("usersContainer");
+
+const allUsers =
+document.getElementById("allUsers");
+
+const activeUsers =
+document.getElementById("activeUsers");
+
+const blockedUsers =
+document.getElementById("blockedUsers");
+
+const userSearch =
+document.getElementById("userSearch");
+
+// ======================================
+// LOAD USERS
+// ======================================
+
+function loadUsers() {
+
+    onValue(ref(db, "users"), (snapshot) => {
+
+        if (!usersContainer) return;
+
+        usersContainer.innerHTML = "";
+
+        let total = 0;
+        let active = 0;
+        let blocked = 0;
+
+        if (!snapshot.exists()) {
+
+            usersContainer.innerHTML = `
+
+            <div class="empty-state">
+
+                <h3>No Users Found</h3>
+
+            </div>
+
+            `;
+
+            return;
+
+        }
+
+        snapshot.forEach((child) => {
+
+            const user = child.val();
+
+            total++;
+
+            if (user.status === "Blocked") {
+
+                blocked++;
+
+            } else {
+
+                active++;
+
+            }
+
+            usersContainer.innerHTML += `
+
+            <div class="user-card">
+
+                <h3>${user.fullName || "Unknown User"}</h3>
+
+                <p><b>Email:</b> ${user.email || "-"}</p>
+
+                <p><b>Phone:</b> ${user.phone || "-"}</p>
+
+                <p><b>Balance:</b>
+                ${Number(user.balance || 0).toLocaleString()} RWF
+                </p>
+
+                <p><b>VIP:</b>
+                ${user.vipPlan || "None"}
+                </p>
+
+                <div class="action-buttons">
+
+                    <button
+                    class="viewUserBtn"
+                    data-id="${child.key}">
+
+                        View
+
+                    </button>
+
+                </div>
+
+            </div>
+
+            `;
+
+        });
+
+        if (allUsers)
+            allUsers.textContent = total;
+
+        if (activeUsers)
+            activeUsers.textContent = active;
+
+        if (blockedUsers)
+            blockedUsers.textContent = blocked;
+
+        activateUserButtons();
+
+    });
+
+}
+
+// ======================================
+// SEARCH USERS
+// ======================================
+
+userSearch?.addEventListener("keyup", () => {
+
+    const keyword =
+    userSearch.value.toLowerCase();
+
+    document
+    .querySelectorAll(".user-card")
+    .forEach(card => {
+
+        if (
+            card.innerText
+            .toLowerCase()
+            .includes(keyword)
+        ) {
+
+            card.style.display = "block";
+
+        } else {
+
+            card.style.display = "none";
+
+        }
+
+    });
+
+});
+
+// ======================================
+// VIEW BUTTON
+// ======================================
+
+function activateUserButtons() {
+
+    document
+    .querySelectorAll(".viewUserBtn")
+    .forEach(btn => {
+
+        btn.onclick = () => {
+
+            openUserModal(
+                btn.dataset.id
+            );
+
+        };
+
+    });
+
+}
+
+// ======================================
+// START
+// ======================================
+
+loadUsers();
+
+console.log("✅ Admin Part 7 Loaded");
+
+    
