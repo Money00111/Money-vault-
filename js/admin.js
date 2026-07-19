@@ -2664,4 +2664,203 @@ transactionFilter?.addEventListener(
 console.log(
 "✅ Admin Part 14 Loaded");
 
+    // ======================================
+// ADMIN.JS - PART 15
+// SETTINGS MANAGEMENT
+// ======================================
+
+// ---------- ELEMENTS ----------
+
+const settingsName =
+document.getElementById("settingsName");
+
+const settingsEmail =
+document.getElementById("settingsEmail");
+
+const settingsPhone =
+document.getElementById("settingsPhone");
+
+const profileForm =
+document.getElementById("profileForm");
+
+const fullNameInput =
+document.getElementById("fullName");
+
+const phoneInput =
+document.getElementById("phone");
+
+const saveProfileBtn =
+document.getElementById("saveProfile");
+
+const passwordForm =
+document.getElementById("passwordForm");
+
+const newPassword =
+document.getElementById("newPassword");
+
+const confirmPassword =
+document.getElementById("confirmPassword");
+
+const changePasswordBtn =
+document.getElementById("changePassword");
+
+// ======================================
+// IMPORT
+// ======================================
+
+import {
+    updatePassword
+}
+from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+
+// ======================================
+// LOAD PROFILE
+// ======================================
+
+async function loadAdminProfile() {
+
+    if (!currentAdmin) return;
+
+    try {
+
+        const snap = await get(
+            ref(db, "users/" + currentAdmin.uid)
+        );
+
+        if (!snap.exists()) return;
+
+        const user = snap.val();
+
+        settingsName.textContent =
+        user.fullName || "Administrator";
+
+        settingsEmail.textContent =
+        user.email || "-";
+
+        settingsPhone.textContent =
+        user.phone || "-";
+
+        fullNameInput.value =
+        user.fullName || "";
+
+        phoneInput.value =
+        user.phone || "";
+
+    }
+
+    catch (error) {
+
+        console.error(error);
+
+    }
+
+}
+
+// ======================================
+// UPDATE PROFILE
+// ======================================
+
+profileForm?.addEventListener("submit",
+async (e)=>{
+
+    e.preventDefault();
+
+    try{
+
+        await update(
+
+            ref(db,"users/"+currentAdmin.uid),
+
+            {
+
+                fullName:
+                fullNameInput.value.trim(),
+
+                phone:
+                phoneInput.value.trim()
+
+            }
+
+        );
+
+        alert("Profile Updated");
+
+        loadAdminProfile();
+
+    }
+
+    catch(error){
+
+        console.error(error);
+
+        alert(error.message);
+
+    }
+
+});
+
+// ======================================
+// CHANGE PASSWORD
+// ======================================
+
+passwordForm?.addEventListener("submit",
+async(e)=>{
+
+    e.preventDefault();
+
+    if(
+
+        newPassword.value !==
+        confirmPassword.value
+
+    ){
+
+        alert("Passwords do not match");
+
+        return;
+
+    }
+
+    if(newPassword.value.length < 6){
+
+        alert("Minimum 6 characters");
+
+        return;
+
+    }
+
+    try{
+
+        await updatePassword(
+
+            currentAdmin,
+
+            newPassword.value
+
+        );
+
+        alert("Password Changed");
+
+        passwordForm.reset();
+
+    }
+
+    catch(error){
+
+        console.error(error);
+
+        alert(error.message);
+
+    }
+
+});
+
+// ======================================
+// START
+// ======================================
+
+loadAdminProfile();
+
+console.log("✅ Admin Part 15 Loaded");
+
     
