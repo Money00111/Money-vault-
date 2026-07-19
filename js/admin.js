@@ -1,6 +1,6 @@
 // ======================================
-// ADMIN.JS - PART 1
-// AUTHENTICATION + SETUP
+// ADMIN.JS PART 1
+// AUTH + SETUP + NAVIGATION
 // Money Vault
 // ======================================
 
@@ -13,9 +13,7 @@ import {
 
 import {
     ref,
-    get,
-    onValue,
-    update
+    get
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
 
 // ======================================
@@ -40,6 +38,9 @@ const menuBtn = document.getElementById("menuBtn");
 const logoutBtn = document.getElementById("logoutBtn");
 const adminName = document.getElementById("adminName");
 
+const menuLinks = document.querySelectorAll(".menu-link");
+const pageSections = document.querySelectorAll(".page-section");
+
 // ======================================
 // AUTH CHECK
 // ======================================
@@ -47,7 +48,7 @@ const adminName = document.getElementById("adminName");
 onAuthStateChanged(auth, async (user) => {
 
     if (!user) {
-        window.location.replace("login.html");
+        window.location.href = "login.html";
         return;
     }
 
@@ -56,11 +57,11 @@ onAuthStateChanged(auth, async (user) => {
         user.email.toLowerCase() !== ADMIN_EMAIL.toLowerCase()
     ) {
 
-        alert("Access Denied!");
+        alert("Access Denied");
 
         await signOut(auth);
 
-        window.location.replace("login.html");
+        window.location.href = "dashboard.html";
 
         return;
     }
@@ -77,43 +78,126 @@ onAuthStateChanged(auth, async (user) => {
 
             const data = snap.val();
 
-            if (adminName) {
-                adminName.textContent =
-                    data.fullName || "Administrator";
-            }
+            adminName.textContent =
+                data.fullName || "Administrator";
 
         } else {
 
-            if (adminName) {
-                adminName.textContent =
-                    "Administrator";
-            }
+            adminName.textContent =
+                "Administrator";
 
         }
 
     } catch (error) {
 
-        console.error(error);
+        console.log(error);
+
+        adminName.textContent =
+            "Administrator";
 
     }
 
     if (loadingScreen) {
-        loadingScreen.style.display = "none";
-    }
 
-    console.log("Admin Login Success");
+        loadingScreen.style.display = "none";
+
+    }
 
 });
 
 // ======================================
-// MENU
+// SIDEBAR BUTTON
 // ======================================
 
 menuBtn?.addEventListener("click", () => {
 
-    sidebar?.classList.toggle("active");
+    sidebar.classList.toggle("show");
 
 });
+
+// ======================================
+// CHANGE PAGE
+// ======================================
+
+function openPage(pageName) {
+
+    pageSections.forEach(section => {
+
+        section.style.display = "none";
+
+    });
+
+    menuLinks.forEach(link => {
+
+        link.classList.remove("active");
+
+    });
+
+    const page = document.getElementById(
+        pageName + "Section"
+    );
+
+    if (page) {
+
+        page.style.display = "block";
+
+    }
+
+    const activeLink = document.querySelector(
+        `[data-page="${pageName}"]`
+    );
+
+    if (activeLink) {
+
+        activeLink.classList.add("active");
+
+    }
+
+    sidebar.classList.remove("show");
+
+}
+
+// ======================================
+// SIDEBAR MENU
+// ======================================
+
+menuLinks.forEach(link => {
+
+    link.addEventListener("click", (e) => {
+
+        e.preventDefault();
+
+        const page = link.dataset.page;
+
+        openPage(page);
+
+    });
+
+});
+
+// ======================================
+// QUICK ACTION BUTTONS
+// ======================================
+
+document.getElementById("openDeposits")?.addEventListener(
+    "click",
+    () => openPage("deposit")
+);
+
+document.getElementById("openWithdraws")?.addEventListener(
+    "click",
+    () => openPage("withdraw")
+);
+
+document.getElementById("openUsers")?.addEventListener(
+    "click",
+    () => openPage("users")
+);
+
+document.getElementById("openSettings")?.addEventListener(
+    "click",
+    () => openPage("settings")
+);
 
 // ======================================
 // LOGOUT
@@ -121,147 +205,181 @@ menuBtn?.addEventListener("click", () => {
 
 logoutBtn?.addEventListener("click", async () => {
 
-    if (!confirm("Logout?")) return;
+    const ok = confirm(
+        "Logout from Admin Panel?"
+    );
 
-    try {
+    if (!ok) return;
 
-        await signOut(auth);
+    await signOut(auth);
 
-        window.location.replace("login.html");
-
-    } catch (error) {
-
-        alert(error.message);
-
-    }
+    window.location.href = "login.html";
 
 });
 
 // ======================================
-// PAGE LOAD
+// DEFAULT PAGE
 // ======================================
 
 window.addEventListener("load", () => {
 
-    document.body.style.opacity = "1";
-
-    if (loadingScreen) {
-
-        setTimeout(() => {
-
-            loadingScreen.style.display = "none";
-
-        }, 1000);
-
-    }
+    openPage("dashboard");
 
 });
 
 // ======================================
-// GLOBAL ERROR
+// READY
 // ======================================
 
-window.addEventListener("error", (e) => {
-
-    console.error(e.error);
-
-    if (loadingScreen) {
-
-        loadingScreen.style.display = "none";
-
-    }
-
-});
+console.log("==================================");
+console.log("Admin Part 1 Loaded Successfully");
+console.log("==================================");
 
 // ======================================
-
-console.log("✅ Admin Part 1 Loaded Successfully");
-
-// ======================================
-// ADMIN.JS - PART 2
-// LOAD DEPOSITS + APPROVE + REJECT
+// ADMIN.JS PART 2
+// LOAD DEPOSIT REQUESTS
 // ======================================
 
-const depositRequests =
+const depositContainer =
 document.getElementById("depositRequests");
 
 function loadDeposits() {
 
-    const depositsRef =
-    ref(db, "depositRequests");
+    const depositsRef = ref(db, "depositRequests");
 
     onValue(depositsRef, (snapshot) => {
 
-        if (!depositRequests) return;
+        if (!depositContainer) return;
 
-        depositRequests.innerHTML = "";
+        depositContainer.innerHTML = "";
 
         if (!snapshot.exists()) {
 
-            depositRequests.innerHTML = `
+            depositContainer.innerHTML = `
+
             <div class="empty-card">
+
+                <i class="fa-solid fa-wallet"></i>
+
                 <h3>No Deposit Requests</h3>
+
             </div>
+
             `;
 
             return;
         }
 
-        const deposits = [];
+        const list = [];
 
         snapshot.forEach((child) => {
 
-            deposits.unshift({
-                key: child.key,
+            list.unshift({
+
+                id: child.key,
+
                 ...child.val()
+
             });
 
         });
 
-        deposits.forEach((data) => {
+        list.forEach((data) => {
 
-            depositRequests.innerHTML += `
+            depositContainer.innerHTML += `
+
             <div class="request-card">
 
-                <h3>${Number(data.amount).toLocaleString()} RWF</h3>
+                <div class="request-top">
 
-                <p>Email: ${data.email}</p>
+                    <h3>${Number(data.amount || 0).toLocaleString()} RWF</h3>
 
-                <p>Phone: ${data.senderPhone}</p>
+                    <span class="status ${String(data.status).toLowerCase()}">
 
-                <p>Transaction: ${data.transactionId}</p>
+                        ${data.status || "Pending"}
 
-                <p>Status: <strong>${data.status}</strong></p>
+                    </span>
+
+                </div>
+
+                <p>
+
+                    <strong>Name:</strong>
+
+                    ${data.fullName || "-"}
+
+                </p>
+
+                <p>
+
+                    <strong>Email:</strong>
+
+                    ${data.email || "-"}
+
+                </p>
+
+                <p>
+
+                    <strong>Phone:</strong>
+
+                    ${data.senderPhone || "-"}
+
+                </p>
+
+                <p>
+
+                    <strong>Transaction ID:</strong>
+
+                    ${data.transactionId || "-"}
+
+                </p>
 
                 <div class="action-buttons">
 
                     <button
                     class="approveBtn"
-                    data-id="${data.key}">
-                    Approve
-                    </button>
+                    data-id="${data.id}">
 
-                    <button
-                    class="viewProof"
-                    data-image="${data.proofImage}">
-                    View Screenshot
-                    </button>
+                        <i class="fa fa-check"></i>
 
-                    <button
-                    class="copyTransaction"
-                    data-transaction="${data.transactionId}">
-                    Copy Transaction ID
+                        Approve
+
                     </button>
 
                     <button
                     class="rejectBtn"
-                    data-id="${data.key}">
-                    Reject
+                    data-id="${data.id}">
+
+                        <i class="fa fa-times"></i>
+
+                        Reject
+
+                    </button>
+
+                    <button
+                    class="viewProof"
+                    data-image="${data.proofImage || ""}">
+
+                        <i class="fa fa-image"></i>
+
+                        Screenshot
+
+                    </button>
+
+                    <button
+                    class="copyTransaction"
+                    data-id="${data.transactionId || ""}">
+
+                        <i class="fa fa-copy"></i>
+
+                        Copy ID
+
                     </button>
 
                 </div>
 
             </div>
+
             `;
 
         });
@@ -270,266 +388,479 @@ function loadDeposits() {
 
     });
 
-    }
+}
+
+loadDeposits();
+
+console.log("✅ Deposits Loaded");
 
 // ======================================
-// ADMIN.JS - PART 3
-// DASHBOARD STATISTICS
+// ADMIN.JS PART 2
+// LOAD DEPOSIT REQUESTS
 // ======================================
 
-// ======================================
-// ELEMENTS
-// ======================================
+const depositContainer =
+document.getElementById("depositRequests");
 
-const totalUsers = document.getElementById("totalUsers");
-const totalDeposits = document.getElementById("totalDeposits");
-const totalPending = document.getElementById("totalPending");
-const totalApproved = document.getElementById("totalApproved");
-const totalRejected = document.getElementById("totalRejected");
-const totalAmount = document.getElementById("totalAmount");
+function loadDeposits() {
 
-// ======================================
-// LOAD STATISTICS
-// ======================================
+    const depositsRef = ref(db, "depositRequests");
 
-function loadStatistics() {
+    onValue(depositsRef, (snapshot) => {
 
-    // USERS
-    onValue(ref(db, "users"), (snapshot) => {
+        if (!depositContainer) return;
 
-        let users = 0;
+        depositContainer.innerHTML = "";
 
-        if (snapshot.exists()) {
-            snapshot.forEach(() => {
-                users++;
-            });
+        if (!snapshot.exists()) {
+
+            depositContainer.innerHTML = `
+
+            <div class="empty-card">
+
+                <i class="fa-solid fa-wallet"></i>
+
+                <h3>No Deposit Requests</h3>
+
+            </div>
+
+            `;
+
+            return;
         }
 
-        if (totalUsers) {
-            totalUsers.textContent = users.toLocaleString();
-        }
+        const list = [];
 
-    });
+        snapshot.forEach((child) => {
 
-    // DEPOSITS
-    onValue(ref(db, "depositRequests"), (snapshot) => {
+            list.unshift({
 
-        let deposits = 0;
-        let pending = 0;
-        let approved = 0;
-        let rejected = 0;
-        let amount = 0;
+                id: child.key,
 
-        if (snapshot.exists()) {
-
-            snapshot.forEach((child) => {
-
-                const data = child.val();
-
-                deposits++;
-
-                amount += Number(data.amount || 0);
-
-                switch (data.status) {
-
-                    case "Pending":
-                        pending++;
-                        break;
-
-                    case "Approved":
-                        approved++;
-                        break;
-
-                    case "Rejected":
-                        rejected++;
-                        break;
-                }
+                ...child.val()
 
             });
 
-        }
+        });
 
-        if (totalDeposits) {
-            totalDeposits.textContent = deposits.toLocaleString();
-        }
+        list.forEach((data) => {
 
-        if (totalPending) {
-            totalPending.textContent = pending.toLocaleString();
-        }
+            depositContainer.innerHTML += `
 
-        if (totalApproved) {
-            totalApproved.textContent = approved.toLocaleString();
-        }
+            <div class="request-card">
 
-        if (totalRejected) {
-            totalRejected.textContent = rejected.toLocaleString();
-        }
+                <div class="request-top">
 
-        if (totalAmount) {
-            totalAmount.textContent =
-                amount.toLocaleString() + " RWF";
-        }
+                    <h3>${Number(data.amount || 0).toLocaleString()} RWF</h3>
+
+                    <span class="status ${String(data.status).toLowerCase()}">
+
+                        ${data.status || "Pending"}
+
+                    </span>
+
+                </div>
+
+                <p>
+
+                    <strong>Name:</strong>
+
+                    ${data.fullName || "-"}
+
+                </p>
+
+                <p>
+
+                    <strong>Email:</strong>
+
+                    ${data.email || "-"}
+
+                </p>
+
+                <p>
+
+                    <strong>Phone:</strong>
+
+                    ${data.senderPhone || "-"}
+
+                </p>
+
+                <p>
+
+                    <strong>Transaction ID:</strong>
+
+                    ${data.transactionId || "-"}
+
+                </p>
+
+                <div class="action-buttons">
+
+                    <button
+                    class="approveBtn"
+                    data-id="${data.id}">
+
+                        <i class="fa fa-check"></i>
+
+                        Approve
+
+                    </button>
+
+                    <button
+                    class="rejectBtn"
+                    data-id="${data.id}">
+
+                        <i class="fa fa-times"></i>
+
+                        Reject
+
+                    </button>
+
+                    <button
+                    class="viewProof"
+                    data-image="${data.proofImage || ""}">
+
+                        <i class="fa fa-image"></i>
+
+                        Screenshot
+
+                    </button>
+
+                    <button
+                    class="copyTransaction"
+                    data-id="${data.transactionId || ""}">
+
+                        <i class="fa fa-copy"></i>
+
+                        Copy ID
+
+                    </button>
+
+                </div>
+
+            </div>
+
+            `;
+
+        });
+
+        activateButtons();
 
     });
 
 }
 
-// ======================================
-// START STATISTICS
-// ======================================
+loadDeposits();
 
-loadStatistics();
-
-console.log("✅ Admin Part 3 Loaded Successfully");
+console.log("✅ Deposits Loaded");
 
 // ======================================
 // ADMIN.JS - PART 4
-// SEARCH + FILTER + VIEW SCREENSHOT
-// Money Vault
+// WITHDRAW REQUESTS
 // ======================================
+
+import {
+    onValue,
+    ref,
+    get,
+    update
+} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
 
 // ======================================
 // ELEMENTS
 // ======================================
 
-const searchInput = document.getElementById("searchInput");
-const filterStatus = document.getElementById("filterStatus");
+const withdrawRequests =
+document.getElementById("withdrawRequests");
+
+const withdrawCount =
+document.getElementById("withdrawCount");
+
+const withdrawPending =
+document.getElementById("withdrawPending");
+
+const withdrawApproved =
+document.getElementById("withdrawApproved");
+
+const withdrawRejected =
+document.getElementById("withdrawRejected");
 
 // ======================================
-// SEARCH REQUESTS
+// LOAD WITHDRAW REQUESTS
 // ======================================
 
-if (searchInput) {
+function loadWithdraws(){
 
-    searchInput.addEventListener("input", () => {
+const withdrawRef =
+ref(db,"withdrawRequests");
 
-        const keyword = searchInput.value.toLowerCase();
+onValue(withdrawRef,(snapshot)=>{
 
-        document.querySelectorAll(".request-card").forEach((card) => {
+if(!withdrawRequests) return;
 
-            const text = card.textContent.toLowerCase();
+withdrawRequests.innerHTML="";
 
-            card.style.display =
-                text.includes(keyword) ? "block" : "none";
+let total=0;
+let pending=0;
+let approved=0;
+let rejected=0;
 
-        });
+if(!snapshot.exists()){
 
-    });
+withdrawRequests.innerHTML=`
+
+<div class="empty-state">
+
+<h3>No Withdraw Requests</h3>
+
+</div>
+
+`;
+
+return;
+
+}
+
+snapshot.forEach(child=>{
+
+const data=child.val();
+
+total++;
+
+if(data.status==="Pending") pending++;
+if(data.status==="Approved") approved++;
+if(data.status==="Rejected") rejected++;
+
+withdrawRequests.innerHTML+=`
+
+<div class="request-card">
+
+<h3>
+
+${Number(data.amount).toLocaleString()} RWF
+
+</h3>
+
+<p>
+
+<b>Name:</b>
+
+${data.fullName||"-"}
+
+</p>
+
+<p>
+
+<b>Email:</b>
+
+${data.email||"-"}
+
+</p>
+
+<p>
+
+<b>Phone:</b>
+
+${data.phone||"-"}
+
+</p>
+
+<p>
+
+<b>Method:</b>
+
+${data.method||"-"}
+
+</p>
+
+<p>
+
+<b>Status:</b>
+
+<strong>${data.status}</strong>
+
+</p>
+
+<div class="action-buttons">
+
+<button
+class="approveWithdraw"
+data-id="${child.key}">
+
+Approve
+
+</button>
+
+<button
+class="rejectWithdraw"
+data-id="${child.key}">
+
+Reject
+
+</button>
+
+</div>
+
+</div>
+
+`;
+
+});
+
+withdrawCount.textContent=total;
+withdrawPending.textContent=pending;
+withdrawApproved.textContent=approved;
+withdrawRejected.textContent=rejected;
+
+activateWithdrawButtons();
+
+});
 
 }
 
 // ======================================
-// FILTER STATUS
+// APPROVE
 // ======================================
 
-if (filterStatus) {
+async function approveWithdraw(id){
 
-    filterStatus.addEventListener("change", () => {
+if(!confirm("Approve Withdraw?")) return;
 
-        const value = filterStatus.value;
+const requestRef=
+ref(db,"withdrawRequests/"+id);
 
-        document.querySelectorAll(".request-card").forEach((card) => {
+const snap=
+await get(requestRef);
 
-            const statusElement = card.querySelector(".status-text");
+if(!snap.exists()) return;
 
-            if (!statusElement) return;
+const withdraw=
+snap.val();
 
-            const status = statusElement.textContent.trim();
+if(withdraw.status==="Approved"){
 
-            if (value === "All" || value === status) {
+alert("Already Approved");
 
-                card.style.display = "block";
+return;
 
-            } else {
+}
 
-                card.style.display = "none";
+const userRef=
+ref(db,"users/"+withdraw.uid);
 
-            }
+const userSnap=
+await get(userRef);
 
-        });
+if(!userSnap.exists()) return;
 
-    });
+const user=
+userSnap.val();
+
+const balance=
+Number(user.balance||0);
+
+if(balance<Number(withdraw.amount)){
+
+alert("Insufficient User Balance");
+
+return;
+
+}
+
+await update(userRef,{
+
+balance:
+balance-
+Number(withdraw.amount),
+
+totalWithdraws:
+Number(user.totalWithdraws||0)+
+Number(withdraw.amount)
+
+});
+
+await update(requestRef,{
+
+status:"Approved",
+
+approvedAt:Date.now()
+
+});
+
+alert("Withdraw Approved");
 
 }
 
 // ======================================
-// GLOBAL BUTTON EVENTS
+// REJECT
 // ======================================
 
-document.addEventListener("click", async (e) => {
+async function rejectWithdraw(id){
 
-    // ===========================
-    // VIEW SCREENSHOT
-    // ===========================
+if(!confirm("Reject Withdraw?")) return;
 
-    if (e.target.classList.contains("viewProof")) {
+await update(
 
-        const image = e.target.dataset.image;
+ref(db,"withdrawRequests/"+id),
 
-        if (!image) {
+{
 
-            alert("Screenshot not found.");
+status:"Rejected",
 
-            return;
+rejectedAt:Date.now()
 
-        }
+}
 
-        window.open(image, "_blank");
+);
 
-    }
+alert("Withdraw Rejected");
 
-    // ===========================
-    // COPY TRANSACTION ID
-    // ===========================
+}
 
-    if (e.target.classList.contains("copyTransaction")) {
+// ======================================
+// BUTTONS
+// ======================================
 
-        const id = e.target.dataset.transaction;
+function activateWithdrawButtons(){
 
-        if (!id) {
+document
+.querySelectorAll(".approveWithdraw")
+.forEach(btn=>{
 
-            alert("Transaction ID not found.");
+btn.onclick=()=>{
 
-            return;
+approveWithdraw(
 
-        }
+btn.dataset.id
 
-        try {
+);
 
-            await navigator.clipboard.writeText(id);
-
-            alert("Transaction ID Copied");
-
-        } catch (error) {
-
-            console.error(error);
-
-            alert("Failed to copy.");
-
-        }
-
-    }
+};
 
 });
 
-// ======================================
-// PAGE READY
-// ======================================
+document
+.querySelectorAll(".rejectWithdraw")
+.forEach(btn=>{
 
-window.addEventListener("load", () => {
+btn.onclick=()=>{
 
-    if (loadingScreen) {
+rejectWithdraw(
 
-        loadingScreen.style.display = "none";
+btn.dataset.id
 
-    }
+);
 
-    console.log("=================================");
-    console.log(" Admin Panel Ready");
-    console.log(" Search Ready");
-    console.log(" Filter Ready");
-    console.log(" View Screenshot Ready");
-    console.log(" Copy Transaction Ready");
-    console.log("=================================");
+};
 
 });
+
+}
+
+// ======================================
+// START
+// ======================================
+
+loadWithdraws();
+
+console.log("✅ Admin Part 4 Loaded");
+
