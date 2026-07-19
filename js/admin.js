@@ -1463,3 +1463,173 @@ activateUserBtn?.addEventListener("click", async () => {
     if (!selectedUserId) return;
 
     if (!confirm("
+
+        // ======================================
+// ADMIN.JS - PART 9
+// ACTIVATE USER + LOAD USERS
+// ======================================
+
+// ======================================
+// ACTIVATE USER
+// ======================================
+
+activateUserBtn?.addEventListener("click", async () => {
+
+    if (!selectedUserId) return;
+
+    if (!confirm("Activate this user?")) return;
+
+    try {
+
+        await update(
+            ref(db, "users/" + selectedUserId),
+            {
+                status: "Active"
+            }
+        );
+
+        alert("User Activated");
+
+        userModal.style.display = "none";
+
+    } catch (error) {
+
+        console.error(error);
+
+        alert(error.message);
+
+    }
+
+});
+
+// ======================================
+// USERS CONTAINER
+// ======================================
+
+const usersContainer =
+document.getElementById("usersContainer");
+
+const allUsers =
+document.getElementById("allUsers");
+
+const activeUsers =
+document.getElementById("activeUsers");
+
+const blockedUsers =
+document.getElementById("blockedUsers");
+
+const emptyUsers =
+document.getElementById("emptyUsers");
+
+// ======================================
+// LOAD USERS
+// ======================================
+
+function loadUsers() {
+
+    onValue(ref(db, "users"), (snapshot) => {
+
+        if (!usersContainer) return;
+
+        usersContainer.innerHTML = "";
+
+        let total = 0;
+        let active = 0;
+        let blocked = 0;
+
+        if (!snapshot.exists()) {
+
+            emptyUsers.style.display = "block";
+
+            return;
+
+        }
+
+        emptyUsers.style.display = "none";
+
+        snapshot.forEach((child) => {
+
+            total++;
+
+            const user = child.val();
+            const uid = child.key;
+
+            if (user.status === "Blocked") {
+
+                blocked++;
+
+            } else {
+
+                active++;
+
+            }
+
+            usersContainer.innerHTML += `
+
+            <div class="user-card">
+
+                <h3>${user.fullName || "Unknown User"}</h3>
+
+                <p>${user.email || "-"}</p>
+
+                <p>${user.phone || "-"}</p>
+
+                <p>
+
+                    Balance:
+                    <strong>
+                    ${Number(user.balance || 0).toLocaleString()} RWF
+                    </strong>
+
+                </p>
+
+                <span class="status ${user.status === "Blocked" ? "rejected" : "approved"}">
+
+                    ${user.status || "Active"}
+
+                </span>
+
+                <button
+                    class="viewUserBtn"
+                    data-id="${uid}">
+
+                    View Details
+
+                </button>
+
+            </div>
+
+            `;
+
+        });
+
+        allUsers.textContent = total;
+        activeUsers.textContent = active;
+        blockedUsers.textContent = blocked;
+
+        document
+        .querySelectorAll(".viewUserBtn")
+        .forEach(btn => {
+
+            btn.onclick = () => {
+
+                openUserModal(btn.dataset.id);
+
+            };
+
+        });
+
+    });
+
+}
+
+// ======================================
+// START USERS
+// ======================================
+
+loadUsers();
+
+console.log("✅ Admin Part 9 Loaded");
+
+    
+
