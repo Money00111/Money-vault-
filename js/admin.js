@@ -3035,4 +3035,243 @@ loadAdminLogs();
 
 console.log("✅ Admin Part 16 Loaded");
 
+    // ======================================
+// ADMIN.JS - PART 17
+// REALTIME NOTIFICATIONS
+// ======================================
+
+// ---------- ELEMENTS ----------
+
+const notificationBadge =
+document.getElementById("notificationBadge");
+
+const notificationList =
+document.getElementById("notificationList");
+
+const notificationBtn =
+document.getElementById("notificationBtn");
+
+const notificationPanel =
+document.getElementById("notificationPanel");
+
+// ======================================
+// COUNTERS
+// ======================================
+
+let lastDepositCount = 0;
+let lastWithdrawCount = 0;
+
+// ======================================
+// LOAD NOTIFICATIONS
+// ======================================
+
+function loadNotifications() {
+
+    // -------------------------
+    // DEPOSITS
+    // -------------------------
+
+    onValue(ref(db, "depositRequests"), (snapshot) => {
+
+        let pending = 0;
+
+        if (notificationList) {
+
+            notificationList.innerHTML = "";
+
+        }
+
+        if (snapshot.exists()) {
+
+            snapshot.forEach((child) => {
+
+                const data = child.val();
+
+                if (data.status === "Pending") {
+
+                    pending++;
+
+                    notificationList.innerHTML += `
+
+                    <div class="notification-item">
+
+                        <i class="fa-solid fa-wallet"></i>
+
+                        <div>
+
+                            <strong>
+                            New Deposit
+                            </strong>
+
+                            <p>
+
+                            ${Number(data.amount || 0)
+                            .toLocaleString()} RWF
+
+                            </p>
+
+                        </div>
+
+                    </div>
+
+                    `;
+
+                }
+
+            });
+
+            if (snapshot.size > lastDepositCount &&
+                lastDepositCount !== 0) {
+
+                playNotificationSound();
+
+            }
+
+            lastDepositCount = snapshot.size;
+
+        }
+
+        updateNotificationBadge(pending);
+
+    });
+
+    // -------------------------
+    // WITHDRAWS
+    // -------------------------
+
+    onValue(ref(db, "withdrawRequests"), (snapshot) => {
+
+        let pending = 0;
+
+        if (snapshot.exists()) {
+
+            snapshot.forEach((child) => {
+
+                const data = child.val();
+
+                if (data.status === "Pending") {
+
+                    pending++;
+
+                    notificationList.innerHTML += `
+
+                    <div class="notification-item">
+
+                        <i class="fa-solid fa-money-bill-transfer"></i>
+
+                        <div>
+
+                            <strong>
+
+                            New Withdraw
+
+                            </strong>
+
+                            <p>
+
+                            ${Number(data.amount || 0)
+                            .toLocaleString()} RWF
+
+                            </p>
+
+                        </div>
+
+                    </div>
+
+                    `;
+
+                }
+
+            });
+
+            if (snapshot.size > lastWithdrawCount &&
+                lastWithdrawCount !== 0) {
+
+                playNotificationSound();
+
+            }
+
+            lastWithdrawCount = snapshot.size;
+
+        }
+
+        updateNotificationBadge();
+
+    });
+
+}
+
+// ======================================
+// UPDATE BADGE
+// ======================================
+
+function updateNotificationBadge() {
+
+    const deposits =
+    document.querySelectorAll(
+    ".notification-item").length;
+
+    if (!notificationBadge) return;
+
+    notificationBadge.textContent = deposits;
+
+    notificationBadge.style.display =
+    deposits > 0 ? "flex" : "none";
+
+}
+
+// ======================================
+// PANEL OPEN/CLOSE
+// ======================================
+
+notificationBtn?.addEventListener("click", () => {
+
+    notificationPanel.classList.toggle("show");
+
+});
+
+// ======================================
+// SOUND
+// ======================================
+
+function playNotificationSound() {
+
+    const audio = new Audio(
+    "sounds/notification.mp3"
+    );
+
+    audio.play().catch(() => {});
+
+}
+
+// ======================================
+// CLOSE PANEL
+// ======================================
+
+window.addEventListener("click", (e) => {
+
+    if (
+
+        notificationPanel &&
+        notificationBtn &&
+
+        !notificationPanel.contains(e.target) &&
+        !notificationBtn.contains(e.target)
+
+    ) {
+
+        notificationPanel.classList.remove("show");
+
+    }
+
+});
+
+// ======================================
+// START
+// ======================================
+
+loadNotifications();
+
+console.log("✅ Admin Part 17 Loaded");
+
     
