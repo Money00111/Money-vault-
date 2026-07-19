@@ -2407,3 +2407,261 @@ loadTransactions();
 
 console.log("✅ Admin Part 13 Loaded");
     
+// ======================================
+// ADMIN.JS - PART 14
+// TRANSACTION SEARCH + FILTER
+// ======================================
+
+
+// ---------- ELEMENTS ----------
+
+const transactionSearch =
+document.getElementById("transactionSearch");
+
+
+const transactionFilter =
+document.getElementById("transactionFilter");
+
+
+// kubika transactions zose
+let allTransactionData = [];
+
+
+// ======================================
+// UPDATE DATA FROM PART 13
+// ======================================
+
+function saveTransactionsData(data){
+
+    allTransactionData = data;
+
+    displayFilteredTransactions(
+        allTransactionData
+    );
+
+}
+
+
+// ======================================
+// FILTER FUNCTION
+// ======================================
+
+function displayFilteredTransactions(data){
+
+
+    if(!transactionsContainer) return;
+
+
+    transactionsContainer.innerHTML="";
+
+
+    data.forEach((transaction)=>{
+
+
+        transactionsContainer.innerHTML += `
+
+
+        <div class="request-card">
+
+
+            <h3>
+
+            <i class="fa-solid fa-clock-rotate-left"></i>
+
+            ${transaction.type}
+
+            </h3>
+
+
+            <p>
+
+            <b>Amount:</b>
+
+            ${Number(transaction.amount || 0)
+            .toLocaleString()} RWF
+
+            </p>
+
+
+            <p>
+
+            <b>Email:</b>
+
+            ${transaction.email || "-"}
+
+            </p>
+
+
+            <p>
+
+            <b>Phone:</b>
+
+            ${transaction.phone || "-"}
+
+            </p>
+
+
+            <p>
+
+            <b>Status:</b>
+
+            <strong>
+            ${transaction.status || "Pending"}
+            </strong>
+
+            </p>
+
+
+            <p>
+
+            <b>Date:</b>
+
+            ${
+            transaction.createdAt
+            ?
+            new Date(transaction.createdAt)
+            .toLocaleString()
+            :
+            "-"
+            }
+
+            </p>
+
+
+        </div>
+
+
+        `;
+
+
+    });
+
+
+}
+
+
+// ======================================
+// SEARCH
+// ======================================
+
+
+transactionSearch?.addEventListener(
+"input",
+()=>{
+
+
+    const value =
+    transactionSearch.value
+    .toLowerCase();
+
+
+
+    const filtered =
+    allTransactionData.filter((item)=>{
+
+
+        return (
+
+            item.email
+            ?.toLowerCase()
+            .includes(value)
+
+            ||
+
+            item.phone
+            ?.toLowerCase()
+            .includes(value)
+
+
+            ||
+
+            item.type
+            ?.toLowerCase()
+            .includes(value)
+
+
+            ||
+
+            item.status
+            ?.toLowerCase()
+            .includes(value)
+
+
+        );
+
+
+    });
+
+
+
+    displayFilteredTransactions(
+        filtered
+    );
+
+
+});
+
+
+
+// ======================================
+// FILTER STATUS / TYPE
+// ======================================
+
+
+transactionFilter?.addEventListener(
+"change",
+()=>{
+
+
+    const value =
+    transactionFilter.value;
+
+
+
+    let filtered =
+    allTransactionData;
+
+
+
+    if(value !== "All"){
+
+
+        filtered =
+        allTransactionData.filter(
+        (item)=>{
+
+
+            return (
+
+            item.type === value
+
+            ||
+
+            item.status === value
+
+            );
+
+
+        });
+
+
+    }
+
+
+
+    displayFilteredTransactions(
+        filtered
+    );
+
+
+});
+
+
+// ======================================
+// READY
+// ======================================
+
+console.log(
+"✅ Admin Part 14 Loaded");
+
+    
