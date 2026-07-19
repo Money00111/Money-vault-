@@ -5,11 +5,9 @@
 
 <meta charset="UTF-8">
 
-<meta
-name="viewport"
-content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Admin Panel | Money Vault</title>
+<title>Money Vault Admin Panel</title>
 
 <link rel="stylesheet" href="css/admin.css">
 
@@ -20,393 +18,881 @@ href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
 
 <body>
 
-<!-- ==========================
+<!-- ======================================
 LOADING SCREEN
-========================== -->
+====================================== -->
 
 <div id="loadingScreen" class="loading-screen">
 
-<div class="loader"></div>
+    <div class="loader"></div>
 
-<h2>Loading Admin Panel...</h2>
+    <h2>Loading Admin Panel...</h2>
 
 </div>
 
-<!-- ==========================
+<!-- ======================================
 SIDEBAR
-========================== -->
+====================================== -->
 
-<div id="sidebar" class="sidebar">
+<aside id="sidebar" class="sidebar">
 
-<div class="logo">
+    <div class="sidebar-top">
 
-<h2>
-💰 Money Vault
-</h2>
+        <div class="logo">
 
-<p>
+            <h2>💰 Money Vault</h2>
 
-Administrator
+            <p>Administrator</p>
 
-</p>
+        </div>
 
-</div>
+    </div>
 
-<ul>
+    <nav class="sidebar-menu">
 
-<li>
+        <a href="#"
+        class="menu-link active"
+        data-page="dashboard">
 
-<a href="#" class="nav-link active" data-section="dashboardSection">
+            <i class="fa-solid fa-gauge"></i>
 
-<i class="fa fa-gauge"></i>
+            <span>Dashboard</span>
 
-Dashboard
+        </a>
 
-</a>
+        <a href="#"
+        class="menu-link"
+        data-page="deposits">
 
-</li>
+            <i class="fa-solid fa-wallet"></i>
 
-<li>
+            <span>Deposits</span>
 
-<a href="#" class="nav-link" data-section="depositSection">
+        </a>
 
-<i class="fa fa-wallet"></i>
+        <a href="#"
+        class="menu-link"
+        data-page="withdraws">
 
-Deposits
+            <i class="fa-solid fa-money-bill-transfer"></i>
 
-</a>
+            <span>Withdraws</span>
 
-</li>
+        </a>
 
-<li>
+        <a href="#"
+        class="menu-link"
+        data-page="users">
 
-<a href="#" class="nav-link" data-section="withdrawSection">
+            <i class="fa-solid fa-users"></i>
 
-<i class="fa fa-money-bill-transfer"></i>
+            <span>Users</span>
 
-Withdraws
+        </a>
 
-</a>
+        <a href="#"
+        class="menu-link"
+        data-page="transactions">
 
-</li>
+            <i class="fa-solid fa-clock-rotate-left"></i>
 
-<li>
+            <span>Transactions</span>
 
-<a href="#" class="nav-link" data-section="usersSection">
+        </a>
 
-<i class="fa fa-users"></i>
+        <a href="#"
+        class="menu-link"
+        data-page="settings">
 
-Users
+            <i class="fa-solid fa-gear"></i>
 
-</a>
+            <span>Settings</span>
 
-</li>
+        </a>
 
-<li>
+    </nav>
 
-<a href="#" class="nav-link" data-section="transactionsSection">
+    <div class="sidebar-bottom">
 
-<i class="fa fa-clock-rotate-left"></i>
+        <button id="logoutBtn" class="logout-btn">
 
-Transactions
+            <i class="fa-solid fa-right-from-bracket"></i>
 
-</a>
+            Logout
 
-</li>
+        </button>
 
-<li>
+    </div>
 
-<a href="#" class="nav-link" data-section="settingsSection">
+</aside>
 
-<i class="fa fa-gear"></i>
-
-Settings
-
-</a>
-
-</li>
-
-<li>
-
-<a href="#" id="logoutBtn">
-
-<i class="fa fa-right-from-bracket"></i>
-
-Logout
-
-</a>
-
-</li>
-
-</ul>
-
-
-</div>
-
-<!-- ==========================
+<!-- ======================================
 MAIN CONTENT
-========================== -->
+====================================== -->
 
-<div class="main">
+<div class="main-content">
 
-<!-- ==========================
-HEADER
-========================== -->
+    <!-- HEADER -->
 
-<header>
+    <header class="top-header">
 
-<button id="menuBtn">
+        <div class="left-header">
 
-<i class="fa fa-bars"></i>
+            <button id="menuBtn">
 
-</button>
+                <i class="fa-solid fa-bars"></i>
 
-<h2>
+            </button>
 
-Admin Dashboard
+            <h1>
 
-</h2>
+                Admin Dashboard
 
-<div class="admin-info">
+            </h1>
 
-<i class="fa fa-user-shield"></i>
+        </div>
 
-<span id="adminName">
+        <div class="right-header">
 
-Administrator
+            <i class="fa-solid fa-user-shield"></i>
 
-</span>
+            <span id="adminName">
 
-</div>
+                Administrator
 
-</header>
+            </span>
 
-<!-- ==========================
-STATISTICS
-========================== -->
+        </div>
 
-<section class="statistics">
+    </header>
 
-<div class="stat-card">
+    <!-- ======================================
+    PAGE CONTENT
+    ====================================== -->
 
-<i class="fa fa-users"></i>
+    <main id="contentArea">
+      
+  <!-- Dashboard izatangira muri Part 2 -->
 
-<h2 id="totalUsers">
+      <!-- ======================================
+DASHBOARD SECTION
+====================================== -->
 
-0
+<section
+id="dashboardSection"
+class="page-section active">
 
-</h2>
+<h2 class="section-title">
 
-<p>Total Users</p>
+<i class="fa-solid fa-chart-line"></i>
 
-</div>
-
-<div class="stat-card">
-
-<i class="fa fa-wallet"></i>
-
-<h2 id="totalDeposits">
-
-0
+Dashboard Overview
 
 </h2>
 
-<p>Total Deposits</p>
+<div class="statistics-grid">
+
+    <div class="stat-card">
+
+        <div class="stat-icon users">
+
+            <i class="fa-solid fa-users"></i>
+
+        </div>
+
+        <div class="stat-info">
+
+            <h3 id="totalUsers">
+
+                0
+
+            </h3>
+
+            <p>
+
+                Total Users
+
+            </p>
+
+        </div>
+
+    </div>
+
+    <div class="stat-card">
+
+        <div class="stat-icon deposits">
+
+            <i class="fa-solid fa-wallet"></i>
+
+        </div>
+
+        <div class="stat-info">
+
+            <h3 id="totalDeposits">
+
+                0
+
+            </h3>
+
+            <p>
+
+                Total Deposits
+
+            </p>
+
+        </div>
+
+    </div>
+
+    <div class="stat-card">
+
+        <div class="stat-icon pending">
+
+            <i class="fa-solid fa-hourglass-half"></i>
+
+        </div>
+
+        <div class="stat-info">
+
+            <h3 id="totalPending">
+
+                0
+
+            </h3>
+
+            <p>
+
+                Pending Requests
+
+            </p>
+
+        </div>
+
+    </div>
+
+    <div class="stat-card">
+
+        <div class="stat-icon approved">
+
+            <i class="fa-solid fa-circle-check"></i>
+
+        </div>
+
+        <div class="stat-info">
+
+            <h3 id="totalApproved">
+
+                0
+
+            </h3>
+
+            <p>
+
+                Approved
+
+            </p>
+
+        </div>
+
+    </div>
+
+    <div class="stat-card">
+
+        <div class="stat-icon rejected">
+
+            <i class="fa-solid fa-circle-xmark"></i>
+
+        </div>
+
+        <div class="stat-info">
+
+            <h3 id="totalRejected">
+
+                0
+
+            </h3>
+
+            <p>
+
+                Rejected
+
+            </p>
+
+        </div>
+
+    </div>
+
+    <div class="stat-card">
+
+        <div class="stat-icon amount">
+
+            <i class="fa-solid fa-money-bill-wave"></i>
+
+        </div>
+
+        <div class="stat-info">
+
+            <h3 id="totalAmount">
+
+                0 RWF
+
+            </h3>
+
+            <p>
+
+                Total Amount
+
+            </p>
+
+        </div>
+
+    </div>
 
 </div>
 
-<div class="stat-card">
+<div class="dashboard-row">
 
-<i class="fa fa-hourglass-half"></i>
+    <div class="dashboard-card">
 
-<h2 id="totalPending">
+        <h3>
 
-0
+            <i class="fa-solid fa-bolt"></i>
 
-</h2>
+            Quick Actions
 
-<p>Pending</p>
+        </h3>
+
+        <div class="quick-actions">
+
+            <button id="openDeposits">
+
+                <i class="fa-solid fa-wallet"></i>
+
+                Deposits
+
+            </button>
+
+            <button id="openWithdraws">
+
+                <i class="fa-solid fa-money-bill-transfer"></i>
+
+                Withdraws
+
+            </button>
+
+            <button id="openUsers">
+
+                <i class="fa-solid fa-users"></i>
+
+                Users
+
+            </button>
+
+            <button id="openSettings">
+
+                <i class="fa-solid fa-gear"></i>
+
+                Settings
+
+            </button>
+
+        </div>
+
+    </div>
+
+    <div class="dashboard-card">
+
+        <h3>
+
+            <i class="fa-solid fa-circle-info"></i>
+
+            System Status
+
+        </h3>
+
+        <div class="system-status">
+
+            <p>
+
+                Firebase
+
+                <span class="status-online">
+
+                    Online
+
+                </span>
+
+            </p>
+
+            <p>
+
+                Database
+
+                <span class="status-online">
+
+                    Connected
+
+                </span>
+
+            </p>
+
+            <p>
+
+                Storage
+
+                <span class="status-online">
+
+                    Active
+
+                </span>
+
+            </p>
+
+        </div>
+
+    </div>
 
 </div>
 
-<div class="stat-card">
+      </section>
 
-<i class="fa fa-circle-check"></i>
-
-<h2 id="totalApproved">
-
-0
-
-</h2>
-
-<p>Approved</p>
-
-</div>
-
-<div class="stat-card">
-
-<i class="fa fa-circle-xmark"></i>
-
-<h2 id="totalRejected">
-
-0
-
-</h2>
-
-<p>Rejected</p>
-
-</div>
-
-<div class="stat-card">
-
-<i class="fa fa-money-bill-wave"></i>
-
-<h2 id="totalAmount">
-
-0 RWF
-
-</h2>
-
-<p>Total Amount</p>
-
-</div>
-
-</section>
-
-<!-- ==========================
-SEARCH & FILTER
-========================== -->
-
-<section class="search-box">
-
-<input
-
-type="text"
-
-id="searchInput"
-
-placeholder="Search email, phone or transaction ID...">
-
-<select id="filterStatus">
-
-<option value="All">
-
-All Status
-
-</option>
-
-<option value="Pending">
-
-Pending
-
-</option>
-
-<option value="Approved">
-
-Approved
-
-</option>
-
-<option value="Rejected">
-
-Rejected
-
-</option>
-
-</select>
-
-</section>
-
-<!-- ==========================
-DEPOSIT REQUESTS
-========================== -->
+      <!-- ======================================
+DEPOSIT SECTION
+====================================== -->
 
 <section
 id="depositSection"
-class="deposit-section">
+class="page-section"
+style="display:none;">
 
-<h2>
+    <div class="section-header">
 
-📥 Deposit Requests
+        <h2>
 
-</h2>
+            <i class="fa-solid fa-wallet"></i>
 
-<div id="depositRequests">
+            Deposit Requests
 
-<!-- JavaScript izashyiramo requests -->
+        </h2>
 
-</div>
+        <div class="section-actions">
+
+            <input
+            type="text"
+            id="searchInput"
+            placeholder="Search email, phone or transaction ID...">
+
+            <select id="filterStatus">
+
+                <option value="All">
+
+                    All Status
+
+                </option>
+
+                <option value="Pending">
+
+                    Pending
+
+                </option>
+
+                <option value="Approved">
+
+                    Approved
+
+                </option>
+
+                <option value="Rejected">
+
+                    Rejected
+
+                </option>
+
+            </select>
+
+        </div>
+
+    </div>
+
+    <!-- SUMMARY -->
+
+    <div class="deposit-summary">
+
+        <div class="summary-card">
+
+            <h3 id="depositCount">
+
+                0
+
+            </h3>
+
+            <p>
+
+                Total Requests
+
+            </p>
+
+        </div>
+
+        <div class="summary-card">
+
+            <h3 id="pendingCount">
+
+                0
+
+            </h3>
+
+            <p>
+
+                Pending
+
+            </p>
+
+        </div>
+
+        <div class="summary-card">
+
+            <h3 id="approvedCount">
+
+                0
+
+            </h3>
+
+            <p>
+
+                Approved
+
+            </p>
+
+        </div>
+
+        <div class="summary-card">
+
+            <h3 id="rejectedCount">
+
+                0
+
+            </h3>
+
+            <p>
+
+                Rejected
+
+            </p>
+
+        </div>
+
+    </div>
+
+    <!-- REQUESTS -->
+
+    <div
+    id="depositRequests"
+    class="request-list">
+
+        <!-- JavaScript izashyiramo requests -->
+
+    </div>
+
+    <!-- EMPTY STATE -->
+
+    <div
+    id="emptyDeposit"
+    class="empty-state"
+    style="display:none;">
+
+        <i class="fa-solid fa-wallet"></i>
+
+        <h3>
+
+            No Deposit Requests
+
+        </h3>
+
+        <p>
+
+            Deposit requests will appear here.
+
+        </p>
+
+    </div>
 
 </section>
 
-  <!-- ==========================
-BOTTOM NAVIGATION
-========================== -->
+<!-- ======================================
+SCREENSHOT MODAL
+====================================== -->
 
-<nav class="bottom-nav">
+<div
+id="proofModal"
+class="proof-modal"
+style="display:none;">
 
-<a href="#" class="nav-link active" data-section="dashboardSection">
+    <div class="proof-box">
 
-<i class="fa fa-gauge"></i>
+        <button
+        id="closeProof">
 
-<span>Dashboard</span>
+            <i class="fa-solid fa-xmark"></i>
 
-</a>
+        </button>
 
-<a href="#" class="nav-link" data-section="depositSection">
+        <img
+        id="proofImage"
+        src=""
+        alt="Deposit Screenshot">
 
-<i class="fa fa-wallet"></i>
-
-<span>Deposits</span>
-
-</a>
-
-<a href="#" class="nav-link" data-section="withdrawSection">
-
-<i class="fa fa-money-bill-transfer"></i>
-
-<span>Withdraws</span>
-
-</a>
-
-<a href="#" class="nav-link" data-section="usersSection">
-
-<i class="fa fa-users"></i>
-
-<span>Users</span>
-
-</a>
-
-<a href="#" class="nav-link" data-section="settingsSection">
-
-<i class="fa fa-gear"></i>
-
-<span>Settings</span>
-
-</a>
-
-  </nav>
-
-<!-- ==========================
-FOOTER
-========================== -->
-
-<footer>
-
-<p>
-
-© 2026 Money Vault Admin Panel
-
-</p>
-
-</footer>
+    </div>
 
 </div>
-<!-- END MAIN -->
 
-<!-- ==========================
-SCRIPTS
-========================== -->
+      <!-- ======================================
+WITHDRAW SECTION
+====================================== -->
+
+<section
+id="withdrawSection"
+class="page-section"
+style="display:none;">
+
+    <div class="section-header">
+
+        <h2>
+
+            <i class="fa-solid fa-money-bill-transfer"></i>
+
+            Withdraw Requests
+
+        </h2>
+
+        <div class="section-actions">
+
+            <input
+            type="text"
+            id="withdrawSearch"
+            placeholder="Search email, phone or amount...">
+
+            <select id="withdrawFilter">
+
+                <option value="All">
+
+                    All Status
+
+                </option>
+
+                <option value="Pending">
+
+                    Pending
+
+                </option>
+
+                <option value="Approved">
+
+                    Approved
+
+                </option>
+
+                <option value="Rejected">
+
+                    Rejected
+
+                </option>
+
+            </select>
+
+        </div>
+
+    </div>
+
+    <!-- SUMMARY -->
+
+    <div class="deposit-summary">
+
+        <div class="summary-card">
+
+            <h3 id="withdrawCount">
+
+                0
+
+            </h3>
+
+            <p>
+
+                Total Requests
+
+            </p>
+
+        </div>
+
+        <div class="summary-card">
+
+            <h3 id="withdrawPending">
+
+                0
+
+            </h3>
+
+            <p>
+
+                Pending
+
+            </p>
+
+        </div>
+
+        <div class="summary-card">
+
+            <h3 id="withdrawApproved">
+
+                0
+
+            </h3>
+
+            <p>
+
+                Approved
+
+            </p>
+
+        </div>
+
+        <div class="summary-card">
+
+            <h3 id="withdrawRejected">
+
+                0
+
+            </h3>
+
+            <p>
+
+                Rejected
+
+            </p>
+
+        </div>
+
+    </div>
+
+    <!-- REQUESTS -->
+
+    <div
+    id="withdrawRequests"
+    class="request-list">
+
+        <!-- JavaScript izashyiramo Withdraw Requests -->
+
+    </div>
+
+    <!-- EMPTY -->
+
+    <div
+    id="emptyWithdraw"
+    class="empty-state"
+    style="display:none;">
+
+        <i class="fa-solid fa-money-bill-transfer"></i>
+
+        <h3>
+
+            No Withdraw Requests
+
+        </h3>
+
+        <p>
+
+            Withdraw requests will appear here.
+
+        </p>
+
+    </div>
+
+</section>
+
+<!-- ======================================
+WITHDRAW DETAILS MODAL
+====================================== -->
+
+<div
+id="withdrawModal"
+class="proof-modal"
+style="display:none;">
+
+    <div class="proof-box">
+
+        <button
+        id="closeWithdrawModal">
+
+            <i class="fa-solid fa-xmark"></i>
+
+        </button>
+
+        <h2>
+
+            Withdraw Details
+
+        </h2>
+
+        <div class="withdraw-details">
+
+            <p>
+
+                <strong>User:</strong>
+
+                <span id="modalUser"></span>
+
+            </p>
+
+            <p>
+
+                <strong>Email:</strong>
+
+                <span id="modalEmail"></span>
+
+            </p>
+
+            <p>
+
+                <strong>Phone:</strong>
+
+                <span id="modalPhone"></span>
+
+            </p>
+
+            <p>
+
+                <strong>Amount:</strong>
+
+                <span id="modalAmount"></span>
+
+            </p>
+
+            <p>
+
+                <strong>Method:</strong>
+
+                <span id="modalMethod"></span>
+
+            </p>
+
+            <p>
+
+                <strong>Status:</strong>
+
+                <span id="modalStatus"></span>
+
+            </p>
+
+        </div>
+
+    </div>
+
+</div>
+
+      
+    </main>
+
+</div>
 
 <script type="module" src="js/admin.js"></script>
 
