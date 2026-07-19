@@ -1631,5 +1631,187 @@ loadUsers();
 
 console.log("✅ Admin Part 9 Loaded");
 
-    
+    // ======================================
+// ADMIN.JS - PART 10
+// LOAD WITHDRAW REQUESTS
+// ======================================
+
+// ---------- ELEMENTS ----------
+
+const withdrawRequests =
+document.getElementById("withdrawRequests");
+
+const withdrawCount =
+document.getElementById("withdrawCount");
+
+const withdrawPending =
+document.getElementById("withdrawPending");
+
+const withdrawApproved =
+document.getElementById("withdrawApproved");
+
+const withdrawRejected =
+document.getElementById("withdrawRejected");
+
+const emptyWithdraw =
+document.getElementById("emptyWithdraw");
+
+// ======================================
+// LOAD WITHDRAW REQUESTS
+// ======================================
+
+function loadWithdrawRequests() {
+
+    onValue(ref(db, "withdrawRequests"), (snapshot) => {
+
+        if (!withdrawRequests) return;
+
+        withdrawRequests.innerHTML = "";
+
+        let total = 0;
+        let pending = 0;
+        let approved = 0;
+        let rejected = 0;
+
+        if (!snapshot.exists()) {
+
+            emptyWithdraw.style.display = "block";
+
+            withdrawCount.textContent = "0";
+            withdrawPending.textContent = "0";
+            withdrawApproved.textContent = "0";
+            withdrawRejected.textContent = "0";
+
+            return;
+
+        }
+
+        emptyWithdraw.style.display = "none";
+
+        const requests = [];
+
+        snapshot.forEach((child) => {
+
+            requests.unshift({
+
+                id: child.key,
+
+                ...child.val()
+
+            });
+
+        });
+
+        requests.forEach((data) => {
+
+            total++;
+
+            if (data.status === "Pending") pending++;
+            if (data.status === "Approved") approved++;
+            if (data.status === "Rejected") rejected++;
+
+            withdrawRequests.innerHTML += `
+
+            <div class="request-card">
+
+                <h3>
+
+                    ${Number(data.amount || 0).toLocaleString()} RWF
+
+                </h3>
+
+                <p>
+
+                    <strong>Name:</strong>
+                    ${data.fullName || "-"}
+
+                </p>
+
+                <p>
+
+                    <strong>Email:</strong>
+                    ${data.email || "-"}
+
+                </p>
+
+                <p>
+
+                    <strong>Phone:</strong>
+                    ${data.phone || "-"}
+
+                </p>
+
+                <p>
+
+                    <strong>Method:</strong>
+                    ${data.method || "-"}
+
+                </p>
+
+                <p>
+
+                    <strong>Status:</strong>
+
+                    <span class="${(data.status || "").toLowerCase()}">
+
+                        ${data.status || "Pending"}
+
+                    </span>
+
+                </p>
+
+                <div class="action-buttons">
+
+                    <button
+                    class="approveWithdrawBtn"
+                    data-id="${data.id}">
+
+                        Approve
+
+                    </button>
+
+                    <button
+                    class="viewWithdrawBtn"
+                    data-id="${data.id}">
+
+                        View
+
+                    </button>
+
+                    <button
+                    class="rejectWithdrawBtn"
+                    data-id="${data.id}">
+
+                        Reject
+
+                    </button>
+
+                </div>
+
+            </div>
+
+            `;
+
+        });
+
+        withdrawCount.textContent = total;
+        withdrawPending.textContent = pending;
+        withdrawApproved.textContent = approved;
+        withdrawRejected.textContent = rejected;
+
+        activateWithdrawButtons();
+
+    });
+
+}
+
+// ======================================
+// START
+// ======================================
+
+loadWithdrawRequests();
+
+console.log("✅ Admin Part 10 Loaded");
+
+                                  
 
