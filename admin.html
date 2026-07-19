@@ -888,7 +888,968 @@ style="display:none;">
     </div>
 
 </div>
+<!-- ======================================
+USERS SECTION
+====================================== -->
 
+<section
+id="usersSection"
+class="page-section"
+style="display:none;">
+
+    <div class="section-header">
+
+        <h2>
+
+            <i class="fa-solid fa-users"></i>
+
+            Users Management
+
+        </h2>
+
+        <div class="section-actions">
+
+            <input
+            type="text"
+            id="userSearch"
+            placeholder="Search user by name, email or phone...">
+
+        </div>
+
+    </div>
+
+    <!-- USERS SUMMARY -->
+
+    <div class="statistics-grid">
+
+        <div class="stat-card">
+
+            <div class="stat-icon users">
+
+                <i class="fa-solid fa-users"></i>
+
+            </div>
+
+            <div class="stat-info">
+
+                <h3 id="allUsers">
+
+                    0
+
+                </h3>
+
+                <p>Total Users</p>
+
+            </div>
+
+        </div>
+
+        <div class="stat-card">
+
+            <div class="stat-icon approved">
+
+                <i class="fa-solid fa-user-check"></i>
+
+            </div>
+
+            <div class="stat-info">
+
+                <h3 id="activeUsers">
+
+                    0
+
+                </h3>
+
+                <p>Active Users</p>
+
+            </div>
+
+        </div>
+
+        <div class="stat-card">
+
+            <div class="stat-icon rejected">
+
+                <i class="fa-solid fa-user-slash"></i>
+
+            </div>
+
+            <div class="stat-info">
+
+                <h3 id="blockedUsers">
+
+                    0
+
+                </h3>
+
+                <p>Blocked Users</p>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- USERS LIST -->
+
+    <div
+    id="usersContainer"
+    class="users-grid">
+
+        <!-- JavaScript izashyiramo Users -->
+
+    </div>
+
+    <!-- EMPTY -->
+
+    <div
+    id="emptyUsers"
+    class="empty-state"
+    style="display:none;">
+
+        <i class="fa-solid fa-users"></i>
+
+        <h3>No Users Found</h3>
+
+        <p>Registered users will appear here.</p>
+
+    </div>
+
+</section>
+
+<!-- ======================================
+USER DETAILS MODAL
+====================================== -->
+
+<div
+id="userModal"
+class="proof-modal"
+style="display:none;">
+
+    <div class="proof-box">
+
+        <button
+        id="closeUserModal">
+
+            <i class="fa-solid fa-xmark"></i>
+
+        </button>
+
+        <h2>
+
+            User Details
+
+        </h2>
+
+        <div class="withdraw-details">
+
+            <p>
+
+                <strong>Full Name:</strong>
+
+                <span id="userFullName"></span>
+
+            </p>
+
+            <p>
+
+                <strong>Email:</strong>
+
+                <span id="userEmail"></span>
+
+            </p>
+
+            <p>
+
+                <strong>Phone:</strong>
+
+                <span id="userPhone"></span>
+
+            </p>
+
+            <p>
+
+                <strong>Balance:</strong>
+
+                <span id="userBalance"></span>
+
+            </p>
+
+            <p>
+
+                <strong>Total Deposits:</strong>
+
+                <span id="userDeposits"></span>
+
+            </p>
+
+            <p>
+
+                <strong>Total Withdraws:</strong>
+
+                <span id="userWithdraws"></span>
+
+            </p>
+
+            <p>
+
+                <strong>VIP Plan:</strong>
+
+                <span id="userVip"></span>
+
+            </p>
+
+            <p>
+
+                <strong>Joined:</strong>
+
+                <span id="userJoined"></span>
+
+            </p>
+
+        </div>
+
+        <div class="action-buttons">
+
+            <button
+            id="blockUserBtn"
+            class="rejectBtn">
+
+                Block User
+
+            </button>
+
+            <button
+            id="activateUserBtn"
+            class="approveBtn">
+
+                Activate User
+
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+        <!-- ======================================
+TRANSACTIONS SECTION
+====================================== -->
+
+<section
+id="transactionsSection"
+class="page-section"
+style="display:none;">
+
+    <div class="section-header">
+
+        <h2>
+
+            <i class="fa-solid fa-clock-rotate-left"></i>
+
+            Transaction History
+
+        </h2>
+
+        <div class="section-actions">
+
+            <input
+            type="text"
+            id="transactionSearch"
+            placeholder="Search email, transaction ID...">
+
+            <select id="transactionFilter">
+
+                <option value="All">
+
+                    All Transactions
+
+                </option>
+
+                <option value="Deposit">
+
+                    Deposits
+
+                </option>
+
+                <option value="Withdraw">
+
+                    Withdraws
+
+                </option>
+
+                <option value="Approved">
+
+                    Approved
+
+                </option>
+
+                <option value="Pending">
+
+                    Pending
+
+                </option>
+
+                <option value="Rejected">
+
+                    Rejected
+
+                </option>
+
+            </select>
+
+        </div>
+
+    </div>
+
+    <!-- SUMMARY -->
+
+    <div class="statistics-grid">
+
+        <div class="stat-card">
+
+            <div class="stat-icon deposits">
+
+                <i class="fa-solid fa-wallet"></i>
+
+            </div>
+
+            <div class="stat-info">
+
+                <h3 id="transactionTotal">
+
+                    0
+
+                </h3>
+
+                <p>Total Transactions</p>
+
+            </div>
+
+        </div>
+
+        <div class="stat-card">
+
+            <div class="stat-icon approved">
+
+                <i class="fa-solid fa-circle-check"></i>
+
+            </div>
+
+            <div class="stat-info">
+
+                <h3 id="transactionApproved">
+
+                    0
+
+                </h3>
+
+                <p>Approved</p>
+
+            </div>
+
+        </div>
+
+        <div class="stat-card">
+
+            <div class="stat-icon pending">
+
+                <i class="fa-solid fa-hourglass-half"></i>
+
+            </div>
+
+            <div class="stat-info">
+
+                <h3 id="transactionPending">
+
+                    0
+
+                </h3>
+
+                <p>Pending</p>
+
+            </div>
+
+        </div>
+
+        <div class="stat-card">
+
+            <div class="stat-icon rejected">
+
+                <i class="fa-solid fa-circle-xmark"></i>
+
+            </div>
+
+            <div class="stat-info">
+
+                <h3 id="transactionRejected">
+
+                    0
+
+                </h3>
+
+                <p>Rejected</p>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- TRANSACTION LIST -->
+
+    <div
+    id="transactionsContainer"
+    class="request-list">
+
+        <!-- JavaScript izashyiramo Transactions -->
+
+    </div>
+
+    <!-- EMPTY -->
+
+    <div
+    id="emptyTransactions"
+    class="empty-state"
+    style="display:none;">
+
+        <i class="fa-solid fa-receipt"></i>
+
+        <h3>
+
+            No Transactions Found
+
+        </h3>
+
+        <p>
+
+            Transactions will appear here.
+
+        </p>
+
+    </div>
+
+</section>
+
+<!-- ======================================
+TRANSACTION DETAILS MODAL
+====================================== -->
+
+<div
+id="transactionModal"
+class="proof-modal"
+style="display:none;">
+
+    <div class="proof-box">
+
+        <button
+        id="closeTransactionModal">
+
+            <i class="fa-solid fa-xmark"></i>
+
+        </button>
+
+        <h2>
+
+            Transaction Details
+
+        </h2>
+
+        <div class="withdraw-details">
+
+            <p>
+
+                <strong>Transaction ID:</strong>
+
+                <span id="transactionIdView"></span>
+
+            </p>
+
+            <p>
+
+                <strong>User:</strong>
+
+                <span id="transactionUser"></span>
+
+            </p>
+
+            <p>
+
+                <strong>Email:</strong>
+
+                <span id="transactionEmail"></span>
+
+            </p>
+
+            <p>
+
+                <strong>Type:</strong>
+
+                <span id="transactionType"></span>
+
+            </p>
+
+            <p>
+
+                <strong>Amount:</strong>
+
+                <span id="transactionAmountView"></span>
+
+            </p>
+
+            <p>
+
+                <strong>Status:</strong>
+
+                <span id="transactionStatusView"></span>
+
+            </p>
+
+            <p>
+
+                <strong>Date:</strong>
+
+                <span id="transactionDateView"></span>
+
+            </p>
+
+        </div>
+
+        <div class="action-buttons">
+
+            <button
+            id="copyTransactionBtn"
+            class="approveBtn">
+
+                <i class="fa-solid fa-copy"></i>
+
+                Copy Transaction ID
+
+            </button>
+
+            <button
+            id="closeTransactionBtn"
+            class="rejectBtn">
+
+                Close
+
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+    <!-- ======================================
+SETTINGS SECTION
+====================================== -->
+
+<section
+id="settingsSection"
+class="page-section"
+style="display:none;">
+
+    <div class="section-header">
+
+        <h2>
+
+            <i class="fa-solid fa-gear"></i>
+
+            Admin Settings
+
+        </h2>
+
+    </div>
+
+    <!-- PROFILE -->
+
+    <div class="settings-card">
+
+        <h3>
+
+            <i class="fa-solid fa-user-shield"></i>
+
+            Administrator Profile
+
+        </h3>
+
+        <div class="settings-form">
+
+            <label>Full Name</label>
+
+            <input
+            type="text"
+            id="adminFullName"
+            placeholder="Administrator">
+
+            <label>Email</label>
+
+            <input
+            type="email"
+            id="adminEmail"
+            placeholder="admin@email.com">
+
+            <button
+            id="saveProfileBtn"
+            class="approveBtn">
+
+                <i class="fa-solid fa-floppy-disk"></i>
+
+                Save Profile
+
+            </button>
+
+        </div>
+
+    </div>
+
+    <!-- PASSWORD -->
+
+    <div class="settings-card">
+
+        <h3>
+
+            <i class="fa-solid fa-lock"></i>
+
+            Change Password
+
+        </h3>
+
+        <div class="settings-form">
+
+            <label>Current Password</label>
+
+            <input
+            type="password"
+            id="currentPassword">
+
+            <label>New Password</label>
+
+            <input
+            type="password"
+            id="newPassword">
+
+            <label>Confirm Password</label>
+
+            <input
+            type="password"
+            id="confirmPassword">
+
+            <button
+            id="changePasswordBtn"
+            class="approveBtn">
+
+                <i class="fa-solid fa-key"></i>
+
+                Change Password
+
+            </button>
+
+        </div>
+
+    </div>
+
+    <!-- APP SETTINGS -->
+
+    <div class="settings-card">
+
+        <h3>
+
+            <i class="fa-solid fa-sliders"></i>
+
+            Application Settings
+
+        </h3>
+
+        <div class="setting-item">
+
+            <span>Dark Mode</span>
+
+            <input
+            type="checkbox"
+            id="darkMode">
+
+        </div>
+
+        <div class="setting-item">
+
+            <span>Enable Notifications</span>
+
+            <input
+            type="checkbox"
+            id="notifications">
+
+        </div>
+
+        <div class="setting-item">
+
+            <span>Auto Refresh Dashboard</span>
+
+            <input
+            type="checkbox"
+            id="autoRefresh"
+            checked>
+
+        </div>
+
+    </div>
+
+    <!-- DATABASE -->
+
+    <div class="settings-card">
+
+        <h3>
+
+            <i class="fa-solid fa-database"></i>
+
+            Database Tools
+
+        </h3>
+
+        <div class="settings-buttons">
+
+            <button
+            id="backupBtn"
+            class="approveBtn">
+
+                <i class="fa-solid fa-download"></i>
+
+                Backup Database
+
+            </button>
+
+            <button
+            id="refreshBtn"
+            class="approveBtn">
+
+                <i class="fa-solid fa-rotate"></i>
+
+                Refresh Data
+
+            </button>
+
+        </div>
+
+    </div>
+
+    <!-- SYSTEM INFO -->
+
+    <div class="settings-card">
+
+        <h3>
+
+            <i class="fa-solid fa-circle-info"></i>
+
+            System Information
+
+        </h3>
+
+        <p>
+
+            <strong>Application:</strong>
+
+            Money Vault
+
+        </p>
+
+        <p>
+
+            <strong>Version:</strong>
+
+            v1.0.0
+
+        </p>
+
+        <p>
+
+            <strong>Database:</strong>
+
+            Firebase Realtime Database
+
+        </p>
+
+        <p>
+
+            <strong>Storage:</strong>
+
+            Firebase Storage
+
+        </p>
+
+    </div>
+
+</section>
+
+        <!-- ======================================
+BOTTOM NAVIGATION (MOBILE)
+====================================== -->
+
+<nav class="bottom-nav">
+
+    <button
+    class="bottom-link active"
+    data-page="dashboard">
+
+        <i class="fa-solid fa-gauge"></i>
+
+        <span>Home</span>
+
+    </button>
+
+    <button
+    class="bottom-link"
+    data-page="deposits">
+
+        <i class="fa-solid fa-wallet"></i>
+
+        <span>Deposits</span>
+
+    </button>
+
+    <button
+    class="bottom-link"
+    data-page="withdraws">
+
+        <i class="fa-solid fa-money-bill-transfer"></i>
+
+        <span>Withdraws</span>
+
+    </button>
+
+    <button
+    class="bottom-link"
+    data-page="users">
+
+        <i class="fa-solid fa-users"></i>
+
+        <span>Users</span>
+
+    </button>
+
+    <button
+    class="bottom-link"
+    data-page="settings">
+
+        <i class="fa-solid fa-gear"></i>
+
+        <span>Settings</span>
+
+    </button>
+
+</nav>
+
+<!-- ======================================
+GLOBAL LOADING
+====================================== -->
+
+<div
+id="globalLoading"
+class="global-loading"
+style="display:none;">
+
+    <div class="loader"></div>
+
+    <p>Please wait...</p>
+
+</div>
+
+<!-- ======================================
+TOAST MESSAGE
+====================================== -->
+
+<div
+id="toast"
+class="toast">
+
+    <span id="toastMessage">
+
+        Success
+
+    </span>
+
+</div>
+
+<!-- ======================================
+CONFIRM MODAL
+====================================== -->
+
+<div
+id="confirmModal"
+class="confirm-modal"
+style="display:none;">
+
+    <div class="confirm-box">
+
+        <h2>
+
+            Confirm Action
+
+        </h2>
+
+        <p id="confirmText">
+
+            Are you sure?
+
+        </p>
+
+        <div class="confirm-buttons">
+
+            <button
+            id="confirmYes"
+            class="approveBtn">
+
+                Yes
+
+            </button>
+
+            <button
+            id="confirmNo"
+            class="rejectBtn">
+
+                No
+
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+<!-- ======================================
+FOOTER
+====================================== -->
+
+<footer class="footer">
+
+    <p>
+
+        © 2026 Money Vault Admin Panel
+
+    </p>
+
+    <small>
+
+        Powered by Firebase Realtime Database
+
+    </small>
+
+</footer>
+
+</div>
+<!-- END MAIN CONTENT -->
+
+<!-- ======================================
+ADMIN JAVASCRIPT
+====================================== -->
+
+<script type="module" src="js/admin.js"></script>
+
+</body>
+
+</html>
       
     </main>
 
