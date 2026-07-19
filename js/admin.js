@@ -2012,3 +2012,204 @@ function activateWithdrawButtons() {
 
 console.log("✅ Admin Part 11 Loaded");                          
 
+// ======================================
+// ADMIN.JS - PART 12
+// WITHDRAW DETAILS + SEARCH + FILTER
+// ======================================
+
+// ---------- ELEMENTS ----------
+
+const withdrawModal =
+document.getElementById("withdrawModal");
+
+const closeWithdrawModal =
+document.getElementById("closeWithdrawModal");
+
+const modalUser =
+document.getElementById("modalUser");
+
+const modalEmail =
+document.getElementById("modalEmail");
+
+const modalPhone =
+document.getElementById("modalPhone");
+
+const modalAmount =
+document.getElementById("modalAmount");
+
+const modalMethod =
+document.getElementById("modalMethod");
+
+const modalStatus =
+document.getElementById("modalStatus");
+
+const withdrawSearch =
+document.getElementById("withdrawSearch");
+
+const withdrawFilter =
+document.getElementById("withdrawFilter");
+
+// ======================================
+// VIEW WITHDRAW DETAILS
+// ======================================
+
+async function viewWithdraw(id) {
+
+    try {
+
+        const snap =
+        await get(ref(db,
+        "withdrawRequests/" + id));
+
+        if (!snap.exists()) {
+
+            alert("Withdraw not found");
+
+            return;
+
+        }
+
+        const data = snap.val();
+
+        modalUser.textContent =
+        data.fullName || "-";
+
+        modalEmail.textContent =
+        data.email || "-";
+
+        modalPhone.textContent =
+        data.phone || "-";
+
+        modalAmount.textContent =
+        Number(data.amount || 0)
+        .toLocaleString() + " RWF";
+
+        modalMethod.textContent =
+        data.method || "-";
+
+        modalStatus.textContent =
+        data.status || "Pending";
+
+        withdrawModal.style.display =
+        "flex";
+
+    }
+
+    catch(error){
+
+        console.error(error);
+
+        alert(error.message);
+
+    }
+
+}
+
+// ======================================
+// CLOSE MODAL
+// ======================================
+
+closeWithdrawModal?.addEventListener("click",()=>{
+
+    withdrawModal.style.display="none";
+
+});
+
+window.addEventListener("click",(e)=>{
+
+    if(e.target===withdrawModal){
+
+        withdrawModal.style.display="none";
+
+    }
+
+});
+
+// ======================================
+// VIEW BUTTONS
+// ======================================
+
+document.addEventListener("click",(e)=>{
+
+    if(e.target.classList.contains("viewWithdrawBtn")){
+
+        viewWithdraw(
+
+            e.target.dataset.id
+
+        );
+
+    }
+
+});
+
+// ======================================
+// SEARCH
+// ======================================
+
+withdrawSearch?.addEventListener("keyup",()=>{
+
+    const keyword =
+    withdrawSearch.value.toLowerCase();
+
+    document
+    .querySelectorAll("#withdrawRequests .request-card")
+    .forEach(card=>{
+
+        if(card.innerText
+        .toLowerCase()
+        .includes(keyword)){
+
+            card.style.display="block";
+
+        }else{
+
+            card.style.display="none";
+
+        }
+
+    });
+
+});
+
+// ======================================
+// FILTER
+// ======================================
+
+withdrawFilter?.addEventListener("change",()=>{
+
+    const value =
+    withdrawFilter.value;
+
+    document
+    .querySelectorAll("#withdrawRequests .request-card")
+    .forEach(card=>{
+
+        const status =
+        card.querySelector("span")
+        ?.innerText || "";
+
+        if(
+            value==="All" ||
+            status===value
+        ){
+
+            card.style.display="block";
+
+        }else{
+
+            card.style.display="none";
+
+        }
+
+    });
+
+});
+
+// ======================================
+// READY
+// ======================================
+
+console.log("✅ Admin Part 12 Loaded");
+
+                                  
