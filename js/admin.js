@@ -916,3 +916,92 @@ loadWithdraws();
 
 console.log("✅ Admin Part 4 Loaded");
 
+// ======================================
+// ADMIN.JS - PART 5
+// PAGE NAVIGATION
+// ======================================
+
+// MENU LINKS
+const menuLinks = document.querySelectorAll(".menu-link");
+
+// SECTIONS
+const sections = {
+    dashboard: document.getElementById("dashboardSection"),
+    deposits: document.getElementById("depositSection"),
+    withdraws: document.getElementById("withdrawSection"),
+    users: document.getElementById("usersSection"),
+    transactions: document.getElementById("transactionsSection"),
+    settings: document.getElementById("settingsSection")
+};
+
+// SHOW PAGE
+function showPage(page) {
+
+    // HIDE ALL SECTIONS
+    Object.values(sections).forEach(section => {
+        if (section) {
+            section.style.display = "none";
+            section.classList.remove("active");
+        }
+    });
+
+    // REMOVE ACTIVE MENU
+    menuLinks.forEach(link => {
+        link.classList.remove("active");
+    });
+
+    // SHOW CURRENT PAGE
+    if (sections[page]) {
+        sections[page].style.display = "block";
+        sections[page].classList.add("active");
+    }
+
+    // ACTIVATE MENU
+    const activeLink = document.querySelector(
+        `.menu-link[data-page="${page}"]`
+    );
+
+    if (activeLink) {
+        activeLink.classList.add("active");
+    }
+
+}
+
+// MENU CLICK
+menuLinks.forEach(link => {
+
+    link.addEventListener("click", (e) => {
+
+        e.preventDefault();
+
+        const page = link.dataset.page;
+
+        showPage(page);
+
+    });
+
+});
+
+// QUICK ACTION BUTTONS
+document.getElementById("openDeposits")?.addEventListener("click", () => {
+    showPage("deposits");
+});
+
+document.getElementById("openWithdraws")?.addEventListener("click", () => {
+    showPage("withdraws");
+});
+
+document.getElementById("openUsers")?.addEventListener("click", () => {
+    showPage("users");
+});
+
+document.getElementById("openSettings")?.addEventListener("click", () => {
+    showPage("settings");
+});
+
+// DEFAULT PAGE
+showPage("dashboard");
+
+console.log("✅ Admin Part 5 Loaded");
+
+                          
