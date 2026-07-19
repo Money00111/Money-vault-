@@ -3515,3 +3515,193 @@ loadNotificationHistory();
 console.log("✅ Admin Part 18 Loaded"); 
 
     
+// ======================================
+// ADMIN.JS - PART 19
+// ANALYTICS DASHBOARD
+// ======================================
+
+// ---------- ELEMENTS ----------
+
+const analyticsBalance =
+document.getElementById("analyticsBalance");
+
+const analyticsDeposits =
+document.getElementById("analyticsDeposits");
+
+const analyticsWithdraws =
+document.getElementById("analyticsWithdraws");
+
+const analyticsProfit =
+document.getElementById("analyticsProfit");
+
+const analyticsToday =
+document.getElementById("analyticsToday");
+
+const analyticsMonth =
+document.getElementById("analyticsMonth");
+
+// ======================================
+// LOAD ANALYTICS
+// ======================================
+
+function loadAnalytics(){
+
+    let totalBalance = 0;
+    let totalDeposits = 0;
+    let totalWithdraws = 0;
+
+    let todayDeposits = 0;
+    let monthDeposits = 0;
+
+    // USERS
+
+    onValue(ref(db,"users"),(snapshot)=>{
+
+        if(snapshot.exists()){
+
+            snapshot.forEach((child)=>{
+
+                const user = child.val();
+
+                totalBalance +=
+                Number(user.balance || 0);
+
+            });
+
+        }
+
+        if(analyticsBalance){
+
+            analyticsBalance.textContent =
+            totalBalance.toLocaleString() + " RWF";
+
+        }
+
+    });
+
+    // DEPOSITS
+
+    onValue(ref(db,"depositRequests"),(snapshot)=>{
+
+        totalDeposits = 0;
+        todayDeposits = 0;
+        monthDeposits = 0;
+
+        if(snapshot.exists()){
+
+            snapshot.forEach((child)=>{
+
+                const item = child.val();
+
+                if(item.status === "Approved"){
+
+                    totalDeposits +=
+                    Number(item.amount || 0);
+
+                    const date =
+                    new Date(item.createdAt || 0);
+
+                    const now =
+                    new Date();
+
+                    if(
+                        date.toDateString() ===
+                        now.toDateString()
+                    ){
+
+                        todayDeposits +=
+                        Number(item.amount || 0);
+
+                    }
+
+                    if(
+                        date.getMonth() ===
+                        now.getMonth()
+                        &&
+                        date.getFullYear() ===
+                        now.getFullYear()
+                    ){
+
+                        monthDeposits +=
+                        Number(item.amount || 0);
+
+                    }
+
+                }
+
+            });
+
+        }
+
+        if(analyticsDeposits){
+
+            analyticsDeposits.textContent =
+            totalDeposits.toLocaleString() + " RWF";
+
+        }
+
+        if(analyticsToday){
+
+            analyticsToday.textContent =
+            todayDeposits.toLocaleString() + " RWF";
+
+        }
+
+        if(analyticsMonth){
+
+            analyticsMonth.textContent =
+            monthDeposits.toLocaleString() + " RWF";
+
+        }
+
+        updateProfit();
+
+    });
+
+    // WITHDRAWS
+
+    onValue(ref(db,"withdrawRequests"),(snapshot)=>{
+
+        totalWithdraws = 0;
+
+        if(snapshot.exists()){
+
+            snapshot.forEach((child)=>{
+
+                const item = child.val();
+
+                if(item.status === "Approved"){
+
+                    totalWithdraws +=
+                    Number(item.amount || 0);
+
+                }
+
+            });
+
+        }
+
+        if(analyticsWithdraws){
+
+            analyticsWithdraws.textContent =
+            totalWithdraws.toLocaleString() + " RWF";
+
+        }
+
+        updateProfit();
+
+    });
+
+    // PROFIT
+
+    function updateProfit(){
+
+        const profit =
+        totalDeposits - totalWithdraws;
+
+        if(analyticsProfit){
+
+            analyticsProfit.textContent =
+            profit.toLocaleString() + " R
+
+        
