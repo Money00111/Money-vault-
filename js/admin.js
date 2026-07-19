@@ -1286,4 +1286,180 @@ loadUsers();
 
 console.log("✅ Admin Part 7 Loaded");
 
-    
+    // ======================================
+// ADMIN.JS - PART 8
+// USER DETAILS + BLOCK / ACTIVATE
+// ======================================
+
+// ---------- ELEMENTS ----------
+
+const userModal = document.getElementById("userModal");
+
+const closeUserModal =
+document.getElementById("closeUserModal");
+
+const userFullName =
+document.getElementById("userFullName");
+
+const userEmail =
+document.getElementById("userEmail");
+
+const userPhone =
+document.getElementById("userPhone");
+
+const userBalance =
+document.getElementById("userBalance");
+
+const userDeposits =
+document.getElementById("userDeposits");
+
+const userWithdraws =
+document.getElementById("userWithdraws");
+
+const userVip =
+document.getElementById("userVip");
+
+const userJoined =
+document.getElementById("userJoined");
+
+const blockUserBtn =
+document.getElementById("blockUserBtn");
+
+const activateUserBtn =
+document.getElementById("activateUserBtn");
+
+// ======================================
+// CURRENT USER
+// ======================================
+
+let selectedUserId = null;
+
+// ======================================
+// OPEN USER MODAL
+// ======================================
+
+async function openUserModal(uid) {
+
+    selectedUserId = uid;
+
+    try {
+
+        const snap = await get(
+            ref(db, "users/" + uid)
+        );
+
+        if (!snap.exists()) {
+
+            alert("User not found");
+
+            return;
+
+        }
+
+        const user = snap.val();
+
+        userFullName.textContent =
+            user.fullName || "-";
+
+        userEmail.textContent =
+            user.email || "-";
+
+        userPhone.textContent =
+            user.phone || "-";
+
+        userBalance.textContent =
+            Number(user.balance || 0).toLocaleString() +
+            " RWF";
+
+        userDeposits.textContent =
+            Number(user.totalDeposits || 0).toLocaleString() +
+            " RWF";
+
+        userWithdraws.textContent =
+            Number(user.totalWithdraws || 0).toLocaleString() +
+            " RWF";
+
+        userVip.textContent =
+            user.vipPlan || "None";
+
+        userJoined.textContent =
+            user.createdAt
+            ? new Date(user.createdAt).toLocaleString()
+            : "-";
+
+        if (user.status === "Blocked") {
+
+            blockUserBtn.style.display = "none";
+            activateUserBtn.style.display = "inline-block";
+
+        } else {
+
+            blockUserBtn.style.display = "inline-block";
+            activateUserBtn.style.display = "none";
+
+        }
+
+        userModal.style.display = "flex";
+
+    } catch (error) {
+
+        console.error(error);
+
+        alert(error.message);
+
+    }
+
+}
+
+// ======================================
+// CLOSE MODAL
+// ======================================
+
+closeUserModal?.addEventListener("click", () => {
+
+    userModal.style.display = "none";
+
+});
+
+window.addEventListener("click", (e) => {
+
+    if (e.target === userModal) {
+
+        userModal.style.display = "none";
+
+    }
+
+});
+
+// ======================================
+// BLOCK USER
+// ======================================
+
+blockUserBtn?.addEventListener("click", async () => {
+
+    if (!selectedUserId) return;
+
+    if (!confirm("Block this user?")) return;
+
+    await update(
+        ref(db, "users/" + selectedUserId),
+        {
+            status: "Blocked"
+        }
+    );
+
+    alert("User Blocked");
+
+    userModal.style.display = "none";
+
+});
+
+// ======================================
+// ACTIVATE USER
+// ======================================
+
+activateUserBtn?.addEventListener("click", async () => {
+
+    if (!selectedUserId) return;
+
+    if (!confirm("
