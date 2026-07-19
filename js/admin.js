@@ -2212,4 +2212,198 @@ withdrawFilter?.addEventListener("change",()=>{
 
 console.log("✅ Admin Part 12 Loaded");
 
-                                  
+      // ======================================
+// ADMIN.JS - PART 13
+// TRANSACTION HISTORY
+// ======================================
+
+// ---------- ELEMENTS ----------
+
+const transactionsContainer =
+document.getElementById("transactionsContainer");
+
+const transactionTotal =
+document.getElementById("transactionTotal");
+
+const transactionApproved =
+document.getElementById("transactionApproved");
+
+const transactionPending =
+document.getElementById("transactionPending");
+
+const transactionRejected =
+document.getElementById("transactionRejected");
+
+// ======================================
+// LOAD TRANSACTIONS
+// ======================================
+
+function loadTransactions() {
+
+    const allTransactions = [];
+
+    // --------------------------
+    // DEPOSITS
+    // --------------------------
+
+    onValue(ref(db,"depositRequests"),(snapshot)=>{
+
+        allTransactions.length = 0;
+
+        if(snapshot.exists()){
+
+            snapshot.forEach((child)=>{
+
+                allTransactions.push({
+
+                    id:child.key,
+
+                    type:"Deposit",
+
+                    ...child.val()
+
+                });
+
+            });
+
+        }
+
+        loadWithdrawTransactions(allTransactions);
+
+    });
+
+}
+
+// ======================================
+// LOAD WITHDRAWS
+// ======================================
+
+function loadWithdrawTransactions(allTransactions){
+
+    onValue(ref(db,"withdrawRequests"),(snapshot)=>{
+
+        if(snapshot.exists()){
+
+            snapshot.forEach((child)=>{
+
+                allTransactions.push({
+
+                    id:child.key,
+
+                    type:"Withdraw",
+
+                    ...child.val()
+
+                });
+
+            });
+
+        }
+
+        renderTransactions(allTransactions);
+
+    });
+
+}
+
+// ======================================
+// RENDER
+// ======================================
+
+function renderTransactions(list){
+
+    if(!transactionsContainer) return;
+
+    transactionsContainer.innerHTML="";
+
+    let approved=0;
+    let pending=0;
+    let rejected=0;
+
+    list.sort((a,b)=>
+
+        (b.createdAt||0)-
+        (a.createdAt||0)
+
+    );
+
+    list.forEach((data)=>{
+
+        if(data.status==="Approved") approved++;
+
+        if(data.status==="Pending") pending++;
+
+        if(data.status==="Rejected") rejected++;
+
+        transactionsContainer.innerHTML += `
+
+        <div class="request-card">
+
+            <h3>
+
+            ${data.type}
+
+            </h3>
+
+            <p>
+
+            Amount:
+            ${Number(data.amount||0).toLocaleString()} RWF
+
+            </p>
+
+            <p>
+
+            Email:
+            ${data.email || "-"}
+
+            </p>
+
+            <p>
+
+            Status:
+            <strong>${data.status}</strong>
+
+            </p>
+
+            <p>
+
+            Date:
+            ${data.createdAt
+            ? new Date(data.createdAt).toLocaleString()
+            : "-"}
+
+            </p>
+
+        </div>
+
+        `;
+
+    });
+
+    if(transactionTotal)
+    transactionTotal.textContent=
+    list.length;
+
+    if(transactionApproved)
+    transactionApproved.textContent=
+    approved;
+
+    if(transactionPending)
+    transactionPending.textContent=
+    pending;
+
+    if(transactionRejected)
+    transactionRejected.textContent=
+    rejected;
+
+}
+
+// ======================================
+// START
+// ======================================
+
+loadTransactions();
+
+console.log("✅ Admin Part 13 Loaded");
+    
