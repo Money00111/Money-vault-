@@ -2863,4 +2863,176 @@ loadAdminProfile();
 
 console.log("✅ Admin Part 15 Loaded");
 
+    // ======================================
+// ADMIN.JS - PART 16
+// ADMIN ACTIVITY LOGS
+// ======================================
+
+// ---------- ELEMENTS ----------
+
+const adminLogs =
+document.getElementById("adminLogs");
+
+const totalLogs =
+document.getElementById("totalLogs");
+
+// ======================================
+// SAVE LOG
+// ======================================
+
+async function saveAdminLog(action, details) {
+
+    if (!currentAdmin) return;
+
+    try {
+
+        const logId =
+        Date.now().toString();
+
+        await update(
+
+            ref(db,
+            "adminLogs/" + logId),
+
+            {
+
+                adminUid:
+                currentAdmin.uid,
+
+                adminEmail:
+                currentAdmin.email,
+
+                action:
+                action,
+
+                details:
+                details,
+
+                createdAt:
+                Date.now()
+
+            }
+
+        );
+
+    }
+
+    catch(error){
+
+        console.error(error);
+
+    }
+
+}
+
+// ======================================
+// LOAD LOGS
+// ======================================
+
+function loadAdminLogs(){
+
+    if(!adminLogs) return;
+
+    onValue(
+
+        ref(db,"adminLogs"),
+
+        (snapshot)=>{
+
+            adminLogs.innerHTML="";
+
+            let total=0;
+
+            if(!snapshot.exists()){
+
+                adminLogs.innerHTML=`
+
+                <div class="empty-card">
+
+                    <h3>No Activity Logs</h3>
+
+                </div>
+
+                `;
+
+                if(totalLogs){
+
+                    totalLogs.textContent="0";
+
+                }
+
+                return;
+
+            }
+
+            const logs=[];
+
+            snapshot.forEach((child)=>{
+
+                logs.unshift(child.val());
+
+            });
+
+            logs.forEach((log)=>{
+
+                total++;
+
+                adminLogs.innerHTML+=`
+
+                <div class="request-card">
+
+                    <h3>
+
+                    ${log.action}
+
+                    </h3>
+
+                    <p>
+
+                    ${log.details}
+
+                    </p>
+
+                    <p>
+
+                    ${log.adminEmail}
+
+                    </p>
+
+                    <small>
+
+                    ${
+                    new Date(
+                    log.createdAt
+                    ).toLocaleString()
+                    }
+
+                    </small>
+
+                </div>
+
+                `;
+
+            });
+
+            if(totalLogs){
+
+                totalLogs.textContent=total;
+
+            }
+
+        }
+
+    );
+
+}
+
+// ======================================
+// START
+// ======================================
+
+loadAdminLogs();
+
+console.log("✅ Admin Part 16 Loaded");
+
     
