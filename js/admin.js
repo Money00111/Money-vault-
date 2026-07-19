@@ -1813,5 +1813,202 @@ loadWithdrawRequests();
 
 console.log("✅ Admin Part 10 Loaded");
 
-                                  
+        // ======================================
+// ADMIN.JS - PART 11
+// APPROVE + REJECT WITHDRAW
+// ======================================
+
+// ======================================
+// APPROVE WITHDRAW
+// ======================================
+
+async function approveWithdraw(id) {
+
+    if (!confirm("Approve this withdraw request?")) {
+        return;
+    }
+
+    try {
+
+        const withdrawRef =
+        ref(db, "withdrawRequests/" + id);
+
+        const withdrawSnap =
+        await get(withdrawRef);
+
+        if (!withdrawSnap.exists()) {
+
+            alert("Withdraw request not found.");
+
+            return;
+
+        }
+
+        const withdraw =
+        withdrawSnap.val();
+
+        if (withdraw.status === "Approved") {
+
+            alert("Already Approved");
+
+            return;
+
+        }
+
+        const userRef =
+        ref(db, "users/" + withdraw.uid);
+
+        const userSnap =
+        await get(userRef);
+
+        if (!userSnap.exists()) {
+
+            alert("User not found.");
+
+            return;
+
+        }
+
+        const user =
+        userSnap.val();
+
+        const balance =
+        Number(user.balance || 0);
+
+        const amount =
+        Number(withdraw.amount || 0);
+
+        if (balance < amount) {
+
+            alert("Insufficient User Balance");
+
+            return;
+
+        }
+
+        // UPDATE USER
+
+        await update(userRef, {
+
+            balance: balance - amount,
+
+            totalWithdraws:
+            Number(user.totalWithdraws || 0) + amount,
+
+            totalTransactions:
+            Number(user.totalTransactions || 0) + 1
+
+        });
+
+        // UPDATE REQUEST
+
+        await update(withdrawRef, {
+
+            status: "Approved",
+
+            approvedAt: Date.now(),
+
+            approvedBy:
+            currentAdmin.email
+
+        });
+
+        alert("Withdraw Approved Successfully");
+
+    }
+
+    catch (error) {
+
+        console.error(error);
+
+        alert(error.message);
+
+    }
+
+}
+
+// ======================================
+// REJECT WITHDRAW
+// ======================================
+
+async function rejectWithdraw(id) {
+
+    if (!confirm("Reject this withdraw request?")) {
+        return;
+    }
+
+    try {
+
+        await update(
+
+            ref(db, "withdrawRequests/" + id),
+
+            {
+
+                status: "Rejected",
+
+                rejectedAt: Date.now(),
+
+                rejectedBy:
+                currentAdmin.email
+
+            }
+
+        );
+
+        alert("Withdraw Rejected");
+
+    }
+
+    catch (error) {
+
+        console.error(error);
+
+        alert(error.message);
+
+    }
+
+}
+
+// ======================================
+// BUTTON EVENTS
+// ======================================
+
+function activateWithdrawButtons() {
+
+    document
+    .querySelectorAll(".approveWithdrawBtn")
+    .forEach((btn) => {
+
+        btn.onclick = () => {
+
+            approveWithdraw(
+
+                btn.dataset.id
+
+            );
+
+        };
+
+    });
+
+    document
+    .querySelectorAll(".rejectWithdrawBtn")
+    .forEach((btn) => {
+
+        btn.onclick = () => {
+
+            rejectWithdraw(
+
+                btn.dataset.id
+
+            );
+
+        };
+
+    });
+
+}
+
+console.log("✅ Admin Part 11 Loaded");                          
 
