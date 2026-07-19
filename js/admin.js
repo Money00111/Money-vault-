@@ -11,10 +11,8 @@ import {
     signOut
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 import {
-    onValue,
     ref,
     get,
-    update
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
 
 // ======================================
