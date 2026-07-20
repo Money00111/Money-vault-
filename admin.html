@@ -775,3 +775,246 @@ Reject
 </div>
 
     
+<!-- ======================================
+USERS SECTION
+====================================== -->
+
+<section
+id="usersSection"
+class="page-section"
+style="display:none;">
+
+<div class="section-header">
+
+<h2>
+
+<i class="fa-solid fa-users"></i>
+
+Users Management
+
+</h2>
+
+<div class="section-actions">
+
+<input
+type="text"
+id="userSearch"
+placeholder="Search by name, email or phone...">
+
+</div>
+
+</div>
+
+<!-- USERS SUMMARY -->
+
+<div class="statistics-grid">
+
+<div class="stat-card">
+
+<div class="stat-icon users">
+
+<i class="fa-solid fa-users"></i>
+
+</div>
+
+<div class="stat-info">
+
+<h3 id="allUsers">0</h3>
+
+<p>Total Users</p>
+
+</div>
+
+</div>
+
+<div class="stat-card">
+
+<div class="stat-icon approved">
+
+<i class="fa-solid fa-user-check"></i>
+
+</div>
+
+<div class="stat-info">
+
+<h3 id="activeUsers">0</h3>
+
+<p>Active Users</p>
+
+</div>
+
+</div>
+
+<div class="stat-card">
+
+<div class="stat-icon rejected">
+
+<i class="fa-solid fa-user-slash"></i>
+
+</div>
+
+<div class="stat-info">
+
+<h3 id="blockedUsers">0</h3>
+
+<p>Blocked Users</p>
+
+</div>
+
+</div>
+
+</div>
+
+<!-- USERS LIST -->
+
+<div
+id="usersContainer"
+class="users-grid">
+
+<!-- JavaScript izashyiramo users -->
+
+</div>
+
+<!-- EMPTY -->
+
+<div
+id="emptyUsers"
+class="empty-state"
+style="display:none;">
+
+<i class="fa-solid fa-users"></i>
+
+<h3>No Users Found</h3>
+
+<p>Registered users will appear here.</p>
+
+</div>
+
+</section>
+
+<!-- ======================================
+USER DETAILS MODAL
+====================================== -->
+
+<div
+id="userModal"
+class="proof-modal"
+style="display:none;">
+
+<div class="proof-box">
+
+<button
+id="closeUserModal"
+class="close-btn">
+
+<i class="fa-solid fa-xmark"></i>
+
+</button>
+
+<h2>
+
+User Details
+
+</h2>
+
+<div class="withdraw-details">
+
+<p>
+
+<strong>Full Name:</strong>
+
+<span id="userFullName"></span>
+
+</p>
+
+<p>
+
+<strong>Email:</strong>
+
+<span id="userEmail"></span>
+
+</p>
+
+<p>
+
+<strong>Phone:</strong>
+
+<span id="userPhone"></span>
+
+</p>
+
+<p>
+
+<strong>Balance:</strong>
+
+<span id="userBalance"></span>
+
+</p>
+
+<p>
+
+<strong>Total Deposits:</strong>
+
+<span id="userDeposits"></span>
+
+</p>
+
+<p>
+
+<strong>Total Withdraws:</strong>
+
+<span id="userWithdraws"></span>
+
+</p>
+
+<p>
+
+<strong>VIP Plan:</strong>
+
+<span id="userVip"></span>
+
+</p>
+
+<p>
+
+<strong>Joined:</strong>
+
+<span id="userJoined"></span>
+
+</p>
+
+<p>
+
+<strong>Status:</strong>
+
+<span id="userStatus"></span>
+
+</p>
+
+</div>
+
+<div class="action-buttons">
+
+<button
+id="blockUserBtn"
+class="rejectBtn">
+
+Block User
+
+</button>
+
+<button
+id="activateUserBtn"
+class="approveBtn">
+
+Activate User
+
+</button>
+
+</div>
+
+</div>
+
+</div>
+
+    
