@@ -1018,3 +1018,280 @@ Activate User
 </div>
 
     
+<!-- ======================================
+TRANSACTIONS SECTION
+====================================== -->
+
+<section
+id="transactionsSection"
+class="page-section"
+style="display:none;">
+
+<div class="section-header">
+
+<h2>
+
+<i class="fa-solid fa-clock-rotate-left"></i>
+
+Transaction History
+
+</h2>
+
+<div class="section-actions">
+
+<input
+type="text"
+id="transactionSearch"
+placeholder="Search email, transaction ID...">
+
+<select id="transactionFilter">
+
+<option value="All">
+All Transactions
+</option>
+
+<option value="Deposit">
+Deposits
+</option>
+
+<option value="Withdraw">
+Withdraws
+</option>
+
+<option value="Approved">
+Approved
+</option>
+
+<option value="Pending">
+Pending
+</option>
+
+<option value="Rejected">
+Rejected
+</option>
+
+</select>
+
+</div>
+
+</div>
+
+<!-- SUMMARY -->
+
+<div class="statistics-grid">
+
+<div class="stat-card">
+
+<div class="stat-icon deposits">
+
+<i class="fa-solid fa-wallet"></i>
+
+</div>
+
+<div class="stat-info">
+
+<h3 id="transactionTotal">
+
+0
+
+</h3>
+
+<p>Total Transactions</p>
+
+</div>
+
+</div>
+
+<div class="stat-card">
+
+<div class="stat-icon approved">
+
+<i class="fa-solid fa-circle-check"></i>
+
+</div>
+
+<div class="stat-info">
+
+<h3 id="transactionApproved">
+
+0
+
+</h3>
+
+<p>Approved</p>
+
+</div>
+
+</div>
+
+<div class="stat-card">
+
+<div class="stat-icon pending">
+
+<i class="fa-solid fa-hourglass-half"></i>
+
+</div>
+
+<div class="stat-info">
+
+<h3 id="transactionPending">
+
+0
+
+</h3>
+
+<p>Pending</p>
+
+</div>
+
+</div>
+
+<div class="stat-card">
+
+<div class="stat-icon rejected">
+
+<i class="fa-solid fa-circle-xmark"></i>
+
+</div>
+
+<div class="stat-info">
+
+<h3 id="transactionRejected">
+
+0
+
+</h3>
+
+<p>Rejected</p>
+
+</div>
+
+</div>
+
+</div>
+
+<!-- TRANSACTIONS LIST -->
+
+<div
+id="transactionsContainer"
+class="request-list">
+
+<!-- JavaScript izashyiramo transactions -->
+
+</div>
+
+<!-- EMPTY -->
+
+<div
+id="emptyTransactions"
+class="empty-state"
+style="display:none;">
+
+<i class="fa-solid fa-receipt"></i>
+
+<h3>
+
+No Transactions Found
+
+</h3>
+
+<p>
+
+Transactions will appear here.
+
+</p>
+
+</div>
+
+</section>
+
+<!-- ======================================
+TRANSACTION DETAILS MODAL
+====================================== -->
+
+<div
+id="transactionModal"
+class="proof-modal"
+style="display:none;">
+
+<div class="proof-box">
+
+<button
+id="closeTransactionModal"
+class="close-btn">
+
+<i class="fa-solid fa-xmark"></i>
+
+</button>
+
+<h2>
+
+Transaction Details
+
+</h2>
+
+<div class="withdraw-details">
+
+<p>
+
+<strong>Transaction ID:</strong>
+
+<span id="transactionId"></span>
+
+</p>
+
+<p>
+
+<strong>User:</strong>
+
+<span id="transactionUser"></span>
+
+</p>
+
+<p>
+
+<strong>Email:</strong>
+
+<span id="transactionEmail"></span>
+
+</p>
+
+<p>
+
+<strong>Type:</strong>
+
+<span id="transactionType"></span>
+
+</p>
+
+<p>
+
+<strong>Amount:</strong>
+
+<span id="transactionAmount"></span>
+
+</p>
+
+<p>
+
+<strong>Status:</strong>
+
+<span id="transactionStatus"></span>
+
+</p>
+
+<p>
+
+<strong>Date:</strong>
+
+<span id="transactionDate"></span>
+
+</p>
+
+</div>
+
+</div>
+
+</div>
+
+    
