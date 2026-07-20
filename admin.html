@@ -414,3 +414,140 @@ Running
 </div>
 
 </section>
+
+    <!-- ======================================
+DEPOSIT SECTION
+====================================== -->
+
+<section
+id="depositSection"
+class="page-section"
+style="display:none;">
+
+<div class="section-header">
+
+<h2>
+
+<i class="fa-solid fa-wallet"></i>
+
+Deposit Requests
+
+</h2>
+
+<div class="section-actions">
+
+<input
+type="text"
+id="searchInput"
+placeholder="Search email, phone or transaction ID...">
+
+<select id="filterStatus">
+
+<option value="All">All Status</option>
+
+<option value="Pending">Pending</option>
+
+<option value="Approved">Approved</option>
+
+<option value="Rejected">Rejected</option>
+
+</select>
+
+</div>
+
+</div>
+
+<!-- SUMMARY -->
+
+<div class="deposit-summary">
+
+<div class="summary-card">
+
+<h3 id="depositCount">0</h3>
+
+<p>Total Requests</p>
+
+</div>
+
+<div class="summary-card">
+
+<h3 id="pendingCount">0</h3>
+
+<p>Pending</p>
+
+</div>
+
+<div class="summary-card">
+
+<h3 id="approvedCount">0</h3>
+
+<p>Approved</p>
+
+</div>
+
+<div class="summary-card">
+
+<h3 id="rejectedCount">0</h3>
+
+<p>Rejected</p>
+
+</div>
+
+</div>
+
+<!-- REQUESTS -->
+
+<div
+id="depositRequests"
+class="request-list">
+
+<!-- JavaScript izashyiramo Deposit Requests -->
+
+</div>
+
+<!-- EMPTY STATE -->
+
+<div
+id="emptyDeposit"
+class="empty-state"
+style="display:none;">
+
+<i class="fa-solid fa-wallet"></i>
+
+<h3>No Deposit Requests</h3>
+
+<p>Deposit requests will appear here.</p>
+
+</div>
+
+</section>
+
+<!-- ======================================
+SCREENSHOT MODAL
+====================================== -->
+
+<div
+id="proofModal"
+class="proof-modal"
+style="display:none;">
+
+<div class="proof-box">
+
+<button
+id="closeProof"
+class="close-btn">
+
+<i class="fa-solid fa-xmark"></i>
+
+</button>
+
+<img
+id="proofImage"
+src=""
+alt="Deposit Screenshot">
+
+</div>
+
+</div>
+
+    
