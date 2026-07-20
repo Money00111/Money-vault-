@@ -550,4 +550,228 @@ alt="Deposit Screenshot">
 
 </div>
 
+    <!-- ======================================
+WITHDRAW SECTION
+====================================== -->
+
+<section
+id="withdrawSection"
+class="page-section"
+style="display:none;">
+
+<div class="section-header">
+
+<h2>
+
+<i class="fa-solid fa-money-bill-transfer"></i>
+
+Withdraw Requests
+
+</h2>
+
+<div class="section-actions">
+
+<input
+type="text"
+id="withdrawSearch"
+placeholder="Search email, phone or amount...">
+
+<select id="withdrawFilter">
+
+<option value="All">All Status</option>
+
+<option value="Pending">Pending</option>
+
+<option value="Approved">Approved</option>
+
+<option value="Rejected">Rejected</option>
+
+</select>
+
+</div>
+
+</div>
+
+<!-- SUMMARY -->
+
+<div class="deposit-summary">
+
+<div class="summary-card">
+
+<h3 id="withdrawCount">0</h3>
+
+<p>Total Requests</p>
+
+</div>
+
+<div class="summary-card">
+
+<h3 id="withdrawPending">0</h3>
+
+<p>Pending</p>
+
+</div>
+
+<div class="summary-card">
+
+<h3 id="withdrawApproved">0</h3>
+
+<p>Approved</p>
+
+</div>
+
+<div class="summary-card">
+
+<h3 id="withdrawRejected">0</h3>
+
+<p>Rejected</p>
+
+</div>
+
+</div>
+
+<!-- REQUESTS -->
+
+<div
+id="withdrawRequests"
+class="request-list">
+
+<!-- JavaScript izashyiramo Withdraw Requests -->
+
+</div>
+
+<!-- EMPTY -->
+
+<div
+id="emptyWithdraw"
+class="empty-state"
+style="display:none;">
+
+<i class="fa-solid fa-money-bill-transfer"></i>
+
+<h3>No Withdraw Requests</h3>
+
+<p>Withdraw requests will appear here.</p>
+
+</div>
+
+</section>
+
+<!-- ======================================
+WITHDRAW DETAILS MODAL
+====================================== -->
+
+<div
+id="withdrawModal"
+class="proof-modal"
+style="display:none;">
+
+<div class="proof-box">
+
+<button
+id="closeWithdrawModal"
+class="close-btn">
+
+<i class="fa-solid fa-xmark"></i>
+
+</button>
+
+<h2>
+
+Withdraw Details
+
+</h2>
+
+<div class="withdraw-details">
+
+<p>
+
+<strong>User:</strong>
+
+<span id="modalUser"></span>
+
+</p>
+
+<p>
+
+<strong>Email:</strong>
+
+<span id="modalEmail"></span>
+
+</p>
+
+<p>
+
+<strong>Phone:</strong>
+
+<span id="modalPhone"></span>
+
+</p>
+
+<p>
+
+<strong>Amount:</strong>
+
+<span id="modalAmount"></span>
+
+</p>
+
+<p>
+
+<strong>Method:</strong>
+
+<span id="modalMethod"></span>
+
+</p>
+
+<p>
+
+<strong>Status:</strong>
+
+<span id="modalStatus"></span>
+
+</p>
+
+<p>
+
+<strong>Request ID:</strong>
+
+<span id="modalRequestId"></span>
+
+</p>
+
+<p>
+
+<strong>Date:</strong>
+
+<span id="modalDate"></span>
+
+</p>
+
+</div>
+
+<div class="action-buttons">
+
+<button
+id="approveWithdrawBtn"
+class="approveBtn">
+
+Approve
+
+</button>
+
+<button
+id="rejectWithdrawBtn"
+class="rejectBtn">
+
+Reject
+
+</button>
+
+</div>
+
+</div>
+
+</div>
+
     
