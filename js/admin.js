@@ -501,3 +501,192 @@ Copy ID
 loadDeposits();
 
 console.log("✅ ADMIN PART 3 LOADED");
+
+// ======================================
+// ADMIN.JS PART 4
+// DEPOSIT ACTION BUTTONS
+// ======================================
+
+// ---------- MODAL ----------
+
+const proofModal =
+document.getElementById("proofModal");
+
+const proofImage =
+document.getElementById("proofImage");
+
+const closeProof =
+document.getElementById("closeProof");
+
+// ======================================
+// ACTIVATE BUTTONS
+// ======================================
+
+function activateDepositButtons() {
+
+    // APPROVE
+
+    document.querySelectorAll(".approveBtn")
+    .forEach(button => {
+
+        button.onclick = async () => {
+
+            const id = button.dataset.id;
+
+            if (!confirm("Approve this deposit?")) return;
+
+            const depositRef =
+            ref(db, "depositRequests/" + id);
+
+            const snap =
+            await get(depositRef);
+
+            if (!snap.exists()) return;
+
+            const deposit =
+            snap.val();
+
+            await update(depositRef, {
+
+                status: "Approved"
+
+            });
+
+            if (deposit.uid) {
+
+                const userRef =
+                ref(db, "users/" + deposit.uid);
+
+                const userSnap =
+                await get(userRef);
+
+                if (userSnap.exists()) {
+
+                    const user =
+                    userSnap.val();
+
+                    const balance =
+                    Number(user.balance || 0);
+
+                    const deposits =
+                    Number(user.totalDeposits || 0);
+
+                    await update(userRef, {
+
+                        balance:
+                        balance + Number(deposit.amount || 0),
+
+                        totalDeposits:
+                        deposits + Number(deposit.amount || 0)
+
+                    });
+
+                }
+
+            }
+
+            alert("Deposit Approved");
+
+        };
+
+    });
+
+    // REJECT
+
+    document.querySelectorAll(".rejectBtn")
+    .forEach(button => {
+
+        button.onclick = async () => {
+
+            const id =
+            button.dataset.id;
+
+            if (!confirm("Reject this deposit?")) return;
+
+            await update(
+
+                ref(db, "depositRequests/" + id),
+
+                {
+
+                    status: "Rejected"
+
+                }
+
+            );
+
+            alert("Deposit Rejected");
+
+        };
+
+    });
+
+    // VIEW SCREENSHOT
+
+    document.querySelectorAll(".viewProof")
+    .forEach(button => {
+
+        button.onclick = () => {
+
+            const image =
+            button.dataset.image;
+
+            if (!image) {
+
+                alert("No Screenshot");
+
+                return;
+
+            }
+
+            proofImage.src = image;
+
+            proofModal.style.display = "flex";
+
+        };
+
+    });
+
+    // COPY TRANSACTION ID
+
+    document.querySelectorAll(".copyTransaction")
+    .forEach(button => {
+
+        button.onclick = async () => {
+
+            await navigator.clipboard.writeText(
+
+                button.dataset.code
+
+            );
+
+            alert("Transaction ID Copied");
+
+        };
+
+    });
+
+}
+
+// ======================================
+// CLOSE MODAL
+// ======================================
+
+closeProof?.addEventListener("click", () => {
+
+    proofModal.style.display = "none";
+
+});
+
+window.addEventListener("click", (e) => {
+
+    if (e.target === proofModal) {
+
+        proofModal.style.display = "none";
+
+    }
+
+});
+
+console.log("✅ ADMIN PART 4 LOADED");
+
