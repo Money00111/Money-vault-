@@ -1223,33 +1223,3 @@ LAYOUT FIX
     width:180px;
 }
 
-/* Mobile */
-
-@media(max-width:768px){
-
-.dashboard-row{
-grid-template-columns:1fr;
-}
-
-.statistics-grid{
-grid-template-columns:1fr;
-}
-
-.deposit-summary{
-grid-template-columns:1fr;
-}
-
-.users-grid{
-grid-template-columns:1fr;
-}
-
-.action-buttons{
-flex-direction:column;
-}
-
-.action-buttons button{
-width:100%;
-}
-
-}
-
