@@ -869,3 +869,205 @@ loadWithdraws();
 
 console.log("✅ ADMIN PART 5 LOADED");
 
+// ======================================
+// ADMIN.JS PART 6
+// WITHDRAW ACTIONS
+// ======================================
+
+// ---------- ELEMENTS ----------
+
+const withdrawModal =
+document.getElementById("withdrawModal");
+
+const closeWithdrawModal =
+document.getElementById("closeWithdrawModal");
+
+const modalUser =
+document.getElementById("modalUser");
+
+const modalEmail =
+document.getElementById("modalEmail");
+
+const modalPhone =
+document.getElementById("modalPhone");
+
+const modalAmount =
+document.getElementById("modalAmount");
+
+const modalMethod =
+document.getElementById("modalMethod");
+
+const modalStatus =
+document.getElementById("modalStatus");
+
+// ======================================
+// BUTTONS
+// ======================================
+
+function activateWithdrawButtons() {
+
+    // ---------- APPROVE ----------
+
+    document
+    .querySelectorAll(".approveWithdrawBtn")
+    .forEach(button => {
+
+        button.onclick = async () => {
+
+            const id = button.dataset.id;
+
+            if (!confirm("Approve this withdraw?")) return;
+
+            const withdrawRef =
+            ref(db, "withdrawRequests/" + id);
+
+            const snap =
+            await get(withdrawRef);
+
+            if (!snap.exists()) return;
+
+            const data = snap.val();
+
+            await update(withdrawRef, {
+
+                status: "Approved"
+
+            });
+
+            if (data.uid) {
+
+                const userRef =
+                ref(db, "users/" + data.uid);
+
+                const userSnap =
+                await get(userRef);
+
+                if (userSnap.exists()) {
+
+                    const user =
+                    userSnap.val();
+
+                    const balance =
+                    Number(user.balance || 0);
+
+                    const totalWithdraws =
+                    Number(user.totalWithdraws || 0);
+
+                    await update(userRef, {
+
+                        balance:
+                        balance - Number(data.amount || 0),
+
+                        totalWithdraws:
+                        totalWithdraws +
+                        Number(data.amount || 0)
+
+                    });
+
+                }
+
+            }
+
+            alert("Withdraw Approved");
+
+        };
+
+    });
+
+    // ---------- REJECT ----------
+
+    document
+    .querySelectorAll(".rejectWithdrawBtn")
+    .forEach(button => {
+
+        button.onclick = async () => {
+
+            const id = button.dataset.id;
+
+            if (!confirm("Reject this withdraw?")) return;
+
+            await update(
+
+                ref(db, "withdrawRequests/" + id),
+
+                {
+
+                    status: "Rejected"
+
+                }
+
+            );
+
+            alert("Withdraw Rejected");
+
+        };
+
+    });
+
+    // ---------- VIEW DETAILS ----------
+
+    document
+    .querySelectorAll(".viewWithdrawBtn")
+    .forEach(button => {
+
+        button.onclick = async () => {
+
+            const id = button.dataset.id;
+
+            const snap =
+            await get(
+                ref(db, "withdrawRequests/" + id)
+            );
+
+            if (!snap.exists()) return;
+
+            const data = snap.val();
+
+            modalUser.textContent =
+            data.fullName || "-";
+
+            modalEmail.textContent =
+            data.email || "-";
+
+            modalPhone.textContent =
+            data.phone || "-";
+
+            modalAmount.textContent =
+            Number(data.amount || 0).toLocaleString() +
+            " RWF";
+
+            modalMethod.textContent =
+            data.method || "-";
+
+            modalStatus.textContent =
+            data.status || "Pending";
+
+            withdrawModal.style.display = "flex";
+
+        };
+
+    });
+
+}
+
+// ======================================
+// CLOSE MODAL
+// ======================================
+
+closeWithdrawModal?.addEventListener("click", () => {
+
+    withdrawModal.style.display = "none";
+
+});
+
+window.addEventListener("click", (e) => {
+
+    if (e.target === withdrawModal) {
+
+        withdrawModal.style.display = "none";
+
+    }
+
+});
+
+console.log("✅ ADMIN PART 6 LOADED");
