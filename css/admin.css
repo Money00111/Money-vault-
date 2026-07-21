@@ -64,9 +64,9 @@ SIDEBAR
 ====================================== */
 
 .sidebar{
-width:270px;
+width:0px;
 background:#111827;
-height:100vh;
+height:0vh;
 position:fixed;
 left:0;
 top:0;
