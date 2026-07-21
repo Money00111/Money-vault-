@@ -1143,12 +1143,17 @@ LAYOUT FIX
     width:calc(100% - 270px);
     padding:20px;
     overflow-x:auto;
+    background:#0f172a;
 }
 
 .page-section{
+    display:none;
     width:100%;
-    max-width:100%;
 }
+
+.page-section.active{
+    display:block;
+ }
 
 /* Cards */
 
