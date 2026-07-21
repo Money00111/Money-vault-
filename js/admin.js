@@ -1865,3 +1865,133 @@ setInterval(() => {
 
 console.log("✅ ADMIN PART 10 LOADED");
 
+// ======================================
+// ADMIN.JS PART 11
+// SETTINGS PAGE
+// ======================================
+
+// ---------- ELEMENTS ----------
+
+const saveSettingsBtn =
+document.getElementById("saveSettingsBtn");
+
+const adminPassword =
+document.getElementById("adminPassword");
+
+const confirmPassword =
+document.getElementById("confirmPassword");
+
+const appVersion =
+document.getElementById("appVersion");
+
+const firebaseStatus =
+document.getElementById("firebaseStatus");
+
+const databaseStatus =
+document.getElementById("databaseStatus");
+
+const storageStatus =
+document.getElementById("storageStatus");
+
+// ======================================
+// SHOW SYSTEM INFO
+// ======================================
+
+function loadSettings(){
+
+    if(appVersion){
+
+        appVersion.textContent =
+        "Money Vault v1.0.0";
+
+    }
+
+    if(firebaseStatus){
+
+        firebaseStatus.textContent =
+        "Online";
+
+    }
+
+    if(databaseStatus){
+
+        databaseStatus.textContent =
+        "Connected";
+
+    }
+
+    if(storageStatus){
+
+        storageStatus.textContent =
+        "Active";
+
+    }
+
+}
+
+loadSettings();
+
+// ======================================
+// CHANGE PASSWORD
+// ======================================
+
+saveSettingsBtn?.addEventListener("click",async()=>{
+
+    const password =
+    adminPassword.value.trim();
+
+    const confirm =
+    confirmPassword.value.trim();
+
+    if(password===""){
+
+        alert("Enter New Password");
+
+        return;
+
+    }
+
+    if(password.length<6){
+
+        alert("Password must be at least 6 characters");
+
+        return;
+
+    }
+
+    if(password!==confirm){
+
+        alert("Passwords do not match");
+
+        return;
+
+    }
+
+    try{
+
+        await updatePassword(
+
+            auth.currentUser,
+
+            password
+
+        );
+
+        alert("Password Updated Successfully");
+
+        adminPassword.value="";
+
+        confirmPassword.value="";
+
+    }catch(error){
+
+        console.error(error);
+
+        alert(error.message);
+
+    }
+
+});
+
+console.log("✅ ADMIN PART 11 LOADED");
+
