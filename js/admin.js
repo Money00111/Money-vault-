@@ -1512,3 +1512,356 @@ userSearch?.addEventListener("keyup",()=>{
 });
 
 console.log("✅ ADMIN PART 8 LOADED");           
+
+// ======================================
+// ADMIN.JS PART 9
+// TRANSACTIONS HISTORY
+// ======================================
+
+// ---------- ELEMENTS ----------
+
+const transactionsContainer =
+document.getElementById("transactionsContainer");
+
+const emptyTransactions =
+document.getElementById("emptyTransactions");
+
+const transactionTotal =
+document.getElementById("transactionTotal");
+
+const transactionApproved =
+document.getElementById("transactionApproved");
+
+const transactionPending =
+document.getElementById("transactionPending");
+
+const transactionRejected =
+document.getElementById("transactionRejected");
+
+// ======================================
+// LOAD TRANSACTIONS
+// ======================================
+
+function loadTransactions(){
+
+    const allTransactions=[];
+
+    // ------------------------
+    // LOAD DEPOSITS
+    // ------------------------
+
+    onValue(
+
+        ref(db,"depositRequests"),
+
+        (depositSnap)=>{
+
+            allTransactions.length=0;
+
+            let approved=0;
+            let pending=0;
+            let rejected=0;
+
+            if(depositSnap.exists()){
+
+                depositSnap.forEach(child=>{
+
+                    const item=child.val();
+
+                    item.id=child.key;
+
+                    item.type="Deposit";
+
+                    allTransactions.push(item);
+
+                });
+
+            }
+
+            // ------------------------
+            // LOAD WITHDRAWS
+            // ------------------------
+
+            onValue(
+
+                ref(db,"withdrawRequests"),
+
+                (withdrawSnap)=>{
+
+                    if(withdrawSnap.exists()){
+
+                        withdrawSnap.forEach(child=>{
+
+                            const item=child.val();
+
+                            item.id=child.key;
+
+                            item.type="Withdraw";
+
+                            allTransactions.push(item);
+
+                        });
+
+                    }
+
+                    // ------------------------
+                    // SORT BY DATE
+                    // ------------------------
+
+                    allTransactions.sort((a,b)=>{
+
+                        return Number(b.createdAt||0)
+                        -
+                        Number(a.createdAt||0);
+
+                    });
+
+                    if(transactionsContainer){
+
+                        transactionsContainer.innerHTML="";
+
+                    }
+
+                    if(allTransactions.length===0){
+
+                        emptyTransactions.style.display="block";
+
+                        transactionTotal.textContent="0";
+
+                        transactionApproved.textContent="0";
+
+                        transactionPending.textContent="0";
+
+                        transactionRejected.textContent="0";
+
+                        return;
+
+                    }
+
+                    emptyTransactions.style.display="none";
+
+                    allTransactions.forEach(item=>{
+
+                        if(item.status==="Approved") approved++;
+
+                        if(item.status==="Pending") pending++;
+
+                        if(item.status==="Rejected") rejected++;
+
+                        transactionsContainer.innerHTML+=`
+
+<div class="request-card">
+
+<div class="request-top">
+
+<h3>
+
+${Number(item.amount||0).toLocaleString()} RWF
+
+</h3>
+
+<span class="status ${String(item.status||"Pending").toLowerCase()}">
+
+${item.status||"Pending"}
+
+</span>
+
+</div>
+
+<p>
+
+<strong>Type:</strong>
+
+${item.type}
+
+</p>
+
+<p>
+
+<strong>Name:</strong>
+
+${item.fullName||"-"}
+
+</p>
+
+<p>
+
+<strong>Email:</strong>
+
+${item.email||"-"}
+
+</p>
+
+<p>
+
+<strong>Method:</strong>
+
+${item.method||"-"}
+
+</p>
+
+<p>
+
+<strong>Transaction ID:</strong>
+
+${item.transactionId||"-"}
+
+</p>
+
+<p>
+
+<strong>Date:</strong>
+
+${item.createdAt
+? new Date(item.createdAt).toLocaleString()
+: "-"}
+
+</p>
+
+</div>
+
+`;
+
+                    });
+
+                    transactionTotal.textContent=
+                    allTransactions.length;
+
+                    transactionApproved.textContent=
+                    approved;
+
+                    transactionPending.textContent=
+                    pending;
+
+                    transactionRejected.textContent=
+                    rejected;
+
+                }
+
+            );
+
+        }
+
+    );
+
+}
+
+// ======================================
+// START
+// ======================================
+
+loadTransactions();
+
+console.log("✅ ADMIN PART 9 LOADED");
+
+// ======================================
+// ADMIN.JS PART 10
+// TRANSACTION SEARCH + FILTER
+// ======================================
+
+// ---------- ELEMENTS ----------
+
+const transactionSearch =
+document.getElementById("transactionSearch");
+
+const transactionFilter =
+document.getElementById("transactionFilter");
+
+// ======================================
+// FILTER FUNCTION
+// ======================================
+
+function filterTransactions() {
+
+    const keyword =
+    transactionSearch.value.toLowerCase();
+
+    const filter =
+    transactionFilter.value;
+
+    const cards =
+    document.querySelectorAll(
+        "#transactionsContainer .request-card"
+    );
+
+    cards.forEach(card => {
+
+        const text =
+        card.innerText.toLowerCase();
+
+        let show = true;
+
+        // SEARCH
+
+        if (
+            keyword !== "" &&
+            !text.includes(keyword)
+        ) {
+
+            show = false;
+
+        }
+
+        // FILTER
+
+        if (
+            filter !== "All"
+        ) {
+
+            if (
+                !text.includes(
+                    filter.toLowerCase()
+                )
+            ) {
+
+                show = false;
+
+            }
+
+        }
+
+        card.style.display =
+        show
+        ? "block"
+        : "none";
+
+    });
+
+}
+
+// ======================================
+// SEARCH EVENT
+// ======================================
+
+transactionSearch?.addEventListener(
+
+    "keyup",
+
+    filterTransactions
+
+);
+
+// ======================================
+// FILTER EVENT
+// ======================================
+
+transactionFilter?.addEventListener(
+
+    "change",
+
+    filterTransactions
+
+);
+
+// ======================================
+// AUTO REFRESH
+// ======================================
+
+setInterval(() => {
+
+    filterTransactions();
+
+}, 1000);
+
+console.log("✅ ADMIN PART 10 LOADED");
+
