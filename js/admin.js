@@ -1071,3 +1071,444 @@ window.addEventListener("click", (e) => {
 });
 
 console.log("✅ ADMIN PART 6 LOADED");
+
+// ======================================
+// ADMIN.JS PART 7
+// LOAD USERS
+// ======================================
+
+// ---------- ELEMENTS ----------
+
+const usersContainer =
+document.getElementById("usersContainer");
+
+const emptyUsers =
+document.getElementById("emptyUsers");
+
+const allUsers =
+document.getElementById("allUsers");
+
+const activeUsers =
+document.getElementById("activeUsers");
+
+const blockedUsers =
+document.getElementById("blockedUsers");
+
+// ======================================
+// LOAD USERS
+// ======================================
+
+function loadUsers() {
+
+    onValue(
+
+        ref(db, "users"),
+
+        (snapshot) => {
+
+            if (!usersContainer) return;
+
+            usersContainer.innerHTML = "";
+
+            let total = 0;
+            let active = 0;
+            let blocked = 0;
+
+            if (!snapshot.exists()) {
+
+                emptyUsers.style.display = "block";
+
+                allUsers.textContent = "0";
+                activeUsers.textContent = "0";
+                blockedUsers.textContent = "0";
+
+                return;
+
+            }
+
+            emptyUsers.style.display = "none";
+
+            const list = [];
+
+            snapshot.forEach((child) => {
+
+                list.unshift({
+
+                    uid: child.key,
+
+                    ...child.val()
+
+                });
+
+            });
+
+            list.forEach((user) => {
+
+                total++;
+
+                if (user.status === "Blocked") {
+
+                    blocked++;
+
+                } else {
+
+                    active++;
+
+                }
+
+                usersContainer.innerHTML += `
+
+<div class="user-card">
+
+<div class="user-header">
+
+<i class="fa-solid fa-user"></i>
+
+<h3>
+
+${user.fullName || "Unknown User"}
+
+</h3>
+
+</div>
+
+<p>
+
+<strong>Email:</strong>
+
+${user.email || "-"}
+
+</p>
+
+<p>
+
+<strong>Phone:</strong>
+
+${user.phone || "-"}
+
+</p>
+
+<p>
+
+<strong>Balance:</strong>
+
+${Number(user.balance || 0).toLocaleString()} RWF
+
+</p>
+
+<p>
+
+<strong>VIP:</strong>
+
+${user.vipPlan || "None"}
+
+</p>
+
+<p>
+
+<strong>Status:</strong>
+
+<span class="${user.status === "Blocked"
+? "status rejected"
+: "status approved"}">
+
+${user.status || "Active"}
+
+</span>
+
+</p>
+
+<button
+class="viewUserBtn"
+data-id="${user.uid}">
+
+<i class="fa-solid fa-eye"></i>
+
+View Details
+
+</button>
+
+</div>
+
+`;
+
+            });
+
+            allUsers.textContent = total;
+            activeUsers.textContent = active;
+            blockedUsers.textContent = blocked;
+
+            activateUserButtons();
+
+        }
+
+    );
+
+}
+
+// ======================================
+// USER BUTTONS
+// ======================================
+
+function activateUserButtons() {
+
+    document
+    .querySelectorAll(".viewUserBtn")
+    .forEach(button => {
+
+        button.onclick = () => {
+
+            openUserModal(
+
+                button.dataset.id
+
+            );
+
+        };
+
+    });
+
+}
+
+// ======================================
+// START
+// ======================================
+
+loadUsers();
+
+console.log("✅ ADMIN PART 7 LOADED");
+
+
+     // ======================================
+// ADMIN.JS PART 8
+// USER DETAILS + BLOCK / ACTIVATE
+// ======================================
+
+// ---------- ELEMENTS ----------
+
+const userModal =
+document.getElementById("userModal");
+
+const closeUserModal =
+document.getElementById("closeUserModal");
+
+const userFullName =
+document.getElementById("userFullName");
+
+const userEmail =
+document.getElementById("userEmail");
+
+const userPhone =
+document.getElementById("userPhone");
+
+const userBalance =
+document.getElementById("userBalance");
+
+const userDeposits =
+document.getElementById("userDeposits");
+
+const userWithdraws =
+document.getElementById("userWithdraws");
+
+const userVip =
+document.getElementById("userVip");
+
+const userJoined =
+document.getElementById("userJoined");
+
+const blockUserBtn =
+document.getElementById("blockUserBtn");
+
+const activateUserBtn =
+document.getElementById("activateUserBtn");
+
+const userSearch =
+document.getElementById("userSearch");
+
+// ======================================
+// CURRENT USER
+// ======================================
+
+let selectedUserId = null;
+
+// ======================================
+// OPEN USER MODAL
+// ======================================
+
+async function openUserModal(uid){
+
+    selectedUserId = uid;
+
+    try{
+
+        const snap =
+        await get(
+            ref(db,"users/"+uid)
+        );
+
+        if(!snap.exists()){
+
+            alert("User not found");
+
+            return;
+
+        }
+
+        const user = snap.val();
+
+        userFullName.textContent =
+        user.fullName || "-";
+
+        userEmail.textContent =
+        user.email || "-";
+
+        userPhone.textContent =
+        user.phone || "-";
+
+        userBalance.textContent =
+        Number(user.balance || 0).toLocaleString() +
+        " RWF";
+
+        userDeposits.textContent =
+        Number(user.totalDeposits || 0).toLocaleString() +
+        " RWF";
+
+        userWithdraws.textContent =
+        Number(user.totalWithdraws || 0).toLocaleString() +
+        " RWF";
+
+        userVip.textContent =
+        user.vipPlan || "None";
+
+        userJoined.textContent =
+        user.createdAt
+        ? new Date(user.createdAt).toLocaleString()
+        : "-";
+
+        if(user.status === "Blocked"){
+
+            blockUserBtn.style.display = "none";
+
+            activateUserBtn.style.display = "inline-block";
+
+        }else{
+
+            blockUserBtn.style.display = "inline-block";
+
+            activateUserBtn.style.display = "none";
+
+        }
+
+        userModal.style.display = "flex";
+
+    }catch(error){
+
+        console.error(error);
+
+        alert(error.message);
+
+    }
+
+}
+
+// ======================================
+// CLOSE USER MODAL
+// ======================================
+
+closeUserModal?.addEventListener("click",()=>{
+
+    userModal.style.display="none";
+
+});
+
+window.addEventListener("click",(e)=>{
+
+    if(e.target===userModal){
+
+        userModal.style.display="none";
+
+    }
+
+});
+
+// ======================================
+// BLOCK USER
+// ======================================
+
+blockUserBtn?.addEventListener("click",async()=>{
+
+    if(!selectedUserId) return;
+
+    if(!confirm("Block this user?")) return;
+
+    await update(
+
+        ref(db,"users/"+selectedUserId),
+
+        {
+
+            status:"Blocked"
+
+        }
+
+    );
+
+    alert("User Blocked Successfully");
+
+    userModal.style.display="none";
+
+});
+
+// ======================================
+// ACTIVATE USER
+// ======================================
+
+activateUserBtn?.addEventListener("click",async()=>{
+
+    if(!selectedUserId) return;
+
+    if(!confirm("Activate this user?")) return;
+
+    await update(
+
+        ref(db,"users/"+selectedUserId),
+
+        {
+
+            status:"Active"
+
+        }
+
+    );
+
+    alert("User Activated Successfully");
+
+    userModal.style.display="none";
+
+});
+
+// ======================================
+// SEARCH USERS
+// ======================================
+
+userSearch?.addEventListener("keyup",()=>{
+
+    const value =
+    userSearch.value.toLowerCase();
+
+    document
+    .querySelectorAll(".user-card")
+    .forEach(card=>{
+
+        card.style.display =
+        card.innerText
+        .toLowerCase()
+        .includes(value)
+        ? "block"
+        : "none";
+
+    });
+
+});
+
+console.log("✅ ADMIN PART 8 LOADED");           
