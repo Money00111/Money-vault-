@@ -1141,9 +1141,23 @@ LAYOUT FIX
 .main-content{
     margin-left:270px;
     width:calc(100% - 270px);
-    padding:20px;
-    overflow-x:auto;
-    background:#0f172a;
+}
+
+@media (max-width:768px){
+
+.main-content{
+    margin-left:0;
+    width:100%;
+}
+
+.sidebar{
+    left:-270px;
+}
+
+.sidebar.active{
+    left:0;
+}
+
 }
 
 .page-section{
