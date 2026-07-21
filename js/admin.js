@@ -357,3 +357,147 @@ function loadDashboardStats() {
 loadDashboardStats();
 
 console.log("✅ ADMIN PART 2 LOADED");
+
+
+// ======================================
+// ADMIN.JS PART 3
+// LOAD DEPOSIT REQUESTS
+// ======================================
+
+// ---------- ELEMENTS ----------
+
+const depositContainer =
+document.getElementById("depositRequests");
+
+const emptyDeposit =
+document.getElementById("emptyDeposit");
+
+// ======================================
+// LOAD DEPOSITS
+// ======================================
+
+function loadDeposits() {
+
+    onValue(
+        ref(db, "depositRequests"),
+        (snapshot) => {
+
+            if (!depositContainer) return;
+
+            depositContainer.innerHTML = "";
+
+            if (!snapshot.exists()) {
+
+                if (emptyDeposit) {
+
+                    emptyDeposit.style.display = "block";
+
+                }
+
+                return;
+
+            }
+
+            if (emptyDeposit) {
+
+                emptyDeposit.style.display = "none";
+
+            }
+
+            snapshot.forEach((child) => {
+
+                const id = child.key;
+
+                const data = child.val();
+
+                depositContainer.innerHTML += `
+
+<div class="request-card">
+
+<div class="request-top">
+
+<h3>${Number(data.amount || 0).toLocaleString()} RWF</h3>
+
+<span class="status ${String(data.status || "Pending").toLowerCase()}">
+
+${data.status || "Pending"}
+
+</span>
+
+</div>
+
+<p><strong>Name:</strong> ${data.fullName || "-"}</p>
+
+<p><strong>Email:</strong> ${data.email || "-"}</p>
+
+<p><strong>Phone:</strong> ${data.senderPhone || "-"}</p>
+
+<p><strong>Method:</strong> ${data.method || "-"}</p>
+
+<p><strong>Transaction ID:</strong> ${data.transactionId || "-"}</p>
+
+<div class="action-buttons">
+
+<button
+class="approveBtn"
+data-id="${id}">
+
+<i class="fa-solid fa-check"></i>
+
+Approve
+
+</button>
+
+<button
+class="rejectBtn"
+data-id="${id}">
+
+<i class="fa-solid fa-xmark"></i>
+
+Reject
+
+</button>
+
+<button
+class="viewProof"
+data-image="${data.proofImage || ""}">
+
+<i class="fa-solid fa-image"></i>
+
+Screenshot
+
+</button>
+
+<button
+class="copyTransaction"
+data-code="${data.transactionId || ""}">
+
+<i class="fa-solid fa-copy"></i>
+
+Copy ID
+
+</button>
+
+</div>
+
+</div>
+
+`;
+
+            });
+
+            activateDepositButtons();
+
+        }
+
+    );
+
+}
+
+// ======================================
+// START
+// ======================================
+
+loadDeposits();
+
+console.log("✅ ADMIN PART 3 LOADED");
