@@ -1995,3 +1995,147 @@ saveSettingsBtn?.addEventListener("click",async()=>{
 
 console.log("✅ ADMIN PART 11 LOADED");
 
+// ======================================
+// ADMIN.JS PART 12
+// FINAL INITIALIZATION
+// ======================================
+
+// ---------- HIDE LOADING ----------
+
+function hideLoadingScreen() {
+
+    const loading =
+    document.getElementById("loadingScreen");
+
+    if (loading) {
+
+        setTimeout(() => {
+
+            loading.style.opacity = "0";
+
+            setTimeout(() => {
+
+                loading.style.display = "none";
+
+            }, 300);
+
+        }, 500);
+
+    }
+
+}
+
+// ======================================
+// FIREBASE CONNECTION
+// ======================================
+
+function checkFirebaseConnection() {
+
+    onValue(
+
+        ref(db, ".info/connected"),
+
+        (snapshot) => {
+
+            const connected =
+            snapshot.val();
+
+            console.log(
+
+                connected
+                ? "✅ Firebase Connected"
+                : "❌ Firebase Disconnected"
+
+            );
+
+        }
+
+    );
+
+}
+
+// ======================================
+// REFRESH ALL DATA
+// ======================================
+
+function refreshAdminData() {
+
+    try {
+
+        loadDashboardStats();
+
+        loadDeposits();
+
+        loadWithdraws();
+
+        loadUsers();
+
+        loadTransactions();
+
+    } catch (error) {
+
+        console.error(error);
+
+    }
+
+}
+
+// ======================================
+// AUTO REFRESH
+// ======================================
+
+setInterval(() => {
+
+    refreshAdminData();
+
+}, 30000);
+
+// ======================================
+// START SYSTEM
+// ======================================
+
+window.addEventListener("load", () => {
+
+    hideLoadingScreen();
+
+    checkFirebaseConnection();
+
+    refreshAdminData();
+
+    console.log("✅ Money Vault Admin Ready");
+
+});
+
+// ======================================
+// GLOBAL ERROR HANDLER
+// ======================================
+
+window.addEventListener("error", (e) => {
+
+    console.error("Admin Error:", e.message);
+
+});
+
+// ======================================
+// UNHANDLED PROMISES
+// ======================================
+
+window.addEventListener(
+
+    "unhandledrejection",
+
+    (e) => {
+
+        console.error(
+
+            "Promise Error:",
+
+            e.reason
+
+        );
+
+    }
+
+);
+
+console.log("✅ ADMIN PART 12 LOADED");
