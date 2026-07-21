@@ -690,3 +690,182 @@ window.addEventListener("click", (e) => {
 
 console.log("✅ ADMIN PART 4 LOADED");
 
+// ======================================
+// ADMIN.JS PART 5
+// LOAD WITHDRAW REQUESTS
+// ======================================
+
+// ---------- ELEMENTS ----------
+
+const withdrawContainer =
+document.getElementById("withdrawRequests");
+
+const emptyWithdraw =
+document.getElementById("emptyWithdraw");
+
+// ======================================
+// LOAD WITHDRAW REQUESTS
+// ======================================
+
+function loadWithdraws() {
+
+    onValue(
+
+        ref(db, "withdrawRequests"),
+
+        (snapshot) => {
+
+            if (!withdrawContainer) return;
+
+            withdrawContainer.innerHTML = "";
+
+            if (!snapshot.exists()) {
+
+                if (emptyWithdraw) {
+
+                    emptyWithdraw.style.display = "block";
+
+                }
+
+                return;
+
+            }
+
+            if (emptyWithdraw) {
+
+                emptyWithdraw.style.display = "none";
+
+            }
+
+            const list = [];
+
+            snapshot.forEach((child) => {
+
+                list.unshift({
+
+                    id: child.key,
+
+                    ...child.val()
+
+                });
+
+            });
+
+            list.forEach((data) => {
+
+                withdrawContainer.innerHTML += `
+
+<div class="request-card">
+
+<div class="request-top">
+
+<h3>
+
+${Number(data.amount || 0).toLocaleString()} RWF
+
+</h3>
+
+<span class="status ${String(data.status || "Pending").toLowerCase()}">
+
+${data.status || "Pending"}
+
+</span>
+
+</div>
+
+<p>
+
+<strong>Name:</strong>
+
+${data.fullName || "-"}
+
+</p>
+
+<p>
+
+<strong>Email:</strong>
+
+${data.email || "-"}
+
+</p>
+
+<p>
+
+<strong>Phone:</strong>
+
+${data.phone || "-"}
+
+</p>
+
+<p>
+
+<strong>Method:</strong>
+
+${data.method || "-"}
+
+</p>
+
+<p>
+
+<strong>Account:</strong>
+
+${data.accountNumber || "-"}
+
+</p>
+
+<div class="action-buttons">
+
+<button
+class="approveWithdrawBtn"
+data-id="${data.id}">
+
+<i class="fa-solid fa-check"></i>
+
+Approve
+
+</button>
+
+<button
+class="rejectWithdrawBtn"
+data-id="${data.id}">
+
+<i class="fa-solid fa-xmark"></i>
+
+Reject
+
+</button>
+
+<button
+class="viewWithdrawBtn"
+data-id="${data.id}">
+
+<i class="fa-solid fa-eye"></i>
+
+View
+
+</button>
+
+</div>
+
+</div>
+
+`;
+
+            });
+
+            activateWithdrawButtons();
+
+        }
+
+    );
+
+}
+
+// ======================================
+// START
+// ======================================
+
+loadWithdraws();
+
+console.log("✅ ADMIN PART 5 LOADED");
+
