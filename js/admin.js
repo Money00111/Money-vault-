@@ -2176,27 +2176,19 @@ function showSection(sectionId) {
 }
 
 openDeposits?.addEventListener("click", () => {
-
-    showSection("depositSection");
-
+    showPage("deposits");
 });
 
 openWithdraws?.addEventListener("click", () => {
-
-    showSection("withdrawSection");
-
+    showPage("withdraws");
 });
 
 openUsers?.addEventListener("click", () => {
-
-    showSection("usersSection");
-
+    showPage("users");
 });
 
 openSettings?.addEventListener("click", () => {
-
-    showSection("settingsSection");
-
+    showPage("settings");
 });
 
 // ======================================
