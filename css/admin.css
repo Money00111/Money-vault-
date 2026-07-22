@@ -64,9 +64,9 @@ SIDEBAR
 ====================================== */
 
 .sidebar{
-width:0px;
+width:270px;
 background:#111827;
-height:0vh;
+height:100vh;
 position:fixed;
 left:0;
 top:0;
@@ -94,7 +94,7 @@ font-size:14px;
 }
 
 .sidebar-menu{
-padding:15px;
+padding:0px;
 display:flex;
 flex-direction:column;
 gap:10px;
