@@ -94,7 +94,7 @@ font-size:14px;
 }
 
 .sidebar-menu{
-padding:0px;
+padding:15px;
 display:flex;
 flex-direction:column;
 gap:10px;
@@ -1140,8 +1140,23 @@ LAYOUT FIX
 .main-content{
     margin-left:270px;
     width:calc(100% - 270px);
-    padding:20px;
-    overflow-x:auto;
+}
+
+@media (max-width:768px){
+
+.main-content{
+    margin-left:0;
+    width:100%;
+}
+
+.sidebar{
+    left:-270px;
+}
+
+.sidebar.active{
+    left:0;
+}
+
 }
 
 .page-section{
