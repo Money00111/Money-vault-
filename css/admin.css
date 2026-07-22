@@ -822,3 +822,243 @@ MODAL ACTION BUTTONS
     transition:.3s;
 }
 
+/* ==========================================
+   MONEY VAULT ADMIN PANEL
+   ADMIN.CSS
+   PART 5
+   SETTINGS + RESPONSIVE
+========================================== */
+
+/* ===========================
+SETTINGS
+=========================== */
+
+.settings-container{
+    display:grid;
+    gap:20px;
+    margin-top:20px;
+}
+
+.settings-card{
+    background:#1e293b;
+    border:1px solid rgba(255,255,255,.08);
+    border-radius:18px;
+    padding:25px;
+}
+
+.settings-card h3{
+    color:#22c55e;
+    font-size:22px;
+    margin-bottom:20px;
+}
+
+.settings-card label{
+    display:block;
+    margin:15px 0 8px;
+    color:#fff;
+    font-weight:600;
+}
+
+.settings-card input{
+    width:100%;
+    height:48px;
+    padding:0 15px;
+    background:#0f172a;
+    border:1px solid #334155;
+    border-radius:10px;
+    color:#fff;
+    outline:none;
+    transition:.3s;
+}
+
+.settings-card input:focus{
+    border-color:#22c55e;
+}
+
+.settings-card button{
+    margin-top:20px;
+    padding:14px 24px;
+    border:none;
+    border-radius:10px;
+    background:#22c55e;
+    color:#fff;
+    font-size:15px;
+    font-weight:bold;
+    cursor:pointer;
+    transition:.3s;
+}
+
+.settings-card button:hover{
+    background:#16a34a;
+}
+
+.system-info{
+    display:flex;
+    flex-direction:column;
+    gap:15px;
+    margin-top:20px;
+}
+
+.system-info div{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    background:#0f172a;
+    border-radius:10px;
+    padding:14px 16px;
+}
+
+.system-info span{
+    color:#22c55e;
+    font-weight:bold;
+}
+
+/* ===========================
+TABLET
+=========================== */
+
+@media (max-width:992px){
+
+.sidebar{
+    width:80px;
+}
+
+.logo p,
+.sidebar-menu span{
+    display:none;
+}
+
+.sidebar-menu .menu-link{
+    justify-content:center;
+    padding:15px;
+}
+
+.main-content{
+    margin-left:80px;
+}
+
+.dashboard-row{
+    grid-template-columns:1fr;
+}
+
+}
+
+/* ===========================
+PHONE
+=========================== */
+
+@media (max-width:768px){
+
+.sidebar{
+    left:-270px;
+    transition:.3s;
+}
+
+.sidebar.active{
+    left:0;
+}
+
+.main-content{
+    margin-left:0;
+}
+
+.top-header{
+    padding:0 15px;
+}
+
+.left-header h1{
+    font-size:18px;
+}
+
+.statistics-grid,
+.deposit-summary,
+.users-grid,
+.dashboard-row{
+    grid-template-columns:1fr;
+}
+
+.section-header{
+    flex-direction:column;
+    align-items:flex-start;
+}
+
+.section-actions{
+    width:100%;
+    flex-direction:column;
+}
+
+.section-actions input,
+.section-actions select{
+    width:100%;
+}
+
+.action-buttons,
+.user-actions{
+    flex-direction:column;
+}
+
+.action-buttons button,
+.user-actions button{
+    width:100%;
+}
+
+.withdraw-details p{
+    flex-direction:column;
+    align-items:flex-start;
+    gap:8px;
+}
+
+.proof-box{
+    max-width:95%;
+    padding:20px;
+}
+
+}
+
+/* ===========================
+SMALL PHONE
+=========================== */
+
+@media (max-width:480px){
+
+#contentArea{
+    padding:15px;
+}
+
+.section-title{
+    font-size:22px;
+}
+
+.section-header h2{
+    font-size:22px;
+}
+
+.stat-card{
+    flex-direction:column;
+    text-align:center;
+    padding:20px;
+}
+
+.stat-icon{
+    width:70px;
+    height:70px;
+    margin-bottom:15px;
+}
+
+.stat-info h3{
+    font-size:24px;
+}
+
+.quick-actions{
+    grid-template-columns:1fr;
+}
+
+.request-card,
+.user-card,
+.transaction-card,
+.settings-card{
+    padding:16px;
+}
+
+   }
+
