@@ -2140,57 +2140,5 @@ window.addEventListener(
 
 console.log("✅ ADMIN PART 12 LOADED");
 
-// ======================================
-// QUICK ACTIONS
-// ======================================
-
-const openDeposits = document.getElementById("openDeposits");
-const openWithdraws = document.getElementById("openWithdraws");
-const openUsers = document.getElementById("openUsers");
-const openSettings = document.getElementById("openSettings");
-
-function hideAllSections() {
-
-    document.querySelectorAll(".page-section").forEach(section => {
-
-        section.style.display = "none";
-        section.classList.remove("active");
-
-    });
-
-}
-
-function showSection(sectionId) {
-
-    hideAllSections();
-
-    const section = document.getElementById(sectionId);
-
-    if(section){
-
-        section.style.display = "block";
-        section.classList.add("active");
-
-    }
-
-}
-
-openDeposits?.addEventListener("click", () => {
-    showPage("deposits");
-});
-
-openWithdraws?.addEventListener("click", () => {
-    showPage("withdraws");
-});
-
-openUsers?.addEventListener("click", () => {
-    showPage("users");
-});
-
-openSettings?.addEventListener("click", () => {
-    showPage("settings");
-});
-
-
 
 
