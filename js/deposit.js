@@ -103,7 +103,12 @@ logoutBtn?.addEventListener("click", async (e) => {
 
     } catch (error) {
 
-        alert(error.message);
+        console.error(error);
+
+alert(
+    error.code + "\n\n" +
+    error.message
+);
 
     }
 
