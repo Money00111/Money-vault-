@@ -5,11 +5,13 @@
 
 <meta charset="UTF-8">
 
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport"
+content="width=device-width, initial-scale=1.0">
 
 <title>Deposit | Money Vault</title>
 
-<link rel="stylesheet" href="css/deposit.css">
+<link rel="stylesheet"
+href="css/deposit.css">
 
 <link rel="stylesheet"
 href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
@@ -18,427 +20,176 @@ href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
 
 <body>
 
-<!-- Sidebar -->
+<!-- ===========================
+LOADING
+=========================== -->
+
+<div id="loadingScreen" class="loading-screen">
+
+    <div class="loader"></div>
+
+    <h2>Please wait...</h2>
+
+</div>
+
+<!-- ===========================
+SIDEBAR
+=========================== -->
 
 <div id="sidebar" class="sidebar">
 
-<div class="logo">
-<h2>💰 Money Vault</h2>
+    <div class="logo">
+
+        <h2>💰 Money Vault</h2>
+
+    </div>
+
+    <ul>
+
+        <li>
+
+            <a href="dashboard.html">
+
+                <i class="fa fa-house"></i>
+
+                Dashboard
+
+            </a>
+
+        </li>
+
+        <li>
+
+            <a href="deposit.html"
+            class="active">
+
+                <i class="fa fa-wallet"></i>
+
+                Deposit
+
+            </a>
+
+        </li>
+
+        <li>
+
+            <a href="withdraw.html">
+
+                <i class="fa fa-money-bill-transfer"></i>
+
+                Withdraw
+
+            </a>
+
+        </li>
+
+        <li>
+
+            <a href="transactions.html">
+
+                <i class="fa fa-clock-rotate-left"></i>
+
+                Transactions
+
+            </a>
+
+        </li>
+
+        <li>
+
+            <a href="profile.html">
+
+                <i class="fa fa-user"></i>
+
+                Profile
+
+            </a>
+
+        </li>
+
+        <li>
+
+            <a href="#"
+            id="logoutBtn">
+
+                <i class="fa fa-right-from-bracket"></i>
+
+                Logout
+
+            </a>
+
+        </li>
+
+    </ul>
+
 </div>
 
-<ul>
-
-<li><a href="dashboard.html"><i class="fa fa-house"></i> Dashboard</a></li>
-
-<li><a href="deposit.html" class="active"><i class="fa fa-wallet"></i> Deposit</a></li>
-
-<li><a href="withdraw.html"><i class="fa fa-money-bill-transfer"></i> Withdraw</a></li>
-
-<li><a href="transactions.html"><i class="fa fa-clock-rotate-left"></i> Transactions</a></li>
-
-<li><a href="profile.html"><i class="fa fa-user"></i> Profile</a></li>
-
-<li><a href="#" id="logoutBtn"><i class="fa fa-right-from-bracket"></i> Logout</a></li>
-
-</ul>
-
-</div>
-
-<!-- Main -->
+<!-- ===========================
+MAIN
+=========================== -->
 
 <div class="main">
 
 <header>
 
 <button id="menuBtn">
+
 <i class="fa fa-bars"></i>
+
 </button>
 
 <h2>Deposit Money</h2>
 
-<div class="header-right">
-
-<i class="fa fa-bell notification"></i>
-
-</div>
-
 </header>
 
-<!-- Instructions -->
-
-<section class="instructions">
-
-<h2>📢 Deposit Instructions</h2>
-
-<ul>
-
-<li>Minimum Deposit: <strong>1,000 RWF</strong></li>
-
-<li>Maximum Deposit: <strong>500,000 RWF</strong></li>
-
-<li>Send money only to the numbers below.</li>
-
-<li>Fill in the deposit form correctly.</li>
-
-<li>Your balance will be updated after admin approval.</li>
-
-</ul>
-
-</section>
-
-<!-- Payment Methods -->
+<!-- ===========================
+PAYMENT METHODS
+=========================== -->
 
 <section class="payment-methods">
 
-<h2>💳 Payment Methods</h2>
+<h2>Payment Methods</h2>
 
 <div class="payment-grid">
 
-<!-- MTN -->
-
 <div class="payment-card">
-
-<i class="fa-solid fa-mobile-screen-button"></i>
 
 <h3>MTN Mobile Money</h3>
 
-<p class="account-name">Account Name</p>
+<h1 id="mtnNumber">
 
-<h4>Money Vault</h4>
+0788846187
 
-<h1 id="mtnNumber">0788846187</h1>
+</h1>
 
 <button id="copyMTN">
 
-<i class="fa fa-copy"></i>
-
 Copy Number
 
 </button>
 
 </div>
-
-<!-- Airtel -->
 
 <div class="payment-card">
 
-<i class="fa-solid fa-mobile-screen-button"></i>
-
 <h3>Airtel Money</h3>
 
-<p class="account-name">Account Name</p>
+<h1 id="airtelNumber">
 
-<h4>Money Vault</h4>
+0722993296
 
-<h1 id="airtelNumber">0722993296</h1>
+</h1>
 
 <button id="copyAirtel">
-
-<i class="fa fa-copy"></i>
 
 Copy Number
 
 </button>
 
 </div>
-
-</div>
-
-</section>
-
-  <!-- Deposit Form -->
-
-<section class="deposit-form">
-
-<h2>💰 Submit Deposit</h2>
-
-<form id="depositForm">
-
-<div class="input-group">
-
-<label>Amount (RWF)</label>
-
-<input
-type="number"
-id="amount"
-placeholder="Enter amount"
-min="1000"
-required>
-
-</div>
-
-<div class="input-group">
-
-<label>Payment Method</label>
-
-<select id="paymentMethod" required>
-
-<option value="">Choose Payment Method</option>
-
-<option value="MTN Mobile Money">MTN Mobile Money</option>
-
-<option value="Airtel Money">Airtel Money</option>
-
-</select>
-
-</div>
-
-<div class="input-group">
-
-<label>Sender Phone Number</label>
-
-<input
-type="tel"
-id="senderPhone"
-placeholder="07XXXXXXXX"
-required>
-
-</div>
-
-<div class="input-group">
-
-<label>Transaction ID</label>
-
-<input
-type="text"
-id="transactionId"
-placeholder="Example: PP240712ABC123"
-required>
-
-</div>
-
-<div class="input-group">
-
-<label>Date & Time of Payment</label>
-
-<input
-type="datetime-local"
-id="paymentDate"
-required>
-
-</div>
-
-<div class="input-group">
-
-<label>Upload Payment Screenshot</label>
-
-<input
-type="file"
-id="paymentProof"
-accept="image/*"
-required>
-
-</div>
-
-<div class="preview-box">
-
-<img
-id="imagePreview"
-src=""
-alt="Payment Screenshot Preview"
-style="display:none;max-width:100%;border-radius:12px;">
-
-</div>
-
-<div class="input-group">
-
-<label>Additional Note (Optional)</label>
-
-<textarea
-id="note"
-rows="4"
-placeholder="Write any additional information here..."></textarea>
-
-</div>
-
-<button
-type="submit"
-class="submit-btn">
-
-<i class="fa-solid fa-paper-plane"></i>
-
-Submit Deposit Request
-
-</button>
-
-</form>
-
-</section>
-
-<!-- Deposit Status -->
-
-<section class="deposit-status">
-
-<h2>📋 Current Deposit Status</h2>
-
-<div class="status-card pending">
-
-<h3>Status</h3>
-
-<p id="depositStatus">
-
-No Deposit Request
-
-</p>
 
 </div>
 
   </section>
 
-  <!-- ===========================
-     Deposit History
-=========================== -->
-
-<section class="deposit-history">
-
-<h2>📜 Deposit History</h2>
-
-<div id="historyList">
-
-<div class="history-card">
-
-<div>
-
-<h3>Deposit #001</h3>
-
-<p>Amount: 10,000 RWF</p>
-
-<p>Method: MTN Mobile Money</p>
-
-<p>Date: --/--/----</p>
-
-</div>
-
-<span class="pending">Pending</span>
-
-</div>
-
-</div>
-
-</section>
-
-<!-- ===========================
-     Security Notice
-=========================== -->
-
-<section class="security">
-
-<div class="security-card">
-
-<h2>🛡️ Security Notice</h2>
-
-<p>
-
-Never send money to any number other than the official payment numbers displayed in this application.
-
-Always keep your transaction ID until your deposit is approved.
-
-Money will only appear in your wallet after admin verification.
-
-</p>
-
-</div>
-
-</section>
-
-<!-- ===========================
-     Customer Support
-=========================== -->
-
-<section class="support">
-
-<div class="support-card">
-
-<h2>📞 Need Help?</h2>
-
-<p>
-
-If your deposit takes longer than expected,
-contact our support team.
-
-</p>
-
-<a href="support.html" class="support-btn">
-
-<i class="fa fa-headset"></i>
-
-Contact Support
-
-</a>
-
-</div>
-
-</section>
-
-<!-- ===========================
-     Bottom Navigation
-=========================== -->
-
-<nav class="bottom-nav">
-
-<a href="dashboard.html">
-
-<i class="fa fa-house"></i>
-
-<span>Home</span>
-
-</a>
-
-<a href="deposit.html" class="active">
-
-<i class="fa fa-wallet"></i>
-
-<span>Deposit</span>
-
-</a>
-
-<a href="withdraw.html">
-
-<i class="fa fa-money-bill-transfer"></i>
-
-<span>Withdraw</span>
-
-</a>
-
-<a href="transactions.html">
-
-<i class="fa fa-clock-rotate-left"></i>
-
-<span>History</span>
-
-</a>
-
-<a href="profile.html">
-
-<i class="fa fa-user"></i>
-
-<span>Profile</span>
-
-</a>
-
-</nav>
-
-<!-- ===========================
-     Footer
-=========================== -->
-
-<footer>
-
-<p>
-
-© 2026 Money Vault. All Rights Reserved.
-
-</p>
-
-</footer>
-
-<!-- JavaScript -->
-
-<script type="module" src="js/deposit.js"></script>
-
-</div>
-<!-- End Main -->
-
-</body>
-
-  </html>
+  
