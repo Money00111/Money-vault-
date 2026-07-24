@@ -168,3 +168,82 @@ const local = new Date(now.getTime() - (offset * 60000));
 
 paymentDate.value = local.toISOString().slice(0,16);          
 
+// ======================================
+// DEPOSIT.JS PART 3
+// SUBMIT DEPOSIT
+// ======================================
+
+depositForm?.addEventListener("submit", async (e) => {
+
+    e.preventDefault();
+
+    if (!currentUser) {
+
+        alert("Please login first.");
+
+        return;
+
+    }
+
+    submitBtn.disabled = true;
+
+    submitBtn.innerHTML =
+        '<i class="fa-solid fa-spinner fa-spin"></i> Submitting...';
+
+    try {
+
+        const depositData = {
+
+            uid: currentUser.uid,
+
+            email: currentUser.email || "",
+
+            amount: Number(amount.value),
+
+            paymentMethod: paymentMethod.value,
+
+            senderPhone: senderPhone.value.trim(),
+
+            transactionId: transactionId.value.trim(),
+
+            paymentDate: paymentDate.value,
+
+            note: note.value.trim(),
+
+            status: "pending",
+
+            createdAt: Date.now()
+
+        };
+
+        // Create new deposit record
+
+        const depositRef = push(ref(db, "depositRequests"));
+
+        await set(depositRef, depositData);
+
+        depositStatus.textContent = "Pending Approval";
+
+        depositStatus.style.color = "#f59e0b";
+
+        alert("Deposit request submitted successfully.");
+
+        depositForm.reset();
+
+    } catch (error) {
+
+        console.error(error);
+
+        alert(error.message);
+
+    } finally {
+
+        submitBtn.disabled = false;
+
+        submitBtn.innerHTML =
+            '<i class="fa-solid fa-paper-plane"></i> Submit Deposit Request';
+
+    }
+
+});
+
