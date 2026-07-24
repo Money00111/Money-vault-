@@ -583,6 +583,14 @@ Copy ID
 
 </button>
 
+<button
+class="viewBtn"
+data-id="${id}">
+
+View
+
+</button>
+
 </div>
 
 </div>
