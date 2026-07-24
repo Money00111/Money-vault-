@@ -1,0 +1,285 @@
+/* ======================================
+ADMIN LOGIN.CSS PART 2
+====================================== */
+
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+font-family:Arial,Helvetica,sans-serif;
+}
+
+body{
+background:linear-gradient(135deg,#0f172a,#111827,#1e293b);
+min-height:100vh;
+display:flex;
+justify-content:center;
+align-items:center;
+padding:20px;
+overflow:hidden;
+}
+
+/* ======================================
+LOADING
+====================================== */
+
+.loading-screen{
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+background:#0f172a;
+display:flex;
+flex-direction:column;
+justify-content:center;
+align-items:center;
+z-index:99999;
+transition:.4s;
+}
+
+.loader{
+width:65px;
+height:65px;
+border:6px solid #334155;
+border-top:6px solid #22c55e;
+border-radius:50%;
+animation:spin 1s linear infinite;
+margin-bottom:20px;
+}
+
+.loading-screen h2{
+color:#fff;
+font-size:22px;
+}
+
+@keyframes spin{
+
+0%{
+transform:rotate(0deg);
+}
+
+100%{
+transform:rotate(360deg);
+}
+
+}
+
+/* ======================================
+LOGIN CONTAINER
+====================================== */
+
+.login-container{
+width:100%;
+max-width:470px;
+}
+
+/* ======================================
+LOGO
+====================================== */
+
+.logo-box{
+text-align:center;
+margin-bottom:30px;
+}
+
+.logo-circle{
+width:90px;
+height:90px;
+margin:auto;
+border-radius:50%;
+background:#22c55e;
+display:flex;
+justify-content:center;
+align-items:center;
+font-size:38px;
+color:#fff;
+box-shadow:0 0 25px rgba(34,197,94,.35);
+margin-bottom:15px;
+}
+
+.logo-box h1{
+font-size:34px;
+color:#fff;
+margin-bottom:6px;
+}
+
+.logo-box p{
+color:#94a3b8;
+font-size:16px;
+}
+
+/* ======================================
+LOGIN CARD
+====================================== */
+
+.login-card{
+background:#1e293b;
+padding:35px;
+border-radius:20px;
+border:1px solid rgba(255,255,255,.08);
+box-shadow:0 15px 40px rgba(0,0,0,.35);
+}
+
+.login-card h2{
+text-align:center;
+margin-bottom:30px;
+font-size:28px;
+color:#fff;
+}
+
+.login-card h2 i{
+color:#22c55e;
+margin-right:10px;
+}
+
+/* ======================================
+INPUTS
+====================================== */
+
+.input-group{
+margin-bottom:20px;
+}
+
+.input-group label{
+display:block;
+margin-bottom:8px;
+font-weight:bold;
+color:#fff;
+}
+
+.input-box{
+position:relative;
+}
+
+.input-box i:first-child{
+position:absolute;
+left:15px;
+top:50%;
+transform:translateY(-50%);
+color:#94a3b8;
+}
+
+.input-box input{
+width:100%;
+height:55px;
+padding-left:48px;
+padding-right:55px;
+border:none;
+outline:none;
+background:#0f172a;
+color:#fff;
+border-radius:12px;
+font-size:16px;
+border:1px solid #334155;
+transition:.3s;
+}
+
+.input-box input:focus{
+border-color:#22c55e;
+}
+
+#togglePassword{
+position:absolute;
+right:10px;
+top:50%;
+transform:translateY(-50%);
+width:40px;
+height:40px;
+border:none;
+background:none;
+cursor:pointer;
+color:#94a3b8;
+font-size:18px;
+}
+
+#togglePassword:hover{
+color:#22c55e;
+}
+
+/* ======================================
+REMEMBER
+====================================== */
+
+.remember-box{
+display:flex;
+justify-content:space-between;
+align-items:center;
+margin-bottom:25px;
+font-size:14px;
+}
+
+.remember-box label{
+color:#cbd5e1;
+display:flex;
+align-items:center;
+gap:8px;
+}
+
+.remember-box a{
+color:#22c55e;
+text-decoration:none;
+}
+
+.remember-box a:hover{
+text-decoration:underline;
+}
+
+/* ======================================
+BUTTON
+====================================== */
+
+.login-btn{
+width:100%;
+height:55px;
+border:none;
+border-radius:12px;
+background:#22c55e;
+color:#fff;
+font-size:17px;
+font-weight:bold;
+cursor:pointer;
+transition:.3s;
+}
+
+.login-btn:hover{
+background:#16a34a;
+transform:translateY(-2px);
+}
+
+.login-btn i{
+margin-right:8px;
+}
+
+/* ======================================
+ERROR
+====================================== */
+
+.login-error{
+margin-top:18px;
+text-align:center;
+font-size:15px;
+font-weight:bold;
+color:#ef4444;
+min-height:22px;
+}
+
+/* ======================================
+RESPONSIVE
+====================================== */
+
+@media(max-width:600px){
+
+.login-card{
+padding:25px;
+}
+
+.logo-box h1{
+font-size:28px;
+}
+
+.login-card h2{
+font-size:24px;
+}
+
+}
