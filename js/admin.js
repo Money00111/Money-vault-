@@ -22,7 +22,14 @@ import {
     onValue
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
 
-
+import "./adminNavigation.js";
+import "./adminDashboard.js";
+import "./adminDeposits.js";
+import "./adminWithdraws.js";
+import "./adminUsers.js";
+import "./adminTransactions.js";
+import "./adminSettings.js";
+import "./adminQuickActions.js";
 // ======================================
 // ADMIN CONFIG
 // ======================================
