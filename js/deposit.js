@@ -222,6 +222,8 @@ depositForm?.addEventListener("submit", async (e) => {
 
         await set(depositRef, depositData);
 
+        await refreshDepositPage();
+
         depositStatus.textContent = "Pending Approval";
 
         depositStatus.style.color = "#f59e0b";
@@ -343,6 +345,86 @@ async function loadDepositHistory() {
         console.error(error);
 
     }
+
+}
+
+// ======================================
+// DEPOSIT.JS PART 5
+// REFRESH HISTORY + STATUS
+// ======================================
+
+// Hamagara history nyuma yo kwinjira
+
+onAuthStateChanged(auth, async (user) => {
+
+    if (!user) {
+
+        window.location.href = "login.html";
+        return;
+
+    }
+
+    currentUser = user;
+
+    loadingScreen.style.display = "none";
+
+    await loadDepositHistory();
+
+});
+
+// ======================================
+// REFRESH AFTER SUBMIT
+// ======================================
+
+async function refreshDepositPage() {
+
+    depositStatus.textContent = "Pending Approval";
+    depositStatus.style.color = "#f59e0b";
+
+    await loadDepositHistory();
+
+}
+
+// ======================================
+// SUBMIT SUCCESS
+// Ongeraho iyi line nyuma ya:
+// await set(depositRef, depositData);
+// ======================================
+
+// await refreshDepositPage();
+
+// ======================================
+// FORMAT STATUS
+// ======================================
+
+function formatStatus(status) {
+
+    if (!status) return "Pending";
+
+    switch (status.toLowerCase()) {
+
+        case "approved":
+            return "Approved";
+
+        case "rejected":
+            return "Rejected";
+
+        default:
+            return "Pending";
+
+    }
+
+}
+
+// ======================================
+// FORMAT DATE
+// ======================================
+
+function formatDate(timestamp) {
+
+    if (!timestamp) return "-";
+
+    return new Date(timestamp).toLocaleString();
 
 }
 
