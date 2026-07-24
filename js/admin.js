@@ -22,14 +22,6 @@ import {
     onValue
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
 
-import {
-    ref,
-    get,
-    update,
-    push,
-    set
-} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
-
 
 // ======================================
 // ADMIN CONFIG
