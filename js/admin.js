@@ -3,6 +3,7 @@
 // IMPORTS + AUTH + NAVIGATION
 // Money Vault
 // ======================================
+import { loadDeposits } from "./adminDeposits.js";
 
 import { auth, db } from "./firebase.js";
 
