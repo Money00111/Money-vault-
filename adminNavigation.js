@@ -162,4 +162,56 @@ window.addEventListener("resize", () => {
 
 });
 
-        
+    // ======================================
+// ADMIN NAVIGATION PART 3
+// PAGE TITLE + LOADING + HELPERS
+// ======================================
+
+// Header Title
+
+const pageTitle = document.getElementById("pageTitle");
+
+// Loading Screen
+
+const loadingScreen = document.getElementById("loadingScreen");
+
+// ======================================
+// PAGE TITLES
+// ======================================
+
+const pageTitles = {
+
+    dashboard: "Admin Dashboard",
+
+    deposits: "Deposit Requests",
+
+    withdraws: "Withdraw Requests",
+
+    users: "Users Management",
+
+    transactions: "Transactions",
+
+    settings: "System Settings"
+
+};
+
+// ======================================
+// UPDATE HEADER
+// ======================================
+
+function updateHeader(page){
+
+    if(pageTitle){
+
+        pageTitle.textContent =
+            pageTitles[page] || "Money Vault Admin";
+
+    }
+
+}
+
+// ======================================
+// SHOW PAGE (Override)
+// ======================================
+
+export function    
