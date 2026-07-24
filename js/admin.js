@@ -227,6 +227,118 @@ document.getElementById("totalRejected");
 const totalAmount =
 document.getElementById("totalAmount");
 
+
+// ======================================
+// ADMIN APPROVE DEPOSIT
+// ======================================
+
+import {
+    ref,
+    get,
+    update,
+    push,
+    set
+} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
+
+
+async function approveDeposit(requestId, uid, amount){
+
+    try{
+
+        const userRef = ref(db, "users/" + uid);
+
+        const userSnap = await get(userRef);
+
+
+        if(!userSnap.exists()){
+
+            alert("User not found");
+
+            return;
+
+        }
+
+
+        const userData = userSnap.val();
+
+
+        const oldBalance = Number(userData.balance || 0);
+
+
+        const newBalance = oldBalance + Number(amount);
+
+
+
+        // Update user balance
+
+        await update(userRef, {
+
+            balance:newBalance
+
+        });
+
+
+
+        // Update deposit status
+
+        const depositRef = ref(
+            db,
+            "depositRequests/" + requestId
+        );
+
+
+        await update(depositRef, {
+
+            status:"approved",
+
+            approvedAt:Date.now()
+
+        });
+
+
+
+        // Add transaction history
+
+        const transactionRef = push(
+            ref(db,"transactions")
+        );
+
+
+        await set(transactionRef,{
+
+            uid:uid,
+
+            type:"Deposit",
+
+            amount:Number(amount),
+
+            status:"Approved",
+
+            createdAt:Date.now()
+
+        });
+
+
+
+        alert("Deposit Approved Successfully");
+
+
+        location.reload();
+
+
+
+    }catch(error){
+
+
+        console.error(error);
+
+
+        alert(error.message);
+
+
+    }
+
+}
 // ======================================
 // LOAD DASHBOARD
 // ======================================
