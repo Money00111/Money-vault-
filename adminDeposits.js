@@ -546,5 +546,135 @@ filterDeposits();
 
 },500);
 
-            
+     // ======================================
+// ADMIN DEPOSITS.JS
+// PART 5
+// AUTO REFRESH + EXPORT CSV
+// ======================================
+
+// ======================================
+// LIVE REFRESH
+// ======================================
+
+let autoRefresh = true;
+
+function startDepositRefresh(){
+
+    setInterval(()=>{
+
+        if(autoRefresh){
+
+            loadDeposits();
+
+        }
+
+    },10000);
+
+}
+
+startDepositRefresh();
+
+// ======================================
+// EXPORT CSV
+// ======================================
+
+const exportDepositsBtn =
+document.getElementById("exportDeposits");
+
+exportDepositsBtn?.addEventListener("click",async()=>{
+
+    const snapshot =
+    await get(ref(db,"depositRequests"));
+
+    if(!snapshot.exists()){
+
+        alert("No deposits found.");
+
+        return;
+
+    }
+
+    let csv =
+
+"User,Amount,Method,Phone,Transaction ID,Status,Date\n";
+
+    snapshot.forEach(child=>{
+
+        const d = child.val();
+
+        csv +=
+
+`${d.email},${d.amount},${d.paymentMethod},${d.senderPhone},${d.transactionId},${d.status},${d.paymentDate}\n`;
+
+    });
+
+    const blob =
+
+    new Blob([csv],{
+
+        type:"text/csv"
+
+    });
+
+    const url =
+
+    URL.createObjectURL(blob);
+
+    const a =
+
+    document.createElement("a");
+
+    a.href = url;
+
+    a.download =
+
+    "MoneyVault_Deposits.csv";
+
+    a.click();
+
+    URL.revokeObjectURL(url);
+
+});
+
+// ======================================
+// LIVE STATISTICS
+// ======================================
+
+function refreshStatistics(){
+
+    totalDeposits.textContent =
+
+    document.querySelectorAll(".request-card").length;
+
+    pendingDeposits.textContent =
+
+    document.querySelectorAll(".status.pending").length;
+
+    approvedDeposits.textContent =
+
+    document.querySelectorAll(".status.approved").length;
+
+    rejectedDeposits.textContent =
+
+    document.querySelectorAll(".status.rejected").length;
+
+}
+
+setInterval(refreshStatistics,3000);
+
+// ======================================
+// STOP AUTO REFRESH
+// ======================================
+
+window.addEventListener("beforeunload",()=>{
+
+    autoRefresh = false;
+
+});
+
+// ======================================
+// MODULE READY
+// ======================================
+
+console.log("✅ adminDeposits.js loaded successfully.");       
 
