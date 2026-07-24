@@ -416,5 +416,135 @@ document.addEventListener("click", async (e)=>{
 
 loadDeposits();
 
+// ======================================
+// ADMIN DEPOSITS.JS
+// PART 4
+// SEARCH + FILTER + VIEW DETAILS
+// ======================================
 
+// Elements
+
+const searchDeposit =
+document.getElementById("searchDeposit");
+
+const filterDeposit =
+document.getElementById("filterDeposit");
+
+// ======================================
+// FILTER DEPOSITS
+// ======================================
+
+function filterDeposits(){
+
+    const keyword =
+    searchDeposit.value.toLowerCase().trim();
+
+    const status =
+    filterDeposit.value;
+
+    const cards =
+    document.querySelectorAll(".request-card");
+
+    cards.forEach(card=>{
+
+        const text =
+        card.innerText.toLowerCase();
+
+        const badge =
+        card.querySelector(".status");
+
+        const cardStatus =
+        badge ?
+        badge.innerText.toLowerCase() :
+        "";
+
+        const matchSearch =
+        text.includes(keyword);
+
+        const matchStatus =
+
+        status === "all"
+
+        ||
+
+        cardStatus === status.toLowerCase();
+
+        card.style.display =
+
+        matchSearch && matchStatus
+
+        ?
+
+        "block"
+
+        :
+
+        "none";
+
+    });
+
+}
+
+// ======================================
+// SEARCH
+// ======================================
+
+if(searchDeposit){
+
+searchDeposit.addEventListener(
+
+"keyup",
+
+filterDeposits
+
+);
+
+}
+
+// ======================================
+// FILTER
+// ======================================
+
+if(filterDeposit){
+
+filterDeposit.addEventListener(
+
+"change",
+
+filterDeposits
+
+);
+
+}
+
+// ======================================
+// VIEW DETAILS
+// ======================================
+
+document.addEventListener("click",(e)=>{
+
+const btn = e.target.closest(".viewBtn");
+
+if(!btn) return;
+
+const card =
+btn.closest(".request-card");
+
+if(!card) return;
+
+alert(card.innerText);
+
+});
+
+// ======================================
+// REFRESH FILTER
+// ======================================
+
+setTimeout(()=>{
+
+filterDeposits();
+
+},500);
+
+            
 
