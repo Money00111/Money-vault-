@@ -75,3 +75,91 @@ export function showPage(page){
 
 }
 
+// ======================================
+// ADMIN NAVIGATION PART 2
+// SIDEBAR TOGGLE + NAVIGATION
+// ======================================
+
+// Mobile Sidebar
+
+menuBtn?.addEventListener("click", () => {
+
+    sidebar.classList.toggle("active");
+
+});
+
+// ======================================
+// MENU NAVIGATION
+// ======================================
+
+menuLinks.forEach(link => {
+
+    link.addEventListener("click", (e) => {
+
+        e.preventDefault();
+
+        const page = link.dataset.page;
+
+        if (!page) return;
+
+        showPage(page);
+
+        // Change URL Hash
+
+        window.location.hash = page;
+
+        // Close Sidebar on Mobile
+
+        if (window.innerWidth <= 768) {
+
+            sidebar.classList.remove("active");
+
+        }
+
+    });
+
+});
+
+// ======================================
+// HASH NAVIGATION
+// ======================================
+
+function loadFromHash() {
+
+    const hash = window.location.hash.replace("#", "");
+
+    if (hash && pages[hash]) {
+
+        showPage(hash);
+
+    } else {
+
+        showPage("dashboard");
+
+    }
+
+}
+
+// Load First Page
+
+loadFromHash();
+
+// Change Page when Hash Changes
+
+window.addEventListener("hashchange", loadFromHash);
+
+// ======================================
+// CLOSE SIDEBAR ON RESIZE
+// ======================================
+
+window.addEventListener("resize", () => {
+
+    if (window.innerWidth > 768) {
+
+        sidebar.classList.remove("active");
+
+    }
+
+});
+
+        
