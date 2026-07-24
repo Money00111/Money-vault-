@@ -186,4 +186,121 @@ rejectedDeposits.textContent=rejected;
 
 }
 
+// ======================================
+// ADMIN DEPOSITS.JS
+// PART 2
+// APPROVE DEPOSIT
+// ======================================
+
+async function approveDeposit(depositId){
+
+    try{
+
+        const depositRef = ref(db, "depositRequests/" + depositId);
+
+        const snapshot = await get(depositRef);
+
+        if(!snapshot.exists()){
+
+            alert("Deposit not found.");
+
+            return;
+
+        }
+
+        const deposit = snapshot.val();
+
+        // Ntukongere kubara deposit yemejwe
+
+        if(deposit.status === "approved"){
+
+            alert("This deposit has already been approved.");
+
+            return;
+
+        }
+
+        // Soma balance y'umukoresha
+
+        const userRef = ref(db, "users/" + deposit.uid);
+
+        const userSnap = await get(userRef);
+
+        if(!userSnap.exists()){
+
+            alert("User account not found.");
+
+            return;
+
+        }
+
+        const user = userSnap.val();
+
+        const currentBalance = Number(user.balance || 0);
+
+        const currentDeposits = Number(user.totalDeposits || 0);
+
+        const newBalance = currentBalance + Number(deposit.amount);
+
+        const newTotalDeposits = currentDeposits + Number(deposit.amount);
+
+        // Hindura user balance
+
+        await update(userRef,{
+
+            balance: newBalance,
+
+            totalDeposits: newTotalDeposits
+
+        });
+
+        // Hindura deposit status
+
+        await update(depositRef,{
+
+            status: "approved",
+
+            approvedAt: Date.now()
+
+        });
+
+        // Andika muri Transaction History
+
+        const transactionRef = push(ref(db, "transactions"));
+
+        await set(transactionRef,{
+
+            uid: deposit.uid,
+
+            email: deposit.email,
+
+            type: "deposit",
+
+            amount: Number(deposit.amount),
+
+            status: "approved",
+
+            paymentMethod: deposit.paymentMethod,
+
+            transactionId: deposit.transactionId,
+
+            createdAt: Date.now()
+
+        });
+
+        alert("Deposit approved successfully.");
+
+    }
+
+    catch(error){
+
+        console.error(error);
+
+        alert(error.message);
+
+    }
+
+}
+
+
 
