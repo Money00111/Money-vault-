@@ -22,6 +22,15 @@ import {
     onValue
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
 
+import {
+    ref,
+    get,
+    update,
+    push,
+    set
+} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
+
+
 // ======================================
 // ADMIN CONFIG
 // ======================================
@@ -231,14 +240,6 @@ document.getElementById("totalAmount");
 // ======================================
 // ADMIN APPROVE DEPOSIT
 // ======================================
-
-import {
-    ref,
-    get,
-    update,
-    push,
-    set
-} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
 
 
 async function approveDeposit(requestId, uid, amount){
