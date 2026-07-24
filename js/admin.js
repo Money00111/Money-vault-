@@ -631,71 +631,149 @@ function activateDepositButtons() {
 
     // APPROVE
 
-    document.querySelectorAll(".approveBtn")
-    .forEach(button => {
+ document
+.querySelectorAll(".approveBtn")
+.forEach(button => {
 
-        button.onclick = async () => {
+button.onclick = async () => {
 
-            const id = button.dataset.id;
+    const id = button.dataset.id;
 
-            if (!confirm("Approve this deposit?")) return;
 
-            const depositRef =
-            ref(db, "depositRequests/" + id);
+    if(!confirm("Approve this deposit?")) return;
 
-            const snap =
-            await get(depositRef);
 
-            if (!snap.exists()) return;
+    try {
 
-            const deposit =
-            snap.val();
+        const depositRef =
+        ref(db,"depositRequests/"+id);
 
-            await update(depositRef, {
 
-                status: "Approved"
+        const snap =
+        await get(depositRef);
 
-            });
 
-            if (deposit.uid) {
+        if(!snap.exists()){
 
-                const userRef =
-                ref(db, "users/" + deposit.uid);
+            alert("Deposit not found");
 
-                const userSnap =
-                await get(userRef);
+            return;
 
-                if (userSnap.exists()) {
+        }
 
-                    const user =
-                    userSnap.val();
 
-                    const balance =
-                    Number(user.balance || 0);
+        const deposit = snap.val();
 
-                    const deposits =
-                    Number(user.totalDeposits || 0);
 
-                    await update(userRef, {
 
-                        balance:
-                        balance + Number(deposit.amount || 0),
+        // Irinde approve kabiri
 
-                        totalDeposits:
-                        deposits + Number(deposit.amount || 0)
+        if(deposit.status === "Approved"){
 
-                    });
+            alert("Already approved");
 
-                }
+            return;
+
+        }
+
+
+
+        // Update deposit
+
+        await update(depositRef,{
+
+            status:"Approved",
+
+            approvedAt:Date.now()
+
+        });
+
+
+
+        // Update user balance
+
+        if(deposit.uid){
+
+
+            const userRef =
+            ref(db,"users/"+deposit.uid);
+
+
+            const userSnap =
+            await get(userRef);
+
+
+
+            if(userSnap.exists()){
+
+
+                const user =
+                userSnap.val();
+
+
+                await update(userRef,{
+
+                    balance:
+                    Number(user.balance || 0)
+                    +
+                    Number(deposit.amount || 0),
+
+
+                    totalDeposits:
+                    Number(user.totalDeposits || 0)
+                    +
+                    Number(deposit.amount || 0)
+
+                });
+
 
             }
 
-            alert("Deposit Approved");
 
-        };
+        }
 
-    });
 
+
+        // Transaction history
+
+        await set(
+
+            push(ref(db,"transactions")),
+
+            {
+
+                uid:deposit.uid,
+
+                type:"Deposit",
+
+                amount:Number(deposit.amount),
+
+                status:"Approved",
+
+                createdAt:Date.now()
+
+            }
+
+        );
+
+
+
+        alert("Deposit Approved Successfully");
+
+
+    }catch(error){
+
+        console.error(error);
+
+        alert(error.message);
+
+    }
+
+
+};
+
+
+});
     // REJECT
 
     document.querySelectorAll(".rejectBtn")
