@@ -418,7 +418,73 @@ Running
     <!-- ======================================
 DEPOSIT SECTION
 ====================================== -->
+<section id="depositSection" class="page-section">
 
+    <div class="section-header">
+
+        <h2>Deposit Requests</h2>
+
+        <div class="section-actions">
+
+            <input
+                id="searchDeposit"
+                placeholder="Search deposits">
+
+            <select id="filterDeposit">
+
+                <option value="all">All</option>
+                <option value="pending">Pending</option>
+                <option value="approved">Approved</option>
+                <option value="rejected">Rejected</option>
+
+            </select>
+
+            <button id="exportDeposits">
+                Export CSV
+            </button>
+
+        </div>
+
+    </div>
+
+    <div class="deposit-summary">
+
+        <div class="summary-card">
+            <h3 id="totalDeposits">0</h3>
+            <p>Total</p>
+        </div>
+
+        <div class="summary-card">
+            <h3 id="pendingDeposits">0</h3>
+            <p>Pending</p>
+        </div>
+
+        <div class="summary-card">
+            <h3 id="approvedDeposits">0</h3>
+            <p>Approved</p>
+        </div>
+
+        <div class="summary-card">
+            <h3 id="rejectedDeposits">0</h3>
+            <p>Rejected</p>
+        </div>
+
+    </div>
+
+    <div id="depositList" class="request-list"></div>
+
+    <div id="emptyDeposit" class="empty-state" style="display:none;">
+
+        <i class="fa-solid fa-wallet"></i>
+
+        <h3>No Deposit Requests</h3>
+
+        <p>Deposit requests will appear here.</p>
+
+    </div>
+
+                </section>
+    
 <section
 id="depositSection"
 class="page-section"
