@@ -302,5 +302,119 @@ async function approveDeposit(depositId){
 
 }
 
+// ======================================
+// ADMIN DEPOSITS.JS
+// PART 3
+// REJECT + BUTTON EVENTS
+// ======================================
+
+// ======================================
+// REJECT DEPOSIT
+// ======================================
+
+async function rejectDeposit(depositId){
+
+    try{
+
+        const depositRef = ref(db, "depositRequests/" + depositId);
+
+        const snapshot = await get(depositRef);
+
+        if(!snapshot.exists()){
+
+            alert("Deposit not found.");
+
+            return;
+
+        }
+
+        const deposit = snapshot.val();
+
+        if(deposit.status === "approved"){
+
+            alert("Approved deposit cannot be rejected.");
+
+            return;
+
+        }
+
+        if(deposit.status === "rejected"){
+
+            alert("Deposit already rejected.");
+
+            return;
+
+        }
+
+        await update(depositRef,{
+
+            status: "rejected",
+
+            rejectedAt: Date.now()
+
+        });
+
+        alert("Deposit rejected successfully.");
+
+    }
+
+    catch(error){
+
+        console.error(error);
+
+        alert(error.message);
+
+    }
+
+}
+
+// ======================================
+// BUTTON EVENTS
+// ======================================
+
+document.addEventListener("click", async (e)=>{
+
+    // APPROVE
+
+    if(e.target.classList.contains("approveBtn")){
+
+        const id = e.target.dataset.id;
+
+        e.target.disabled = true;
+
+        e.target.innerHTML =
+        '<i class="fa-solid fa-spinner fa-spin"></i> Approving...';
+
+        await approveDeposit(id);
+
+        loadDeposits();
+
+    }
+
+    // REJECT
+
+    if(e.target.classList.contains("rejectBtn")){
+
+        const id = e.target.dataset.id;
+
+        e.target.disabled = true;
+
+        e.target.innerHTML =
+        '<i class="fa-solid fa-spinner fa-spin"></i> Rejecting...';
+
+        await rejectDeposit(id);
+
+        loadDeposits();
+
+    }
+
+});
+
+// ======================================
+// START
+// ======================================
+
+loadDeposits();
+
 
 
