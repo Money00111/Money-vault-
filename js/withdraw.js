@@ -254,3 +254,140 @@ logoutBtn?.addEventListener("click", async (e) => {
 
 });
 
+// ======================================
+// WITHDRAW.JS - PART 1B.2
+// WITHDRAW CALCULATOR
+// ======================================
+
+// Summary Elements
+
+const enteredAmount =
+document.getElementById("enteredAmount");
+
+const withdrawFee =
+document.getElementById("withdrawFee");
+
+const receiveAmount =
+document.getElementById("receiveAmount");
+
+const summaryAmount =
+document.getElementById("summaryAmount");
+
+const summaryFee =
+document.getElementById("summaryFee");
+
+const summaryReceive =
+document.getElementById("summaryReceive");
+
+
+// ======================================
+// UPDATE CALCULATOR
+// ======================================
+
+function updateWithdrawCalculator() {
+
+    const amount = Number(withdrawAmount.value) || 0;
+
+    const balance = Number(window.userBalance || 0);
+
+    const fee = Math.round(amount * 0.05);
+
+    const receive = amount - fee;
+
+    enteredAmount.textContent =
+        amount.toLocaleString() + " RWF";
+
+    withdrawFee.textContent =
+        fee.toLocaleString() + " RWF";
+
+    receiveAmount.textContent =
+        receive.toLocaleString() + " RWF";
+
+    summaryAmount.textContent =
+        amount.toLocaleString() + " RWF";
+
+    summaryFee.textContent =
+        fee.toLocaleString() + " RWF";
+
+    summaryReceive.textContent =
+        receive.toLocaleString() + " RWF";
+
+    // Validation
+
+    if (amount === 0) {
+
+        submitBtn.disabled = true;
+
+        return;
+
+    }
+
+    if (amount < 2000) {
+
+        submitBtn.disabled = true;
+
+        return;
+
+    }
+
+    if (amount > 500000) {
+
+        submitBtn.disabled = true;
+
+        return;
+
+    }
+
+    if (amount > balance) {
+
+        submitBtn.disabled = true;
+
+        return;
+
+    }
+
+    submitBtn.disabled = false;
+
+}
+
+
+// ======================================
+// LIVE INPUT
+// ======================================
+
+withdrawAmount?.addEventListener("input", () => {
+
+    updateWithdrawCalculator();
+
+});
+
+
+// ======================================
+// RESET SUMMARY
+// ======================================
+
+function resetCalculator() {
+
+    enteredAmount.textContent = "0 RWF";
+
+    withdrawFee.textContent = "0 RWF";
+
+    receiveAmount.textContent = "0 RWF";
+
+    summaryAmount.textContent = "0 RWF";
+
+    summaryFee.textContent = "0 RWF";
+
+    summaryReceive.textContent = "0 RWF";
+
+    submitBtn.disabled = true;
+
+}
+
+
+// ======================================
+// START
+// ======================================
+
+resetCalculator();
+
