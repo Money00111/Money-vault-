@@ -16,7 +16,10 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
 
 import {
-    ref,
+    update,
+     push,
+     set
+     ref,
     onValue
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
 
