@@ -202,7 +202,257 @@ DASHBOARD
 id="dashboardSection"
 class="page-section active">
 
-<!-- Dashboard izaza muri Part 2 -->
+<!-- ======================================
+DASHBOARD
+====================================== -->
+
+<h2 class="section-title">
+    <i class="fa-solid fa-chart-line"></i>
+    Admin Dashboard
+</h2>
+
+<!-- Statistics -->
+
+<div class="statistics-grid">
+
+    <div class="stat-card">
+        <div class="stat-icon users">
+            <i class="fa-solid fa-users"></i>
+        </div>
+
+        <div class="stat-info">
+            <h3 id="totalUsers">0</h3>
+            <p>Total Users</p>
+        </div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-icon deposits">
+            <i class="fa-solid fa-wallet"></i>
+        </div>
+
+        <div class="stat-info">
+            <h3 id="dashboardTotalDeposits">0</h3>
+            <p>Total Deposits</p>
+        </div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-icon pending">
+            <i class="fa-solid fa-clock"></i>
+        </div>
+
+        <div class="stat-info">
+            <h3 id="dashboardPendingDeposits">0</h3>
+            <p>Pending Deposits</p>
+        </div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-icon approved">
+            <i class="fa-solid fa-circle-check"></i>
+        </div>
+
+        <div class="stat-info">
+            <h3 id="dashboardApprovedDeposits">0</h3>
+            <p>Approved Deposits</p>
+        </div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-icon rejected">
+            <i class="fa-solid fa-circle-xmark"></i>
+        </div>
+
+        <div class="stat-info">
+            <h3 id="dashboardTotalWithdraws">0</h3>
+            <p>Total Withdraws</p>
+        </div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-icon amount">
+            <i class="fa-solid fa-sack-dollar"></i>
+        </div>
+
+        <div class="stat-info">
+            <h3 id="systemBalance">0 RWF</h3>
+            <p>Total System Balance</p>
+        </div>
+    </div>
+
+</div>
+
+<!-- Dashboard Row -->
+
+<div class="dashboard-row">
+
+    <!-- Quick Actions -->
+
+    <div class="dashboard-card">
+
+        <h3>
+
+            <i class="fa-solid fa-bolt"></i>
+
+            Quick Actions
+
+        </h3>
+
+        <div class="quick-actions">
+
+            <button id="refreshDashboard">
+
+                <i class="fa-solid fa-rotate"></i>
+
+                Refresh Dashboard
+
+            </button>
+
+            <button id="openDeposits">
+
+                <i class="fa-solid fa-wallet"></i>
+
+                Deposits
+
+            </button>
+
+            <button id="openWithdraws">
+
+                <i class="fa-solid fa-money-bill-transfer"></i>
+
+                Withdraws
+
+            </button>
+
+            <button id="openUsers">
+
+                <i class="fa-solid fa-users"></i>
+
+                Users
+
+            </button>
+
+            <button id="openTransactions">
+
+                <i class="fa-solid fa-clock-rotate-left"></i>
+
+                Transactions
+
+            </button>
+
+            <button id="openSettings">
+
+                <i class="fa-solid fa-gear"></i>
+
+                Settings
+
+            </button>
+
+        </div>
+
+    </div>
+
+    <!-- System Status -->
+
+    <div class="dashboard-card">
+
+        <h3>
+
+            <i class="fa-solid fa-server"></i>
+
+            System Status
+
+        </h3>
+
+        <div class="system-status">
+
+            <p>
+
+                Firebase
+
+                <span class="status-online">
+
+                    Online
+
+                </span>
+
+            </p>
+
+            <p>
+
+                Authentication
+
+                <span class="status-online">
+
+                    Active
+
+                </span>
+
+            </p>
+
+            <p>
+
+                Database
+
+                <span class="status-online">
+
+                    Connected
+
+                </span>
+
+            </p>
+
+            <p>
+
+                Storage
+
+                <span class="status-online">
+
+                    Ready
+
+                </span>
+
+            </p>
+
+        </div>
+
+    </div>
+
+</div>
+
+<!-- Recent Activity -->
+
+<div class="dashboard-card" style="margin-top:25px;">
+
+    <h3>
+
+        <i class="fa-solid fa-clock-rotate-left"></i>
+
+        Recent Activity
+
+    </h3>
+
+    <div id="recentActivity">
+
+        <div class="empty-state">
+
+            <i class="fa-solid fa-inbox"></i>
+
+            <h3>No Recent Activity</h3>
+
+            <p>
+
+                Deposits, Withdraws and other admin activities
+                will appear here.
+
+            </p>
+
+        </div>
+
+    </div>
+
+</div>
 
 </section>
 
