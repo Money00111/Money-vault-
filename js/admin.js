@@ -633,4 +633,152 @@ function renderDeposits(data) {
 
 }
 
+// ======================================
+// ADMIN.JS PART 3C
+// REJECT + SEARCH + FILTER
+// ======================================
 
+// REJECT DEPOSIT
+
+depositList.addEventListener("click", async (e) => {
+
+    const btn = e.target.closest(".rejectBtn");
+
+    if (!btn) return;
+
+    const depositId = btn.dataset.id;
+
+    const deposit = depositsData[depositId];
+
+    if (!deposit) return;
+
+    if (deposit.status !== "pending") {
+
+        alert("This deposit has already been processed.");
+
+        return;
+
+    }
+
+    const ok = confirm("Reject this deposit?");
+
+    if (!ok) return;
+
+    try {
+
+        await update(
+
+            ref(db, "depositRequests/" + depositId),
+
+            {
+
+                status: "rejected",
+
+                rejectedAt: Date.now()
+
+            }
+
+        );
+
+        // onValue() izahita ivugurura page
+
+        alert("Deposit Rejected Successfully.");
+
+    }
+
+    catch (error) {
+
+        console.error(error);
+
+        alert(error.message);
+
+    }
+
+});
+
+
+// ======================================
+// SEARCH
+// ======================================
+
+const depositSearch =
+document.getElementById("depositSearch");
+
+depositSearch?.addEventListener("input", () => {
+
+    applyDepositFilter();
+
+});
+
+
+// ======================================
+// FILTER
+// ======================================
+
+const depositFilter =
+document.getElementById("depositFilter");
+
+depositFilter?.addEventListener("change", () => {
+
+    applyDepositFilter();
+
+});
+
+
+// ======================================
+// APPLY SEARCH + FILTER
+// ======================================
+
+function applyDepositFilter() {
+
+    const keyword =
+        (depositSearch.value || "")
+        .toLowerCase()
+        .trim();
+
+    const filter =
+        depositFilter.value;
+
+    const filtered = {};
+
+    Object.entries(depositsData).forEach(([id, dep]) => {
+
+        const email =
+            (dep.email || "")
+            .toLowerCase();
+
+        const phone =
+            (dep.senderPhone || "")
+            .toLowerCase();
+
+        const tx =
+            (dep.transactionId || "")
+            .toLowerCase();
+
+        const matchesSearch =
+
+            email.includes(keyword) ||
+
+            phone.includes(keyword) ||
+
+            tx.includes(keyword);
+
+        const matchesFilter =
+
+            filter === "all" ||
+
+            dep.status === filter;
+
+        if (matchesSearch && matchesFilter) {
+
+            filtered[id] = dep;
+
+        }
+
+    });
+
+    renderDeposits(filtered);
+
+}
+
+    
