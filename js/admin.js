@@ -464,8 +464,400 @@ DEPOSITS
 id="depositsSection"
 class="page-section">
 
-<!-- Deposits zizaza muri Part 3 -->
 
+<!-- ======================================
+DEPOSIT MANAGEMENT
+====================================== -->
+
+<div class="section-header">
+
+    <h2>
+        <i class="fa-solid fa-wallet"></i>
+        Deposit Management
+    </h2>
+
+    <div class="section-actions">
+
+        <input
+            type="text"
+            id="depositSearch"
+            placeholder="Search by Name, Email or Transaction ID">
+
+        <select id="depositFilter">
+
+            <option value="all">All Deposits</option>
+            <option value="pending">Pending</option>
+            <option value="approved">Approved</option>
+            <option value="rejected">Rejected</option>
+
+        </select>
+
+    </div>
+
+</div>
+
+<!-- ======================================
+DEPOSIT SUMMARY
+====================================== -->
+
+<div class="deposit-summary">
+
+    <div class="summary-card">
+
+        <h3 id="depositTotalCount">0</h3>
+
+        <p>Total Deposits</p>
+
+    </div>
+
+    <div class="summary-card">
+
+        <h3 id="depositPendingCount">0</h3>
+
+        <p>Pending</p>
+
+    </div>
+
+    <div class="summary-card">
+
+        <h3 id="depositApprovedCount">0</h3>
+
+        <p>Approved</p>
+
+    </div>
+
+    <div class="summary-card">
+
+        <h3 id="depositRejectedCount">0</h3>
+
+        <p>Rejected</p>
+
+    </div>
+
+</div>
+
+<!-- ======================================
+DEPOSIT REQUESTS
+====================================== -->
+
+<div
+id="depositList"
+class="request-list">
+
+<!-- Admin.js izashyiramo Deposit Cards -->
+
+</div>
+
+<!-- ======================================
+EMPTY STATE
+====================================== -->
+
+<div
+id="emptyDeposit"
+class="empty-state"
+style="display:none;">
+
+<i class="fa-solid fa-wallet"></i>
+
+<h3>No Deposit Requests</h3>
+
+<p>
+
+Deposit requests from users will appear here.
+
+</p>
+
+</div>
+
+      <!-- ======================================
+DEPOSIT CARD TEMPLATE
+Admin.js izajya iyikora automatically
+====================================== -->
+
+<div class="request-card">
+
+    <div class="request-top">
+
+        <h3>
+            User Deposit
+        </h3>
+
+        <span class="status pending">
+
+            Pending
+
+        </span>
+
+    </div>
+
+    <p>
+
+        <strong>Name:</strong>
+
+        <span class="deposit-name">
+
+            John Doe
+
+        </span>
+
+    </p>
+
+    <p>
+
+        <strong>Email:</strong>
+
+        <span class="deposit-email">
+
+            john@gmail.com
+
+        </span>
+
+    </p>
+
+    <p>
+
+        <strong>Amount:</strong>
+
+        <span class="deposit-amount">
+
+            10,000 RWF
+
+        </span>
+
+    </p>
+
+    <p>
+
+        <strong>Phone:</strong>
+
+        <span class="deposit-phone">
+
+            0788123456
+
+        </span>
+
+    </p>
+
+    <p>
+
+        <strong>Payment Method:</strong>
+
+        <span class="deposit-method">
+
+            MTN Mobile Money
+
+        </span>
+
+    </p>
+
+    <p>
+
+        <strong>Transaction ID:</strong>
+
+        <span class="deposit-transaction">
+
+            PP240712ABC123
+
+        </span>
+
+    </p>
+
+    <p>
+
+        <strong>Payment Date:</strong>
+
+        <span class="deposit-date">
+
+            24 Jul 2026 10:45 AM
+
+        </span>
+
+    </p>
+
+    <p>
+
+        <strong>Note:</strong>
+
+        <span class="deposit-note">
+
+            No additional note.
+
+        </span>
+
+    </p>
+
+    <!-- ======================================
+    ACTION BUTTONS
+    ====================================== -->
+
+    <div class="action-buttons">
+
+        <button
+            class="approveBtn">
+
+            <i class="fa-solid fa-circle-check"></i>
+
+            Approve
+
+        </button>
+
+        <button
+            class="rejectBtn">
+
+            <i class="fa-solid fa-circle-xmark"></i>
+
+            Reject
+
+        </button>
+
+    </div>
+
+</div>
+<!-- ======================================
+DEPOSIT CARD TEMPLATE
+Admin.js izajya iyikora automatically
+====================================== -->
+
+<div class="request-card">
+
+    <div class="request-top">
+
+        <h3>
+            User Deposit
+        </h3>
+
+        <span class="status pending">
+
+            Pending
+
+        </span>
+
+    </div>
+
+    <p>
+
+        <strong>Name:</strong>
+
+        <span class="deposit-name">
+
+            John Doe
+
+        </span>
+
+    </p>
+
+    <p>
+
+        <strong>Email:</strong>
+
+        <span class="deposit-email">
+
+            john@gmail.com
+
+        </span>
+
+    </p>
+
+    <p>
+
+        <strong>Amount:</strong>
+
+        <span class="deposit-amount">
+
+            10,000 RWF
+
+        </span>
+
+    </p>
+
+    <p>
+
+        <strong>Phone:</strong>
+
+        <span class="deposit-phone">
+
+            0788123456
+
+        </span>
+
+    </p>
+
+    <p>
+
+        <strong>Payment Method:</strong>
+
+        <span class="deposit-method">
+
+            MTN Mobile Money
+
+        </span>
+
+    </p>
+
+    <p>
+
+        <strong>Transaction ID:</strong>
+
+        <span class="deposit-transaction">
+
+            PP240712ABC123
+
+        </span>
+
+    </p>
+
+    <p>
+
+        <strong>Payment Date:</strong>
+
+        <span class="deposit-date">
+
+            24 Jul 2026 10:45 AM
+
+        </span>
+
+    </p>
+
+    <p>
+
+        <strong>Note:</strong>
+
+        <span class="deposit-note">
+
+            No additional note.
+
+        </span>
+
+    </p>
+
+    <!-- ======================================
+    ACTION BUTTONS
+    ====================================== -->
+
+    <div class="action-buttons">
+
+        <button
+            class="approveBtn">
+
+            <i class="fa-solid fa-circle-check"></i>
+
+            Approve
+
+        </button>
+
+        <button
+            class="rejectBtn">
+
+            <i class="fa-solid fa-circle-xmark"></i>
+
+            Reject
+
+        </button>
+
+    </div>
+
+</div>
+                
 </section>
 
 <!-- ======================================
