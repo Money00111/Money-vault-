@@ -535,3 +535,215 @@ withdrawForm?.addEventListener("submit", async (e) => {
 
 });
 
+// ======================================
+// WITHDRAW.JS - PART 3A.1
+// LOAD WITHDRAW HISTORY
+// ======================================
+
+const historyList =
+document.getElementById("historyList");
+
+const withdrawStatus =
+document.getElementById("withdrawStatus");
+
+let withdrawHistory = {};
+
+function loadWithdrawHistory() {
+
+    if (!currentUser) return;
+
+    const withdrawRef = ref(db, "withdrawRequests");
+
+    onValue(withdrawRef, (snapshot) => {
+
+        withdrawHistory = {};
+
+        historyList.innerHTML = "";
+
+        if (!snapshot.exists()) {
+
+            historyList.innerHTML = `
+
+                <div class="history-card empty">
+
+                    <i class="fa-solid fa-wallet"></i>
+
+                    <h3>No Withdraw History</h3>
+
+                    <p>Your withdraw requests will appear here.</p>
+
+                </div>
+
+            `;
+
+            withdrawStatus.textContent =
+                "No Withdraw Request";
+
+            return;
+
+        }
+
+        snapshot.forEach((child) => {
+
+            const id = child.key;
+
+            const data = child.val();
+
+            if (data.uid !== currentUser.uid) return;
+
+            withdrawHistory[id] = data;
+
+        });
+
+        renderWithdrawHistory(withdrawHistory);
+
+        updateWithdrawStatus();
+
+    });
+
+}
+
+
+// ======================================
+// START HISTORY
+// ======================================
+
+onAuthStateChanged(auth, (user) => {
+
+    if (!user) return;
+
+    currentUser = user;
+
+    loadWithdrawHistory();
+
+});
+// ======================================
+// WITHDRAW.JS - PART 3A.2
+// RENDER WITHDRAW HISTORY
+// ======================================
+
+function renderWithdrawHistory(data) {
+
+    historyList.innerHTML = "";
+
+    const requests = Object.entries(data);
+
+    if (requests.length === 0) {
+
+        historyList.innerHTML = `
+
+        <div class="history-card empty">
+
+            <i class="fa-solid fa-money-bill-transfer"></i>
+
+            <h3>No Withdraw History</h3>
+
+            <p>You haven't submitted any withdraw request yet.</p>
+
+        </div>
+
+        `;
+
+        return;
+
+    }
+
+    requests.sort((a, b) => {
+
+        return (b[1].createdAt || 0) - (a[1].createdAt || 0);
+
+    });
+
+    requests.forEach(([id, withdraw]) => {
+
+        const status =
+            (withdraw.status || "pending").toLowerCase();
+
+        const card = document.createElement("div");
+
+        card.className = "history-card";
+
+        card.innerHTML = `
+
+        <div class="history-info">
+
+            <h3>
+
+                ${Number(withdraw.amount || 0).toLocaleString()} RWF
+
+            </h3>
+
+            <p>
+
+                <strong>Receive:</strong>
+
+                ${Number(withdraw.receive || 0).toLocaleString()} RWF
+
+            </p>
+
+            <p>
+
+                <strong>Fee:</strong>
+
+                ${Number(withdraw.fee || 0).toLocaleString()} RWF
+
+            </p>
+
+            <p>
+
+                <strong>Method:</strong>
+
+                ${withdraw.paymentMethod || "-"}
+
+            </p>
+
+            <p>
+
+                <strong>Phone:</strong>
+
+                ${withdraw.phone || "-"}
+
+            </p>
+
+            <p>
+
+                <strong>Account Name:</strong>
+
+                ${withdraw.accountName || "-"}
+
+            </p>
+
+            <p>
+
+                <strong>Reason:</strong>
+
+                ${withdraw.reason || "-"}
+
+            </p>
+
+            <p>
+
+                <strong>Date:</strong>
+
+                ${formatWithdrawDate(withdraw.createdAt)}
+
+            </p>
+
+        </div>
+
+        <span class="status ${status}">
+
+            ${formatWithdrawStatus(status)}
+
+        </span>
+
+        `;
+
+        historyList.appendChild(card);
+
+    });
+
+}
+
+
+            
