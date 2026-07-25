@@ -1,933 +1,142 @@
-<!DOCTYPE html>
-<html lang="en">
+// ======================================
+// ADMIN.JS - PART 1
+// Money Vault Admin Panel
+// ======================================
 
-<head>
+import { auth, db } from "./firebase.js";
 
-<meta charset="UTF-8">
+import {
+    onAuthStateChanged,
+    signOut
+} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 
-<meta name="viewport"
-content="width=device-width, initial-scale=1.0">
+import {
+    ref,
+    get
+} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
 
-<title>Money Vault | Admin Panel</title>
 
-<link rel="stylesheet"
-href="css/admin.css">
+// ======================================
+// DOM ELEMENTS
+// ======================================
 
-<link rel="stylesheet"
-href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+const loadingScreen = document.getElementById("loadingScreen");
 
-</head>
+const adminName = document.getElementById("adminName");
+const adminEmail = document.getElementById("adminEmail");
 
-<body>
+const logoutBtn = document.getElementById("logoutBtn");
 
-<!-- ======================================
-LOADING SCREEN
-====================================== -->
 
-<div id="loadingScreen" class="loading-screen">
+// ======================================
+// ADMIN AUTH CHECK
+// ======================================
 
-<div class="loader"></div>
+onAuthStateChanged(auth, async (user) => {
 
-<h2>Loading Admin Panel...</h2>
+    if (!user) {
 
-</div>
+        window.location.href = "admin-login.html";
+        return;
 
-<!-- ======================================
-SIDEBAR
-====================================== -->
+    }
 
-<aside class="sidebar" id="sidebar">
+    try {
 
-<div class="sidebar-top">
+        const adminRef = ref(db, "admins/" + user.uid);
 
-<div class="logo">
+        const snap = await get(adminRef);
 
-<h2>💰 Money Vault</h2>
+        if (!snap.exists()) {
 
-<p>Administrator</p>
+            alert("Access Denied!");
 
-</div>
+            await signOut(auth);
 
-</div>
+            window.location.href = "login.html";
 
-<nav class="sidebar-menu">
+            return;
 
-<a href="#"
-class="menu-link active"
-data-page="dashboard">
+        }
 
-<i class="fa-solid fa-chart-line"></i>
+        const admin = snap.val();
 
-<span>Dashboard</span>
+        adminName.textContent =
+            admin.name || "Administrator";
 
-</a>
+        adminEmail.textContent =
+            user.email;
 
-<a href="#"
-class="menu-link"
-data-page="deposits">
+        loadingScreen.style.display = "none";
 
-<i class="fa-solid fa-wallet"></i>
+    }
 
-<span>Deposits</span>
+    catch (error) {
 
-</a>
+        console.error(error);
 
-<a href="#"
-class="menu-link"
-data-page="withdraws">
+        alert(error.message);
 
-<i class="fa-solid fa-money-bill-transfer"></i>
+    }
 
-<span>Withdraws</span>
+});
 
-</a>
 
-<a href="#"
-class="menu-link"
-data-page="users">
+// ======================================
+// SIDEBAR NAVIGATION
+// ======================================
 
-<i class="fa-solid fa-users"></i>
+const menuLinks =
+document.querySelectorAll(".menu-link");
 
-<span>Users</span>
+const sections =
+document.querySelectorAll(".page-section");
 
-</a>
+menuLinks.forEach(link => {
 
-<a href="#"
-class="menu-link"
-data-page="transactions">
+    link.addEventListener("click", (e) => {
 
-<i class="fa-solid fa-clock-rotate-left"></i>
+        e.preventDefault();
 
-<span>Transactions</span>
+        menuLinks.forEach(item =>
+            item.classList.remove("active"));
 
-</a>
+        link.classList.add("active");
 
-<a href="#"
-class="menu-link"
-data-page="quickActions">
+        const page =
+            link.dataset.page;
 
-<i class="fa-solid fa-bolt"></i>
+        sections.forEach(section =>
+            section.classList.remove("active"));
 
-<span>Quick Actions</span>
+        document
+            .getElementById(page + "Section")
+            .classList.add("active");
 
-</a>
+        document
+            .getElementById("pageTitle")
+            .textContent =
+            link.innerText.trim();
 
-<a href="#"
-class="menu-link"
-data-page="settings">
+    });
 
-<i class="fa-solid fa-gear"></i>
+});
 
-<span>Settings</span>
 
-</a>
+// ======================================
+// LOGOUT
+// ======================================
 
-</nav>
+logoutBtn.addEventListener("click", async () => {
 
-<div class="sidebar-bottom">
+    if (!confirm("Logout Admin?"))
+        return;
 
-<button id="logoutBtn" class="logout-btn">
+    await signOut(auth);
 
-<i class="fa-solid fa-right-from-bracket"></i>
+    window.location.href =
+        "admin-login.html";
 
-Logout
+});
 
-</button>
-
-</div>
-
-</aside>
-
-<!-- ======================================
-MAIN CONTENT
-====================================== -->
-
-<div class="main-content">
-
-<!-- HEADER -->
-
-<header class="top-header">
-
-<div class="left-header">
-
-<button id="menuBtn">
-
-<i class="fa-solid fa-bars"></i>
-
-</button>
-
-<h1 id="pageTitle">
-
-Dashboard
-
-</h1>
-
-</div>
-
-<div class="right-header">
-
-<i class="fa-solid fa-user-shield"></i>
-
-<div>
-
-<h4 id="adminName">
-
-Loading...
-
-</h4>
-
-<p id="adminEmail">
-
-Loading...
-
-</p>
-
-</div>
-
-</div>
-
-</header>
-
-<!-- ======================================
-CONTENT
-====================================== -->
-
-<div id="contentArea">
-
-<!-- ======================================
-DASHBOARD
-====================================== -->
-
-<section
-id="dashboardSection"
-class="page-section active">
-
-<!-- ======================================
-DASHBOARD
-====================================== -->
-
-<h2 class="section-title">
-    <i class="fa-solid fa-chart-line"></i>
-    Admin Dashboard
-</h2>
-
-<!-- Statistics -->
-
-<div class="statistics-grid">
-
-    <div class="stat-card">
-        <div class="stat-icon users">
-            <i class="fa-solid fa-users"></i>
-        </div>
-
-        <div class="stat-info">
-            <h3 id="totalUsers">0</h3>
-            <p>Total Users</p>
-        </div>
-    </div>
-
-    <div class="stat-card">
-        <div class="stat-icon deposits">
-            <i class="fa-solid fa-wallet"></i>
-        </div>
-
-        <div class="stat-info">
-            <h3 id="dashboardTotalDeposits">0</h3>
-            <p>Total Deposits</p>
-        </div>
-    </div>
-
-    <div class="stat-card">
-        <div class="stat-icon pending">
-            <i class="fa-solid fa-clock"></i>
-        </div>
-
-        <div class="stat-info">
-            <h3 id="dashboardPendingDeposits">0</h3>
-            <p>Pending Deposits</p>
-        </div>
-    </div>
-
-    <div class="stat-card">
-        <div class="stat-icon approved">
-            <i class="fa-solid fa-circle-check"></i>
-        </div>
-
-        <div class="stat-info">
-            <h3 id="dashboardApprovedDeposits">0</h3>
-            <p>Approved Deposits</p>
-        </div>
-    </div>
-
-    <div class="stat-card">
-        <div class="stat-icon rejected">
-            <i class="fa-solid fa-circle-xmark"></i>
-        </div>
-
-        <div class="stat-info">
-            <h3 id="dashboardTotalWithdraws">0</h3>
-            <p>Total Withdraws</p>
-        </div>
-    </div>
-
-    <div class="stat-card">
-        <div class="stat-icon amount">
-            <i class="fa-solid fa-sack-dollar"></i>
-        </div>
-
-        <div class="stat-info">
-            <h3 id="systemBalance">0 RWF</h3>
-            <p>Total System Balance</p>
-        </div>
-    </div>
-
-</div>
-
-<!-- Dashboard Row -->
-
-<div class="dashboard-row">
-
-    <!-- Quick Actions -->
-
-    <div class="dashboard-card">
-
-        <h3>
-
-            <i class="fa-solid fa-bolt"></i>
-
-            Quick Actions
-
-        </h3>
-
-        <div class="quick-actions">
-
-            <button id="refreshDashboard">
-
-                <i class="fa-solid fa-rotate"></i>
-
-                Refresh Dashboard
-
-            </button>
-
-            <button id="openDeposits">
-
-                <i class="fa-solid fa-wallet"></i>
-
-                Deposits
-
-            </button>
-
-            <button id="openWithdraws">
-
-                <i class="fa-solid fa-money-bill-transfer"></i>
-
-                Withdraws
-
-            </button>
-
-            <button id="openUsers">
-
-                <i class="fa-solid fa-users"></i>
-
-                Users
-
-            </button>
-
-            <button id="openTransactions">
-
-                <i class="fa-solid fa-clock-rotate-left"></i>
-
-                Transactions
-
-            </button>
-
-            <button id="openSettings">
-
-                <i class="fa-solid fa-gear"></i>
-
-                Settings
-
-            </button>
-
-        </div>
-
-    </div>
-
-    <!-- System Status -->
-
-    <div class="dashboard-card">
-
-        <h3>
-
-            <i class="fa-solid fa-server"></i>
-
-            System Status
-
-        </h3>
-
-        <div class="system-status">
-
-            <p>
-
-                Firebase
-
-                <span class="status-online">
-
-                    Online
-
-                </span>
-
-            </p>
-
-            <p>
-
-                Authentication
-
-                <span class="status-online">
-
-                    Active
-
-                </span>
-
-            </p>
-
-            <p>
-
-                Database
-
-                <span class="status-online">
-
-                    Connected
-
-                </span>
-
-            </p>
-
-            <p>
-
-                Storage
-
-                <span class="status-online">
-
-                    Ready
-
-                </span>
-
-            </p>
-
-        </div>
-
-    </div>
-
-</div>
-
-<!-- Recent Activity -->
-
-<div class="dashboard-card" style="margin-top:25px;">
-
-    <h3>
-
-        <i class="fa-solid fa-clock-rotate-left"></i>
-
-        Recent Activity
-
-    </h3>
-
-    <div id="recentActivity">
-
-        <div class="empty-state">
-
-            <i class="fa-solid fa-inbox"></i>
-
-            <h3>No Recent Activity</h3>
-
-            <p>
-
-                Deposits, Withdraws and other admin activities
-                will appear here.
-
-            </p>
-
-        </div>
-
-    </div>
-
-</div>
-
-</section>
-
-<!-- ======================================
-DEPOSITS
-====================================== -->
-
-<section
-id="depositsSection"
-class="page-section">
-
-
-<!-- ======================================
-DEPOSIT MANAGEMENT
-====================================== -->
-
-<div class="section-header">
-
-    <h2>
-        <i class="fa-solid fa-wallet"></i>
-        Deposit Management
-    </h2>
-
-    <div class="section-actions">
-
-        <input
-            type="text"
-            id="depositSearch"
-            placeholder="Search by Name, Email or Transaction ID">
-
-        <select id="depositFilter">
-
-            <option value="all">All Deposits</option>
-            <option value="pending">Pending</option>
-            <option value="approved">Approved</option>
-            <option value="rejected">Rejected</option>
-
-        </select>
-
-    </div>
-
-</div>
-
-<!-- ======================================
-DEPOSIT SUMMARY
-====================================== -->
-
-<div class="deposit-summary">
-
-    <div class="summary-card">
-
-        <h3 id="depositTotalCount">0</h3>
-
-        <p>Total Deposits</p>
-
-    </div>
-
-    <div class="summary-card">
-
-        <h3 id="depositPendingCount">0</h3>
-
-        <p>Pending</p>
-
-    </div>
-
-    <div class="summary-card">
-
-        <h3 id="depositApprovedCount">0</h3>
-
-        <p>Approved</p>
-
-    </div>
-
-    <div class="summary-card">
-
-        <h3 id="depositRejectedCount">0</h3>
-
-        <p>Rejected</p>
-
-    </div>
-
-</div>
-
-<!-- ======================================
-DEPOSIT REQUESTS
-====================================== -->
-
-<div
-id="depositList"
-class="request-list">
-
-<!-- Admin.js izashyiramo Deposit Cards -->
-
-</div>
-
-<!-- ======================================
-EMPTY STATE
-====================================== -->
-
-<div
-id="emptyDeposit"
-class="empty-state"
-style="display:none;">
-
-<i class="fa-solid fa-wallet"></i>
-
-<h3>No Deposit Requests</h3>
-
-<p>
-
-Deposit requests from users will appear here.
-
-</p>
-
-</div>
-
-      <!-- ======================================
-DEPOSIT CARD TEMPLATE
-Admin.js izajya iyikora automatically
-====================================== -->
-
-<div class="request-card">
-
-    <div class="request-top">
-
-        <h3>
-            User Deposit
-        </h3>
-
-        <span class="status pending">
-
-            Pending
-
-        </span>
-
-    </div>
-
-    <p>
-
-        <strong>Name:</strong>
-
-        <span class="deposit-name">
-
-            John Doe
-
-        </span>
-
-    </p>
-
-    <p>
-
-        <strong>Email:</strong>
-
-        <span class="deposit-email">
-
-            john@gmail.com
-
-        </span>
-
-    </p>
-
-    <p>
-
-        <strong>Amount:</strong>
-
-        <span class="deposit-amount">
-
-            10,000 RWF
-
-        </span>
-
-    </p>
-
-    <p>
-
-        <strong>Phone:</strong>
-
-        <span class="deposit-phone">
-
-            0788123456
-
-        </span>
-
-    </p>
-
-    <p>
-
-        <strong>Payment Method:</strong>
-
-        <span class="deposit-method">
-
-            MTN Mobile Money
-
-        </span>
-
-    </p>
-
-    <p>
-
-        <strong>Transaction ID:</strong>
-
-        <span class="deposit-transaction">
-
-            PP240712ABC123
-
-        </span>
-
-    </p>
-
-    <p>
-
-        <strong>Payment Date:</strong>
-
-        <span class="deposit-date">
-
-            24 Jul 2026 10:45 AM
-
-        </span>
-
-    </p>
-
-    <p>
-
-        <strong>Note:</strong>
-
-        <span class="deposit-note">
-
-            No additional note.
-
-        </span>
-
-    </p>
-
-    <!-- ======================================
-    ACTION BUTTONS
-    ====================================== -->
-
-    <div class="action-buttons">
-
-        <button
-            class="approveBtn">
-
-            <i class="fa-solid fa-circle-check"></i>
-
-            Approve
-
-        </button>
-
-        <button
-            class="rejectBtn">
-
-            <i class="fa-solid fa-circle-xmark"></i>
-
-            Reject
-
-        </button>
-
-    </div>
-
-</div>
-<!-- ======================================
-DEPOSIT CARD TEMPLATE
-Admin.js izajya iyikora automatically
-====================================== -->
-
-<div class="request-card">
-
-    <div class="request-top">
-
-        <h3>
-            User Deposit
-        </h3>
-
-        <span class="status pending">
-
-            Pending
-
-        </span>
-
-    </div>
-
-    <p>
-
-        <strong>Name:</strong>
-
-        <span class="deposit-name">
-
-            John Doe
-
-        </span>
-
-    </p>
-
-    <p>
-
-        <strong>Email:</strong>
-
-        <span class="deposit-email">
-
-            john@gmail.com
-
-        </span>
-
-    </p>
-
-    <p>
-
-        <strong>Amount:</strong>
-
-        <span class="deposit-amount">
-
-            10,000 RWF
-
-        </span>
-
-    </p>
-
-    <p>
-
-        <strong>Phone:</strong>
-
-        <span class="deposit-phone">
-
-            0788123456
-
-        </span>
-
-    </p>
-
-    <p>
-
-        <strong>Payment Method:</strong>
-
-        <span class="deposit-method">
-
-            MTN Mobile Money
-
-        </span>
-
-    </p>
-
-    <p>
-
-        <strong>Transaction ID:</strong>
-
-        <span class="deposit-transaction">
-
-            PP240712ABC123
-
-        </span>
-
-    </p>
-
-    <p>
-
-        <strong>Payment Date:</strong>
-
-        <span class="deposit-date">
-
-            24 Jul 2026 10:45 AM
-
-        </span>
-
-    </p>
-
-    <p>
-
-        <strong>Note:</strong>
-
-        <span class="deposit-note">
-
-            No additional note.
-
-        </span>
-
-    </p>
-
-    <!-- ======================================
-    ACTION BUTTONS
-    ====================================== -->
-
-    <div class="action-buttons">
-
-        <button
-            class="approveBtn">
-
-            <i class="fa-solid fa-circle-check"></i>
-
-            Approve
-
-        </button>
-
-        <button
-            class="rejectBtn">
-
-            <i class="fa-solid fa-circle-xmark"></i>
-
-            Reject
-
-        </button>
-
-    </div>
-
-</div>
-                
-</section>
-
-<!-- ======================================
-WITHDRAWS
-====================================== -->
-
-<section
-id="withdrawsSection"
-class="page-section">
-
-<!-- Withdraws zizaza muri Part 4 -->
-
-</section>
-
-<!-- ======================================
-USERS
-====================================== -->
-
-<section
-id="usersSection"
-class="page-section">
-
-<!-- Users zizaza muri Part 5 -->
-
-</section>
-
-<!-- ======================================
-TRANSACTIONS
-====================================== -->
-
-<section
-id="transactionsSection"
-class="page-section">
-
-<!-- Transactions zizaza muri Part 5 -->
-
-</section>
-
-<!-- ======================================
-QUICK ACTIONS
-====================================== -->
-
-<section
-id="quickActionsSection"
-class="page-section">
-
-<!-- Quick Actions zizaza muri Part 6 -->
-
-</section>
-
-<!-- ======================================
-SETTINGS
-====================================== -->
-
-<section
-id="settingsSection"
-class="page-section">
-
-<!-- Settings zizaza muri Part 6 -->
-
-</section>
-
-</div>
-
-</div>
-
-<script type="module" src="js/admin.js"></script>
-
-</body>
-
-</html>
-
-    
+            
