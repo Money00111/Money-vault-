@@ -868,8 +868,241 @@ WITHDRAWS
 id="withdrawsSection"
 class="page-section">
 
-<!-- Withdraws zizaza muri Part 4 -->
+<!-- ======================================
+WITHDRAW MANAGEMENT
+====================================== -->
 
+<div class="section-header">
+
+    <h2>
+        <i class="fa-solid fa-money-bill-transfer"></i>
+        Withdraw Management
+    </h2>
+
+    <div class="section-actions">
+
+        <input
+            type="text"
+            id="withdrawSearch"
+            placeholder="Search by Name, Email or Transaction ID">
+
+        <select id="withdrawFilter">
+
+            <option value="all">All Withdraws</option>
+            <option value="pending">Pending</option>
+            <option value="approved">Approved</option>
+            <option value="rejected">Rejected</option>
+
+        </select>
+
+    </div>
+
+</div>
+
+<!-- ======================================
+WITHDRAW SUMMARY
+====================================== -->
+
+<div class="deposit-summary">
+
+    <div class="summary-card">
+
+        <h3 id="withdrawTotalCount">0</h3>
+
+        <p>Total Withdraws</p>
+
+    </div>
+
+    <div class="summary-card">
+
+        <h3 id="withdrawPendingCount">0</h3>
+
+        <p>Pending</p>
+
+    </div>
+
+    <div class="summary-card">
+
+        <h3 id="withdrawApprovedCount">0</h3>
+
+        <p>Approved</p>
+
+    </div>
+
+    <div class="summary-card">
+
+        <h3 id="withdrawRejectedCount">0</h3>
+
+        <p>Rejected</p>
+
+    </div>
+
+</div>
+
+<!-- ======================================
+WITHDRAW REQUESTS
+====================================== -->
+
+<div
+id="withdrawList"
+class="request-list">
+
+<!-- admin.js izashyira Withdraw Cards hano -->
+
+</div>
+
+<!-- ======================================
+EMPTY STATE
+====================================== -->
+
+<div
+id="emptyWithdraw"
+class="empty-state"
+style="display:none;">
+
+<i class="fa-solid fa-money-bill-transfer"></i>
+
+<h3>No Withdraw Requests</h3>
+
+<p>
+
+Withdraw requests from users will appear here.
+
+</p>
+
+</div>
+
+<!-- ======================================
+WITHDRAW DETAILS MODAL
+====================================== -->
+
+<div
+id="withdrawModal"
+class="proof-modal"
+style="display:none;">
+
+<div class="proof-box">
+
+<button
+id="closeWithdrawModal"
+class="close-btn">
+
+<i class="fa-solid fa-xmark"></i>
+
+</button>
+
+<h2>
+
+<i class="fa-solid fa-money-bill-transfer"></i>
+
+Withdraw Details
+
+</h2>
+
+<div class="withdraw-details">
+
+<p>
+
+<strong>Name</strong>
+
+<span id="modalWithdrawName">-</span>
+
+</p>
+
+<p>
+
+<strong>Email</strong>
+
+<span id="modalWithdrawEmail">-</span>
+
+</p>
+
+<p>
+
+<strong>Amount</strong>
+
+<span id="modalWithdrawAmount">0 RWF</span>
+
+</p>
+
+<p>
+
+<strong>Phone</strong>
+
+<span id="modalWithdrawPhone">-</span>
+
+</p>
+
+<p>
+
+<strong>Payment Method</strong>
+
+<span id="modalWithdrawMethod">-</span>
+
+</p>
+
+<p>
+
+<strong>Account Number</strong>
+
+<span id="modalWithdrawAccount">-</span>
+
+</p>
+
+<p>
+
+<strong>Request Date</strong>
+
+<span id="modalWithdrawDate">-</span>
+
+</p>
+
+<p>
+
+<strong>Status</strong>
+
+<span
+id="modalWithdrawStatus"
+class="status pending">
+
+Pending
+
+</span>
+
+</p>
+
+</div>
+
+<!-- ACTION BUTTONS -->
+
+<div class="action-buttons">
+
+<button
+id="modalApproveWithdraw"
+class="approveBtn">
+
+<i class="fa-solid fa-circle-check"></i>
+
+Approve Withdraw
+
+</button>
+
+<button
+id="modalRejectWithdraw"
+class="rejectBtn">
+
+<i class="fa-solid fa-circle-xmark"></i>
+
+Reject Withdraw
+
+</button>
+
+</div>
+
+</div>
+
+</div>
+    
 </section>
 
 <!-- ======================================
