@@ -1113,7 +1113,55 @@ USERS
 id="usersSection"
 class="page-section">
 
-<!-- Users zizaza muri Part 5 -->
+<!-- ======================================
+USERS MANAGEMENT
+====================================== -->
+
+<section
+id="usersSection"
+class="page-section">
+
+<div class="section-header">
+
+<h2>
+
+<i class="fa-solid fa-users"></i>
+
+Users Management
+
+</h2>
+
+<div class="section-actions">
+
+<input
+type="text"
+id="userSearch"
+placeholder="Search users...">
+
+</div>
+
+</div>
+
+<div
+id="usersList"
+class="users-grid">
+
+<!-- admin.js izashyira users hano -->
+
+</div>
+
+<div
+id="emptyUsers"
+class="empty-state"
+style="display:none;">
+
+<i class="fa-solid fa-users"></i>
+
+<h3>No Users Found</h3>
+
+<p>No registered users.</p>
+
+</div>
 
 </section>
 
@@ -1125,7 +1173,56 @@ TRANSACTIONS
 id="transactionsSection"
 class="page-section">
 
-<!-- Transactions zizaza muri Part 5 -->
+<div class="section-header">
+
+<h2>
+
+<i class="fa-solid fa-clock-rotate-left"></i>
+
+Transactions
+
+</h2>
+
+<div class="section-actions">
+
+<input
+type="text"
+id="transactionSearch"
+placeholder="Search transaction...">
+
+<select id="transactionFilter">
+
+<option value="all">All</option>
+
+<option value="deposit">Deposits</option>
+
+<option value="withdraw">Withdraws</option>
+
+</select>
+
+</div>
+
+</div>
+
+<div
+id="transactionList">
+
+<!-- admin.js -->
+
+</div>
+
+<div
+id="emptyTransaction"
+class="empty-state"
+style="display:none;">
+
+<i class="fa-solid fa-clock-rotate-left"></i>
+
+<h3>No Transactions</h3>
+
+<p>Transactions will appear here.</p>
+
+</div>
 
 </section>
 
@@ -1137,7 +1234,65 @@ QUICK ACTIONS
 id="quickActionsSection"
 class="page-section">
 
-<!-- Quick Actions zizaza muri Part 6 -->
+<h2 class="section-title">
+
+<i class="fa-solid fa-bolt"></i>
+
+Quick Actions
+
+</h2>
+
+<div class="quick-actions">
+
+<button id="refreshDashboard">
+
+<i class="fa-solid fa-rotate"></i>
+
+Refresh Dashboard
+
+</button>
+
+<button id="approveAllDeposits">
+
+<i class="fa-solid fa-wallet"></i>
+
+Approve All Deposits
+
+</button>
+
+<button id="approveAllWithdraws">
+
+<i class="fa-solid fa-money-bill-transfer"></i>
+
+Approve All Withdraws
+
+</button>
+
+<button id="openUsersBtn">
+
+<i class="fa-solid fa-users"></i>
+
+Open Users
+
+</button>
+
+<button id="openTransactionsBtn">
+
+<i class="fa-solid fa-clock-rotate-left"></i>
+
+Open Transactions
+
+</button>
+
+<button id="openSettingsBtn">
+
+<i class="fa-solid fa-gear"></i>
+
+Open Settings
+
+</button>
+
+</div>
 
 </section>
 
@@ -1149,13 +1304,78 @@ SETTINGS
 id="settingsSection"
 class="page-section">
 
-<!-- Settings zizaza muri Part 6 -->
+<div class="settings-container">
+
+<div class="settings-card">
+
+<h3>Admin Settings</h3>
+
+<label>Admin Name</label>
+
+<input
+id="adminNameInput"
+type="text">
+
+<label>Email</label>
+
+<input
+id="adminEmailInput"
+type="email"
+readonly>
+
+<button id="saveSettings">
+
+Save Settings
+
+</button>
+
+</div>
+
+<div class="settings-card">
+
+<h3>System Information</h3>
+
+<div class="system-info">
+
+<div>
+
+<span>Version</span>
+
+<span>2.0</span>
+
+</div>
+
+<div>
+
+<span>Firebase</span>
+
+<span>Connected</span>
+
+</div>
+
+<div>
+
+<span>Status</span>
+
+<span>Online</span>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
 
 </section>
 
 </div>
 
 </div>
+
+<!-- ======================================
+ADMIN JS
+====================================== -->
 
 <script type="module" src="js/admin.js"></script>
 
