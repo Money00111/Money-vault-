@@ -15,6 +15,12 @@ import {
     get
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
 
+import {
+    ref,
+    onValue
+} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
+
+
 
 // ======================================
 // DOM ELEMENTS
@@ -136,6 +142,187 @@ logoutBtn.addEventListener("click", async () => {
 
     window.location.href =
         "admin-login.html";
+
+});
+
+            
+// ======================================
+// ADMIN.JS - PART 2
+// Dashboard Statistics + Quick Actions
+// ======================================
+
+
+// ======================================
+// DASHBOARD ELEMENTS
+// ======================================
+
+const totalUsers = document.getElementById("totalUsers");
+const dashboardTotalDeposits = document.getElementById("dashboardTotalDeposits");
+const dashboardPendingDeposits = document.getElementById("dashboardPendingDeposits");
+const dashboardApprovedDeposits = document.getElementById("dashboardApprovedDeposits");
+const dashboardTotalWithdraws = document.getElementById("dashboardTotalWithdraws");
+const systemBalance = document.getElementById("systemBalance");
+
+
+// ======================================
+// LOAD DASHBOARD
+// ======================================
+
+function loadDashboard() {
+
+    // USERS
+
+    onValue(ref(db, "users"), (snapshot) => {
+
+        let users = snapshot.val() || {};
+
+        totalUsers.textContent =
+            Object.keys(users).length;
+
+        let balance = 0;
+
+        Object.values(users).forEach(user => {
+
+            balance += Number(user.balance || 0);
+
+        });
+
+        systemBalance.textContent =
+            balance.toLocaleString() + " RWF";
+
+    });
+
+
+    // DEPOSITS
+
+    onValue(ref(db, "depositRequests"), (snapshot) => {
+
+        let deposits = snapshot.val() || {};
+
+        let total = 0;
+        let pending = 0;
+        let approved = 0;
+
+        Object.values(deposits).forEach(dep => {
+
+            total++;
+
+            if (dep.status === "pending")
+                pending++;
+
+            if (dep.status === "approved")
+                approved++;
+
+        });
+
+        dashboardTotalDeposits.textContent = total;
+        dashboardPendingDeposits.textContent = pending;
+        dashboardApprovedDeposits.textContent = approved;
+
+    });
+
+
+    // WITHDRAWS
+
+    onValue(ref(db, "withdrawRequests"), (snapshot) => {
+
+        let withdraws = snapshot.val() || {};
+
+        dashboardTotalWithdraws.textContent =
+            Object.keys(withdraws).length;
+
+    });
+
+}
+
+loadDashboard();
+
+
+// ======================================
+// QUICK ACTIONS
+// ======================================
+
+const refreshDashboard =
+document.getElementById("refreshDashboard");
+
+const openDeposits =
+document.getElementById("openDeposits");
+
+const openWithdraws =
+document.getElementById("openWithdraws");
+
+const openUsers =
+document.getElementById("openUsers");
+
+const openTransactions =
+document.getElementById("openTransactions");
+
+const openSettings =
+document.getElementById("openSettings");
+
+
+// REFRESH
+
+refreshDashboard?.addEventListener("click", () => {
+
+    loadDashboard();
+
+    alert("Dashboard Refreshed Successfully.");
+
+});
+
+
+// OPEN DEPOSITS
+
+openDeposits?.addEventListener("click", () => {
+
+    document
+        .querySelector('[data-page="deposits"]')
+        .click();
+
+});
+
+
+// OPEN WITHDRAWS
+
+openWithdraws?.addEventListener("click", () => {
+
+    document
+        .querySelector('[data-page="withdraws"]')
+        .click();
+
+});
+
+
+// OPEN USERS
+
+openUsers?.addEventListener("click", () => {
+
+    document
+        .querySelector('[data-page="users"]')
+        .click();
+
+});
+
+
+// OPEN TRANSACTIONS
+
+openTransactions?.addEventListener("click", () => {
+
+    document
+        .querySelector('[data-page="transactions"]')
+        .click();
+
+});
+
+
+// OPEN SETTINGS
+
+openSettings?.addEventListener("click", () => {
+
+    document
+        .querySelector('[data-page="settings"]')
+        .click();
 
 });
 
