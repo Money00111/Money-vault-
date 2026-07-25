@@ -325,4 +325,312 @@ openSettings?.addEventListener("click", () => {
 
 });
 
-            
+// ======================================
+// ADMIN.JS PART 3A.1
+// LOAD DEPOSIT REQUESTS
+// ======================================
+
+const depositList = document.getElementById("depositList");
+
+const emptyDeposit = document.getElementById("emptyDeposit");
+
+let depositsData = {};
+
+function loadDeposits() {
+
+    onValue(ref(db, "depositRequests"), (snapshot) => {
+
+        depositsData = {};
+
+        depositList.innerHTML = "";
+
+        if (!snapshot.exists()) {
+
+            emptyDeposit.style.display = "block";
+
+            return;
+
+        }
+
+        emptyDeposit.style.display = "none";
+
+        snapshot.forEach((child) => {
+
+            const id = child.key;
+
+            const deposit = child.val();
+
+            depositsData[id] = deposit;
+
+        });
+
+        renderDeposits(depositsData);
+
+        updateDepositSummary();
+
+    });
+
+}
+
+
+// ======================================
+// UPDATE SUMMARY
+// ======================================
+
+function updateDepositSummary() {
+
+    let total = 0;
+    let pending = 0;
+    let approved = 0;
+    let rejected = 0;
+
+    Object.values(depositsData).forEach(dep => {
+
+        total++;
+
+        if (dep.status === "pending") pending++;
+
+        else if (dep.status === "approved") approved++;
+
+        else if (dep.status === "rejected") rejected++;
+
+    });
+
+    document.getElementById("depositTotalCount").textContent = total;
+
+    document.getElementById("depositPendingCount").textContent = pending;
+
+    document.getElementById("depositApprovedCount").textContent = approved;
+
+    document.getElementById("depositRejectedCount").textContent = rejected;
+
+}
+
+
+// ======================================
+// START
+// ======================================
+
+loadDeposits();
+
+// ======================================
+// ADMIN.JS PART 3A.2
+// RENDER DEPOSIT CARDS
+// ======================================
+
+function renderDeposits(data) {
+
+    depositList.innerHTML = "";
+
+    const deposits = Object.entries(data);
+
+    if (deposits.length === 0) {
+
+        emptyDeposit.style.display = "block";
+        return;
+
+    }
+
+    emptyDeposit.style.display = "none";
+
+    deposits.sort((a, b) => {
+
+        return (b[1].createdAt || 0) - (a[1].createdAt || 0);
+
+    });
+
+    deposits.forEach(([id, deposit]) => {
+
+        const status = deposit.status || "pending";
+
+        const card = document.createElement("div");
+
+        card.className = "request-card";
+
+        card.innerHTML = `
+
+        <div class="request-top">
+
+            <h3>${deposit.email || "Unknown User"}</h3>
+
+            <span class="status ${status}">
+
+                ${status.toUpperCase()}
+
+            </span>
+
+        </div>
+
+        <p><strong>Amount:</strong>
+        ${Number(deposit.amount || 0).toLocaleString()} RWF</p>
+
+        <p><strong>Method:</strong>
+        ${deposit.paymentMethod || "-"}</p>
+
+        <p><strong>Phone:</strong>
+        ${deposit.senderPhone || "-"}</p>
+
+        <p><strong>Transaction ID:</strong>
+        ${deposit.transactionId || "-"}</p>
+
+        <p><strong>Payment Date:</strong>
+        ${deposit.paymentDate || "-"}</p>
+
+        <p><strong>Note:</strong>
+        ${deposit.note || "No Note"}</p>
+
+        <div class="action-buttons">
+
+            ${
+                status === "pending"
+                ? `
+                <button
+                    class="approveBtn"
+                    data-id="${id}">
+
+                    <i class="fa-solid fa-circle-check"></i>
+
+                    Approve
+
+                </button>
+
+                <button
+                    class="rejectBtn"
+                    data-id="${id}">
+
+                    <i class="fa-solid fa-circle-xmark"></i>
+
+                    Reject
+
+                </button>
+                `
+                : `
+                <button disabled>
+
+                    ${status.toUpperCase()}
+
+                </button>
+                `
+            }
+
+        </div>
+
+        `;
+
+        depositList.appendChild(card);
+
+    });
+
+}
+
+// ======================================
+// ADMIN.JS PART 3A.2
+// RENDER DEPOSIT CARDS
+// ======================================
+
+function renderDeposits(data) {
+
+    depositList.innerHTML = "";
+
+    const deposits = Object.entries(data);
+
+    if (deposits.length === 0) {
+
+        emptyDeposit.style.display = "block";
+        return;
+
+    }
+
+    emptyDeposit.style.display = "none";
+
+    deposits.sort((a, b) => {
+
+        return (b[1].createdAt || 0) - (a[1].createdAt || 0);
+
+    });
+
+    deposits.forEach(([id, deposit]) => {
+
+        const status = deposit.status || "pending";
+
+        const card = document.createElement("div");
+
+        card.className = "request-card";
+
+        card.innerHTML = `
+
+        <div class="request-top">
+
+            <h3>${deposit.email || "Unknown User"}</h3>
+
+            <span class="status ${status}">
+
+                ${status.toUpperCase()}
+
+            </span>
+
+        </div>
+
+        <p><strong>Amount:</strong>
+        ${Number(deposit.amount || 0).toLocaleString()} RWF</p>
+
+        <p><strong>Method:</strong>
+        ${deposit.paymentMethod || "-"}</p>
+
+        <p><strong>Phone:</strong>
+        ${deposit.senderPhone || "-"}</p>
+
+        <p><strong>Transaction ID:</strong>
+        ${deposit.transactionId || "-"}</p>
+
+        <p><strong>Payment Date:</strong>
+        ${deposit.paymentDate || "-"}</p>
+
+        <p><strong>Note:</strong>
+        ${deposit.note || "No Note"}</p>
+
+        <div class="action-buttons">
+
+            ${
+                status === "pending"
+                ? `
+                <button
+                    class="approveBtn"
+                    data-id="${id}">
+
+                    <i class="fa-solid fa-circle-check"></i>
+
+                    Approve
+
+                </button>
+
+                <button
+                    class="rejectBtn"
+                    data-id="${id}">
+
+                    <i class="fa-solid fa-circle-xmark"></i>
+
+                    Reject
+
+                </button>
+                `
+                : `
+                <button disabled>
+
+                    ${status.toUpperCase()}
+
+                </button>
+                `
+            }
+
+        </div>
+
+        `;
+
+        depositList.appendChild(card);
+
+    });
+
+}
+
+
