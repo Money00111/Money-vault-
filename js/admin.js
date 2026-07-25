@@ -784,4 +784,208 @@ function applyDepositFilter() {
 
 }
 
-    
+    // ======================================
+// ADMIN.JS PART 4A
+// LOAD WITHDRAW REQUESTS
+// ======================================
+
+const withdrawList = document.getElementById("withdrawList");
+const emptyWithdraw = document.getElementById("emptyWithdraw");
+
+let withdrawsData = {};
+
+function loadWithdraws() {
+
+    onValue(ref(db, "withdrawRequests"), (snapshot) => {
+
+        withdrawsData = {};
+
+        withdrawList.innerHTML = "";
+
+        if (!snapshot.exists()) {
+
+            emptyWithdraw.style.display = "block";
+
+            updateWithdrawSummary();
+
+            return;
+
+        }
+
+        emptyWithdraw.style.display = "none";
+
+        snapshot.forEach((child) => {
+
+            withdrawsData[child.key] = child.val();
+
+        });
+
+        renderWithdraws(withdrawsData);
+
+        updateWithdrawSummary();
+
+    });
+
+}
+
+
+// ======================================
+// RENDER WITHDRAW CARDS
+// ======================================
+
+function renderWithdraws(data) {
+
+    withdrawList.innerHTML = "";
+
+    const requests = Object.entries(data);
+
+    if (requests.length === 0) {
+
+        emptyWithdraw.style.display = "block";
+
+        return;
+
+    }
+
+    emptyWithdraw.style.display = "none";
+
+    requests.sort((a, b) => {
+
+        return (b[1].createdAt || 0) - (a[1].createdAt || 0);
+
+    });
+
+    requests.forEach(([id, withdraw]) => {
+
+        const status = withdraw.status || "pending";
+
+        const card = document.createElement("div");
+
+        card.className = "request-card";
+
+        card.innerHTML = `
+
+        <div class="request-top">
+
+            <h3>${withdraw.email || "Unknown User"}</h3>
+
+            <span class="status ${status}">
+
+                ${status.toUpperCase()}
+
+            </span>
+
+        </div>
+
+        <p><strong>Amount:</strong>
+        ${Number(withdraw.amount || 0).toLocaleString()} RWF</p>
+
+        <p><strong>Method:</strong>
+        ${withdraw.paymentMethod || "-"}</p>
+
+        <p><strong>Phone:</strong>
+        ${withdraw.phone || "-"}</p>
+
+        <p><strong>Account:</strong>
+        ${withdraw.accountNumber || "-"}</p>
+
+        <p><strong>Date:</strong>
+        ${withdraw.requestDate || "-"}</p>
+
+        <div class="action-buttons">
+
+        ${
+        status === "pending"
+
+        ?
+
+        `
+
+        <button
+        class="approveWithdrawBtn"
+        data-id="${id}">
+
+        <i class="fa-solid fa-circle-check"></i>
+
+        Approve
+
+        </button>
+
+        <button
+        class="rejectWithdrawBtn"
+        data-id="${id}">
+
+        <i class="fa-solid fa-circle-xmark"></i>
+
+        Reject
+
+        </button>
+
+        `
+
+        :
+
+        `
+
+        <button disabled>
+
+        ${status.toUpperCase()}
+
+        </button>
+
+        `
+
+        }
+
+        </div>
+
+        `;
+
+        withdrawList.appendChild(card);
+
+    });
+
+}
+
+
+// ======================================
+// UPDATE SUMMARY
+// ======================================
+
+function updateWithdrawSummary() {
+
+    let total = 0;
+    let pending = 0;
+    let approved = 0;
+    let rejected = 0;
+
+    Object.values(withdrawsData).forEach(w => {
+
+        total++;
+
+        if (w.status === "pending") pending++;
+
+        else if (w.status === "approved") approved++;
+
+        else if (w.status === "rejected") rejected++;
+
+    });
+
+    document.getElementById("withdrawTotalCount").textContent = total;
+
+    document.getElementById("withdrawPendingCount").textContent = pending;
+
+    document.getElementById("withdrawApprovedCount").textContent = approved;
+
+    document.getElementById("withdrawRejectedCount").textContent = rejected;
+
+}
+
+
+// ======================================
+// START
+// ======================================
+
+loadWithdraws();
+
+
