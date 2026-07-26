@@ -43,7 +43,7 @@ onAuthStateChanged(auth, async (user) => {
         window.location.href = "admin-login.html";
         return;
 
-    }
+   }
 
     try {
 
