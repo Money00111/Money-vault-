@@ -529,63 +529,99 @@ function renderDeposits(data) {
 
 // REJECT DEPOSIT
 
-depositList.addEventListener("click", async (e) => {
+depositList.addEventListener("click", async(e)=>{
 
-    const btn = e.target.closest(".rejectBtn");
+const btn = e.target.closest(".approveBtn");
 
-    if (!btn) return;
+if(!btn) return;
 
-    const depositId = btn.dataset.id;
 
-    const deposit = depositsData[depositId];
+const id = btn.dataset.id;
 
-    if (!deposit) return;
+const deposit = depositsData[id];
 
-    if (deposit.status !== "pending") {
+if(!deposit) return;
 
-        alert("This deposit has already been processed.");
 
-        return;
+if(deposit.status !== "pending"){
+alert("Already processed");
+return;
+}
 
-    }
 
-    const ok = confirm("Reject this deposit?");
+const userRef = ref(db,"users/"+deposit.uid);
 
-    if (!ok) return;
 
-    try {
+const snap = await get(userRef);
 
-        await update(
 
-            ref(db, "depositRequests/" + depositId),
+if(!snap.exists()){
+alert("User not found");
+return;
+}
 
-            {
 
-                status: "rejected",
+const user = snap.val();
 
-                rejectedAt: Date.now()
 
-            }
+const oldBalance =
+Number(user.balance || 0);
 
-        );
 
-        // onValue() izahita ivugurura page
+const amount =
+Number(deposit.amount || 0);
 
-        alert("Deposit Rejected Successfully.");
 
-    }
 
-    catch (error) {
+await update(userRef,{
 
-        console.error(error);
-
-        alert(error.message);
-
-    }
+balance:
+oldBalance + amount
 
 });
 
 
+
+await update(
+ref(db,"depositRequests/"+id),
+{
+
+status:"approved",
+
+approvedAt:Date.now(),
+
+approvedBy:auth.currentUser.uid
+
+});
+
+
+
+const transactionRef =
+push(ref(db,"transactions"));
+
+
+await set(transactionRef,{
+
+uid:deposit.uid,
+
+email:deposit.email,
+
+type:"deposit",
+
+amount:amount,
+
+status:"approved",
+
+createdAt:Date.now()
+
+});
+
+
+
+alert("Deposit Approved Successfully");
+
+
+});
 // ======================================
 // SEARCH
 // ======================================
