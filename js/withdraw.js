@@ -745,5 +745,181 @@ function renderWithdrawHistory(data) {
 
 }
 
+// ======================================
+// WITHDRAW.JS - PART 3B.1
+// UPDATE CURRENT WITHDRAW STATUS
+// ======================================
+
+function updateWithdrawStatus() {
+
+    const requests = Object.values(withdrawHistory);
+
+    if (requests.length === 0) {
+
+        withdrawStatus.textContent = "No Withdraw Request";
+
+        withdrawStatus.className = "status";
+
+        return;
+
+    }
+
+    // Shyira izishya mbere
+
+    requests.sort((a, b) => {
+
+        return (b.createdAt || 0) - (a.createdAt || 0);
+
+    });
+
+    const latest = requests[0];
+
+    const status =
+        (latest.status || "pending").toLowerCase();
+
+    withdrawStatus.textContent =
+        formatWithdrawStatus(status);
+
+    // Hindura class kugirango CSS ikore neza
+
+    withdrawStatus.classList.remove(
+        "pending",
+        "approved",
+        "rejected"
+    );
+
+    withdrawStatus.classList.add(status);
+
+    // Optional color (niba CSS itarimo)
+
+    switch (status) {
+
+        case "approved":
+
+            withdrawStatus.style.color = "#16a34a";
+
+            break;
+
+        case "rejected":
+
+            withdrawStatus.style.color = "#dc2626";
+
+            break;
+
+        default:
+
+            withdrawStatus.style.color = "#f59e0b";
+
+            break;
+
+    }
+
+}
+// ======================================
+// WITHDRAW.JS - PART 3B.2
+// HELPER FUNCTIONS
+// ======================================
+
+// FORMAT STATUS
+
+function formatWithdrawStatus(status) {
+
+    if (!status) return "Pending";
+
+    switch (status.toLowerCase()) {
+
+        case "approved":
+            return "Approved";
+
+        case "rejected":
+            return "Rejected";
+
+        case "pending":
+        default:
+            return "Pending";
+
+    }
+
+}
+
+
+// ======================================
+// FORMAT DATE
+// ======================================
+
+function formatWithdrawDate(timestamp) {
+
+    if (!timestamp) return "-";
+
+    try {
+
+        return new Date(timestamp).toLocaleString("en-US", {
+
+            year: "numeric",
+            month: "short",
+            day: "2-digit",
+            hour: "2-digit",
+            minute: "2-digit"
+
+        });
+
+    } catch (error) {
+
+        return "-";
+
+    }
+
+}
+
+
+// ======================================
+// REFRESH AFTER SUBMIT
+// ======================================
+
+async function refreshWithdrawPage() {
+
+    await loadUserData();
+
+    loadWithdrawHistory();
+
+}
+
+
+// ======================================
+// RESET STATUS
+// ======================================
+
+function resetWithdrawStatus() {
+
+    withdrawStatus.textContent = "No Withdraw Request";
+
+    withdrawStatus.classList.remove(
+
+        "pending",
+        "approved",
+        "rejected"
+
+    );
+
+}
+
+
+// ======================================
+// PAGE START
+// ======================================
+
+window.addEventListener("load", () => {
+
+    if (currentUser) {
+
+        loadUserData();
+
+        loadWithdrawHistory();
+
+    }
+
+});
+
+    
 
             
