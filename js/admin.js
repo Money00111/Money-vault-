@@ -984,4 +984,291 @@ function updateWithdrawSummary() {
 
 loadWithdraws();
 
+// ======================================
+// ADMIN.JS PART 4B
+// APPROVE WITHDRAW
+// ======================================
 
+withdrawList.addEventListener("click", async (e) => {
+
+    const btn = e.target.closest(".approveWithdrawBtn");
+
+    if (!btn) return;
+
+    const withdrawId = btn.dataset.id;
+
+    const withdraw = withdrawsData[withdrawId];
+
+    if (!withdraw) return;
+
+    if (withdraw.status !== "pending") {
+
+        alert("This withdraw request has already been processed.");
+
+        return;
+
+    }
+
+    const ok = confirm("Approve this withdraw request?");
+
+    if (!ok) return;
+
+    try {
+
+        // USER
+
+        const userRef =
+            ref(db, "users/" + withdraw.uid);
+
+        const userSnap =
+            await get(userRef);
+
+        if (!userSnap.exists()) {
+
+            alert("User not found.");
+
+            return;
+
+        }
+
+        const user =
+            userSnap.val();
+
+        const currentBalance =
+            Number(user.balance || 0);
+
+        const amount =
+            Number(withdraw.amount || 0);
+
+        // Safety Check
+
+        if (currentBalance < amount) {
+
+            alert("User balance is not enough.");
+
+            return;
+
+        }
+
+        // NEW BALANCE
+
+        const newBalance =
+            currentBalance - amount;
+
+        // UPDATE USER BALANCE
+
+        await update(userRef, {
+
+            balance: newBalance
+
+        });
+
+        // UPDATE WITHDRAW STATUS
+
+        await update(
+
+            ref(db, "withdrawRequests/" + withdrawId),
+
+            {
+
+                status: "approved",
+
+                approvedAt: Date.now(),
+
+                approvedBy: auth.currentUser.uid
+
+            }
+
+        );
+
+        // SAVE TRANSACTION
+
+        const transactionRef =
+            push(ref(db, "transactions"));
+
+        await set(transactionRef, {
+
+            uid: withdraw.uid,
+
+            email: withdraw.email,
+
+            type: "withdraw",
+
+            amount: amount,
+
+            fee: withdraw.fee,
+
+            receive: withdraw.receive,
+
+            paymentMethod: withdraw.paymentMethod,
+
+            phone: withdraw.phone,
+
+            accountName: withdraw.accountName,
+
+            status: "approved",
+
+            createdAt: Date.now()
+
+        });
+
+        alert("Withdraw Approved Successfully.");
+
+    }
+
+    catch (error) {
+
+        console.error(error);
+
+        alert(error.message);
+
+    }
+
+});
+
+// ======================================
+// ADMIN.JS PART 4C
+// REJECT + SEARCH + FILTER WITHDRAWS
+// ======================================
+
+// --------------------------------------
+// REJECT WITHDRAW
+// --------------------------------------
+
+withdrawList.addEventListener("click", async (e) => {
+
+    const btn = e.target.closest(".rejectWithdrawBtn");
+
+    if (!btn) return;
+
+    const withdrawId = btn.dataset.id;
+
+    const withdraw = withdrawsData[withdrawId];
+
+    if (!withdraw) return;
+
+    if (withdraw.status !== "pending") {
+
+        alert("This withdraw request has already been processed.");
+
+        return;
+
+    }
+
+    const ok = confirm("Reject this withdraw request?");
+
+    if (!ok) return;
+
+    try {
+
+        await update(
+
+            ref(db, "withdrawRequests/" + withdrawId),
+
+            {
+
+                status: "rejected",
+
+                rejectedAt: Date.now(),
+
+                rejectedBy: auth.currentUser.uid
+
+            }
+
+        );
+
+        alert("Withdraw Rejected Successfully.");
+
+    } catch (error) {
+
+        console.error(error);
+
+        alert(error.message);
+
+    }
+
+});
+
+
+// --------------------------------------
+// SEARCH
+// --------------------------------------
+
+const withdrawSearch =
+document.getElementById("withdrawSearch");
+
+withdrawSearch?.addEventListener("input", () => {
+
+    applyWithdrawFilter();
+
+});
+
+
+// --------------------------------------
+// FILTER
+// --------------------------------------
+
+const withdrawFilter =
+document.getElementById("withdrawFilter");
+
+withdrawFilter?.addEventListener("change", () => {
+
+    applyWithdrawFilter();
+
+});
+
+
+// --------------------------------------
+// APPLY FILTER
+// --------------------------------------
+
+function applyWithdrawFilter() {
+
+    const keyword =
+        (withdrawSearch?.value || "")
+        .toLowerCase()
+        .trim();
+
+    const filter =
+        withdrawFilter?.value || "all";
+
+    const filtered = {};
+
+    Object.entries(withdrawsData).forEach(([id, item]) => {
+
+        const email =
+            (item.email || "").toLowerCase();
+
+        const phone =
+            (item.phone || "").toLowerCase();
+
+        const account =
+            (item.accountName || "").toLowerCase();
+
+        const matchesSearch =
+
+            email.includes(keyword) ||
+
+            phone.includes(keyword) ||
+
+            account.includes(keyword);
+
+        const matchesFilter =
+
+            filter === "all" ||
+
+            (item.status || "").toLowerCase() === filter;
+
+        if (matchesSearch && matchesFilter) {
+
+            filtered[id] = item;
+
+        }
+
+    });
+
+    renderWithdraws(filtered);
+
+}
+
+            
