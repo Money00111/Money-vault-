@@ -127,6 +127,101 @@ logoutBtn?.addEventListener("click", async (e) => {
 });
 
 // ======================================
+// WITHDRAW.JS - PART 1B.1
+// LOAD USER DATA (Realtime Database)
+// ======================================
+
+async function loadUserData() {
+
+    if (!currentUser) return;
+
+    try {
+
+        const userRef = ref(db, "users/" + currentUser.uid);
+
+        const snapshot = await get(userRef);
+
+        if (!snapshot.exists()) {
+
+            availableBalance.textContent = "0 RWF";
+
+            vipStatus.textContent = "VIP 0";
+
+            return;
+
+        }
+
+        const user = snapshot.val();
+
+        const balance = Number(user.balance || 0);
+
+        availableBalance.textContent =
+            balance.toLocaleString() + " RWF";
+
+        vipStatus.textContent =
+            user.vipPlan || "VIP 0";
+
+        // Bika balance kugira ngo ikoreshwe muri validation
+        window.userBalance = balance;
+
+    } catch (error) {
+
+        console.error(error);
+
+        alert("Failed to load account information.");
+
+    }
+
+}
+
+
+// ======================================
+// LIVE BALANCE REFRESH
+// ======================================
+
+function startBalanceListener() {
+
+    if (!currentUser) return;
+
+    const userRef = ref(db, "users/" + currentUser.uid);
+
+    onValue(userRef, (snapshot) => {
+
+        if (!snapshot.exists()) return;
+
+        const user = snapshot.val();
+
+        const balance = Number(user.balance || 0);
+
+        availableBalance.textContent =
+            balance.toLocaleString() + " RWF";
+
+        vipStatus.textContent =
+            user.vipPlan || "VIP 0";
+
+        window.userBalance = balance;
+
+    });
+
+}
+
+
+// ======================================
+// START LIVE LISTENER
+// ======================================
+
+onAuthStateChanged(auth, (user) => {
+
+    if (!user) return;
+
+    currentUser = user;
+
+    startBalanceListener();
+
+});
+
+
+// ======================================
 // WITHDRAW.JS - PART 1B.2
 // WITHDRAW CALCULATOR
 // ======================================
