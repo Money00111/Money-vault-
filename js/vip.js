@@ -148,6 +148,8 @@ function loadUserData() {
 
         updateVipButtons();
 
+        checkVipExpiration();
+
     });
 
 }
@@ -694,3 +696,63 @@ console.log("Daily Reward Active");
 
 console.log("VIP Expiration Active");
 
+// ======================================
+// VIP.JS - PART 4A
+// CHECK VIP EXPIRATION
+// ======================================
+
+async function checkVipExpiration(){
+
+    if(!currentUser) return;
+
+    const updates = {};
+
+    let changed = false;
+
+    Object.entries(vipPlans).forEach(([id,plan])=>{
+
+        if(plan.status !== "active") return;
+
+        const daysPassed = Math.floor(
+
+            (Date.now() - Number(plan.purchasedAt))
+
+            /(1000*60*60*24)
+
+        );
+
+        const remaining =
+
+            Number(plan.totalDays) - daysPassed;
+
+        updates[
+            "vipPlans/" + id + "/remainingDays"
+        ] = remaining;
+
+        if(remaining <= 0){
+
+            updates[
+                "vipPlans/" + id + "/status"
+            ] = "expired";
+
+        }
+
+        changed = true;
+
+    });
+
+    if(changed){
+
+        await update(
+
+            ref(db,"users/"+currentUser.uid),
+
+            updates
+
+        );
+
+    }
+
+}
+
+    
