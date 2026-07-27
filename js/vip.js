@@ -283,7 +283,7 @@ function updateVipButtons() {
 
         if (purchased) {
 
-            button.disabled = true;
+        
 
             button.innerHTML = `
 
