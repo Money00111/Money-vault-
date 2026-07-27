@@ -513,3 +513,185 @@ async function buyVip(button) {
 
 console.log("VIP PART 2 READY");
 
+// ======================================
+// VIP.JS - PART 3A
+// DAILY INCOME SYSTEM
+// ======================================
+
+async function claimDailyIncome() {
+
+    if (!currentUser) return;
+
+    const userRef =
+        ref(db, "users/" + currentUser.uid);
+
+    const snap =
+        await get(userRef);
+
+    if (!snap.exists()) return;
+
+    const user = snap.val();
+
+    const vipPlans =
+        user.vipPlans || {};
+
+    let totalIncome = 0;
+
+    const updates = {};
+
+    Object.entries(vipPlans).forEach(([id, plan]) => {
+
+        if (plan.status !== "active") return;
+
+        if (Number(plan.remainingDays) <= 0) {
+
+            updates[
+                "vipPlans/" + id + "/status"
+            ] = "expired";
+
+            return;
+
+        }
+
+        totalIncome +=
+            Number(plan.dailyIncome);
+
+        updates[
+            "vipPlans/" + id + "/remainingDays"
+        ] =
+            Number(plan.remainingDays) - 1;
+
+        if (
+            Number(plan.remainingDays) - 1 <= 0
+        ) {
+
+            updates[
+                "vipPlans/" + id + "/status"
+            ] = "expired";
+
+        }
+
+    });
+
+    if (totalIncome <= 0) {
+
+        alert("No Active VIP Plan");
+
+        return;
+
+    }
+
+    updates.balance =
+        Number(user.balance || 0) +
+        totalIncome;
+
+    updates.totalProfit =
+        Number(user.totalProfit || 0) +
+        totalIncome;
+
+    updates.lastClaim =
+        Date.now();
+
+    await update(userRef, updates);
+
+    alert(
+        totalIncome.toLocaleString() +
+        " RWF Added Successfully."
+    );
+
+}
+
+// ======================================
+// VIP.JS - PART 3B
+// CLAIM ONCE EVERY 24 HOURS
+// ======================================
+
+const claimBtn =
+document.getElementById("claimIncomeBtn");
+
+claimBtn?.addEventListener("click", () => {
+
+    claimDailyReward();
+
+});
+
+async function claimDailyReward(){
+
+    if(!currentUser) return;
+
+    const userRef =
+    ref(db,"users/" + currentUser.uid);
+
+    const snap =
+    await get(userRef);
+
+    if(!snap.exists()) return;
+
+    const user =
+    snap.val();
+
+    const lastClaim =
+    Number(user.lastClaim || 0);
+
+    const now =
+    Date.now();
+
+    const oneDay =
+    24 * 60 * 60 * 1000;
+
+    if(now - lastClaim < oneDay){
+
+        const remain =
+
+        Math.ceil(
+
+            (oneDay - (now - lastClaim))
+
+            /1000/60/60
+
+        );
+
+        alert(
+
+            "Come back after "
+
+            + remain +
+
+            " hours."
+
+        );
+
+        return;
+
+    }
+
+    await claimDailyIncome();
+
+}
+
+
+// ======================================
+// AUTO REFRESH USER
+// ======================================
+
+setInterval(()=>{
+
+    if(currentUser){
+
+        loadUserData();
+
+    }
+
+},5000);
+
+
+// ======================================
+// READY
+// ======================================
+
+console.log("VIP PART 3 READY");
+
+console.log("Daily Reward Active");
+
+console.log("VIP Expiration Active");
+
