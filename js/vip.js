@@ -812,4 +812,109 @@ function calculateVipTotals() {
 
 } 
 
-        
+   // ======================================
+// VIP.JS - PART 5
+// SHOW ALL PURCHASED VIP PLANS
+// ======================================
+
+function renderOwnedVipPlans() {
+
+    if (!ownedVipList) return;
+
+    ownedVipList.innerHTML = "";
+
+    const plans = Object.values(vipPlans);
+
+    if (plans.length === 0) {
+
+        ownedVipList.innerHTML = `
+
+        <div class="emptyVip">
+
+            No VIP Purchased
+
+        </div>
+
+        `;
+
+        return;
+
+    }
+
+    plans.forEach(plan => {
+
+        const daysPassed = Math.floor(
+
+            (Date.now() - Number(plan.purchasedAt))
+
+            / (1000 * 60 * 60 * 24)
+
+        );
+
+        const remainingDays =
+
+            Math.max(
+                0,
+                Number(plan.totalDays) - daysPassed
+            );
+
+        const percent =
+
+            Math.min(
+                100,
+                (daysPassed / Number(plan.totalDays)) * 100
+            );
+
+        const status =
+
+            remainingDays <= 0
+
+            ? "expired"
+
+            : "active";
+
+        ownedVipList.innerHTML += `
+
+        <div class="owned-vip-card">
+
+            <h3>${plan.vipName}</h3>
+
+            <p>
+
+                Daily Income :
+                ${Number(plan.dailyIncome).toLocaleString()} RWF
+
+            </p>
+
+            <p>
+
+                Remaining Days :
+                ${remainingDays}
+
+            </p>
+
+            <div class="vip-progress">
+
+                <div
+                    class="vip-progress-bar"
+                    style="width:${percent}%">
+
+                </div>
+
+            </div>
+
+            <span class="vip-status ${status}">
+
+                ${status.toUpperCase()}
+
+            </span>
+
+        </div>
+
+        `;
+
+    });
+
+}
+
+                  
