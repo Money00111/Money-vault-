@@ -319,3 +319,197 @@ function updateVipButtons() {
 
 console.log("VIP PART 1 COMPLETE");
 
+// ======================================
+// VIP.JS - PART 2A
+// BUY VIP PLAN
+// ======================================
+
+// BUY BUTTONS
+
+buyButtons.forEach(button => {
+
+    button.addEventListener("click", () => {
+
+        buyVip(button);
+
+    });
+
+});
+
+
+// ======================================
+// BUY VIP
+// ======================================
+
+async function buyVip(button) {
+
+    if (!currentUser) return;
+
+    const vipName =
+        button.dataset.vip;
+
+    const price =
+        Number(button.dataset.price);
+
+    const dailyIncome =
+        Number(button.dataset.daily);
+
+    const totalDays =
+        Number(button.dataset.days);
+
+    const balanceNow =
+        Number(userData.balance || 0);
+
+    // CHECK BALANCE
+
+    if (balanceNow < price) {
+
+        alert("Insufficient Balance");
+
+        return;
+
+    }
+
+    // CONFIRM
+
+    const ok = confirm(
+
+        `Buy ${vipName} for ${price.toLocaleString()} RWF ?`
+
+    );
+
+    if (!ok) return;
+
+    try {
+
+        const purchaseRef = push(
+
+            ref(
+                db,
+                "users/" +
+                currentUser.uid +
+                "/vipPlans"
+            )
+
+        );
+
+        await set(
+
+            purchaseRef,
+
+            {
+
+                vipName: vipName,
+
+                dailyIncome: dailyIncome,
+
+                totalDays: totalDays,
+
+                remainingDays: totalDays,
+
+                purchasedAt: Date.now(),
+
+                status: "active"
+
+            }
+
+        );
+
+        const newBalance =
+            balanceNow - price;
+                // UPDATE USER BALANCE
+
+        await update(
+
+            ref(db, "users/" + currentUser.uid),
+
+            {
+
+                balance: newBalance
+
+            }
+
+        );
+
+        // SAVE TRANSACTION
+
+        const transactionRef = push(
+
+            ref(
+
+                db,
+
+                "transactions/" +
+
+                currentUser.uid
+
+            )
+
+        );
+
+        await set(
+
+            transactionRef,
+
+            {
+
+                type: "VIP Purchase",
+
+                vipName: vipName,
+
+                amount: price,
+
+                dailyIncome: dailyIncome,
+
+                totalDays: totalDays,
+
+                status: "completed",
+
+                createdAt: Date.now()
+
+            }
+
+        );
+
+        // UPDATE LOCAL DATA
+
+        userData.balance = newBalance;
+
+        vipPlans[purchaseRef.key] = {
+
+            vipName: vipName,
+
+            dailyIncome: dailyIncome,
+
+            totalDays: totalDays,
+
+            remainingDays: totalDays,
+
+            purchasedAt: Date.now(),
+
+            status: "active"
+
+        };
+
+        calculateVipTotals();
+
+        renderOwnedVipPlans();
+
+        updateVipButtons();
+
+        alert(vipName + " Purchased Successfully.");
+
+    }
+
+    catch (error) {
+
+        console.error(error);
+
+        alert(error.message);
+
+    }
+
+}
+
+console.log("VIP PART 2 READY");
+
