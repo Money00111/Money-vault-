@@ -755,4 +755,61 @@ async function checkVipExpiration(){
 
 }
 
-    
+   // ======================================
+// VIP.JS - PART 4B
+// CALCULATE ACTIVE VIP TOTALS
+// ======================================
+
+function calculateVipTotals() {
+
+    let totalDailyIncome = 0;
+
+    let totalProfitAmount = 0;
+
+    let vipCount = 0;
+
+    Object.values(vipPlans).forEach(plan => {
+
+        if (plan.status !== "active") return;
+
+        const daysPassed = Math.floor(
+
+            (Date.now() - Number(plan.purchasedAt))
+
+            / (1000 * 60 * 60 * 24)
+
+        );
+
+        const remainingDays =
+
+            Number(plan.totalDays) - daysPassed;
+
+        if (remainingDays <= 0) return;
+
+        vipCount++;
+
+        totalDailyIncome +=
+            Number(plan.dailyIncome);
+
+        totalProfitAmount +=
+
+            Number(plan.dailyIncome) *
+
+            remainingDays;
+
+    });
+
+    currentVip.textContent =
+        vipCount + " Active VIP";
+
+    dailyIncome.textContent =
+        totalDailyIncome.toLocaleString() +
+        " RWF";
+
+    totalProfit.textContent =
+        totalProfitAmount.toLocaleString() +
+        " RWF";
+
+} 
+
+        
