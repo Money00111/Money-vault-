@@ -2,7 +2,6 @@
 // VIP.JS - PART 1A
 // Money Vault Pro VIP System
 // ======================================
-
 import { auth, db } from "./firebase.js";
 
 import {
