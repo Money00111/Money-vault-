@@ -182,13 +182,10 @@ async function buyVip(button){
 
     // CHECK CURRENT VIP
 
-    if(userData.vip === vipName){
-
-        alert("You already own this VIP Plan.");
-
-        return;
-
-    }
+    if (userData.vipPlans && userData.vipPlans[vipName]) {
+    alert("You already own this VIP Plan.");
+    return;
+                      }
 
     // CONFIRM
 
