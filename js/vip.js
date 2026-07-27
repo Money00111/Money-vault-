@@ -1,6 +1,6 @@
 // ======================================
-// VIP.JS - PART 1
-// Money Vault
+// VIP.JS - PART 1A
+// Money Vault Pro VIP System
 // ======================================
 
 import { auth, db } from "./firebase.js";
@@ -14,30 +14,57 @@ import {
     ref,
     onValue,
     update,
-    push
+    push,
+    set,
+    get
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
+
+
 // ======================================
 // ELEMENTS
 // ======================================
 
-const loadingScreen = document.getElementById("loadingScreen");
+const loadingScreen =
+document.getElementById("loadingScreen");
 
-const menuBtn = document.getElementById("menuBtn");
-const sidebar = document.getElementById("sidebar");
-const logoutBtn = document.getElementById("logoutBtn");
+const menuBtn =
+document.getElementById("menuBtn");
 
-const balance = document.getElementById("balance");
+const sidebar =
+document.getElementById("sidebar");
 
-const currentVip = document.getElementById("currentVip");
-const dailyIncome = document.getElementById("dailyIncome");
-const totalProfit = document.getElementById("totalProfit");
+const logoutBtn =
+document.getElementById("logoutBtn");
+
+const balance =
+document.getElementById("balance");
+
+const currentVip =
+document.getElementById("currentVip");
+
+const dailyIncome =
+document.getElementById("dailyIncome");
+
+const totalProfit =
+document.getElementById("totalProfit");
+
+const ownedVipList =
+document.getElementById("ownedVipList");
+
+const buyButtons =
+document.querySelectorAll(".buyVipBtn");
+
 
 // ======================================
-// CURRENT USER
+// USER
 // ======================================
 
 let currentUser = null;
+
 let userData = {};
+
+let vipPlans = {};
+
 
 // ======================================
 // SIDEBAR
@@ -49,29 +76,23 @@ menuBtn?.addEventListener("click", () => {
 
 });
 
+
 // ======================================
 // LOGOUT
 // ======================================
 
-logoutBtn?.addEventListener("click", async (e) => {
+logoutBtn?.addEventListener("click", async () => {
 
-    e.preventDefault();
+    const ok = confirm("Logout?");
 
-    if (!confirm("Logout from Money Vault?")) return;
+    if (!ok) return;
 
-    try {
+    await signOut(auth);
 
-        await signOut(auth);
-
-        location.href = "login.html";
-
-    } catch (error) {
-
-        alert(error.message);
-
-    }
+    location.href = "login.html";
 
 });
+
 
 // ======================================
 // AUTH
@@ -93,266 +114,17 @@ onAuthStateChanged(auth, (user) => {
 
 });
 
+
 // ======================================
-// LOAD USER DATA
+// LOAD USER
 // ======================================
 
 function loadUserData() {
 
-    const userRef = ref(db, "users/" + currentUser.uid);
+    const userRef =
+    ref(db, "users/" + currentUser.uid);
 
     onValue(userRef, (snapshot) => {
-
-        loadingScreen.style.display = "none";
-
-        if (!snapshot.exists()) return;
-
-        userData = snapshot.val();
-
-        balance.textContent =
-            Number(userData.balance || 0).toLocaleString() + " RWF";
-
-        currentVip.textContent =
-            userData.currentVip || "VIP 0";
-        
-        dailyIncome.textContent =
-            Number(userData.dailyIncome || 0).toLocaleString() + " RWF";
-
-        totalProfit.textContent =
-            Number(userData.totalProfit || 0).toLocaleString() + " RWF";
-
-    });
-
-}
-
-console.log("VIP Part 1 Loaded");
-
-// ======================================
-// VIP.JS - PART 2
-// BUY VIP PLAN
-// ======================================
-
-// ======================================
-// VIP BUTTONS
-// ======================================
-
-const buyButtons = document.querySelectorAll(".buyVipBtn");
-
-// ======================================
-// BUY VIP
-// ======================================
-
-buyButtons.forEach(button => {
-
-    button.addEventListener("click", () => {
-
-        buyVip(button);
-
-    });
-
-});
-
-// ======================================
-// BUY FUNCTION
-// ======================================
-
-async function buyVip(button){
-
-    if(!currentUser) return;
-
-    const vipName = button.dataset.vip;
-
-    const price = Number(button.dataset.price);
-
-    const daily = Number(button.dataset.daily);
-
-    const profit = Number(button.dataset.profit);
-
-    const balanceNow = Number(userData.balance || 0);
-
-    // CHECK BALANCE
-
-    if(balanceNow < price){
-
-        alert("Insufficient Balance.");
-
-        return;
-
-    }
-
-    // CHECK CURRENT VIP
-
-    if (userData.vipPlans && userData.vipPlans[vipName]) {
-    alert("You already own this VIP Plan.");
-    return;
-                      }
-
-    // CONFIRM
-
-    const ok = confirm(
-
-        `Buy ${vipName} for ${price.toLocaleString()} RWF ?`
-
-    );
-
-    if(!ok) return;
-
-    try{
-
-        const newBalance = balanceNow - price;
-
-        // UPDATE USER
-
-        await update(
-    ref(db, "users/" + currentUser.uid),
-    {
-        balance: newBalance,
-        currentVip: vipName,
-        dailyIncome: daily,
-        totalProfit: profit,
-        vipPurchaseDate: Date.now(),
-
-        ["vipPlans/" + vipName + "/active"]: true,
-        ["vipPlans/" + vipName + "/purchasedAt"]: Date.now()
-    }
-);
-
-        // SAVE TRANSACTION
-
-        await push(
-
-            ref(db,"transactions/" + currentUser.uid),
-
-            {
-
-                type:"VIP Purchase",
-
-                amount:price,
-
-                date:new Date().toLocaleString(),
-
-                status:"Completed"
-
-            }
-
-        );
-
-        alert(vipName + " Activated Successfully.");
-
-    }
-
-    catch(error){
-
-        alert(error.message);
-
-    }
-
-}
-
-console.log("VIP Part 2 Loaded");
-
-// ======================================
-// VIP.JS - PART 3
-// FINAL
-// ======================================
-
-// ======================================
-// UPDATE ACTIVE VIP BUTTON
-// ======================================
-
-function updateVipButtons() {
-
-    document.querySelectorAll(".buyVipBtn").forEach(button => {
-
-        const vip = button.dataset.vip;
-
-        if (userData.vip === vip) {
-
-            button.innerHTML = `
-            <i class="fas fa-check-circle"></i>
-            Current Plan
-            `;
-
-            button.disabled = true;
-
-            button.classList.add("activeVip");
-
-        } else {
-
-            button.disabled = false;
-
-            button.classList.remove("activeVip");
-
-            button.innerHTML = `
-            <i class="fas fa-crown"></i>
-            Buy Now
-            `;
-
-        }
-
-    });
-
-}
-
-// ======================================
-// TOAST MESSAGE
-// ======================================
-
-function showToast(message) {
-
-    let toast = document.querySelector(".toast");
-
-    if (!toast) {
-
-        toast = document.createElement("div");
-
-        toast.className = "toast";
-
-        document.body.appendChild(toast);
-
-    }
-
-    toast.textContent = message;
-
-    toast.classList.add("show");
-
-    setTimeout(() => {
-
-        toast.classList.remove("show");
-
-    }, 3000);
-
-}
-
-// ======================================
-// UPDATE USER INTERFACE
-// ======================================
-
-function refreshVipInfo() {
-
-    balance.textContent =
-        Number(userData.balance || 0).toLocaleString() + " RWF";
-
-    currentVip.textContent =
-        userData.vip || "VIP 0";
-
-    dailyIncome.textContent =
-        Number(userData.dailyIncome || 0).toLocaleString() + " RWF";
-
-    totalProfit.textContent =
-        Number(userData.totalProfit || 0).toLocaleString() + " RWF";
-
-    updateVipButtons();
-
-}
-
-// ======================================
-// HIDE LOADING
-// ======================================
-
-window.addEventListener("load", () => {
-
-    setTimeout(() => {
 
         if (loadingScreen) {
 
@@ -360,57 +132,190 @@ window.addEventListener("load", () => {
 
         }
 
-    }, 800);
-
-});
-
-// ======================================
-// WATCH USER CHANGES
-// ======================================
-
-if (currentUser) {
-
-    const userRef = ref(db, "users/" + currentUser.uid);
-
-    onValue(userRef, (snapshot) => {
-
         if (!snapshot.exists()) return;
 
         userData = snapshot.val();
 
-        refreshVipInfo();
+        vipPlans =
+        userData.vipPlans || {};
+
+        balance.textContent =
+        Number(userData.balance || 0)
+        .toLocaleString() + " RWF";
+
+        calculateVipTotals();
+
+        renderOwnedVipPlans();
+
+        updateVipButtons();
 
     });
 
 }
 
-// ======================================
-// SUPPORT BUTTON
-// ======================================
-
-const supportBtn = document.querySelector(".support-btn");
-
-supportBtn?.addEventListener("click", (e) => {
-
-    e.preventDefault();
-
-    window.open(
-        "https://wa.me/250788846187",
-        "_blank"
-    );
-
-});
-
-// ======================================
-// READY
+    // ======================================
+// VIP.JS - PART 1B
+// CALCULATE + RENDER VIP PLANS
 // ======================================
 
-console.log("==================================");
+// ======================================
+// CALCULATE VIP TOTALS
+// ======================================
 
-console.log(" Money Vault VIP Ready ");
+function calculateVipTotals() {
 
-console.log(" VIP Purchase System Active ");
+    let totalDailyIncome = 0;
 
-console.log(" Firebase Connected ");
+    let totalProfitAmount = 0;
 
-console.log("==================================");
+    let currentPlan = "VIP 0";
+
+    Object.values(vipPlans).forEach(plan => {
+
+        if (plan.status !== "active") return;
+
+        totalDailyIncome +=
+            Number(plan.dailyIncome || 0);
+
+        totalProfitAmount +=
+            Number(plan.dailyIncome || 0) *
+            Number(plan.remainingDays || 0);
+
+        currentPlan = plan.vipName;
+
+    });
+
+    currentVip.textContent = currentPlan;
+
+    dailyIncome.textContent =
+        totalDailyIncome.toLocaleString() + " RWF";
+
+    totalProfit.textContent =
+        totalProfitAmount.toLocaleString() + " RWF";
+
+}
+
+
+// ======================================
+// SHOW PURCHASED VIP PLANS
+// ======================================
+
+function renderOwnedVipPlans() {
+
+    if (!ownedVipList) return;
+
+    ownedVipList.innerHTML = "";
+
+    const plans =
+        Object.values(vipPlans);
+
+    if (plans.length === 0) {
+
+        ownedVipList.innerHTML = `
+
+        <div class="emptyVip">
+
+            No VIP Purchased
+
+        </div>
+
+        `;
+
+        return;
+
+    }
+
+    plans.forEach(plan => {
+
+        ownedVipList.innerHTML += `
+
+        <div class="owned-vip-card">
+
+            <h3>${plan.vipName}</h3>
+
+            <p>
+
+                Daily Income :
+                ${Number(plan.dailyIncome).toLocaleString()} RWF
+
+            </p>
+
+            <p>
+
+                Remaining Days :
+                ${plan.remainingDays}
+
+            </p>
+
+            <span class="vip-status ${plan.status}">
+
+                ${plan.status.toUpperCase()}
+
+            </span>
+
+        </div>
+
+        `;
+
+    });
+
+}
+
+
+// ======================================
+// UPDATE VIP BUTTONS
+// ======================================
+
+function updateVipButtons() {
+
+    buyButtons.forEach(button => {
+
+        const vip =
+            button.dataset.vip;
+
+        const purchased =
+            Object.values(vipPlans).find(plan =>
+
+                plan.vipName === vip &&
+                plan.status === "active"
+
+            );
+
+        if (purchased) {
+
+            button.disabled = true;
+
+            button.innerHTML = `
+
+            <i class="fas fa-check-circle"></i>
+
+            Purchased
+
+            `;
+
+            button.classList.add("activeVip");
+
+        }
+
+        else {
+
+            button.disabled = false;
+
+            button.classList.remove("activeVip");
+
+            button.innerHTML = `
+
+            <i class="fas fa-crown"></i>
+
+            Buy Now
+
+            `;
+
+        }
+
+    });
+
+}
+
+console.log("VIP PART 1 COMPLETE");
+
