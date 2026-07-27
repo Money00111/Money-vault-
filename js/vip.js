@@ -113,8 +113,8 @@ function loadUserData() {
             Number(userData.balance || 0).toLocaleString() + " RWF";
 
         currentVip.textContent =
-            userData.vip || "VIP 0";
-
+            userData.currentVip || "VIP 0";
+        
         dailyIncome.textContent =
             Number(userData.dailyIncome || 0).toLocaleString() + " RWF";
 
@@ -207,24 +207,18 @@ async function buyVip(button){
         // UPDATE USER
 
         await update(
+    ref(db, "users/" + currentUser.uid),
+    {
+        balance: newBalance,
+        currentVip: vipName,
+        dailyIncome: daily,
+        totalProfit: profit,
+        vipPurchaseDate: Date.now(),
 
-            ref(db,"users/" + currentUser.uid),
-
-            {
-
-                balance:newBalance,
-
-                vip:vipName,
-
-                dailyIncome:daily,
-
-                totalProfit:profit,
-
-                vipPurchaseDate:Date.now()
-
-            }
-
-        );
+        ["vipPlans/" + vipName + "/active"]: true,
+        ["vipPlans/" + vipName + "/purchasedAt"]: Date.now()
+    }
+);
 
         // SAVE TRANSACTION
 
