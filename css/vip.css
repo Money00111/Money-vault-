@@ -1032,4 +1032,35 @@ font-size:55px;
 }
 
                            }
+.claim-timer-box{
+    background:#111827;
+    color:#fff;
+    padding:15px;
+    border-radius:12px;
+    text-align:center;
+    margin-bottom:15px;
+}
+
+.claim-timer-box p{
+    margin:0;
+    font-size:14px;
+    opacity:0.8;
+}
+
+.claim-timer-box h3{
+    margin-top:8px;
+    font-size:26px;
+    letter-spacing:2px;
+}
+
+.claim-btn{
+    width:100%;
+    padding:14px;
+    border:none;
+    border-radius:12px;
+    background:#16a34a;
+    color:#fff;
+    font-size:16px;
+    font-weight:bold;
+}
 
