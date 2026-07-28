@@ -1077,7 +1077,78 @@ document.getElementById("claimIncomeBtn");
 const claimTimer =
 document.getElementById("claimTimer");
 
+// ======================================
+// PART 11
+// 24 HOUR CLAIM LOCK
+// ======================================
+
+const claimBtn =
+document.getElementById("claimIncomeBtn");
+
+const claimTimer =
+document.getElementById("claimTimer");
+
 setInterval(updateClaimTimer,1000);
+
+async function updateClaimTimer(){
+
+    if(!currentUser) return;
+
+    const snap =
+    await get(
+        ref(db,"users/" + currentUser.uid)
+    );
+
+    if(!snap.exists()) return;
+
+    const user = snap.val();
+
+    const lastClaim =
+    Number(user.lastClaim || 0);
+
+    const oneDay =
+    24 * 60 * 60 * 1000;
+
+    const now =
+    Date.now();
+
+    const remaining =
+    oneDay - (now - lastClaim);
+
+    if(lastClaim === 0 || remaining <= 0){
+
+        claimBtn.disabled = false;
+
+        claimBtn.innerHTML =
+        "Claim Daily Income";
+
+        claimTimer.textContent =
+        "Ready to Claim";
+
+        return;
+
+    }
+
+    claimBtn.disabled = true;
+
+    const hours =
+    Math.floor(remaining / 3600000);
+
+    const minutes =
+    Math.floor((remaining % 3600000)/60000);
+
+    const seconds =
+    Math.floor((remaining % 60000)/1000);
+
+    claimTimer.textContent =
+
+    hours + "h " +
+
+    minutes + "m " +
+
+    seconds + "s";
+
+}
 
 async function updateClaimTimer(){
 
