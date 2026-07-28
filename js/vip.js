@@ -827,4 +827,77 @@ function startClaimTimer(){
 
 startClaimTimer();
 
-        
+        // ======================================
+// VIP.JS - PART 8A
+// LOAD USER VIP PLANS
+// ======================================
+
+const ownedVipList =
+document.getElementById("ownedVipList");
+
+function loadVipPlans() {
+
+    if (!currentUser) return;
+
+    const vipRef =
+    ref(db, "users/" + currentUser.uid + "/vipPlans");
+
+    onValue(vipRef, (snapshot) => {
+
+        ownedVipList.innerHTML = "";
+
+        let totalDaily = 0;
+
+        if (!snapshot.exists()) {
+
+            ownedVipList.innerHTML =
+            "<p>No VIP purchased.</p>";
+
+            dailyIncome.textContent = "0 RWF";
+
+            return;
+
+        }
+
+        snapshot.forEach((child) => {
+
+            const vip = child.val();
+
+            if (vip.status === "active") {
+
+                totalDaily += Number(vip.dailyIncome || 0);
+
+            }
+
+            const card =
+            document.createElement("div");
+
+            card.className = "owned-vip-card";
+
+            card.innerHTML = `
+
+                <h4>${vip.vipName}</h4>
+
+                <p>Daily Income:
+                ${Number(vip.dailyIncome).toLocaleString()} RWF</p>
+
+                <p>Remaining Days:
+                ${vip.remainingDays}</p>
+
+                <p>Status:
+                ${vip.status}</p>
+
+            `;
+
+            ownedVipList.appendChild(card);
+
+        });
+
+        dailyIncome.textContent =
+        totalDaily.toLocaleString() + " RWF";
+
+    });
+
+}
+
+            
