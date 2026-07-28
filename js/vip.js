@@ -404,95 +404,6 @@ async function buyVip(button) {
 }
 
 console.log("VIP PART 2 READY");
-
-// ======================================
-// VIP.JS - PART 3A
-// DAILY INCOME SYSTEM
-// ======================================
-
-async function claimDailyIncome() {
-
-    if (!currentUser) return;
-
-    const userRef =
-        ref(db, "users/" + currentUser.uid);
-
-    const snap =
-        await get(userRef);
-
-    if (!snap.exists()) return;
-
-    const user = snap.val();
-
-    const vipPlans =
-        user.vipPlans || {};
-
-    let totalIncome = 0;
-
-    const updates = {};
-
-    Object.entries(vipPlans).forEach(([id, plan]) => {
-
-        if (plan.status !== "active") return;
-
-        if (Number(plan.remainingDays) <= 0) {
-
-            updates[
-                "vipPlans/" + id + "/status"
-            ] = "expired";
-
-            return;
-
-        }
-
-        totalIncome +=
-            Number(plan.dailyIncome);
-
-        updates[
-            "vipPlans/" + id + "/remainingDays"
-        ] =
-            Number(plan.remainingDays) - 1;
-
-        if (
-            Number(plan.remainingDays) - 1 <= 0
-        ) {
-
-            updates[
-                "vipPlans/" + id + "/status"
-            ] = "expired";
-
-        }
-
-    });
-
-    if (totalIncome <= 0) {
-
-        alert("No Active VIP Plan");
-
-        return;
-
-    }
-
-    updates.balance =
-        Number(user.balance || 0) +
-        totalIncome;
-
-    updates.totalProfit =
-        Number(user.totalProfit || 0) +
-        totalIncome;
-
-    updates.lastClaim =
-        Date.now();
-
-    await update(userRef, updates);
-
-    alert(
-        totalIncome.toLocaleString() +
-        " RWF Added Successfully."
-    );
-
-}
-
 // ======================================
 // VIP.JS - PART 3B
 // CLAIM ONCE EVERY 24 HOURS
@@ -808,4 +719,49 @@ function renderOwnedVipPlans() {
 
 }
 
-                  
+           // ======================================
+// VIP.JS - PART 6
+// DAILY INCOME + TRANSACTION
+// ======================================
+
+async function claimDailyIncome() {
+
+    if (!currentUser) return;
+
+    const userRef =
+        ref(db, "users/" + currentUser.uid);
+
+    const snap =
+        await get(userRef);
+
+    if (!snap.exists()) return;
+
+    const user = snap.val();
+
+    const plans =
+        user.vipPlans || {};
+
+    let totalIncome = 0;
+
+    const updates = {};
+
+    Object.entries(plans).forEach(([id, plan]) => {
+
+        if (plan.status !== "active") return;
+
+        const daysPassed = Math.floor(
+
+            (Date.now() - Number(plan.purchasedAt))
+
+            / (1000 * 60 * 60 * 24)
+
+        );
+
+        const remaining =
+
+            Number(plan.totalDays) - daysPassed;
+
+        if (remaining <= 0) {
+
+            updates       
+            
