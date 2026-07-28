@@ -930,4 +930,140 @@ activeVipCount + " Active VIP Plan(s)";
 
 }
 
-            
+          // ======================================
+// PART 10
+// CLAIM DAILY INCOME
+// ======================================
+
+const claimBtn =
+document.getElementById("claimIncomeBtn");
+
+claimBtn?.addEventListener("click", claimDailyIncome);
+
+async function claimDailyIncome(){
+
+    if(!currentUser) return;
+
+    const userRef =
+    ref(db,"users/" + currentUser.uid);
+
+    const userSnap =
+    await get(userRef);
+
+    if(!userSnap.exists()) return;
+
+    const user =
+    userSnap.val();
+
+    const vipPlans =
+    user.vipPlans || {};
+
+    let totalIncome = 0;
+
+    for(const key in vipPlans){
+
+        const vip = vipPlans[key];
+
+        if(vip.status !== "active")
+        continue;
+
+        totalIncome +=
+        Number(vip.dailyIncome || 0);
+
+        let remaining =
+        Number(vip.remainingDays || 0);
+
+        remaining--;
+
+        if(remaining <= 0){
+
+            await update(
+
+                ref(db,
+                "users/" +
+                currentUser.uid +
+                "/vipPlans/" + key),
+
+                {
+
+                    remainingDays:0,
+
+                    status:"expired"
+
+                }
+
+            );
+
+        }
+
+        else{
+
+            await update(
+
+                ref(db,
+                "users/" +
+                currentUser.uid +
+                "/vipPlans/" + key),
+
+                {
+
+                    remainingDays:remaining
+
+                }
+
+            );
+
+        }
+
+    }
+
+    if(totalIncome <= 0){
+
+        alert("No Active VIP Plans.");
+
+        return;
+
+    }
+
+    const newBalance =
+    Number(user.balance || 0)
+    + totalIncome;
+
+    await update(userRef,{
+
+        balance:newBalance,
+
+        lastClaim:Date.now()
+
+    });
+
+    const tx =
+    push(ref(db,"transactions"));
+
+    await set(tx,{
+
+        uid:currentUser.uid,
+
+        type:"Daily Income",
+
+        amount:totalIncome,
+
+        createdAt:Date.now(),
+
+        status:"Completed"
+
+    });
+
+    alert(
+
+        "Daily Income Claimed\n\n+" +
+
+        totalIncome.toLocaleString()
+
+        + " RWF"
+
+    );
+
+}
+
+
