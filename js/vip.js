@@ -404,74 +404,6 @@ async function buyVip(button) {
 }
 
 console.log("VIP PART 2 READY");
-// ======================================
-// VIP.JS - PART 3B
-// CLAIM ONCE EVERY 24 HOURS
-// ======================================
-
-const claimBtn =
-document.getElementById("claimIncomeBtn");
-
-claimBtn?.addEventListener("click", () => {
-
-    claimDailyReward();
-
-});
-
-async function claimDailyReward(){
-
-    if(!currentUser) return;
-
-    const userRef =
-    ref(db,"users/" + currentUser.uid);
-
-    const snap =
-    await get(userRef);
-
-    if(!snap.exists()) return;
-
-    const user =
-    snap.val();
-
-    const lastClaim =
-    Number(user.lastClaim || 0);
-
-    const now =
-    Date.now();
-
-    const oneDay =
-    24 * 60 * 60 * 1000;
-
-    if(now - lastClaim < oneDay){
-
-        const remain =
-
-        Math.ceil(
-
-            (oneDay - (now - lastClaim))
-
-            /1000/60/60
-
-        );
-
-        alert(
-
-            "Come back after "
-
-            + remain +
-
-            " hours."
-
-        );
-
-        return;
-
-    }
-
-    await claimDailyIncome();
-
-}
-
 
 // ======================================
 // AUTO REFRESH USER
@@ -764,4 +696,60 @@ async function claimDailyIncome() {
         if (remaining <= 0) {
 
             updates       
+            
+// ======================================
+// VIP.JS - PART 7
+// CLAIM DAILY INCOME (24 HOURS)
+// ======================================
+
+async function claimDailyReward() {
+
+    if (!currentUser) return;
+
+    const userRef =
+        ref(db, "users/" + currentUser.uid);
+
+    const snap =
+        await get(userRef);
+
+    if (!snap.exists()) return;
+
+    const user = snap.val();
+
+    const lastClaim =
+        Number(user.lastClaim || 0);
+
+    const now =
+        Date.now();
+
+    const oneDay =
+        24 * 60 * 60 * 1000;
+
+    // CHECK 24 HOURS
+
+    if (lastClaim !== 0 && (now - lastClaim) < oneDay) {
+
+        const hours = Math.floor(
+            (oneDay - (now - lastClaim)) / 3600000
+        );
+
+        const minutes = Math.floor(
+            ((oneDay - (now - lastClaim)) % 3600000) / 60000
+        );
+
+        alert(
+            "Daily income already claimed.\n\nTry again after "
+            + hours + "h "
+            + minutes + "m."
+        );
+
+        return;
+
+    }
+
+    // GIVE REWARD
+
+    await claimDailyIncome();
+
+}
             
