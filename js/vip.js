@@ -215,6 +215,23 @@ console.log("VIP PART 1 COMPLETE");
 // BUY VIP PLAN
 // ======================================
 
+function registerVipButtons(){
+
+    document
+    .querySelectorAll(".buyVipBtn")
+
+    .forEach(button=>{
+
+        button.onclick=()=>{
+
+            buyVip(button);
+
+        };
+
+    });
+
+}
+
 // BUY BUTTONS
 
 buyButtons.forEach(button => {
