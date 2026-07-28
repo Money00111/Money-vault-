@@ -138,9 +138,6 @@ function loadUserData() {
         vipPlans =
         userData.vipPlans || {};
 
-        balance.textContent =
-        Number(userData.balance || 0)
-        .toLocaleString() + " RWF";
 
         calculateVipTotals();
 
