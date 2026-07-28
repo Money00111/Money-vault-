@@ -1100,11 +1100,6 @@ document.getElementById("claimIncomeBtn");
 const claimTimer =
 document.getElementById("claimTimer");
 
-// ======================================
-// PART 11
-// 24 HOUR CLAIM LOCK
-// ======================================
-
 const claimBtn =
 document.getElementById("claimIncomeBtn");
 
