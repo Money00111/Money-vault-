@@ -753,3 +753,78 @@ async function claimDailyReward() {
 
 }
             
+// ======================================
+// VIP.JS - PART 8
+// CLAIM COUNTDOWN TIMER
+// ======================================
+
+const claimTimer =
+document.getElementById("claimTimer");
+
+function startClaimTimer(){
+
+    if(!currentUser) return;
+
+    const userRef =
+    ref(db,"users/" + currentUser.uid);
+
+    onValue(userRef,(snapshot)=>{
+
+        if(!snapshot.exists()) return;
+
+        const user =
+        snapshot.val();
+
+        const lastClaim =
+        Number(user.lastClaim || 0);
+
+        const oneDay =
+        24 * 60 * 60 * 1000;
+
+        function updateTimer(){
+
+            const now = Date.now();
+
+            const diff =
+            oneDay - (now - lastClaim);
+
+            if(diff <= 0){
+
+                claimTimer.textContent =
+                "Ready Now";
+
+                claimBtn.disabled = false;
+
+                return;
+
+            }
+
+            const hours = Math.floor(diff/3600000);
+
+            const minutes = Math.floor((diff%3600000)/60000);
+
+            const seconds = Math.floor((diff%60000)/1000);
+
+            claimTimer.textContent =
+
+                String(hours).padStart(2,"0") + ":" +
+
+                String(minutes).padStart(2,"0") + ":" +
+
+                String(seconds).padStart(2,"0");
+
+            claimBtn.disabled = true;
+
+        }
+
+        updateTimer();
+
+        setInterval(updateTimer,1000);
+
+    });
+
+}
+
+startClaimTimer();
+
+        
