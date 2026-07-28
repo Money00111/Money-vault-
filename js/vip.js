@@ -9,6 +9,7 @@ import {
     signOut
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 
+
 import {
     ref,
     onValue,
@@ -17,8 +18,6 @@ import {
     set,
     get
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
-
-
 // ======================================
 // ELEMENTS
 // ======================================
