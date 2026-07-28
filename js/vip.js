@@ -22,6 +22,9 @@ import {
 // ELEMENTS
 // ======================================
 
+const vipGrid =
+document.querySelector(".vip-grid");
+
 const loadingScreen =
 document.getElementById("loadingScreen");
 
@@ -1210,4 +1213,86 @@ async function updateClaimTimer(){
 
 }
 
+           function loadVipPackages(){
+
+    const plansRef =
+    ref(db,"vipPlans");
+
+    onValue(plansRef,(snapshot)=>{
+
+        if(!snapshot.exists()) return;
+
+        vipGrid.innerHTML="";
+
+        snapshot.forEach((child)=>{
+
+            const vip=child.val();
+
+            if(vip.status!==true) return;
+
+            vipGrid.innerHTML += `
+
+            <div class="vip-card">
+
+                <div class="vip-badge">
+
+                    ${vip.name}
+
+                </div>
+
+                <h2>
+
+                    ${Number(vip.price).toLocaleString()} RWF
+
+                </h2>
+
+                <p>
+
+                    Daily Income:
+                    ${Number(vip.dailyIncome).toLocaleString()} RWF
+
+                </p>
+
+                <p>
+
+                    Duration:
+                    ${vip.duration} Days
+
+                </p>
+
+                <p>
+
+                    Total Profit:
+                    ${Number(vip.totalProfit).toLocaleString()} RWF
+
+                </p>
+
+                <button
+                class="buyVipBtn"
+
+                data-vip="${vip.name}"
+
+                data-price="${vip.price}"
+
+                data-daily="${vip.dailyIncome}"
+
+                data-profit="${vip.totalProfit}"
+
+                data-days="${vip.duration}">
+
+                Buy Now
+
+                </button>
+
+            </div>
+
+            `;
+
+        });
+
+        registerVipButtons();
+
+    });
+
+} 
             
