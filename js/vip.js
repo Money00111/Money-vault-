@@ -917,9 +917,15 @@ function loadVipPlans() {
 
         });
 
-        dailyIncome.textContent =
-        totalDaily.toLocaleString() + " RWF";
+        
+dailyIncome.textContent =
+totalDaily.toLocaleString() + " RWF";
 
+totalProfit.textContent =
+totalProfitAmount.toLocaleString() + " RWF";
+
+currentVip.textContent =
+activeVipCount + " Active VIP Plan(s)";
     });
 
 }
