@@ -305,7 +305,7 @@ async function buyVip(button) {
 
         const newBalance =
             balanceNow - price;
-                // UPDATE USER BALANCE
+            
 
         // UPDATE BALANCE ONLY
 
@@ -864,8 +864,9 @@ function loadVipPlans() {
     onValue(vipRef, (snapshot) => {
 
         ownedVipList.innerHTML = "";
-
-        let totalDaily = 0;
+           let totalDaily = 0;
+           let totalProfitAmount = 0;
+           let activeVipCount = 0;
 
         if (!snapshot.exists()) {
 
