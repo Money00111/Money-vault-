@@ -308,17 +308,40 @@ async function buyVip(button) {
             balanceNow - price;
                 // UPDATE USER BALANCE
 
-        await update(
+        // UPDATE BALANCE ONLY
 
-            ref(db, "users/" + currentUser.uid),
+await update(
+    ref(db, "users/" + currentUser.uid),
+    {
+        balance: newBalance
+    }
+);
 
-            {
+// SAVE VIP PLAN
 
-                balance: newBalance
+const vipRef = push(
+    ref(db, "users/" + currentUser.uid + "/vipPlans")
+);
 
-            }
+await set(vipRef, {
 
-        );
+    vipName: vipName,
+
+    dailyIncome: daily,
+
+    totalProfit: profit,
+
+    totalDays: 30,
+
+    remainingDays: 30,
+
+    purchasedAt: Date.now(),
+
+    lastClaim: 0,
+
+    status: "active"
+
+});
 
         // SAVE TRANSACTION
 
