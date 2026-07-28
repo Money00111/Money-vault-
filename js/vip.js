@@ -113,8 +113,11 @@ onAuthStateChanged(auth, (user) => {
 
     loadUserData();
 
-});
+    loadVipPlans();
 
+    loadVipPackages();
+
+});
 
 // ======================================
 // LOAD USER
