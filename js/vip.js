@@ -885,7 +885,11 @@ function loadVipPlans() {
 
             if (vip.status === "active") {
 
-                totalDaily += Number(vip.dailyIncome || 0);
+    totalDaily += Number(vip.dailyIncome || 0);
+
+    totalProfitAmount += Number(vip.totalProfit || 0);
+
+    activeVipCount++;
 
             }
 
