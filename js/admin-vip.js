@@ -520,3 +520,182 @@ function addEditButton(){
 console.log(
 "ADMIN VIP PART 7 READY"
 );
+
+
+// ======================================
+// ADMIN SECURITY SYSTEM - PART 8
+// MONEY VAULT PRO
+// ======================================
+
+
+// ======================================
+// FIREBASE IMPORT
+// ======================================
+
+import { auth, db } from "./firebase.js";
+
+
+import {
+
+    onAuthStateChanged
+
+} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+
+
+import {
+
+    ref,
+    get
+
+} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
+
+
+
+
+// ======================================
+// ADMIN CONFIG
+// ======================================
+
+
+// Shyiramo email ya Admin wawe
+
+const ADMIN_EMAIL = 
+"Niyigenaepizo@gmail.com";
+
+
+
+
+
+// ======================================
+// CHECK ADMIN ACCESS
+// ======================================
+
+
+onAuthStateChanged(auth, async(user)=>{
+
+
+    if(!user){
+
+
+        window.location.href =
+        "login.html";
+
+
+        return;
+
+    }
+
+
+
+
+    if(user.email !== ADMIN_EMAIL){
+
+
+        alert(
+            "Access Denied"
+        );
+
+
+        window.location.href =
+        "dashboard.html";
+
+
+        return;
+
+    }
+
+
+
+    console.log(
+        "Admin Access Granted"
+    );
+
+
+
+});
+
+
+
+
+
+
+// ======================================
+// VALIDATE VIP DATA
+// ======================================
+
+
+function validateVipData(
+    price,
+    daily,
+    duration
+){
+
+
+
+    if(
+
+        price <= 0 ||
+
+        daily <= 0 ||
+
+        duration <= 0
+
+    ){
+
+
+        alert(
+            "Invalid VIP Information"
+        );
+
+
+        return false;
+
+    }
+
+
+
+
+    return true;
+
+
+}
+
+
+
+
+
+// ======================================
+// SAFE NUMBER
+// ======================================
+
+
+function safeNumber(value){
+
+
+
+    const number =
+    Number(value);
+
+
+
+    if(isNaN(number)){
+
+        return 0;
+
+    }
+
+
+
+    return number;
+
+
+}
+
+
+
+
+
+console.log(
+"ADMIN SECURITY PART 8 READY"
+);
+
