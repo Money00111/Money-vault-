@@ -362,21 +362,15 @@ function registerVipButtons() {
 async function buyVip(button) {
 
     if (!currentUser) return;
+const vipName = button.dataset.vip;
 
-    const vipName =
-        button.dataset.vip;
+const price = Number(button.dataset.price);
 
-    const price =
-        Number(button.dataset.price);
+const daily = Number(button.dataset.daily);
 
-    const dailyIncome =
-        Number(button.dataset.daily);
+const profit = Number(button.dataset.profit);
 
-    const totalDays =
-        Number(button.dataset.days);
-
-    const balanceNow =
-        Number(userData.balance || 0);
+const days = Number(button.dataset.days););
 
     // CHECK BALANCE
 
@@ -451,7 +445,6 @@ await update(
 const vipRef = push(
     ref(db, "users/" + currentUser.uid + "/vipPlans")
 );
-
 await set(vipRef, {
 
     vipName: vipName,
@@ -460,9 +453,9 @@ await set(vipRef, {
 
     totalProfit: profit,
 
-    totalDays: 30,
+    totalDays: days,
 
-    remainingDays: 30,
+    remainingDays: days,
 
     purchasedAt: Date.now(),
 
