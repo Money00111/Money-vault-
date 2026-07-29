@@ -251,8 +251,6 @@ buyButtons.forEach(button => {
 // LOAD VIP PACKAGES FROM FIREBASE
 // ======================================
 
-const vipGrid = document.querySelector(".vip-grid");
-
 function loadVipPackages() {
 
     const vipRef = ref(db, "vipPlans");
@@ -334,27 +332,6 @@ function loadVipPackages() {
 
 }
 
-// ======================================
-// PART 12D
-// REGISTER BUY BUTTONS
-// ======================================
-
-function registerVipButtons() {
-
-    const buttons =
-    document.querySelectorAll(".buyVipBtn");
-
-    buttons.forEach((button) => {
-
-        button.addEventListener("click", () => {
-
-            buyVip(button);
-
-        });
-
-    });
-
-}
 // ======================================
 // BUY VIP
 // ======================================
