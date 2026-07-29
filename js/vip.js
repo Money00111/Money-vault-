@@ -304,6 +304,9 @@ function loadUserData(){
 
         userData.vipPlans || {};
 
+        updateVipDashboard();
+updateVipButtons();
+
 
 
         console.log(
@@ -1186,4 +1189,909 @@ console.log(
 "VIP PART 1C COMPLETE"
 );
 
-            
+      // ======================================
+// VIP.JS - PART 2
+// OWNED VIP DISPLAY + STATISTICS
+// ======================================
+
+
+
+// ======================================
+// RENDER USER VIP PLANS
+// ======================================
+
+function renderOwnedVipPlans(){
+
+
+    if(!ownedVipList) return;
+
+
+
+    ownedVipList.innerHTML = "";
+
+
+
+    const plans =
+
+    Object.values(userVipPlans);
+
+
+
+    if(plans.length === 0){
+
+
+        ownedVipList.innerHTML = `
+
+            <div class="emptyVip">
+
+                No VIP Purchased
+
+            </div>
+
+        `;
+
+
+        return;
+
+    }
+
+
+
+
+    plans.forEach(plan=>{
+
+
+        const purchasedDate =
+
+        Number(plan.purchasedAt || 0);
+
+
+
+
+        const daysPassed =
+
+        Math.floor(
+
+            (Date.now() - purchasedDate)
+
+            /
+
+            (1000 * 60 * 60 * 24)
+
+        );
+
+
+
+
+        const remainingDays =
+
+        Math.max(
+
+            0,
+
+            Number(plan.totalDays) -
+
+            daysPassed
+
+        );
+
+
+
+
+        const status =
+
+        remainingDays > 0
+
+        ? "active"
+
+        : "expired";
+
+
+
+
+        const progress =
+
+        Math.min(
+
+            100,
+
+            (
+
+            daysPassed /
+
+            Number(plan.totalDays)
+
+            ) * 100
+
+        );
+
+
+
+
+
+        const card =
+
+        document.createElement("div");
+
+
+
+        card.className =
+        "owned-vip-card";
+
+
+
+
+        card.innerHTML = `
+
+
+        <h3>
+
+        ${plan.vipName}
+
+        </h3>
+
+
+
+        <p>
+
+        Daily Income:
+
+        <b>
+
+        ${Number(plan.dailyIncome)
+        .toLocaleString()} RWF
+
+        </b>
+
+        </p>
+
+
+
+
+        <p>
+
+        Remaining Days:
+
+        <b>
+
+        ${remainingDays}
+
+        Days
+
+        </b>
+
+        </p>
+
+
+
+
+
+        <div class="vip-progress">
+
+
+            <div
+
+            class="vip-progress-bar"
+
+            style="width:${progress}%">
+
+            </div>
+
+
+        </div>
+
+
+
+
+        <span class="vip-status ${status}">
+
+        ${status.toUpperCase()}
+
+        </span>
+
+
+
+        `;
+
+
+
+        ownedVipList.appendChild(card);
+
+
+
+    });
+
+
+
+}
+
+
+
+
+
+// ======================================
+// CALCULATE VIP TOTALS
+// ======================================
+
+function calculateVipTotals(){
+
+
+
+    let activeCount = 0;
+
+
+    let totalDaily = 0;
+
+
+    let totalProfitAmount = 0;
+
+
+
+
+
+    Object.values(userVipPlans)
+
+    .forEach(plan=>{
+
+
+
+        if(plan.status !== "active")
+
+        return;
+
+
+
+
+        const daysPassed =
+
+        Math.floor(
+
+            (Date.now() -
+
+            Number(plan.purchasedAt))
+
+            /
+
+            (1000*60*60*24)
+
+        );
+
+
+
+
+        const remaining =
+
+        Number(plan.totalDays)
+
+        -
+
+        daysPassed;
+
+
+
+
+
+        if(remaining <= 0)
+
+        return;
+
+
+
+
+
+        activeCount++;
+
+
+
+
+
+        totalDaily +=
+
+        Number(plan.dailyIncome || 0);
+
+
+
+
+
+        totalProfitAmount +=
+
+        Number(plan.dailyIncome || 0)
+
+        *
+
+        remaining;
+
+
+
+
+    });
+
+
+
+
+
+
+    if(currentVip){
+
+
+        currentVip.textContent =
+
+        activeCount +
+
+        " Active VIP";
+
+
+    }
+
+
+
+
+
+    if(dailyIncome){
+
+
+        dailyIncome.textContent =
+
+        totalDaily.toLocaleString()
+
+        +
+
+        " RWF";
+
+
+    }
+
+
+
+
+
+    if(totalProfit){
+
+
+        totalProfit.textContent =
+
+        totalProfitAmount
+
+        .toLocaleString()
+
+        +
+
+        " RWF";
+
+
+    }
+
+
+
+}
+
+
+
+
+
+// ======================================
+// RUN WHEN USER DATA CHANGES
+// ======================================
+
+
+function updateVipDashboard(){
+
+
+    renderOwnedVipPlans();
+
+
+    calculateVipTotals();
+
+
+}
+
+
+
+console.log(
+"VIP PART 2 COMPLETE"
+);      
+
+        // ======================================
+// VIP.JS - PART 3
+// DAILY INCOME CLAIM SYSTEM
+// 24 HOURS LOCK + COUNTDOWN TIMER
+// ======================================
+
+
+
+// ======================================
+// CLAIM BUTTON EVENT
+// ======================================
+
+claimBtn?.addEventListener("click",()=>{
+
+    claimDailyIncome();
+
+});
+
+
+
+
+// ======================================
+// CLAIM DAILY INCOME
+// ======================================
+
+async function claimDailyIncome(){
+
+
+    if(!currentUser) return;
+
+
+
+    try{
+
+
+        const userRef =
+
+        ref(
+            db,
+            "users/" + currentUser.uid
+        );
+
+
+
+        const snapshot =
+
+        await get(userRef);
+
+
+
+        if(!snapshot.exists())
+        return;
+
+
+
+
+        const user = snapshot.val();
+
+
+
+        const lastClaim =
+
+        Number(
+            user.lastClaim || 0
+        );
+
+
+
+        const now =
+        Date.now();
+
+
+
+        const oneDay =
+
+        24 *
+
+        60 *
+
+        60 *
+
+        1000;
+
+
+
+
+        // CHECK 24 HOURS
+
+
+        if(
+
+            lastClaim !== 0 &&
+
+            (now - lastClaim) < oneDay
+
+        ){
+
+
+            alert(
+                "Daily income already claimed. Wait until timer finishes."
+            );
+
+
+            return;
+
+        }
+
+
+
+
+
+        const plans =
+
+        user.vipPlans || {};
+
+
+
+        let totalIncome = 0;
+
+
+
+        const updates = {};
+
+
+
+
+
+        Object.entries(plans)
+
+        .forEach(([id,plan])=>{
+
+
+
+            if(plan.status !== "active")
+            return;
+
+
+
+
+            const remaining =
+
+            Number(plan.remainingDays || 0);
+
+
+
+
+            if(remaining <= 0){
+
+
+                updates[
+
+                "vipPlans/" + id + "/status"
+
+                ] = "expired";
+
+
+
+                return;
+
+            }
+
+
+
+
+
+            totalIncome +=
+
+            Number(plan.dailyIncome || 0);
+
+
+
+
+
+        });
+
+
+
+
+
+        if(totalIncome <= 0){
+
+
+            alert(
+                "No active VIP plan."
+            );
+
+
+            return;
+
+        }
+
+
+
+
+
+        const newBalance =
+
+        Number(user.balance || 0)
+
+        +
+
+        totalIncome;
+
+
+
+
+
+
+        // UPDATE USER
+
+
+        await update(userRef,{
+
+            balance:newBalance,
+
+            lastClaim:now,
+
+            ...updates
+
+        });
+
+
+
+
+
+
+        // SAVE TRANSACTION
+
+
+        const txRef =
+
+        push(
+
+            ref(
+
+            db,
+
+            "transactions/" +
+
+            currentUser.uid
+
+            )
+
+        );
+
+
+
+
+        await set(txRef,{
+
+
+            type:"Daily Income",
+
+
+            amount:totalIncome,
+
+
+            status:"completed",
+
+
+            createdAt:now
+
+
+        });
+
+
+
+
+
+
+
+        alert(
+
+            "Daily Income Claimed +"
+
+            +
+
+            totalIncome.toLocaleString()
+
+            +
+
+            " RWF"
+
+        );
+
+
+
+    }
+
+
+    catch(error){
+
+
+        console.error(
+            "CLAIM ERROR:",
+            error
+        );
+
+
+        alert(
+            error.message
+        );
+
+
+    }
+
+
+}
+
+
+
+
+
+
+
+// ======================================
+// COUNTDOWN TIMER
+// ======================================
+
+
+function updateClaimTimer(){
+
+
+
+    if(!currentUser)
+    return;
+
+
+
+    get(
+
+        ref(
+            db,
+            "users/" + currentUser.uid
+        )
+
+    )
+
+    .then(snapshot=>{
+
+
+        if(!snapshot.exists())
+        return;
+
+
+
+        const user = snapshot.val();
+
+
+
+        const lastClaim =
+
+        Number(
+            user.lastClaim || 0
+        );
+
+
+
+        const oneDay =
+
+        24 *
+
+        60 *
+
+        60 *
+
+        1000;
+
+
+
+        const remaining =
+
+        oneDay -
+
+        (Date.now() - lastClaim);
+
+
+
+
+
+        if(remaining <= 0 || lastClaim === 0){
+
+
+
+            if(claimTimer)
+
+            claimTimer.textContent =
+            "Ready to Claim";
+
+
+
+            if(claimBtn)
+
+            claimBtn.disabled = false;
+
+
+
+            return;
+
+
+        }
+
+
+
+
+
+        if(claimBtn)
+
+        claimBtn.disabled = true;
+
+
+
+
+
+        const hours =
+
+        Math.floor(
+
+        remaining / 3600000
+
+        );
+
+
+
+
+        const minutes =
+
+        Math.floor(
+
+        (remaining % 3600000)
+
+        / 60000
+
+        );
+
+
+
+
+
+        const seconds =
+
+        Math.floor(
+
+        (remaining % 60000)
+
+        / 1000
+
+        );
+
+
+
+
+
+        if(claimTimer){
+
+
+            claimTimer.textContent =
+
+            hours + "h "
+
+            +
+
+            minutes + "m "
+
+            +
+
+            seconds + "s";
+
+
+        }
+
+
+
+
+    });
+
+
+
+}
+
+
+
+
+
+
+// UPDATE TIMER EVERY SECOND
+
+
+setInterval(()=>{
+
+
+    updateClaimTimer();
+
+
+},1000);
+
+
+
+
+console.log(
+"VIP PART 3 COMPLETE"
+);
+
+        
