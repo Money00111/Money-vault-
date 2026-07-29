@@ -246,7 +246,93 @@ buyButtons.forEach(button => {
     });
 
 });
+// ======================================
+// PART 12C
+// LOAD VIP PACKAGES FROM FIREBASE
+// ======================================
 
+const vipGrid = document.querySelector(".vip-grid");
+
+function loadVipPackages() {
+
+    const vipRef = ref(db, "vipPlans");
+
+    onValue(vipRef, (snapshot) => {
+
+        if (!snapshot.exists()) {
+
+            vipGrid.innerHTML = `
+                <h3>No VIP Plans Available</h3>
+            `;
+            return;
+
+        }
+
+        vipGrid.innerHTML = "";
+
+        snapshot.forEach((child) => {
+
+            const vip = child.val();
+
+            if (vip.status !== true) return;
+
+            vipGrid.innerHTML += `
+
+            <div class="vip-card">
+
+                <div class="vip-badge">
+
+                    ${vip.name}
+
+                </div>
+
+                <h2>${Number(vip.price).toLocaleString()} RWF</h2>
+
+                <ul>
+
+                    <li>
+                        <i class="fas fa-check"></i>
+                        Daily Income:
+                        <b>${Number(vip.dailyIncome).toLocaleString()} RWF</b>
+                    </li>
+
+                    <li>
+                        <i class="fas fa-check"></i>
+                        Duration:
+                        <b>${vip.duration} Days</b>
+                    </li>
+
+                    <li>
+                        <i class="fas fa-check"></i>
+                        Total Profit:
+                        <b>${Number(vip.totalProfit).toLocaleString()} RWF</b>
+                    </li>
+
+                </ul>
+
+                <button
+                    class="buyVipBtn"
+                    data-vip="${vip.name}"
+                    data-price="${vip.price}"
+                    data-daily="${vip.dailyIncome}"
+                    data-profit="${vip.totalProfit}"
+                    data-days="${vip.duration}">
+
+                    Buy Now
+
+                </button>
+
+            </div>
+
+            `;
+
+        });
+
+        registerVipButtons();
+
+    });
+
+}
 
 // ======================================
 // BUY VIP
