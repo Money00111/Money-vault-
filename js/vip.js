@@ -35,7 +35,6 @@ import {
  generateDailyProfit
 } from "./vip-profit-engine.js";
 
-
 // ======================================
 // DOM ELEMENTS
 // ======================================
