@@ -216,7 +216,9 @@ onAuthStateChanged(auth,(user)=>{
 
     currentUser = user;
 
-
+generateDailyProfit(
+currentUser.uid
+);
 
     console.log(
         "Logged User:",
