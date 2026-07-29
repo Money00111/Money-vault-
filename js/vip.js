@@ -2095,3 +2095,532 @@ console.log(
 );
 
         
+// ======================================
+// VIP.JS - PART 4
+// VIP EXPIRATION SYSTEM
+// AUTO UPDATE + FINAL CLEANUP
+// ======================================
+
+
+
+// ======================================
+// CHECK VIP EXPIRATION
+// ======================================
+
+async function checkVipExpiration(){
+
+
+    if(!currentUser)
+    return;
+
+
+
+    const userRef =
+
+    ref(
+        db,
+        "users/" + currentUser.uid
+    );
+
+
+
+    const snapshot =
+
+    await get(userRef);
+
+
+
+    if(!snapshot.exists())
+    return;
+
+
+
+    const user = snapshot.val();
+
+
+
+    const plans =
+
+    user.vipPlans || {};
+
+
+
+    const updates = {};
+
+
+
+    let changed = false;
+
+
+
+
+
+    Object.entries(plans)
+
+    .forEach(([id,plan])=>{
+
+
+
+        if(plan.status !== "active")
+
+        return;
+
+
+
+
+
+        const purchasedAt =
+
+        Number(plan.purchasedAt || 0);
+
+
+
+
+
+        const totalDays =
+
+        Number(plan.totalDays || 0);
+
+
+
+
+
+        const daysPassed =
+
+        Math.floor(
+
+        (Date.now() - purchasedAt)
+
+        /
+
+        (1000*60*60*24)
+
+        );
+
+
+
+
+
+        const remainingDays =
+
+        Math.max(
+
+        0,
+
+        totalDays - daysPassed
+
+        );
+
+
+
+
+
+        updates[
+
+        "vipPlans/" + id + "/remainingDays"
+
+        ]
+
+        = remainingDays;
+
+
+
+
+
+        if(remainingDays <= 0){
+
+
+
+            updates[
+
+            "vipPlans/" + id + "/status"
+
+            ]
+
+            = "expired";
+
+
+
+        }
+
+
+
+
+
+        changed = true;
+
+
+
+    });
+
+
+
+
+
+
+    if(changed){
+
+
+
+        await update(
+
+            userRef,
+
+            updates
+
+        );
+
+
+
+    }
+
+
+
+}
+
+
+
+
+
+
+// ======================================
+// AUTO REFRESH VIP STATUS
+// ======================================
+
+
+setInterval(()=>{
+
+
+    if(currentUser){
+
+
+        checkVipExpiration();
+
+
+    }
+
+
+},60000);
+
+
+
+
+
+
+// ======================================
+// UPDATE ALL VIP INFORMATION
+// ======================================
+
+function refreshVipSystem(){
+
+
+
+    checkVipExpiration();
+
+
+
+    calculateVipTotals();
+
+
+
+    renderOwnedVipPlans();
+
+
+
+    updateVipButtons();
+
+
+
+}
+
+
+
+
+
+// ======================================
+// RUN WHEN USER LOADS
+// ======================================
+
+if(currentUser){
+
+
+    refreshVipSystem();
+
+
+}
+
+
+
+
+
+// ======================================
+// FINAL READY MESSAGE
+// ======================================
+
+
+console.log(
+"Money Vault Pro VIP SYSTEM COMPLETE"
+);
+
+            // ======================================
+// VIP.JS - PART 5
+// VIP SYSTEM TESTING + FINAL FIXES
+// ======================================
+
+
+
+// ======================================
+// CHECK FIREBASE CONNECTION
+// ======================================
+
+function checkVipConnection(){
+
+
+    if(!currentUser){
+
+
+        console.log(
+            "No user logged in"
+        );
+
+
+        return false;
+
+    }
+
+
+    console.log(
+        "VIP System Connected:",
+        currentUser.uid
+    );
+
+
+    return true;
+
+
+}
+
+
+
+
+
+// ======================================
+// SAFE NUMBER FORMAT
+// ======================================
+
+function formatMoney(amount){
+
+
+    return Number(amount || 0)
+
+    .toLocaleString()
+
+    + " RWF";
+
+
+}
+
+
+
+
+
+// ======================================
+// VERIFY USER BALANCE
+// ======================================
+
+async function verifyUserBalance(){
+
+
+    if(!currentUser) return;
+
+
+
+    const snapshot =
+
+    await get(
+
+        ref(
+            db,
+            "users/" + currentUser.uid
+        )
+
+    );
+
+
+
+    if(!snapshot.exists())
+    return;
+
+
+
+    const user = snapshot.val();
+
+
+
+    console.log(
+
+        "Current Balance:",
+
+        formatMoney(user.balance)
+
+    );
+
+
+}
+
+
+
+
+
+
+// ======================================
+// VERIFY VIP PLANS
+// ======================================
+
+async function verifyVipPlans(){
+
+
+    const snapshot =
+
+    await get(
+
+        ref(
+            db,
+            "vipPlans"
+        )
+
+    );
+
+
+
+    if(!snapshot.exists()){
+
+
+        console.log(
+            "No VIP packages found"
+        );
+
+
+        return;
+
+    }
+
+
+
+    console.log(
+        "VIP Packages:",
+        snapshot.val()
+    );
+
+
+}
+
+
+
+
+
+
+// ======================================
+// VERIFY PURCHASED VIP
+// ======================================
+
+async function verifyUserVip(){
+
+
+    if(!currentUser)
+    return;
+
+
+
+    const snapshot =
+
+    await get(
+
+        ref(
+            db,
+            "users/" +
+
+            currentUser.uid +
+
+            "/vipPlans"
+
+        )
+
+    );
+
+
+
+    if(!snapshot.exists()){
+
+
+        console.log(
+            "No purchased VIP"
+        );
+
+
+        return;
+
+    }
+
+
+
+    console.log(
+
+        "User VIP Plans:",
+
+        snapshot.val()
+
+    );
+
+
+}
+
+
+
+
+
+// ======================================
+// RUN FULL VIP TEST
+// ======================================
+
+async function testVipSystem(){
+
+
+
+    console.log(
+        "====== VIP SYSTEM TEST ======"
+    );
+
+
+
+    checkVipConnection();
+
+
+
+    await verifyUserBalance();
+
+
+
+    await verifyVipPlans();
+
+
+
+    await verifyUserVip();
+
+
+
+    console.log(
+        "====== TEST COMPLETE ======"
+    );
+
+
+}
+
+
+
+
+console.log(
+"VIP PART 5 READY"
+);
+
+            
