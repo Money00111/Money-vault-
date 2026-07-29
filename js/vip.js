@@ -31,7 +31,9 @@ import {
 
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
 
-
+import {
+ generateDailyProfit
+} from "./vip-profit-engine.js";
 
 
 // ======================================
