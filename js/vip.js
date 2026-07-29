@@ -347,8 +347,10 @@ const daily = Number(button.dataset.daily);
 
 const profit = Number(button.dataset.profit);
 
-const days = Number(button.dataset.days););
-
+const days = Number(button.dataset.days);
+    
+    const balanceNow = Number(userData.balance || 0);
+   
     // CHECK BALANCE
 
     if (balanceNow < price) {
