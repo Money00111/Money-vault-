@@ -12,16 +12,12 @@ import {
 
 import {
     ref,
-    onValue
-} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
-
-import {
+    onValue,
     get,
     push,
     set,
     update
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
-
 
 // ======================================
 // DOM ELEMENTS
