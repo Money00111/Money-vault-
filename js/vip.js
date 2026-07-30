@@ -111,35 +111,24 @@ onAuthStateChanged(auth, (user) => {
 function loadUserData() {
 
     const userRef = ref(db, "users/" + currentUser.uid);
+onValue(userRef, (snapshot) => {
 
-    onValue(userRef, (snapshot) => {
+    if (!snapshot.exists()) {
 
-        if (loadingScreen) {
+        console.log("User data not found");
 
-            loadingScreen.style.display = "none";
+        return;
 
-        }
+    }
 
-        if (!snapshot.exists()) {
+    userData = snapshot.val();
 
-            console.log("User data not found");
+    vipPlans = userData.vipPlans || {};
 
-            return;
+    balance.textContent =
+    Number(userData.balance || 0).toLocaleString() + " RWF";
 
-        }
-
-        userData = snapshot.val();
-
-        vipPlans = userData.vipPlans || {};
-
-        balance.textContent =
-            Number(userData.balance || 0).toLocaleString() + " RWF";
-
-        console.log("User Loaded");
-
-    });
-
-}
+});
 
 console.log("VIP PART 1 READY");
 
