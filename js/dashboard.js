@@ -122,6 +122,8 @@ function loadUser(user) {
         }
 
         const data = snapshot.val();
+
+        console.log("USER DATA:", data);
         
         createReferral(data);
         
