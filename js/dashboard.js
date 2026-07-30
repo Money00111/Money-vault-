@@ -268,16 +268,16 @@ function loadTransactions(user){
 // ======================================
 function createReferral(data){
 
-    referralLink.value=
+    if(!referralLink) return;
 
-    window.location.origin+
+    const code = data.referralCode || "NONE";
 
-    "/register.html?ref="+
-
-    data.referralCode;
+    referralLink.value =
+    window.location.origin +
+    "/register.html?ref=" +
+    code;
 
 }
-
 // ======================================
 // COPY REFERRAL
 // ======================================
