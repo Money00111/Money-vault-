@@ -224,3 +224,46 @@ function loadVipPackages() {
     });
 
 }
+
+// ======================================
+// VIP.JS - PART 3
+// REGISTER BUY VIP BUTTONS
+// ======================================
+
+function registerVipButtons() {
+
+    const buttons = document.querySelectorAll(".buyVipBtn");
+
+    buttons.forEach((button) => {
+
+        button.addEventListener("click", () => {
+
+            buyVip(button);
+
+        });
+
+    });
+
+}
+
+// ======================================
+// BUY VIP
+// ======================================
+
+async function buyVip(button) {
+
+    if (!currentUser) return;
+
+    alert(
+        "VIP Selected: " +
+        button.dataset.vip +
+        "\n\nPrice: " +
+        Number(button.dataset.price).toLocaleString() +
+        " RWF"
+    );
+
+}
+
+console.log("VIP PART 3 READY");
+
+    
