@@ -81,7 +81,7 @@ logoutBtn?.addEventListener("click", async () => {
 // AUTH
 // ======================================
 
-onAuthStateChanged(auth, (user) => {
+
 onAuthStateChanged(auth, (user) => {
 
     if (!user) {
