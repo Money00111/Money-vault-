@@ -432,27 +432,6 @@ supportBtn?.addEventListener("click", (e) => {
 
 });
 
-// ======================================
-// COPY BUTTON TOAST
-// ======================================
-
-copyReferral?.addEventListener("click", async () => {
-
-    try {
-
-        await navigator.clipboard.writeText(
-            referralLink.value
-        );
-
-        showToast("Referral link copied.");
-
-    } catch (error) {
-
-        alert(error.message);
-
-    }
-
-});
 
 // ======================================
 // HIDE LOADING IF STILL VISIBLE
