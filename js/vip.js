@@ -525,6 +525,8 @@ function loadUserVipPlans(){
         totalProfitAmount.toLocaleString() + " RWF";
 
 
+        updateVipButtons();
+
     });
 
 
