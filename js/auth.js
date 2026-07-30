@@ -96,8 +96,7 @@ export async function registerUser(
         // REFERRAL
         // ==========================
 
-        if (referralCode.trim() !== "") {
-
+        if (referralCode && referralCode.trim() !== "") {
             const usersRef = ref(db, "users");
 
             const snapshot = await get(usersRef);
