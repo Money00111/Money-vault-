@@ -101,6 +101,8 @@ onAuthStateChanged(auth, (user) => {
 
     loadVipPackages();
 
+    loadUserVipPlans();
+
 });
 
 
