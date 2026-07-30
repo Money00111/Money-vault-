@@ -532,3 +532,57 @@ function loadUserVipPlans(){
 
 
 console.log("VIP PART 5 READY");
+
+// ======================================
+// VIP.JS - PART 9
+// UPDATE VIP BUTTONS
+// ======================================
+
+function updateVipButtons() {
+
+    const buyButtons =
+        document.querySelectorAll(".buyVipBtn");
+
+    buyButtons.forEach((button) => {
+
+        const vipName =
+            button.dataset.vip;
+
+        const purchased =
+            Object.values(vipPlans).find(plan =>
+
+                plan.vipName === vipName &&
+                plan.status === "active"
+
+            );
+
+        if (purchased) {
+
+            button.innerHTML = `
+                <i class="fas fa-check-circle"></i>
+                Purchased
+            `;
+
+            button.disabled = true;
+
+            button.classList.add("purchased");
+
+        } else {
+
+            button.innerHTML = `
+                <i class="fas fa-cart-shopping"></i>
+                Buy Now
+            `;
+
+            button.disabled = false;
+
+            button.classList.remove("purchased");
+
+        }
+
+    });
+
+}
+
+console.log("VIP PART 9 READY");
+
