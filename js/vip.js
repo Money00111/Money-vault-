@@ -41,7 +41,7 @@ const totalProfit = document.getElementById("totalProfit");
 
 const ownedVipList = document.getElementById("ownedVipList");
 
-const vipGrid = document.querySelector(".vip-grid");
+const vipGrid = document.getElementById("vipGrid");
 
 
 // ======================================
