@@ -152,8 +152,13 @@ function loadVipPackages() {
 
     const vipRef = ref(db, "vipPlans");
 
-    onValue(vipRef, (snapshot) => {
+onValue(vipRef, (snapshot) => {
 
+    alert("Snapshot exists: " + snapshot.exists());
+
+    console.log(snapshot.val());
+
+});
         if (!vipGrid) return;
 
         vipGrid.innerHTML = "";
