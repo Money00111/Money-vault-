@@ -183,6 +183,10 @@ function loadVipPackages() {
 
 
             const vip = child.val();
+            console.log("PRICE:", vip.price);
+console.log("DAILY:", vip.dailyIncome);
+console.log("PROFIT:", vip.totalProfit);
+console.log("DURATION:", vip.duration);
 
 console.log("VIP DATA:", vip);
 
