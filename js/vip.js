@@ -96,7 +96,9 @@ onAuthStateChanged(auth, (user) => {
     }
 
     currentUser = user;
-
+    
+alert("User logged in: " + user.uid);
+    
     loadUserData();
 
     loadVipPackages();
