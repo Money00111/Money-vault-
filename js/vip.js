@@ -156,6 +156,8 @@ function loadVipPackages() {
 
     const vipRef = ref(db, "vipPlans");
 
+    alert("Ngiye gusoma Firebase");
+
     onValue(vipRef, (snapshot) => {
 
         console.log("Snapshot exists:", snapshot.exists());
