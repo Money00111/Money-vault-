@@ -184,6 +184,8 @@ function loadVipPackages() {
 
             const vip = child.val();
 
+console.log("VIP DATA:", vip);
+
 
             console.log("VIP FROM DATABASE:", vip);
 
