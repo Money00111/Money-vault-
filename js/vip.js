@@ -154,32 +154,23 @@ function loadVipPackages() {
 
     onValue(vipRef, (snapshot) => {
 
-    console.log(snapshot.exists());
-    console.log(snapshot.val());
+        if (loadingScreen) {
+            loadingScreen.style.display = "none";
+        }
 
-    vipGrid.innerHTML = "";
+        console.log(snapshot.val());
 
-    if (!snapshot.exists()) {
-        vipGrid.innerHTML = `
-            <div class="emptyVip">
-                No VIP Plans Available
-            </div>
-        `;
-        return;
-    }
+    }, (error) => {
 
-    snapshot.forEach((child) => {
+        console.error(error);
 
-        const vip = child.val();
+        if (loadingScreen) {
+            loadingScreen.style.display = "none";
+        }
 
-        console.log(vip);
-
-        if (vip.status !== true) return;
-
-        // ...
     });
 
-});
+}
 
         registerVipButtons();
 
