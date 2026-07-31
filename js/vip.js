@@ -147,26 +147,25 @@ console.log("VIP PART 1 READY");
 
 
 // ======================================
-// VIP.JS - PART 2
-// TEST LOAD VIP PLANS FROM FIREBASE
+// VIP.JS - PART 2 TEST
 // ======================================
 
 function loadVipPackages() {
 
-    console.log("loadVipPackages started");
+    alert("loadVipPackages YATANGIYE");
 
     const vipRef = ref(db, "vipPlans");
 
-    onValue(vipRef, (snapshot) => {
+    onValue(vipRef, (snapshot)=>{
 
-        console.log("Firebase Snapshot:", snapshot.val());
+        alert("Firebase RESPONSE YABONETSE");
 
-        alert("Firebase yasomye VIP Plans");
+        console.log("VIP DATA:", snapshot.val());
 
 
-        if (!vipGrid) {
+        if(!vipGrid){
 
-            console.log("vipGrid ntabaho muri HTML");
+            alert("vipGrid ntiboneka");
 
             return;
 
@@ -175,52 +174,35 @@ function loadVipPackages() {
 
         vipGrid.innerHTML = `
 
-            <div class="vip-card">
+        <div class="vip-card diamond">
 
-                <div class="vip-badge">
-                    TEST
-                </div>
-
-                <i class="fas fa-gem vip-icon"></i>
-
-                <h2>TEST VIP CARD</h2>
-
-                <h1>5,000 RWF</h1>
-
-                <ul>
-
-                    <li>Daily Income: 500 RWF</li>
-
-                    <li>Duration: 30 Days</li>
-
-                    <li>Total Profit: 15,000 RWF</li>
-
-                </ul>
-
-                <button class="buyVipBtn">
-                    Buy Now
-                </button>
-
+            <div class="vip-badge">
+                TEST VIP
             </div>
+
+            <i class="fas fa-gem vip-icon"></i>
+
+            <h2>VIP TEST</h2>
+
+            <h1>50,000 RWF</h1>
+
+            <p>Daily Income: 7,000 RWF</p>
+
+        </div>
 
         `;
 
 
-        console.log("VIP CARD YASHYIZWE MURI HTML");
+        alert("CARD YASHYIZWEHO");
 
 
-    }, (error)=>{
+    },(error)=>{
 
-        console.error("Firebase Error:", error);
-
-        alert(error.message);
+        alert("Firebase ERROR: "+error.message);
 
     });
 
 }
-
-
-console.log("VIP PART 2 TEST READY");
 
 // ======================================
 // VIP.JS - PART 3
