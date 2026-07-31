@@ -158,6 +158,8 @@ function loadVipPackages() {
 
         console.log("Snapshot exists:", snapshot.exists());
 
+    alert(JSON.stringify(snapshot.val()));
+
         if (!vipGrid) return;
 
         vipGrid.innerHTML = "";
