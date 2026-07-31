@@ -173,8 +173,13 @@ function loadVipPackages() {
         }
 
         snapshot.forEach((child) => {
-console.log("VIP DATA:", snapshot.val());
-            
+
+
+    const vip = child.val();
+
+    console.log(vip);
+    alert(JSON.stringify(vip));
+
             const vip = child.val();
 
             console.log(vip);
