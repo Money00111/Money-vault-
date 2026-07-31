@@ -176,6 +176,7 @@ function loadVipPackages() {
 console.log(child.val());
 
             const vip = child.val();
+            alert(JSON.stringify(vip));
 
             if (!vip) return;
 
