@@ -153,25 +153,39 @@ console.log("VIP PART 1 READY");
 
 function loadVipPackages() {
 
+
     const vipRef = ref(db, "vipPlans");
 
 
     onValue(vipRef, (snapshot) => {
 
 
-        if (!vipGrid) return;
+        if (!vipGrid) {
+
+            console.log("vipGrid not found");
+
+            return;
+
+        }
 
 
         vipGrid.innerHTML = "";
 
 
+
         if (!snapshot.exists()) {
 
+
             vipGrid.innerHTML = `
-                <div class="emptyVip">
-                    No VIP Plans Available
-                </div>
+
+            <div class="emptyVip">
+
+                No VIP Plans Available
+
+            </div>
+
             `;
+
 
             return;
 
@@ -185,8 +199,31 @@ function loadVipPackages() {
             const vip = child.val();
 
 
+
+            const name =
+                vip.name || "VIP Plan";
+
+
+            const price =
+                Number(vip.price || 0);
+
+
+            const daily =
+                Number(vip.dailyIncome || 0);
+
+
+            const profit =
+                Number(vip.totalProfit || 0);
+
+
+            const duration =
+                Number(vip.duration || 0);
+
+
+
             const card =
             document.createElement("div");
+
 
 
             card.className =
@@ -199,7 +236,7 @@ function loadVipPackages() {
 
             <div class="vip-badge">
 
-                ${vip.name}
+                ${name}
 
             </div>
 
@@ -207,67 +244,94 @@ function loadVipPackages() {
             <i class="fas fa-gem vip-icon"></i>
 
 
+
             <h2>
 
-                ${vip.name}
+                ${name}
 
             </h2>
 
 
+
             <h1>
 
-                ${Number(vip.price).toLocaleString()} RWF
+                ${price.toLocaleString()} RWF
 
             </h1>
 
 
 
             <p>
-                Daily Income:
-                <b>
-                ${Number(vip.dailyIncome).toLocaleString()} RWF
-                </b>
+
+            Daily Income:
+
+            <b>
+
+            ${daily.toLocaleString()} RWF
+
+            </b>
+
             </p>
 
 
 
             <p>
-                Duration:
-                <b>
-                ${vip.duration} Days
-                </b>
+
+            Duration:
+
+            <b>
+
+            ${duration} Days
+
+            </b>
+
             </p>
 
 
 
             <p>
-                Total Profit:
-                <b>
-                ${Number(vip.totalProfit).toLocaleString()} RWF
-                </b>
+
+            Total Profit:
+
+            <b>
+
+            ${profit.toLocaleString()} RWF
+
+            </b>
+
             </p>
 
 
 
             <button
+
             class="buyVipBtn"
 
-            data-vip="${vip.name}"
 
-            data-price="${vip.price}"
+            data-vip="${name}"
 
-            data-daily="${vip.dailyIncome}"
 
-            data-profit="${vip.totalProfit}"
+            data-price="${price}"
 
-            data-days="${vip.duration}"
+
+            data-daily="${daily}"
+
+
+            data-profit="${profit}"
+
+
+            data-days="${duration}"
+
             >
+
 
             <i class="fas fa-cart-shopping"></i>
 
             Buy Now
 
+
             </button>
+
 
 
             `;
@@ -289,11 +353,19 @@ function loadVipPackages() {
 
 
 
+    }, (error) => {
+
+
+        console.error(
+            "VIP Plans Error:",
+            error
+        );
+
+
     });
 
 
 }
-
 
 
 // ======================================
