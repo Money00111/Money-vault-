@@ -148,62 +148,201 @@ console.log("VIP PART 1 READY");
 
 
 // ======================================
-// VIP.JS - PART 2 TEST
+// VIP.JS - PART 2
+// LOAD VIP PACKAGES FROM FIREBASE
 // ======================================
 
 function loadVipPackages() {
 
-    alert("loadVipPackages YATANGIYE");
 
     const vipRef = ref(db, "vipPlans");
 
-    onValue(vipRef, (snapshot)=>{
 
-        alert("Firebase RESPONSE YABONETSE");
-
-        console.log("VIP DATA:", snapshot.val());
+    onValue(vipRef, (snapshot) => {
 
 
-        if(!vipGrid){
+        if (!vipGrid) {
 
-            alert("vipGrid ntiboneka");
+            console.log("vipGrid not found");
 
             return;
 
         }
 
 
-        vipGrid.innerHTML = `
+        vipGrid.innerHTML = "";
 
-        <div class="vip-card diamond">
+
+        if (!snapshot.exists()) {
+
+
+            vipGrid.innerHTML = `
+
+            <div class="emptyVip">
+
+                No VIP Plans Available
+
+            </div>
+
+            `;
+
+
+            return;
+
+        }
+
+
+
+        snapshot.forEach((child) => {
+
+
+            const vip = child.val();
+
+
+            const vipId = child.key;
+
+
+
+            const card = document.createElement("div");
+
+
+            card.className = "vip-card";
+
+
+
+            card.innerHTML = `
+
 
             <div class="vip-badge">
-                TEST VIP
+
+                ${vip.name || vip.vipName || vipId}
+
             </div>
+
 
             <i class="fas fa-gem vip-icon"></i>
 
-            <h2>VIP TEST</h2>
-
-            <h1>50,000 RWF</h1>
-
-            <p>Daily Income: 7,000 RWF</p>
-
-        </div>
-
-        `;
 
 
-        alert("CARD YASHYIZWEHO");
+            <h2>
+
+                ${vip.name || vip.vipName || "VIP Plan"}
+
+            </h2>
 
 
-    },(error)=>{
 
-        alert("Firebase ERROR: "+error.message);
+            <h1>
+
+                ${Number(vip.price || 0)
+                .toLocaleString()} RWF
+
+            </h1>
+
+
+
+            <p>
+
+            Daily Income:
+
+            <b>
+
+            ${Number(vip.dailyIncome || 0)
+            .toLocaleString()} RWF
+
+            </b>
+
+            </p>
+
+
+
+            <p>
+
+            Total Profit:
+
+            <b>
+
+            ${Number(vip.totalProfit || vip.profit || 0)
+            .toLocaleString()} RWF
+
+            </b>
+
+            </p>
+
+
+
+            <p>
+
+            Duration:
+
+            <b>
+
+            ${vip.duration || vip.days || vip.totalDays || 0}
+
+            Days
+
+            </b>
+
+            </p>
+
+
+
+            <button
+
+            class="buyVipBtn"
+
+            data-vip="${vip.name || vip.vipName || vipId}"
+
+            data-price="${vip.price || 0}"
+
+            data-daily="${vip.dailyIncome || 0}"
+
+            data-profit="${vip.totalProfit || vip.profit || 0}"
+
+            data-days="${vip.duration || vip.days || vip.totalDays || 0}"
+
+            >
+
+            <i class="fas fa-cart-shopping"></i>
+
+            Buy Now
+
+            </button>
+
+
+
+            `;
+
+
+
+            vipGrid.appendChild(card);
+
+
+
+        });
+
+
+
+        registerVipButtons();
+
+
+        updateVipButtons();
+
+
+    }, (error)=>{
+
+
+        console.error(
+            "VIP LOAD ERROR:",
+            error
+        );
+
 
     });
 
+
 }
+
 
 // ======================================
 // VIP.JS - PART 3
