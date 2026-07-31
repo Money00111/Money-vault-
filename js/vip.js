@@ -180,7 +180,7 @@ function loadVipPackages() {
     console.log(vip);
     alert(JSON.stringify(vip));
 
-            const vip = child.val();
+            
 
             console.log(vip);
 
