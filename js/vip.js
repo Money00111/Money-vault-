@@ -19,7 +19,7 @@ import {
     update
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
 
-alert("VIP JS STARTED");
+
 // ======================================
 // DOM ELEMENTS
 // ======================================
@@ -98,8 +98,7 @@ onAuthStateChanged(auth, (user) => {
 
     currentUser = user;
     
-alert("User logged in: " + user.uid);
-    
+
     loadUserData();
 
     loadVipPackages();
