@@ -653,7 +653,7 @@ function updateVipButtons() {
         const purchased =
             Object.values(vipPlans).find(plan =>
 
-                plan.vipName === vipName &&
+                (plan.vipName || plan.name) === vipName
                 plan.status === "active"
 
             );
