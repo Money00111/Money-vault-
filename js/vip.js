@@ -154,30 +154,100 @@ function loadVipPackages() {
 
     onValue(vipRef, (snapshot) => {
 
-        if (loadingScreen) {
-            loadingScreen.style.display = "none";
+        if (!vipGrid) return;
+
+        vipGrid.innerHTML = "";
+
+        if (!snapshot.exists()) {
+
+            vipGrid.innerHTML = `
+                <div class="emptyVip">
+                    No VIP Plans Available
+                </div>
+            `;
+
+            return;
+
         }
 
-        console.log(snapshot.val());
+        snapshot.forEach((child) => {
+
+            const vip = child.val();
+
+            if (!vip) return;
+
+            if (vip.status !== true) return;
+
+            vipGrid.innerHTML += `
+
+            <div class="vip-card">
+
+                <div class="vip-badge">
+                    ${vip.name}
+                </div>
+
+                <h2>${Number(vip.price || 0).toLocaleString()} RWF</h2>
+
+                <ul>
+
+                    <li>
+                        <i class="fas fa-check"></i>
+                        Daily Income:
+                        <b>${Number(vip.dailyIncome || 0).toLocaleString()} RWF</b>
+                    </li>
+
+                    <li>
+                        <i class="fas fa-check"></i>
+                        Duration:
+                        <b>${vip.duration || 0} Days</b>
+                    </li>
+
+                    <li>
+                        <i class="fas fa-check"></i>
+                        Total Profit:
+                        <b>${Number(vip.totalProfit || 0).toLocaleString()} RWF</b>
+                    </li>
+
+                </ul>
+
+                <button
+                    class="buyVipBtn"
+                    data-vip="${vip.name}"
+                    data-price="${vip.price}"
+                    data-daily="${vip.dailyIncome}"
+                    data-profit="${vip.totalProfit}"
+                    data-days="${vip.duration}">
+
+                    <i class="fas fa-cart-shopping"></i>
+                    Buy Now
+
+                </button>
+
+            </div>
+
+            `;
+
+        });
+
+        registerVipButtons();
+
+        updateVipButtons();
 
     }, (error) => {
 
         console.error(error);
 
-        if (loadingScreen) {
-            loadingScreen.style.display = "none";
-        }
+        vipGrid.innerHTML = `
+            <div class="emptyVip">
+                Failed to load VIP Plans.
+            </div>
+        `;
 
     });
 
 }
 
-        registerVipButtons();
-
-    });
-
-}
-
+console.log("VIP PART 2 READY");
 // ======================================
 // VIP.JS - PART 3
 // REGISTER BUY VIP BUTTONS
