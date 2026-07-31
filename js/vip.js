@@ -172,6 +172,9 @@ function loadVipPackages() {
 
         snapshot.forEach((child) => {
 
+            console.log(child.key);
+console.log(child.val());
+
             const vip = child.val();
 
             if (!vip) return;
