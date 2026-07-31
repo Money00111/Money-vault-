@@ -145,9 +145,10 @@ loadingScreen.style.display="none";
 
 console.log("VIP PART 1 READY");
 
+
 // ======================================
 // VIP.JS - PART 2
-// LOAD VIP PLANS FROM FIREBASE
+// TEST LOAD VIP PLANS FROM FIREBASE
 // ======================================
 
 function loadVipPackages() {
@@ -156,79 +157,70 @@ function loadVipPackages() {
 
     const vipRef = ref(db, "vipPlans");
 
-    alert("Ngiye gusoma Firebase");
-
     onValue(vipRef, (snapshot) => {
 
-        console.log("Snapshot exists:", snapshot.exists());
+        console.log("Firebase Snapshot:", snapshot.val());
 
-    alert(JSON.stringify(snapshot.val()));
+        alert("Firebase yasomye VIP Plans");
 
-        if (!vipGrid) return;
 
-        vipGrid.innerHTML = "";
+        if (!vipGrid) {
 
-        if (!snapshot.exists()) {
-
-            vipGrid.innerHTML = `
-                <div class="emptyVip">
-                    No VIP Plans Available
-                </div>
-            `;
+            console.log("vipGrid ntabaho muri HTML");
 
             return;
+
         }
 
-        snapshot.forEach((child) => {
 
-            console.log("VIP:", child.key, child.val());
+        vipGrid.innerHTML = `
 
-            const vip = child.val();
+            <div class="vip-card">
 
-            if (!vip) return;
-
-            vipGrid.innerHTML += `
-                <div class="vip-card">
-
-                    <div class="vip-badge">${vip.name}</div>
-
-                    <h2>${Number(vip.price).toLocaleString()} RWF</h2>
-
-                    <ul>
-                        <li>Daily Income: <b>${Number(vip.dailyIncome).toLocaleString()} RWF</b></li>
-                        <li>Duration: <b>${vip.duration} Days</b></li>
-                        <li>Total Profit: <b>${Number(vip.totalProfit).toLocaleString()} RWF</b></li>
-                    </ul>
-
-                    <button
-                        class="buyVipBtn"
-                        data-vip="${vip.name}"
-                        data-price="${vip.price}"
-                        data-daily="${vip.dailyIncome}"
-                        data-profit="${vip.totalProfit}"
-                        data-days="${vip.duration}">
-                        Buy Now
-                    </button>
-
+                <div class="vip-badge">
+                    TEST
                 </div>
-            `;
 
-        });
+                <i class="fas fa-gem vip-icon"></i>
 
-        console.log("FINAL HTML:", vipGrid.innerHTML);
+                <h2>TEST VIP CARD</h2>
 
-        registerVipButtons();
-        updateVipButtons();
+                <h1>5,000 RWF</h1>
 
-    }, (error) => {
+                <ul>
 
-        console.error(error);
+                    <li>Daily Income: 500 RWF</li>
+
+                    <li>Duration: 30 Days</li>
+
+                    <li>Total Profit: 15,000 RWF</li>
+
+                </ul>
+
+                <button class="buyVipBtn">
+                    Buy Now
+                </button>
+
+            </div>
+
+        `;
+
+
+        console.log("VIP CARD YASHYIZWE MURI HTML");
+
+
+    }, (error)=>{
+
+        console.error("Firebase Error:", error);
+
+        alert(error.message);
 
     });
 
 }
 
-console.log("VIP PART 2 READY");
+
+console.log("VIP PART 2 TEST READY");
 
 // ======================================
 // VIP.JS - PART 3
