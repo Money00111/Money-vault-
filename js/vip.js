@@ -228,34 +228,54 @@ function registerVipButtons() {
 
 
     
+
 // ======================================
 // VIP.JS - PART 4
-// BUY VIP PLAN
+// BUY VIP PLAN REQUEST
 // ======================================
 
 async function buyVip(button) {
 
     if (!currentUser) return;
 
-    const vipName = button.dataset.vip;
-    const price = Number(button.dataset.price);
-    const daily = Number(button.dataset.daily);
-    const profit = Number(button.dataset.profit);
-    const days = Number(button.dataset.days);
+
+    const vipName =
+        button.dataset.vip;
+
+    const price =
+        Number(button.dataset.price);
+
+    const daily =
+        Number(button.dataset.daily);
+
+    const profit =
+        Number(button.dataset.profit);
+
+    const days =
+        Number(button.dataset.days);
+
+
 
     const ok = confirm(
         `Buy ${vipName} for ${price.toLocaleString()} RWF?`
     );
 
+
     if (!ok) return;
 
+
+
     try {
+
 
         const userRef =
             ref(db, "users/" + currentUser.uid);
 
+
         const snap =
             await get(userRef);
+
+
 
         if (!snap.exists()) {
 
@@ -265,10 +285,17 @@ async function buyVip(button) {
 
         }
 
-        const user = snap.val();
+
+
+        const user =
+            snap.val();
+
+
 
         const balanceNow =
             Number(user.balance || 0);
+
+
 
         if (balanceNow < price) {
 
@@ -278,69 +305,78 @@ async function buyVip(button) {
 
         }
 
-        const newBalance =
-            balanceNow - price;
 
-        await update(userRef, {
-            balance: newBalance
-        });
 
-        const vipRef = push(
-            ref(db, "users/" + currentUser.uid + "/vipPlans")
-        );
+        // ======================================
+        // CREATE VIP PURCHASE REQUEST
+        // ======================================
 
-        await set(vipRef, {
+
+        const requestRef =
+            push(ref(db, "vipPurchaseRequests"));
+
+
+
+        await set(requestRef, {
+
+
+            uid: currentUser.uid,
+
+
+            email: user.email || currentUser.email,
+
 
             vipName: vipName,
+
+
+            price: price,
+
 
             dailyIncome: daily,
 
+
             totalProfit: profit,
+
 
             totalDays: days,
 
-            remainingDays: days,
 
-            purchasedAt: Date.now(),
+            status: "pending",
 
-            lastClaim: 0,
-
-            status: "active"
-
-        });
-
-        const txRef = push(
-            ref(db, "transactions/" + currentUser.uid)
-        );
-
-        await set(txRef, {
-
-            type: "VIP Purchase",
-
-            vipName: vipName,
-
-            amount: price,
-
-            status: "Completed",
 
             createdAt: Date.now()
 
+
         });
 
-        alert(vipName + " purchased successfully.");
 
-    } catch (error) {
 
-        console.error(error);
+        alert(
+            "VIP purchase request sent successfully. Wait for admin approval."
+        );
 
-        alert(error.message);
+
 
     }
 
+    catch(error) {
+
+
+        console.error(error);
+
+
+        alert(error.message);
+
+
+    }
+
+
 }
 
-console.log("VIP PART 4 READY");
 
+console.log("VIP PART 4 REQUEST SYSTEM READY");
+
+            
 // ======================================
 // VIP.JS - PART 5
 // LOAD USER VIP PLANS
