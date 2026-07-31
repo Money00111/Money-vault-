@@ -172,7 +172,6 @@ function loadVipPackages() {
 
             const vip = child.val();
 
-            if (vip.status !== true) return;
 
             vipGrid.innerHTML += `
 
