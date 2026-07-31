@@ -149,11 +149,10 @@ console.log("VIP PART 1 READY");
 
 // ======================================
 // VIP.JS - PART 2
-// LOAD VIP PACKAGES FROM FIREBASE
+// LOAD VIP PLANS FROM FIREBASE
 // ======================================
 
 function loadVipPackages() {
-
 
     const vipRef = ref(db, "vipPlans");
 
@@ -161,13 +160,7 @@ function loadVipPackages() {
     onValue(vipRef, (snapshot) => {
 
 
-        if (!vipGrid) {
-
-            console.log("vipGrid not found");
-
-            return;
-
-        }
+        if (!vipGrid) return;
 
 
         vipGrid.innerHTML = "";
@@ -175,17 +168,11 @@ function loadVipPackages() {
 
         if (!snapshot.exists()) {
 
-
             vipGrid.innerHTML = `
-
-            <div class="emptyVip">
-
-                No VIP Plans Available
-
-            </div>
-
+                <div class="emptyVip">
+                    No VIP Plans Available
+                </div>
             `;
-
 
             return;
 
@@ -199,14 +186,12 @@ function loadVipPackages() {
             const vip = child.val();
 
 
-            const vipId = child.key;
+            const card =
+            document.createElement("div");
 
 
-
-            const card = document.createElement("div");
-
-
-            card.className = "vip-card";
+            card.className =
+            "vip-card";
 
 
 
@@ -215,7 +200,7 @@ function loadVipPackages() {
 
             <div class="vip-badge">
 
-                ${vip.name || vip.vipName || vipId}
+                ${vip.name}
 
             </div>
 
@@ -223,84 +208,60 @@ function loadVipPackages() {
             <i class="fas fa-gem vip-icon"></i>
 
 
-
             <h2>
 
-                ${vip.name || vip.vipName || "VIP Plan"}
+                ${vip.name}
 
             </h2>
 
 
-
             <h1>
 
-                ${Number(vip.price || 0)
-                .toLocaleString()} RWF
+                ${Number(vip.price).toLocaleString()} RWF
 
             </h1>
 
 
 
             <p>
-
-            Daily Income:
-
-            <b>
-
-            ${Number(vip.dailyIncome || 0)
-            .toLocaleString()} RWF
-
-            </b>
-
+                Daily Income:
+                <b>
+                ${Number(vip.dailyIncome).toLocaleString()} RWF
+                </b>
             </p>
 
 
 
             <p>
-
-            Total Profit:
-
-            <b>
-
-            ${Number(vip.totalProfit || vip.profit || 0)
-            .toLocaleString()} RWF
-
-            </b>
-
+                Duration:
+                <b>
+                ${vip.duration} Days
+                </b>
             </p>
 
 
 
             <p>
-
-            Duration:
-
-            <b>
-
-            ${vip.duration || vip.days || vip.totalDays || 0}
-
-            Days
-
-            </b>
-
+                Total Profit:
+                <b>
+                ${Number(vip.totalProfit).toLocaleString()} RWF
+                </b>
             </p>
 
 
 
             <button
-
             class="buyVipBtn"
 
-            data-vip="${vip.name || vip.vipName || vipId}"
+            data-vip="${vip.name}"
 
-            data-price="${vip.price || 0}"
+            data-price="${vip.price}"
 
-            data-daily="${vip.dailyIncome || 0}"
+            data-daily="${vip.dailyIncome}"
 
-            data-profit="${vip.totalProfit || vip.profit || 0}"
+            data-profit="${vip.totalProfit}"
 
-            data-days="${vip.duration || vip.days || vip.totalDays || 0}"
-
+            data-days="${vip.duration}"
             >
 
             <i class="fas fa-cart-shopping"></i>
@@ -308,7 +269,6 @@ function loadVipPackages() {
             Buy Now
 
             </button>
-
 
 
             `;
@@ -329,19 +289,12 @@ function loadVipPackages() {
         updateVipButtons();
 
 
-    }, (error)=>{
-
-
-        console.error(
-            "VIP LOAD ERROR:",
-            error
-        );
-
 
     });
 
 
 }
+
 
 
 // ======================================
