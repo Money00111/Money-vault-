@@ -143,7 +143,6 @@ loadingScreen.style.display="none";
 
 console.log("VIP PART 1 READY");
 
-
 // ======================================
 // VIP.JS - PART 2
 // LOAD VIP PLANS FROM FIREBASE
@@ -151,24 +150,17 @@ console.log("VIP PART 1 READY");
 
 function loadVipPackages() {
 
+    console.log("loadVipPackages started");
+
     const vipRef = ref(db, "vipPlans");
 
     onValue(vipRef, (snapshot) => {
 
-        console.log("VIP SNAPSHOT:", snapshot.val());
+        console.log("Snapshot exists:", snapshot.exists());
 
-
-        if (!vipGrid) {
-
-            console.error("vipGrid not found");
-
-            return;
-
-        }
-
+        if (!vipGrid) return;
 
         vipGrid.innerHTML = "";
-
 
         if (!snapshot.exists()) {
 
@@ -179,128 +171,58 @@ function loadVipPackages() {
             `;
 
             return;
-
         }
-
-
 
         snapshot.forEach((child) => {
 
+            console.log("VIP:", child.key, child.val());
 
             const vip = child.val();
 
-
-            console.log("VIP DATA:", vip);
-
-
-
             if (!vip) return;
 
-
-
             vipGrid.innerHTML += `
-
                 <div class="vip-card">
 
+                    <div class="vip-badge">${vip.name}</div>
 
-                    <div class="vip-badge">
-
-                        ${vip.name}
-
-                    </div>
-
-
-
-                    <h2>
-
-                        ${Number(vip.price || 0).toLocaleString()} RWF
-
-                    </h2>
-
-
+                    <h2>${Number(vip.price).toLocaleString()} RWF</h2>
 
                     <ul>
-
-                        <li>
-                            Daily Income:
-                            <b>
-                            ${Number(vip.dailyIncome || 0).toLocaleString()} RWF
-                            </b>
-                        </li>
-
-
-                        <li>
-                            Duration:
-                            <b>
-                            ${vip.duration || 0} Days
-                            </b>
-                        </li>
-
-
-                        <li>
-                            Total Profit:
-                            <b>
-                            ${Number(vip.totalProfit || 0).toLocaleString()} RWF
-                            </b>
-                        </li>
-
-
+                        <li>Daily Income: <b>${Number(vip.dailyIncome).toLocaleString()} RWF</b></li>
+                        <li>Duration: <b>${vip.duration} Days</b></li>
+                        <li>Total Profit: <b>${Number(vip.totalProfit).toLocaleString()} RWF</b></li>
                     </ul>
 
-
-
                     <button
-
                         class="buyVipBtn"
-
                         data-vip="${vip.name}"
-
                         data-price="${vip.price}"
-
                         data-daily="${vip.dailyIncome}"
-
                         data-profit="${vip.totalProfit}"
-
                         data-days="${vip.duration}">
-
                         Buy Now
-
                     </button>
 
-
-
                 </div>
-
             `;
-
 
         });
 
-
-
         console.log("FINAL HTML:", vipGrid.innerHTML);
 
-
-
         registerVipButtons();
-
         updateVipButtons();
-
-
 
     }, (error) => {
 
-
-        console.error("VIP LOAD ERROR:", error);
-
+        console.error(error);
 
     });
-
 
 }
 
 console.log("VIP PART 2 READY");
-
 
 // ======================================
 // VIP.JS - PART 3
