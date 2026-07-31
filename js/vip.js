@@ -183,8 +183,8 @@ console.log("FINAL HTML:", vipGrid.innerHTML);
             
 
             console.log(vip);
-
-            if (!vip || vip.status !== true) return;
+    if (!vip || vip.status === false) return;
+            
 
             console.log("ADDING VIP CARD:", vip);
             
