@@ -153,75 +153,33 @@ function loadVipPackages() {
     const vipRef = ref(db, "vipPlans");
 
     onValue(vipRef, (snapshot) => {
-        
-       console.log("VIP SNAPSHOT:", snapshot.val());
-        vipGrid.innerHTML = "";
 
-        if (!snapshot.exists()) {
+    console.log(snapshot.exists());
+    console.log(snapshot.val());
 
-            vipGrid.innerHTML = `
-                <div class="emptyVip">
-                    No VIP Plans Available
-                </div>
-            `;
+    vipGrid.innerHTML = "";
 
-            return;
-        }
-
-        snapshot.forEach((child) => {
-
-            const vip = child.val();
-
-
-            vipGrid.innerHTML += `
-
-            <div class="vip-card">
-
-                <div class="vip-badge">
-                    ${vip.name}
-                </div>
-
-                <h2>${Number(vip.price).toLocaleString()} RWF</h2>
-
-                <ul>
-
-                    <li>
-                        <i class="fas fa-check"></i>
-                        Daily Income:
-                        <b>${Number(vip.dailyIncome).toLocaleString()} RWF</b>
-                    </li>
-
-                    <li>
-                        <i class="fas fa-check"></i>
-                        Duration:
-                        <b>${vip.duration} Days</b>
-                    </li>
-
-                    <li>
-                        <i class="fas fa-check"></i>
-                        Total Profit:
-                        <b>${Number(vip.totalProfit).toLocaleString()} RWF</b>
-                    </li>
-
-                </ul>
-
-                <button
-                    class="buyVipBtn"
-                    data-vip="${vip.name}"
-                    data-price="${vip.price}"
-                    data-daily="${vip.dailyIncome}"
-                    data-profit="${vip.totalProfit}"
-                    data-days="${vip.duration}">
-
-                    Buy Now
-
-                </button>
-
+    if (!snapshot.exists()) {
+        vipGrid.innerHTML = `
+            <div class="emptyVip">
+                No VIP Plans Available
             </div>
+        `;
+        return;
+    }
 
-            `;
+    snapshot.forEach((child) => {
 
-        });
+        const vip = child.val();
+
+        console.log(vip);
+
+        if (vip.status !== true) return;
+
+        // ...
+    });
+
+});
 
         registerVipButtons();
 
