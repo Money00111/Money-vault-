@@ -147,7 +147,7 @@ console.log("VIP PART 1 READY");
 
 
 
-        
+ 
 // ======================================
 // VIP.JS - PART 2
 // LOAD VIP PLANS FROM FIREBASE
@@ -157,10 +157,17 @@ function loadVipPackages() {
 
     const vipRef = ref(db, "vipPlans");
 
+
     onValue(vipRef, (snapshot) => {
 
 
-        if (!vipGrid) return;
+        if (!vipGrid) {
+
+            console.log("vipGrid not found");
+
+            return;
+
+        }
 
 
         vipGrid.innerHTML = "";
@@ -168,10 +175,15 @@ function loadVipPackages() {
 
         if (!snapshot.exists()) {
 
+
             vipGrid.innerHTML = `
+
             <div class="emptyVip">
+
                 No VIP Plans Available
+
             </div>
+
             `;
 
             return;
@@ -179,41 +191,40 @@ function loadVipPackages() {
         }
 
 
+
         snapshot.forEach((child) => {
 
 
             const vip = child.val();
-            console.log("PRICE:", vip.price);
-console.log("DAILY:", vip.dailyIncome);
-console.log("PROFIT:", vip.totalProfit);
-console.log("DURATION:", vip.duration);
-
-console.log("VIP DATA:", vip);
 
 
-            console.log("VIP FROM DATABASE:", vip);
+            console.log("VIP DATA:", vip);
+
 
 
             const name = 
-            vip.name || 
-            vip.vipName || 
-            "VIP Plan";
+            vip.name || "VIP Plan";
+
 
 
             const price =
-            Number(vip.price ?? 0);
+            Number(vip.price);
 
 
-            const daily =
-            Number(vip.dailyIncome ?? vip.daily ?? 0);
 
+            const dailyIncome =
+            Number(vip.dailyIncome);
 
-            const profit =
-            Number(vip.totalProfit ?? vip.profit ?? 0);
 
 
             const duration =
-            Number(vip.duration ?? vip.days ?? 0);
+            Number(vip.duration);
+
+
+
+            const totalProfit =
+            Number(vip.totalProfit);
+
 
 
 
@@ -221,83 +232,145 @@ console.log("VIP DATA:", vip);
             document.createElement("div");
 
 
-            card.className = "vip-card";
+
+            card.className =
+            "vip-card";
+
 
 
             card.innerHTML = `
 
+
             <div class="vip-badge">
+
                 ${name}
+
             </div>
+
 
 
             <i class="fas fa-gem vip-icon"></i>
 
 
-            <h2>${name}</h2>
+
+            <h2>
+
+                ${name}
+
+            </h2>
+
 
 
             <h1>
-            ${price.toLocaleString()} RWF
+
+                ${price.toLocaleString()} RWF
+
             </h1>
 
 
+
             <p>
+
             Daily Income:
-            <b>${daily.toLocaleString()} RWF</b>
+
+            <b>
+
+            ${dailyIncome.toLocaleString()} RWF
+
+            </b>
+
             </p>
 
 
+
             <p>
+
             Duration:
-            <b>${duration} Days</b>
+
+            <b>
+
+            ${duration} Days
+
+            </b>
+
             </p>
+
 
 
             <p>
+
             Total Profit:
-            <b>${profit.toLocaleString()} RWF</b>
+
+            <b>
+
+            ${totalProfit.toLocaleString()} RWF
+
+            </b>
+
             </p>
 
 
-            <button 
+
+            <button
+
             class="buyVipBtn"
+
 
             data-vip="${name}"
 
+
             data-price="${price}"
 
-            data-daily="${daily}"
 
-            data-profit="${profit}"
+            data-daily="${dailyIncome}"
+
+
+            data-profit="${totalProfit}"
+
 
             data-days="${duration}"
+
             >
 
             <i class="fas fa-cart-shopping"></i>
+
             Buy Now
 
             </button>
 
+
             `;
+
 
 
             vipGrid.appendChild(card);
 
 
+
         });
+
 
 
         registerVipButtons();
 
+
         updateVipButtons();
+
+
+
+    }, (error) => {
+
+
+        console.error(
+            "VIP LOAD ERROR:",
+            error
+        );
 
 
     });
 
-}
-            
 
+}
 
 // ======================================
 // VIP.JS - PART 3
