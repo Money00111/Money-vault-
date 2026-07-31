@@ -197,6 +197,8 @@ function loadVipPackages() {
 
             const vip = child.val();
 
+            alert(JSON.stringify(vip));
+
 
             console.log("VIP DATA:", vip);
 
