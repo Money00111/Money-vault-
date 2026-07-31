@@ -173,7 +173,7 @@ function loadVipPackages() {
         }
 
         snapshot.forEach((child) => {
-
+console.log("FINAL HTML:", vipGrid.innerHTML);
 
     const vip = child.val();
 
@@ -186,6 +186,8 @@ function loadVipPackages() {
 
             if (!vip || vip.status !== true) return;
 
+            console.log("ADDING VIP CARD:", vip);
+            
             vipGrid.innerHTML += `
                 <div class="vip-card">
 
