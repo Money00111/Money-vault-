@@ -1007,6 +1007,32 @@ withdrawList.addEventListener("click", async (e) => {
 
         );
 
+        // SEND USER NOTIFICATION
+
+const notificationRef =
+push(
+ref(db,
+"notifications/" + withdraw.uid)
+);
+
+
+await set(notificationRef,{
+
+title:"Withdraw Approved",
+
+message:
+"Your withdraw of " +
+amount.toLocaleString() +
+" RWF has been approved.",
+
+type:"withdraw",
+
+read:false,
+
+createdAt:Date.now()
+
+});
+
         // SAVE TRANSACTION
 
         const transactionRef =
