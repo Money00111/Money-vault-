@@ -980,131 +980,248 @@ async function checkVipExpiration() {
 
 }
 
+
+
+        // ======================================
 // VIP.JS - PART 10
 // CLAIM COUNTDOWN TIMER
+// ======================================
 
 startClaimTimer();
 
 setInterval(startClaimTimer, 1000);
 
+
 async function startClaimTimer() {
 
     if (!currentUser) return;
 
+
     try {
 
+
         const vipRef =
-        ref(db,
-        "users/" +
-        currentUser.uid +
-        "/vipPlans");
+        ref(
+            db,
+            "users/" +
+            currentUser.uid +
+            "/vipPlans"
+        );
+
 
         const snap =
         await get(vipRef);
 
+
+
         if (!snap.exists()) {
 
-            claimTimer.textContent =
-            "No Active VIP";
 
-            claimIncomeBtn.disabled = true;
+            if (claimTimer) {
+
+                claimTimer.textContent =
+                "No Active VIP";
+
+            }
+
+
+            if (claimIncomeBtn) {
+
+                claimIncomeBtn.disabled = true;
+
+            }
+
 
             return;
 
         }
 
+
+
         const vipPlans =
         snap.val();
 
+
+
         const now =
         Date.now();
+
+
 
         let nextClaim = 0;
 
         let hasActiveVip = false;
 
+
+
         for (const key in vipPlans) {
 
-            const vip = vipPlans[key];
 
-            if (vip.status !== "active")
+            const vip =
+            vipPlans[key];
+
+
+
+            if (vip.status !== "active") {
+
                 continue;
+
+            }
+
+
 
             hasActiveVip = true;
 
+
+
             const claimTime =
-            Number(vip.lastClaim || 0) +
+
+            Number(vip.lastClaim || 0)
+            +
             86400000;
 
+
+
             if (
+
                 nextClaim === 0 ||
+
                 claimTime < nextClaim
+
             ) {
 
                 nextClaim = claimTime;
 
             }
 
+
         }
+
+
 
         if (!hasActiveVip) {
 
-            claimTimer.textContent =
-            "No Active VIP";
 
-            claimIncomeBtn.disabled = true;
+            if (claimTimer) {
+
+                claimTimer.textContent =
+                "No Active VIP";
+
+            }
+
+
+            if (claimIncomeBtn) {
+
+                claimIncomeBtn.disabled = true;
+
+            }
+
 
             return;
 
         }
+
+
+
 
         if (now >= nextClaim) {
 
-            claimTimer.textContent =
-            "Ready To Claim";
 
-            claimIncomeBtn.disabled = false;
+            if (claimTimer) {
+
+                claimTimer.textContent =
+                "Ready To Claim";
+
+            }
+
+
+            if (claimIncomeBtn) {
+
+                claimIncomeBtn.disabled = false;
+
+            }
+
 
             return;
 
         }
+
+
+
 
         const diff =
         nextClaim - now;
 
+
+
         const hours =
-        Math.floor(diff / 3600000);
+        Math.floor(
+            diff / 3600000
+        );
+
+
 
         const minutes =
         Math.floor(
             (diff % 3600000) / 60000
         );
 
+
+
         const seconds =
         Math.floor(
             (diff % 60000) / 1000
         );
 
-        claimTimer.textContent =
 
-        hours.toString().padStart(2,"0")
-        + ":" +
 
-        minutes.toString().padStart(2,"0")
-        + ":" +
+        if (claimTimer) {
 
-        seconds.toString().padStart(2,"0");
 
-        claimIncomeBtn.disabled = true;
+            claimTimer.textContent =
+
+            hours.toString().padStart(2,"0")
+            + ":" +
+
+            minutes.toString().padStart(2,"0")
+            + ":" +
+
+            seconds.toString().padStart(2,"0");
+
+
+        }
+
+
+
+        if (claimIncomeBtn) {
+
+            claimIncomeBtn.disabled = true;
+
+        }
+
+
 
     }
 
-    catch (error) {
 
-        console.error(error);
+    catch(error) {
+
+
+        console.error(
+            "Claim Timer Error:",
+            error
+        );
+
 
     }
+
 
 }
+
+
+
+            
+
+    
 
 
