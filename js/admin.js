@@ -644,7 +644,31 @@ await set(notificationRef,{
     createdAt:Date.now()
 
 });
+// ======================================
+// SEND VIP APPROVED NOTIFICATION
+// ======================================
 
+const notificationRef =
+push(
+    ref(db, "notifications/" + vip.uid)
+);
+
+await set(notificationRef, {
+
+    title: "VIP Approved",
+
+    message:
+        "Your " +
+        vip.vipName +
+        " purchase request has been approved successfully.",
+
+    type: "vip",
+
+    read: false,
+
+    createdAt: Date.now()
+
+});
 
 alert("Deposit Approved Successfully");
 
