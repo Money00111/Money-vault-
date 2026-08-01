@@ -1601,7 +1601,31 @@ window.approveVipRequest = async function(id) {
             auth.currentUser.uid
 
         });
+        
+// VIP NOTIFICATION
 
+const notificationRef =
+push(
+ref(db,
+"notifications/" + request.uid)
+);
+
+
+await set(notificationRef,{
+
+title:"VIP Activated",
+
+message:
+request.vipName +
+" has been activated successfully.",
+
+type:"vip",
+
+read:false,
+
+createdAt:Date.now()
+
+});
 
 
         alert(
