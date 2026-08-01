@@ -66,8 +66,9 @@ function loadNotifications(uid) {
 
             notificationList.innerHTML = `
 
-        <div class="notification-card"
-onclick="markAsRead('${uid}','${data.id}')">
+          <div class="empty-card">
+           No Notifications
+
 
             </div>
 
@@ -101,7 +102,8 @@ onclick="markAsRead('${uid}','${data.id}')">
 
             notificationList.innerHTML += `
 
-            <div class="notification-card">
+            <div class="notification-card"
+onclick="markAsRead('${uid}','${data.id}')">
 
                 <h3>${data.title || "Notification"}</h3>
 
