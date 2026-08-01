@@ -14,6 +14,9 @@ import {
     onValue
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
 
+import {
+    update
+} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
 
 // ======================================
 // ELEMENTS
@@ -63,9 +66,8 @@ function loadNotifications(uid) {
 
             notificationList.innerHTML = `
 
-            <div class="empty-card">
-
-                No Notifications
+        <div class="notification-card"
+onclick="markAsRead('${uid}','${data.id}')">
 
             </div>
 
@@ -81,9 +83,13 @@ function loadNotifications(uid) {
 
         snapshot.forEach((child) => {
 
-            notifications.push(child.val());
+    notifications.push({
+        id: child.key,
+        ...child.val()
+    });
 
-        });
+});
+    
 
         notifications.sort((a, b) =>
             (b.createdAt || 0) - (a.createdAt || 0)
@@ -127,9 +133,6 @@ console.log("Notifications Loaded Successfully");
 // MARK NOTIFICATION AS READ
 // ======================================
 
-import {
-    update
-} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
 
 async function markAsRead(uid, notificationId) {
 
