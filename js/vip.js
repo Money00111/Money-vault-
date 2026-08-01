@@ -980,10 +980,8 @@ async function checkVipExpiration() {
 
 }
 
-// ======================================
-// VIP.JS - PART 9
+// VIP.JS - PART 10
 // CLAIM COUNTDOWN TIMER
-// ======================================
 
 startClaimTimer();
 
