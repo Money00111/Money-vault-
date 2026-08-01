@@ -43,26 +43,31 @@ onAuthStateChanged(auth, (user) => {
 });
 
 // ======================================
-// LOAD TRANSACTIONS
+// LOAD TRANSACTIONS - UPDATED
 // ======================================
 
 function loadTransactions(uid) {
 
+
     const txRef = query(
 
-        ref(db, "transactions/" + uid),
+        ref(db, "transactions"),
 
-        orderByChild("time")
+        orderByChild("createdAt")
 
     );
 
+
     onValue(txRef, (snapshot) => {
+
 
         loadingScreen.style.display = "none";
 
         transactionList.innerHTML = "";
 
+
         if (!snapshot.exists()) {
+
 
             transactionList.innerHTML = `
 
@@ -74,62 +79,128 @@ function loadTransactions(uid) {
 
             `;
 
+
             totalTransactions.textContent = "0";
 
             return;
 
         }
 
+
+
         let count = 0;
 
         const transactions = [];
 
+
+
         snapshot.forEach((item) => {
 
-            transactions.unshift(item.val());
 
-            count++;
+            const tx = item.val();
+
+
+            // FATA IZ'UMUKORESHA WENYINE
+
+            if(tx.uid === uid){
+
+                transactions.unshift(tx);
+
+                count++;
+
+            }
+
 
         });
 
+
+
         totalTransactions.textContent = count;
 
-        transactions.forEach((tx) => {
 
-            transactionList.innerHTML += `
 
-            <div class="transaction-card">
+        if(count === 0){
 
-                <div class="left">
+            transactionList.innerHTML = `
 
-                    <h3>${tx.type}</h3>
+            <div class="empty">
 
-                    <p>${tx.method || ""}</p>
-
-                    <small>${tx.date || ""}</small>
-
-                </div>
-
-                <div class="right">
-
-                    <h2>${Number(tx.amount).toLocaleString()} RWF</h2>
-
-                    <span class="${tx.status}">
-
-                        ${tx.status}
-
-                    </span>
-
-                </div>
+                <h3>No Transactions Found</h3>
 
             </div>
 
             `;
 
+            return;
+
+        }
+
+
+
+        transactions.forEach((tx)=>{
+
+
+            transactionList.innerHTML += `
+
+
+            <div class="transaction-card">
+
+
+                <div class="left">
+
+
+                    <h3>${tx.type}</h3>
+
+
+                    <p>
+                    ${tx.paymentMethod || tx.method || ""}
+                    </p>
+
+
+                    <small>
+
+                    ${new Date(
+                    tx.createdAt
+                    ).toLocaleString()}
+
+                    </small>
+
+
+                </div>
+
+
+
+                <div class="right">
+
+
+                    <h2>
+
+                    ${Number(tx.amount || 0)
+                    .toLocaleString()} RWF
+
+                    </h2>
+
+
+                    <span class="${tx.status}">
+
+                    ${tx.status}
+
+                    </span>
+
+
+                </div>
+
+
+            </div>
+
+
+            `;
+
+
         });
+
 
     });
 
-}
 
-console.log("Transactions Loaded Successfully");
+}
