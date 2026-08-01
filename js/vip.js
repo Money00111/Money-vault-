@@ -888,3 +888,96 @@ async function claimDailyIncome() {
     }
 
 }
+
+// ======================================
+// VIP.JS - PART 8
+// VIP EXPIRATION SYSTEM
+// ======================================
+
+checkVipExpiration();
+
+setInterval(checkVipExpiration, 60000);
+
+async function checkVipExpiration() {
+
+    if (!currentUser) return;
+
+    try {
+
+        const vipRef =
+        ref(db,
+        "users/" +
+        currentUser.uid +
+        "/vipPlans");
+
+        const snap =
+        await get(vipRef);
+
+        if (!snap.exists())
+            return;
+
+        const vipPlans =
+        snap.val();
+
+        const now =
+        Date.now();
+
+        let changed =
+        false;
+
+        for (const key in vipPlans) {
+
+            const vip =
+            vipPlans[key];
+
+            if (vip.status !== "active")
+                continue;
+
+            const totalDays =
+            Number(vip.totalDays || 0);
+
+            const purchasedAt =
+            Number(vip.purchasedAt || 0);
+
+            const daysPassed =
+            Math.floor(
+                (now - purchasedAt) /
+                86400000
+            );
+
+            const remaining =
+            totalDays - daysPassed;
+
+            vip.remainingDays =
+            remaining > 0
+            ? remaining
+            : 0;
+
+            if (remaining <= 0) {
+
+                vip.status =
+                "expired";
+
+            }
+
+            changed = true;
+
+        }
+
+        if (changed) {
+
+            await update(vipRef, vipPlans);
+
+        }
+
+    }
+
+    catch (error) {
+
+        console.error(error);
+
+    }
+
+}
+
+
