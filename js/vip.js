@@ -732,12 +732,12 @@ function updateVipButtons() {
             button.dataset.vip;
 
         const purchased =
-            Object.values(vipPlans).find(plan =>
+    Object.values(vipPlans).find(plan =>
 
-                (plan.vipName || plan.name) === vipName
-                plan.status === "active"
+        (plan.vipName || plan.name) === vipName &&
+        plan.status === "active"
 
-            );
+    );
 
         if (purchased) {
 
