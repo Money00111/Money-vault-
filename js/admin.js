@@ -1411,4 +1411,236 @@ function renderVipRequests(data){
 
 }
 
-        
+  // ======================================
+// ADMIN.JS - PART 5B
+// APPROVE + REJECT VIP PURCHASE REQUESTS
+// ======================================
+
+
+// APPROVE VIP REQUEST
+
+window.approveVipRequest = async function(id) {
+
+
+    const requestRef =
+        ref(db, "vipPurchaseRequests/" + id);
+
+
+    const snap =
+        await get(requestRef);
+
+
+    if(!snap.exists()){
+
+        alert("Request not found");
+        return;
+
+    }
+
+
+    const request =
+        snap.val();
+
+
+
+    if(request.status !== "pending"){
+
+        alert("Already processed");
+        return;
+
+    }
+
+
+
+    const ok =
+    confirm(
+        "Approve this VIP purchase?"
+    );
+
+
+    if(!ok) return;
+
+
+
+    try{
+
+
+        const userRef =
+        ref(db, "users/" + request.uid);
+
+
+
+        const userSnap =
+        await get(userRef);
+
+
+
+        if(!userSnap.exists()){
+
+            alert("User not found");
+            return;
+
+        }
+
+
+
+        const user =
+        userSnap.val();
+
+
+
+        const balance =
+        Number(user.balance || 0);
+
+
+
+        const price =
+        Number(request.price || 0);
+
+
+
+        if(balance < price){
+
+            alert("User balance is not enough");
+
+            return;
+
+        }
+
+
+
+        // REMOVE MONEY
+
+        await update(userRef,{
+
+            balance:
+            balance - price
+
+        });
+
+
+
+        // ADD VIP TO USER
+
+        const vipRef =
+        push(
+            ref(db,
+            "users/" +
+            request.uid +
+            "/vipPlans")
+        );
+
+
+
+        await set(vipRef,{
+
+            vipName:
+            request.vipName,
+
+            dailyIncome:
+            Number(request.dailyIncome || 0),
+
+            totalProfit:
+            Number(request.totalProfit || 0),
+
+            totalDays:
+            Number(request.totalDays || 0),
+
+            remainingDays:
+            Number(request.totalDays || 0),
+
+            purchasedAt:
+            Date.now(),
+
+            lastClaim:
+            0,
+
+            status:
+            "active"
+
+        });
+
+
+
+        // UPDATE REQUEST
+
+        await update(requestRef,{
+
+            status:"approved",
+
+            approvedAt:
+            Date.now(),
+
+            approvedBy:
+            auth.currentUser.uid
+
+        });
+
+
+
+        alert(
+        "VIP Approved Successfully"
+        );
+
+
+    }
+
+    catch(error){
+
+        console.error(error);
+
+        alert(error.message);
+
+    }
+
+
+};
+
+
+
+
+// REJECT VIP REQUEST
+
+
+window.rejectVipRequest = async function(id){
+
+
+    const ok =
+    confirm(
+    "Reject this VIP purchase?"
+    );
+
+
+    if(!ok) return;
+
+
+
+    await update(
+
+        ref(db,
+        "vipPurchaseRequests/" + id),
+
+        {
+
+            status:"rejected",
+
+            rejectedAt:
+            Date.now(),
+
+            rejectedBy:
+            auth.currentUser.uid
+
+        }
+
+    );
+
+
+
+    alert(
+    "VIP Request Rejected"
+    );
+
+
+};   
+
+
