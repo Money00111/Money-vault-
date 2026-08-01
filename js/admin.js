@@ -616,6 +616,8 @@ createdAt:Date.now()
 
 });
 
+alert("Deposit Approved Successfully");
+
     // ======================================
 // SEND DEPOSIT APPROVED NOTIFICATION
 // ======================================
