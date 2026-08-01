@@ -1,6 +1,6 @@
 // ======================================
-// NOTIFICATIONS.JS - PART 12
-// LOAD USER NOTIFICATIONS
+// NOTIFICATIONS.JS - PART 11B
+// Money Vault User Notifications
 // ======================================
 
 import { auth, db } from "./firebase.js";
@@ -14,11 +14,21 @@ import {
     onValue
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
 
+
+// ======================================
+// ELEMENTS
+// ======================================
+
 const notificationList =
 document.getElementById("notificationList");
 
 const notificationCount =
 document.getElementById("notificationCount");
+
+
+// ======================================
+// AUTH
+// ======================================
 
 onAuthStateChanged(auth, (user) => {
 
@@ -32,6 +42,11 @@ onAuthStateChanged(auth, (user) => {
     loadNotifications(user.uid);
 
 });
+
+
+// ======================================
+// LOAD NOTIFICATIONS
+// ======================================
 
 function loadNotifications(uid) {
 
@@ -74,7 +89,7 @@ function loadNotifications(uid) {
             (b.createdAt || 0) - (a.createdAt || 0)
         );
 
-        notifications.forEach((item) => {
+        notifications.forEach((data) => {
 
             count++;
 
@@ -82,13 +97,13 @@ function loadNotifications(uid) {
 
             <div class="notification-card">
 
-                <h3>${item.title}</h3>
+                <h3>${data.title || "Notification"}</h3>
 
-                <p>${item.message}</p>
+                <p>${data.message || ""}</p>
 
                 <small>
 
-                    ${new Date(item.createdAt).toLocaleString()}
+                    ${new Date(data.createdAt).toLocaleString()}
 
                 </small>
 
