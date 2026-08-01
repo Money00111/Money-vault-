@@ -1197,4 +1197,218 @@ function applyWithdrawFilter() {
 
 }
 
-            
+            // ======================================
+// ADMIN.JS - PART 5A
+// LOAD VIP PURCHASE REQUESTS
+// ======================================
+
+const vipRequestList =
+document.getElementById("vipRequestList");
+
+const emptyVipRequest =
+document.getElementById("emptyVipRequest");
+
+let vipRequestsData = {};
+
+
+// ======================================
+// LOAD REQUESTS
+// ======================================
+
+function loadVipPurchaseRequests(){
+
+    onValue(ref(db,"vipPurchaseRequests"),(snapshot)=>{
+
+        vipRequestsData = {};
+
+        vipRequestList.innerHTML = "";
+
+
+        if(!snapshot.exists()){
+
+            if(emptyVipRequest){
+
+                emptyVipRequest.style.display="block";
+
+            }
+
+            return;
+
+        }
+
+
+        if(emptyVipRequest){
+
+            emptyVipRequest.style.display="none";
+
+        }
+
+
+
+        snapshot.forEach((child)=>{
+
+            vipRequestsData[child.key] =
+            child.val();
+
+        });
+
+
+        renderVipRequests(vipRequestsData);
+
+
+    });
+
+}
+
+
+loadVipPurchaseRequests();
+
+
+
+// ======================================
+// RENDER VIP REQUESTS
+// ======================================
+
+function renderVipRequests(data){
+
+
+    vipRequestList.innerHTML="";
+
+
+    Object.entries(data).forEach(([id,vip])=>{
+
+
+        const status =
+        vip.status || "pending";
+
+
+
+        const card =
+        document.createElement("div");
+
+
+        card.className =
+        "request-card";
+
+
+
+        card.innerHTML = `
+
+
+        <div class="request-top">
+
+
+            <h3>
+            ${vip.fullName || "User"}
+            </h3>
+
+
+            <span class="status ${status}">
+            ${status.toUpperCase()}
+            </span>
+
+
+        </div>
+
+
+
+        <p>
+        <strong>Email:</strong>
+        ${vip.email || "-"}
+        </p>
+
+
+        <p>
+        <strong>VIP:</strong>
+        ${vip.vipName}
+        </p>
+
+
+        <p>
+        <strong>Price:</strong>
+        ${Number(vip.price || 0).toLocaleString()} RWF
+        </p>
+
+
+        <p>
+        <strong>Daily Income:</strong>
+        ${Number(vip.dailyIncome || 0).toLocaleString()} RWF
+        </p>
+
+
+        <p>
+        <strong>Total Profit:</strong>
+        ${Number(vip.totalProfit || 0).toLocaleString()} RWF
+        </p>
+
+
+        <p>
+        <strong>Duration:</strong>
+        ${vip.totalDays || 0} Days
+        </p>
+
+
+
+        <div class="action-buttons">
+
+
+        ${
+            status === "pending"
+
+            ?
+
+            `
+
+            <button
+            class="approveVipBtn"
+            data-id="${id}">
+
+            <i class="fa-solid fa-circle-check"></i>
+            Approve
+
+            </button>
+
+
+            <button
+            class="rejectVipBtn"
+            data-id="${id}">
+
+            <i class="fa-solid fa-circle-xmark"></i>
+            Reject
+
+            </button>
+
+            `
+
+            :
+
+            `
+
+            <button disabled>
+
+            ${status.toUpperCase()}
+
+            </button>
+
+            `
+
+        }
+
+
+        </div>
+
+
+        `;
+
+
+
+        vipRequestList.appendChild(card);
+
+
+
+    });
+
+
+}
+
+        
