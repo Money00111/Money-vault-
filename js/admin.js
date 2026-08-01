@@ -1643,4 +1643,80 @@ window.rejectVipRequest = async function(id){
 
 };   
 
+// ======================================
+// ADMIN.JS - PART 6
+// VIP PURCHASE STATISTICS
+// ======================================
+
+const vipTotalCount =
+document.getElementById("vipTotalCount");
+
+const vipPendingCount =
+document.getElementById("vipPendingCount");
+
+const vipApprovedCount =
+document.getElementById("vipApprovedCount");
+
+const vipRejectedCount =
+document.getElementById("vipRejectedCount");
+
+
+function loadVipStatistics() {
+
+    onValue(
+        ref(db, "vipPurchaseRequests"),
+        (snapshot) => {
+
+            let total = 0;
+            let pending = 0;
+            let approved = 0;
+            let rejected = 0;
+
+            if (snapshot.exists()) {
+
+                snapshot.forEach((child) => {
+
+                    total++;
+
+                    const request =
+                    child.val();
+
+                    if (request.status === "pending") {
+
+                        pending++;
+
+                    } else if (request.status === "approved") {
+
+                        approved++;
+
+                    } else if (request.status === "rejected") {
+
+                        rejected++;
+
+                    }
+
+                });
+
+            }
+
+            vipTotalCount.textContent =
+            total;
+
+            vipPendingCount.textContent =
+            pending;
+
+            vipApprovedCount.textContent =
+            approved;
+
+            vipRejectedCount.textContent =
+            rejected;
+
+        }
+    );
+
+}
+
+
+loadVipStatistics();
+
 
