@@ -616,6 +616,32 @@ createdAt:Date.now()
 
 });
 
+    // ======================================
+// SEND DEPOSIT APPROVED NOTIFICATION
+// ======================================
+
+const notificationRef =
+push(
+    ref(db,"notifications/" + deposit.uid)
+);
+
+
+await set(notificationRef,{
+
+    title:"Deposit Approved",
+
+    message:
+    "Your deposit of " +
+    amount.toLocaleString() +
+    " RWF has been approved.",
+
+    type:"deposit",
+
+    read:false,
+
+    createdAt:Date.now()
+
+});
 
 
 alert("Deposit Approved Successfully");
