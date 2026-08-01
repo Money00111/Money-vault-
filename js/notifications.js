@@ -121,3 +121,36 @@ function loadNotifications(uid) {
 
 console.log("Notifications Loaded Successfully");
 
+
+// ======================================
+// NOTIFICATIONS.JS - PART 13
+// MARK NOTIFICATION AS READ
+// ======================================
+
+import {
+    update
+} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
+
+async function markAsRead(uid, notificationId) {
+
+    try {
+
+        await update(
+
+            ref(db, "notifications/" + uid + "/" + notificationId),
+
+            {
+                read: true
+            }
+
+        );
+
+    }
+
+    catch (error) {
+
+        console.error(error);
+
+    }
+
+    }
