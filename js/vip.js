@@ -180,6 +180,12 @@ function loadVipPackages() {
 
             const vip = child.val();
 
+            
+console.log(vip);
+console.log(typeof vip.price, vip.price);
+console.log(typeof vip.dailyIncome, vip.dailyIncome);
+console.log(typeof vip.duration, vip.duration);
+console.log(typeof vip.totalProfit, vip.totalProfit);
             console.log("VIP DATA:", vip);
 
             const name = vip.name || "VIP Plan";
