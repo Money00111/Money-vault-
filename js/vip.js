@@ -658,6 +658,14 @@ console.log("VIP PART 9 READY");
 // CLAIM DAILY INCOME
 // ======================================
 
+async function claimDailyIncome() {
+
+    console.log("Claim button clicked");
+
+    if (!currentUser) return;
+
+    ...
+                }
 const claimIncomeBtn =
 document.getElementById("claimIncomeBtn");
 
