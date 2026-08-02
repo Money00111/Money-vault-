@@ -191,162 +191,53 @@ function loadVipPackages() {
         }
 
 
-
 snapshot.forEach((child) => {
-
-    console.log("KEY:", child.key);
-
-    console.log("VALUE:", child.val());
 
     const vip = child.val();
 
+    console.log("VIP DATA:", vip);
+
+    const name = vip.name || "VIP Plan";
+    const price = Number(vip.price || 0);
+    const dailyIncome = Number(vip.dailyIncome || 0);
+    const duration = Number(vip.duration || 0);
+    const totalProfit = Number(vip.totalProfit || (dailyIncome * duration));
+
+    const card = document.createElement("div");
+
+    card.className = "vip-card";
+
+    card.innerHTML = `
+        <div class="vip-badge">${name}</div>
+
+        <i class="fas fa-gem vip-icon"></i>
+
+        <h2>${name}</h2>
+
+        <h1>${price.toLocaleString()} RWF</h1>
+
+        <p>Daily Income: <b>${dailyIncome.toLocaleString()} RWF</b></p>
+
+        <p>Duration: <b>${duration} Days</b></p>
+
+        <p>Total Profit: <b>${totalProfit.toLocaleString()} RWF</b></p>
+
+        <button
+            class="buyVipBtn"
+            data-vip="${name}"
+            data-price="${price}"
+            data-daily="${dailyIncome}"
+            data-profit="${totalProfit}"
+            data-days="${duration}">
+            <i class="fas fa-cart-shopping"></i>
+            Buy Now
+        </button>
+    `;
+
+    vipGrid.appendChild(card);
+
 });
 
-
-            const name = 
-            vip.name || "VIP Plan";
-
-
-
-            const price =
-            Number(vip.price);
-
-
-
-            const dailyIncome =
-            Number(vip.dailyIncome);
-
-
-
-            const duration =
-            Number(vip.duration);
-
-
-
-            
-            const totalProfit =
-            dailyIncome * duration;
-
-            const card =
-            document.createElement("div");
-
-
-
-            card.className =
-            "vip-card";
-
-
-
-            card.innerHTML = `
-
-
-            <div class="vip-badge">
-
-                ${name}
-
-            </div>
-
-
-
-            <i class="fas fa-gem vip-icon"></i>
-
-
-
-            <h2>
-
-                ${name}
-
-            </h2>
-
-
-
-            <h1>
-
-                ${price.toLocaleString()} RWF
-
-            </h1>
-
-
-
-            <p>
-
-            Daily Income:
-
-            <b>
-
-            ${dailyIncome.toLocaleString()} RWF
-
-            </b>
-
-            </p>
-
-
-
-            <p>
-
-            Duration:
-
-            <b>
-
-            ${duration} Days
-
-            </b>
-
-            </p>
-
-
-
-            <p>
-
-            Total Profit:
-
-            <b>
-
-            ${totalProfit.toLocaleString()} RWF
-
-            </b>
-
-            </p>
-
-
-
-            <button
-
-            class="buyVipBtn"
-
-
-            data-vip="${name}"
-
-
-            data-price="${price}"
-
-
-            data-daily="${dailyIncome}"
-
-
-            data-profit="${totalProfit}"
-
-
-            data-days="${duration}"
-
-            >
-
-            <i class="fas fa-cart-shopping"></i>
-
-            Buy Now
-
-            </button>
-
-
-            `;
-
-
-
-            vipGrid.appendChild(card);
-
-
-
-        });
 
 
 
