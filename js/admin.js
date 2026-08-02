@@ -622,11 +622,6 @@ alert("Deposit Approved Successfully");
 // SEND DEPOSIT APPROVED NOTIFICATION
 // ======================================
 
-const notificationRef =
-push(
-    ref(db,"notifications/" + deposit.uid)
-);
-
 
 await set(notificationRef,{
 
