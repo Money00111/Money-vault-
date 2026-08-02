@@ -658,127 +658,236 @@ console.log("VIP PART 9 READY");
 // CLAIM DAILY INCOME
 // ======================================
 
-async function claimDailyIncome() {
-
-    console.log("Claim button clicked");
-
-    if (!currentUser) return;
-
-    
 const claimIncomeBtn =
 document.getElementById("claimIncomeBtn");
 
 const claimTimer =
 document.getElementById("claimTimer");
 
-claimIncomeBtn?.addEventListener("click", claimDailyIncome);
+
+// BUTTON EVENT
+
+claimIncomeBtn?.addEventListener(
+    "click",
+    claimDailyIncome
+);
+
+
 
 async function claimDailyIncome() {
 
-    if (!currentUser) return;
+    console.log("Claim button clicked");
+
+
+    if (!currentUser) {
+
+        alert("User not logged in");
+
+        return;
+
+    }
+
 
     try {
 
+
         const userRef =
-        ref(db, "users/" + currentUser.uid);
+        ref(
+            db,
+            "users/" + currentUser.uid
+        );
+
 
         const userSnap =
         await get(userRef);
 
+
+
         if (!userSnap.exists()) {
 
+
             alert("User not found");
+
             return;
 
+
         }
+
+
 
         const user =
         userSnap.val();
 
+
+
         const vipPlans =
         user.vipPlans || {};
 
+
+
         let totalIncome = 0;
+
         let updated = false;
 
-        const now = Date.now();
+
+        const now =
+        Date.now();
+
+
 
         for (const key in vipPlans) {
 
-            const vip = vipPlans[key];
 
-            if (vip.status !== "active")
+            const vip =
+            vipPlans[key];
+
+
+
+            if (vip.status !== "active") {
+
                 continue;
+
+            }
+
+
 
             const lastClaim =
             Number(vip.lastClaim || 0);
 
-            if (now - lastClaim < 86400000)
+
+
+            if (
+                now - lastClaim < 86400000
+            ) {
+
                 continue;
 
+            }
+
+
+
             totalIncome +=
-            Number(vip.dailyIncome || 0);
+            Number(
+                vip.dailyIncome || 0
+            );
+
+
 
             vipPlans[key].lastClaim =
             now;
 
+
+
             updated = true;
 
+
         }
+
+
 
         if (!updated) {
 
-            alert("Daily income is not available yet.");
+
+            alert(
+                "Daily income is not available yet."
+            );
+
 
             return;
 
+
         }
 
-        await update(userRef, {
 
-            balance:
-            Number(user.balance || 0) + totalIncome,
 
-            vipPlans:
-            vipPlans
+        await update(
+            userRef,
+            {
 
-        });
+                balance:
+                Number(user.balance || 0)
+                +
+                totalIncome,
+
+
+                vipPlans:
+                vipPlans
+
+            }
+        );
+
+
+
 
         const txRef =
-        push(ref(db, "transactions"));
+        push(
+            ref(db, "transactions")
+        );
 
-        await set(txRef, {
 
-            uid: currentUser.uid,
 
-            email: currentUser.email,
+        await set(
+            txRef,
+            {
 
-            type: "dailyIncome",
+                uid:
+                currentUser.uid,
 
-            amount: totalIncome,
 
-            status: "completed",
+                email:
+                currentUser.email,
 
-            createdAt: now
 
-        });
+                type:
+                "dailyIncome",
+
+
+                amount:
+                totalIncome,
+
+
+                status:
+                "completed",
+
+
+                createdAt:
+                now
+
+            }
+        );
+
+
 
         alert(
-            totalIncome.toLocaleString() +
+            totalIncome.toLocaleString()
+            +
             " RWF claimed successfully."
         );
 
+
+
     }
 
-    catch (error) {
 
-        console.error(error);
+    catch(error) {
+
+
+        console.error(
+            "Claim Error:",
+            error
+        );
+
 
         alert(error.message);
 
+
     }
 
+
 }
+
+
+console.log("VIP PART 7 READY");
 
 // ======================================
 // VIP.JS - PART 8
