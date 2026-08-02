@@ -192,15 +192,15 @@ function loadVipPackages() {
 
 
 
-        snapshot.forEach((child) => {
+snapshot.forEach((child) => {
 
+    console.log("KEY:", child.key);
 
-            const vip = child.val();
+    console.log("VALUE:", child.val());
 
+    const vip = child.val();
 
-
-            console.log("VIP DATA:", vip);
-
+});
 
 
             const name = 
