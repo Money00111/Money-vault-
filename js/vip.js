@@ -664,8 +664,7 @@ async function claimDailyIncome() {
 
     if (!currentUser) return;
 
-    ...
-                }
+    
 const claimIncomeBtn =
 document.getElementById("claimIncomeBtn");
 
