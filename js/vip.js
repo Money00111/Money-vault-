@@ -147,8 +147,7 @@ console.log("VIP PART 1 READY");
 
 
 
- 
-// ======================================
+ // ======================================
 // VIP.JS - PART 2
 // LOAD VIP PLANS FROM FIREBASE
 // ======================================
@@ -157,111 +156,100 @@ function loadVipPackages() {
 
     const vipRef = ref(db, "vipPlans");
 
-
     onValue(vipRef, (snapshot) => {
 
-
         if (!vipGrid) {
-
             console.log("vipGrid not found");
-
             return;
-
         }
-
 
         vipGrid.innerHTML = "";
 
-
         if (!snapshot.exists()) {
 
-
             vipGrid.innerHTML = `
-
-            <div class="emptyVip">
-
-                No VIP Plans Available
-
-            </div>
-
+                <div class="emptyVip">
+                    No VIP Plans Available
+                </div>
             `;
 
             return;
-
         }
 
+        snapshot.forEach((child) => {
 
-snapshot.forEach((child) => {
+            const vip = child.val();
 
-    const vip = child.val();
+            console.log("VIP DATA:", vip);
 
-    console.log("VIP DATA:", vip);
+            const name = vip.name || "VIP Plan";
+            const price = Number(vip.price ?? 0);
+            const dailyIncome = Number(vip.dailyIncome ?? 0);
+            const duration = Number(vip.duration ?? 0);
 
-    const name = vip.name || "VIP Plan";
-    const price = Number(vip.price || 0);
-    const dailyIncome = Number(vip.dailyIncome || 0);
-    const duration = Number(vip.duration || 0);
-    const totalProfit = Number(vip.totalProfit || (dailyIncome * duration));
+            const totalProfit =
+                vip.totalProfit != null
+                ? Number(vip.totalProfit)
+                : dailyIncome * duration;
 
-    const card = document.createElement("div");
+            const card = document.createElement("div");
 
-    card.className = "vip-card";
+            card.className = "vip-card";
 
-    card.innerHTML = `
-        <div class="vip-badge">${name}</div>
+            card.innerHTML = `
+                <div class="vip-badge">
+                    ${name}
+                </div>
 
-        <i class="fas fa-gem vip-icon"></i>
+                <i class="fas fa-gem vip-icon"></i>
 
-        <h2>${name}</h2>
+                <h2>${name}</h2>
 
-        <h1>${price.toLocaleString()} RWF</h1>
+                <h1>${price.toLocaleString()} RWF</h1>
 
-        <p>Daily Income: <b>${dailyIncome.toLocaleString()} RWF</b></p>
+                <p>
+                    Daily Income:
+                    <b>${dailyIncome.toLocaleString()} RWF</b>
+                </p>
 
-        <p>Duration: <b>${duration} Days</b></p>
+                <p>
+                    Duration:
+                    <b>${duration} Days</b>
+                </p>
 
-        <p>Total Profit: <b>${totalProfit.toLocaleString()} RWF</b></p>
+                <p>
+                    Total Profit:
+                    <b>${totalProfit.toLocaleString()} RWF</b>
+                </p>
 
-        <button
-            class="buyVipBtn"
-            data-vip="${name}"
-            data-price="${price}"
-            data-daily="${dailyIncome}"
-            data-profit="${totalProfit}"
-            data-days="${duration}">
-            <i class="fas fa-cart-shopping"></i>
-            Buy Now
-        </button>
-    `;
+                <button
+                    class="buyVipBtn"
+                    data-vip="${name}"
+                    data-price="${price}"
+                    data-daily="${dailyIncome}"
+                    data-profit="${totalProfit}"
+                    data-days="${duration}">
 
-    vipGrid.appendChild(card);
+                    <i class="fas fa-cart-shopping"></i>
+                    Buy Now
 
-});
+                </button>
+            `;
 
+            vipGrid.appendChild(card);
 
-
+        });
 
         registerVipButtons();
-
-
         updateVipButtons();
-
-
 
     }, (error) => {
 
-
-        console.error(
-            "VIP LOAD ERROR:",
-            error
-        );
-
+        console.error("VIP LOAD ERROR:", error);
 
     });
 
-
 }
-
 // ======================================
 // VIP.JS - PART 3
 // REGISTER BUY VIP BUTTONS
