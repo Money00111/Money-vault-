@@ -1220,7 +1220,29 @@ async function startClaimTimer() {
 
 }
 
+// ======================================
+// CLAIM BUTTON CONNECT
+// ======================================
 
+const claimBtn = document.getElementById("claimIncomeBtn");
+
+if (claimBtn) {
+
+    claimBtn.addEventListener("click", () => {
+
+        console.log("CLAIM BUTTON CLICKED");
+
+        claimDailyIncome();
+
+    });
+
+    console.log("CLAIM BUTTON CONNECTED");
+
+} else {
+
+    console.log("CLAIM BUTTON NOT FOUND");
+
+}
 
             
 
