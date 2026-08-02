@@ -223,11 +223,9 @@ function loadVipPackages() {
 
 
 
+            
             const totalProfit =
-            Number(vip.totalProfit);
-
-
-
+            dailyIncome * duration;
 
             const card =
             document.createElement("div");
