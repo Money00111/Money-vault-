@@ -1749,6 +1749,27 @@ window.rejectVipRequest = async function(id){
 
 
 };   
+// ======================================
+// ADMIN.JS - PART 5C
+// VIP BUTTON EVENTS
+// ======================================
+
+vipRequestList.addEventListener("click", (e) => {
+
+    const approveBtn = e.target.closest(".approveVipBtn");
+
+    if (approveBtn) {
+        approveVipRequest(approveBtn.dataset.id);
+        return;
+    }
+
+    const rejectBtn = e.target.closest(".rejectVipBtn");
+
+    if (rejectBtn) {
+        rejectVipRequest(rejectBtn.dataset.id);
+    }
+
+});
 
 // ======================================
 // ADMIN.JS - PART 6
