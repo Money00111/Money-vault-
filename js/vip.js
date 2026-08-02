@@ -983,23 +983,27 @@ async function checkVipExpiration() {
 }
 
 
-
-        // ======================================
+// ======================================
 // VIP.JS - PART 10
 // CLAIM COUNTDOWN TIMER
 // ======================================
+
 
 startClaimTimer();
 
 setInterval(startClaimTimer, 1000);
 
 
+
 async function startClaimTimer() {
+
 
     if (!currentUser) return;
 
 
+
     try {
+
 
 
         const vipRef =
@@ -1011,8 +1015,10 @@ async function startClaimTimer() {
         );
 
 
+
         const snap =
         await get(vipRef);
+
 
 
 
@@ -1027,16 +1033,11 @@ async function startClaimTimer() {
             }
 
 
-            if (claimIncomeBtn) {
-
-                claimIncomeBtn.disabled = true;
-
-            }
-
-
             return;
 
+
         }
+
 
 
 
@@ -1056,7 +1057,9 @@ async function startClaimTimer() {
 
 
 
+
         for (const key in vipPlans) {
+
 
 
             const vip =
@@ -1077,19 +1080,16 @@ async function startClaimTimer() {
 
 
             const claimTime =
-
             Number(vip.lastClaim || 0)
             +
             86400000;
 
 
 
+
             if (
-
                 nextClaim === 0 ||
-
                 claimTime < nextClaim
-
             ) {
 
                 nextClaim = claimTime;
@@ -1097,7 +1097,10 @@ async function startClaimTimer() {
             }
 
 
+
         }
+
+
 
 
 
@@ -1112,21 +1115,20 @@ async function startClaimTimer() {
             }
 
 
-            if (claimIncomeBtn) {
-
-                claimIncomeBtn.disabled = true;
-
-            }
-
-
             return;
+
 
         }
 
 
 
 
+
+        // READY TO CLAIM
+
+
         if (now >= nextClaim) {
+
 
 
             if (claimTimer) {
@@ -1137,6 +1139,7 @@ async function startClaimTimer() {
             }
 
 
+
             if (claimIncomeBtn) {
 
                 claimIncomeBtn.disabled = false;
@@ -1144,15 +1147,19 @@ async function startClaimTimer() {
             }
 
 
+
             return;
+
 
         }
 
 
 
 
+
         const diff =
         nextClaim - now;
+
 
 
 
@@ -1177,29 +1184,42 @@ async function startClaimTimer() {
 
 
 
+
         if (claimTimer) {
 
 
             claimTimer.textContent =
 
-            hours.toString().padStart(2,"0")
-            + ":" +
-
-            minutes.toString().padStart(2,"0")
-            + ":" +
-
-            seconds.toString().padStart(2,"0");
+            hours
+            .toString()
+            .padStart(2,"0")
+            +
+            ":"
+            +
+            minutes
+            .toString()
+            .padStart(2,"0")
+            +
+            ":"
+            +
+            seconds
+            .toString()
+            .padStart(2,"0");
 
 
         }
 
 
+
+
+        // BUTTON IGUMEHO IKORA
 
         if (claimIncomeBtn) {
 
-            claimIncomeBtn.disabled = true;
+            claimIncomeBtn.disabled = false;
 
         }
+
 
 
 
@@ -1220,32 +1240,5 @@ async function startClaimTimer() {
 
 }
 
-// ======================================
-// CLAIM BUTTON CONNECT
-// ======================================
 
-const claimBtn = document.getElementById("claimIncomeBtn");
-
-if (claimBtn) {
-
-    claimBtn.addEventListener("click", () => {
-
-        console.log("CLAIM BUTTON CLICKED");
-
-        claimDailyIncome();
-
-    });
-
-    console.log("CLAIM BUTTON CONNECTED");
-
-} else {
-
-    console.log("CLAIM BUTTON NOT FOUND");
-
-}
-
-            
-
-    
-
-
+console.log("VIP PART 10 READY");
