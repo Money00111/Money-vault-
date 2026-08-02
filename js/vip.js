@@ -174,14 +174,17 @@ function loadVipPackages() {
             `;
 
             return;
+
+            
         }
+        console.log("SNAPSHOT:", snapshot.val());
 
         snapshot.forEach((child) => {
 
-            const vip = child.val();
+            const vip = child.val()
 
-            
-console.log(vip.name);
+console.log("KEY:", child.key);
+console.log("DATA:", child.val());
 console.log(vip.price);
 console.log(vip.dailyIncome);
 console.log(vip.duration);
