@@ -325,6 +325,20 @@ openSettings?.addEventListener("click", () => {
 });
 
 // ======================================
+// ADMIN.JS - PART 3
+// OPEN VIP REQUESTS
+// ===================================
+
+const openVipRequests =
+document.getElementById("openVipRequests");
+
+openVipRequests?.addEventListener("click", () => {
+
+    document
+        .querySelector('[data-page="vipRequests"]')
+        ?.click();
+
+// ======================================
 // ADMIN.JS PART 3A.1
 // LOAD DEPOSIT REQUESTS
 // ======================================
