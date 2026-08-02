@@ -678,6 +678,8 @@ async function claimDailyIncome() {
 
     console.log("Claim button clicked");
 
+    alert("Button is working");
+
 
     if (!currentUser) {
 
