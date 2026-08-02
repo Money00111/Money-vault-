@@ -1612,31 +1612,41 @@ window.approveVipRequest = async function(id) {
 
         await set(vipRef,{
 
-            vipName:
-            request.vipName,
+    name:
+    request.vipName,
 
-            dailyIncome:
-            Number(request.dailyIncome || 0),
+    vipName:
+    request.vipName,
 
-            totalProfit:
-            Number(request.totalProfit || 0),
+    price:
+    Number(request.price || 0),
 
-            totalDays:
-            Number(request.totalDays || 0),
+    dailyIncome:
+    Number(request.dailyIncome || 0),
 
-            remainingDays:
-            Number(request.totalDays || 0),
+    totalProfit:
+    Number(request.totalProfit || 0),
 
-            purchasedAt:
-            Date.now(),
+    duration:
+    Number(request.totalDays || 0),
 
-            lastClaim:
-            0,
+    totalDays:
+    Number(request.totalDays || 0),
 
-            status:
-            "active"
+    remainingDays:
+    Number(request.totalDays || 0),
 
-        });
+    purchasedAt:
+    Date.now(),
+
+    lastClaim:
+    0,
+
+    status:
+    "active"
+
+});
+        
 
 
 
