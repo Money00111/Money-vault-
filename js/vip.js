@@ -599,7 +599,6 @@ function loadUserVipPlans(){
 
 
 console.log("VIP PART 5 READY");
-
 // ======================================
 // VIP.JS - PART 9
 // UPDATE VIP BUTTONS
@@ -616,12 +615,12 @@ function updateVipButtons() {
             button.dataset.vip;
 
         const purchased =
-    Object.values(vipPlans).find(plan =>
+            Object.values(vipPlans).some(plan =>
 
-        (plan.vipName || plan.name) === vipName &&
-        plan.status === "active"
+                (plan.vipName || plan.name) === vipName &&
+                plan.status === "active"
 
-    );
+            );
 
         if (purchased) {
 
