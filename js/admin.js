@@ -779,28 +779,7 @@ function applyDepositFilter() {
 
     renderDeposits(filtered);
 
-}
-
-    // ======================================
-// ADMIN.JS - PART 3D
-// OPEN VIP REQUESTS QUICK ACTION
-// ======================================
-
-const openVipRequests =
-document.getElementById("openVipRequests");
-
-
-openVipRequests?.addEventListener("click", () => {
-
-    document
-    .querySelector('[data-page="vipRequests"]')
-    ?.click();
-
-});
-
-
-console.log("VIP REQUEST QUICK ACTION READY");
-
+        } 
     // ======================================
 // ADMIN.JS PART 4A
 // LOAD WITHDRAW REQUESTS
