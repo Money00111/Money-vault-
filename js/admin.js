@@ -751,6 +751,8 @@ function applyDepositFilter() {
     renderDeposits(filtered);
 
         } 
+
+    });
     // ======================================
 // ADMIN.JS PART 4A
 // LOAD WITHDRAW REQUESTS
