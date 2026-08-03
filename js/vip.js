@@ -429,174 +429,100 @@ async function buyVip(button) {
 
 console.log("VIP PART 4 REQUEST SYSTEM READY");
 
-            
 // ======================================
 // VIP.JS - PART 5
 // LOAD USER VIP PLANS
 // ======================================
 
-function loadUserVipPlans(){
+function loadUserVipPlans() {
 
-    if(!currentUser) return;
-
+    if (!currentUser) return;
 
     const vipRef = ref(
         db,
         "users/" + currentUser.uid + "/vipPlans"
     );
 
-
-    onValue(vipRef, (snapshot)=>{
-
+    onValue(vipRef, (snapshot) => {
 
         ownedVipList.innerHTML = "";
 
-
         let activeCount = 0;
-
         let totalDaily = 0;
-
         let totalProfitAmount = 0;
 
-
-
-        if(!snapshot.exists()){
-
+        if (!snapshot.exists()) {
 
             ownedVipList.innerHTML = `
-
-            <div class="emptyVip">
-
-                No VIP Purchased
-
-            </div>
-
+                <div class="emptyVip">
+                    No VIP Purchased
+                </div>
             `;
 
-
-            currentVip.textContent =
-            "VIP 0";
-
-
-            dailyIncome.textContent =
-            "0 RWF";
-
-
-            totalProfit.textContent =
-            "0 RWF";
-
+            currentVip.textContent = "VIP 0";
+            dailyIncome.textContent = "0 RWF";
+            totalProfit.textContent = "0 RWF";
 
             return;
-
         }
 
-
-
-        snapshot.forEach((child)=>{
-
+        snapshot.forEach((child) => {
 
             const vip = child.val();
 
-
-
-            if(vip.status === "active"){
-
+            if (vip.status === "active") {
 
                 activeCount++;
 
+                totalDaily += Number(vip.dailyIncome || 0);
 
-                totalDaily +=
-                Number(vip.dailyIncome || 0);
-
-
-                totalProfitAmount +=
-                Number(vip.totalProfit || 0);
-
+                totalProfitAmount += Number(vip.totalProfit || 0);
 
             }
 
-
-
             ownedVipList.innerHTML += `
 
+                <div class="owned-vip-card">
 
-            <div class="owned-vip-card">
+                    <h3>${vip.vipName}</h3>
 
+                    <p>
+                        Daily Income:
+                        <b>${Number(vip.dailyIncome || 0).toLocaleString()} RWF</b>
+                    </p>
 
-                <h3>
+                    <p>
+                        Remaining Days:
+                        <b>${vip.remainingDays || 0}</b>
+                    </p>
 
-                    ${vip.vipName}
+                    <p>
+                        Status:
+                        <span class="vip-status">
+                            ${vip.status}
+                        </span>
+                    </p>
 
-                </h3>
-
-
-                <p>
-
-                Daily Income:
-
-                <b>
-                ${Number(vip.dailyIncome || 0)
-                .toLocaleString()} RWF
-                </b>
-
-                </p>
-
-
-                <p>
-
-                Remaining Days:
-
-                <b>
-                ${vip.remainingDays || 0}
-                </b>
-
-
-                </p>
-
-
-
-                <p>
-
-                Status:
-
-                <span class="vip-status">
-
-                ${vip.status}
-
-                </span>
-
-                </p>
-
-
-            </div>
-
+                </div>
 
             `;
 
-
         });
 
-
-
         currentVip.textContent =
-        activeCount + " Active VIP";
-
+            activeCount + " Active VIP";
 
         dailyIncome.textContent =
-        totalDaily.toLocaleString() + " RWF";
-
+            totalDaily.toLocaleString() + " RWF";
 
         totalProfit.textContent =
-        totalProfitAmount.toLocaleString() + " RWF";
-
+            totalProfitAmount.toLocaleString() + " RWF";
 
         updateVipButtons();
 
     });
 
-
 }
-
 
 console.log("VIP PART 5 READY");
 // ======================================
