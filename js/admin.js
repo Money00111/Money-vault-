@@ -639,27 +639,34 @@ createdAt:Date.now()
 
 alert("Deposit Approved Successfully");
 
-    // ======================================
+
+// ======================================
 // SEND DEPOSIT APPROVED NOTIFICATION
 // ======================================
 
+const notificationRef =
+push(
+    ref(db, "notifications/" + deposit.uid)
+);
 
-await set(notificationRef,{
 
-    title:"Deposit Approved",
+await set(notificationRef, {
+
+    title: "Deposit Approved",
 
     message:
     "Your deposit of " +
     amount.toLocaleString() +
     " RWF has been approved.",
 
-    type:"deposit",
+    type: "deposit",
 
-    read:false,
+    read: false,
 
-    createdAt:Date.now()
+    createdAt: Date.now()
 
 });
+
 // ======================================
 // SEND VIP APPROVED NOTIFICATION
 // ======================================
