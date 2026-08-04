@@ -82,8 +82,7 @@ const storage = getStorage(app);
 // ======================================
 // EXPORTS
 // ======================================
-
-export {
+ export {
 
     app,
 
