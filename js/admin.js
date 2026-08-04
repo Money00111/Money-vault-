@@ -2099,117 +2099,102 @@ window.approveVipRequest = async function(id) {
         });
 
 
+// ======================================
+// REFERRAL BONUS 1000 RWF
+// ONLY ONCE AFTER VIP APPROVAL
+// ======================================
+
+if (
+    user.referredBy &&
+    user.referralBonusGiven !== true
+) {
+
+
+    const inviterRef =
+    ref(
+        db,
+        "users/" + user.referredBy
+    );
+
+
+    const inviterSnap =
+    await get(inviterRef);
 
 
 
-        // ======================================
-        // REFERRAL BONUS 1000 RWF
-        // ONLY ONCE
-        // ======================================
+    if (inviterSnap.exists()) {
 
 
-        if (
-            user.referredBy &&
-            user.referralBonusGiven !== true
-        ) {
-
-
-            const inviterRef =
-            ref(
-                db,
-                "users/" +
-                user.referredBy
-            );
-
-
-            const inviterSnap =
-            await get(inviterRef);
+        const inviter =
+        inviterSnap.val();
 
 
 
-            if (inviterSnap.exists()) {
-
-
-                const inviter =
-                inviterSnap.val();
+        const oldReferral =
+        Number(inviter.referralBonus || 0);
 
 
 
-                const oldReferral =
-                Number(
-                    inviter.referralEarnings || 0
-                );
+        await update(inviterRef, {
+
+
+            referralBonus:
+            oldReferral + 1000
+
+
+        });
 
 
 
-                await update(inviterRef, {
+        // STOP DOUBLE BONUS
 
+        await update(userRef, {
 
-                    referralEarnings:
-                    oldReferral + 1000,
+            referralBonusGiven:
+            true
 
-
-                    referralBonus:
-                    Number(
-                        inviter.referralBonus || 0
-                    ) + 1000
-
-
-                });
+        });
 
 
 
-                await update(userRef, {
+        // SAVE REFERRAL TRANSACTION
 
-                    referralBonusGiven:
-                    true
-
-                });
-
-
-
-                // Referral Transaction
+        const referralTx =
+        push(
+            ref(db,"transactions")
+        );
 
 
-                const referralTx =
-                push(
-                    ref(db,"transactions")
-                );
+        await set(referralTx, {
 
 
-                await set(referralTx, {
+            uid:
+            user.referredBy,
 
 
-                    uid:
-                    user.referredBy,
+            type:
+            "referral_bonus",
 
 
-                    type:
-                    "referral_bonus",
+            amount:
+            1000,
 
 
-                    amount:
-                    1000,
+            status:
+            "approved",
 
 
-                    status:
-                    "approved",
+            createdAt:
+            Date.now()
 
 
-                    createdAt:
-                    Date.now()
+        });
 
 
-                });
+    }
 
 
-            }
-
-
-        }
-
-
-
+}
 
 
 
