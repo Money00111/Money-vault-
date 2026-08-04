@@ -188,7 +188,11 @@ export async function loginUser(email, password) {
 
         }
 
-        window.location.href = "dashboard.html";
+        setTimeout(()=>{
+
+    window.location.href = "dashboard.html";
+
+},500);
 
         return true;
 
