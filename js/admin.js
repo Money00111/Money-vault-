@@ -652,10 +652,9 @@ function updateText(id,value){
 }
 
 // ======================================
-// DEPOSIT MANAGEMENT
-// PART 3
+// DEPOSIT MANAGEMENT FINAL
+// PART 10
 // ======================================
-
 
 
 // ================================
@@ -675,7 +674,6 @@ function loadDeposits(){
 
         const list =
         document.getElementById("depositList");
-
 
 
         const empty =
@@ -715,14 +713,14 @@ function loadDeposits(){
 
 
 
-        const deposits =
-        snapshot.val();
-
-
-
-        Object.entries(deposits)
+        Object.entries(snapshot.val())
         .reverse()
         .forEach(([id,deposit])=>{
+
+
+
+            const status =
+            deposit.status || "pending";
 
 
 
@@ -730,7 +728,9 @@ function loadDeposits(){
             document.createElement("div");
 
 
-            card.className="request-card";
+
+            card.className =
+            "request-card";
 
 
 
@@ -740,13 +740,15 @@ function loadDeposits(){
 <div class="request-top">
 
 <h3>
+
 ${deposit.name || "User Deposit"}
+
 </h3>
 
 
-<span class="status ${deposit.status || "pending"}">
+<span class="status ${status}">
 
-${deposit.status || "pending"}
+${status}
 
 </span>
 
@@ -756,32 +758,50 @@ ${deposit.status || "pending"}
 
 
 <p>
+
 <strong>Email:</strong>
+
 ${deposit.email || "-"}
+
 </p>
 
 
 <p>
+
 <strong>Amount:</strong>
-${Number(deposit.amount || 0).toLocaleString()} RWF
+
+${Number(deposit.amount || 0)
+.toLocaleString()} RWF
+
 </p>
 
 
 <p>
+
 <strong>Phone:</strong>
+
 ${deposit.phone || "-"}
+
 </p>
 
 
+
 <p>
+
 <strong>Method:</strong>
+
 ${deposit.method || "Mobile Money"}
+
 </p>
 
 
+
 <p>
+
 <strong>Transaction ID:</strong>
+
 ${deposit.transactionId || "-"}
+
 </p>
 
 
@@ -789,8 +809,12 @@ ${deposit.transactionId || "-"}
 <div class="action-buttons">
 
 
-<button 
+<button
+
 class="approveBtn"
+
+${status !== "pending" ? "disabled" : ""}
+
 onclick="approveDeposit('${id}')">
 
 <i class="fa-solid fa-circle-check"></i>
@@ -801,8 +825,12 @@ Approve
 
 
 
-<button 
+<button
+
 class="rejectBtn"
+
+${status !== "pending" ? "disabled" : ""}
+
 onclick="rejectDeposit('${id}')">
 
 <i class="fa-solid fa-circle-xmark"></i>
@@ -810,7 +838,6 @@ onclick="rejectDeposit('${id}')">
 Reject
 
 </button>
-
 
 
 </div>
@@ -837,9 +864,11 @@ Reject
 
 
 
+
 // ================================
-// APPROVE DEPOSIT
+// APPROVE DEPOSIT ONCE
 // ================================
+
 
 window.approveDeposit = async function(id){
 
@@ -854,7 +883,11 @@ window.approveDeposit = async function(id){
 
 
 
-    if(!snapshot.exists()) return;
+    if(!snapshot.exists()){
+
+        return;
+
+    }
 
 
 
@@ -863,9 +896,13 @@ window.approveDeposit = async function(id){
 
 
 
-    if(deposit.status==="approved"){
+    // STOP DOUBLE ACTION
 
-        alert("Already approved");
+    if(deposit.status !== "pending"){
+
+
+        alert("This deposit was already processed");
+
 
         return;
 
@@ -888,6 +925,7 @@ window.approveDeposit = async function(id){
 
         alert("User not found");
 
+
         return;
 
     }
@@ -899,46 +937,47 @@ window.approveDeposit = async function(id){
 
 
 
-    const oldBalance =
-    Number(user.balance || 0);
-
-
-
     const amount =
     Number(deposit.amount || 0);
 
 
 
-    await update(userRef,{
+    const oldBalance =
+    Number(user.balance || 0);
 
+
+
+    // UPDATE USER BALANCE
+
+    await update(userRef,{
 
         balance:
         oldBalance + amount
 
-
     });
 
 
+
+
+    // CHANGE STATUS
 
     await update(depositRef,{
 
-
         status:"approved",
 
-        approvedAt:
-        Date.now()
-
+        approvedAt:Date.now()
 
     });
 
 
 
-    const transactionRef =
-    push(ref(db,"transactions"));
 
+    // SAVE TRANSACTION
 
+    await set(
+    push(ref(db,"transactions")),
 
-    await set(transactionRef,{
+    {
 
 
         uid:deposit.uid,
@@ -949,15 +988,16 @@ window.approveDeposit = async function(id){
 
         status:"approved",
 
-        date:Date.now()
+        reference:id,
 
+        date:Date.now()
 
 
     });
 
 
 
-    alert("Deposit Approved");
+    alert("Deposit Approved Successfully");
 
 
 };
@@ -966,9 +1006,11 @@ window.approveDeposit = async function(id){
 
 
 
+
 // ================================
-// REJECT DEPOSIT
+// REJECT DEPOSIT ONCE
 // ================================
+
 
 window.rejectDeposit = async function(id){
 
@@ -979,36 +1021,57 @@ window.rejectDeposit = async function(id){
 
 
 
-    await update(depositRef,{
-
-
-        status:"rejected",
-
-        rejectedAt:
-        Date.now()
-
-
-    });
-
-
-
     const snapshot =
     await get(depositRef);
 
 
 
-    if(snapshot.exists()){
+    if(!snapshot.exists()){
+
+        return;
+
+    }
 
 
-        const deposit =
-        snapshot.val();
+
+    const deposit =
+    snapshot.val();
 
 
 
-        await set(
-        push(ref(db,"transactions")),
 
-        {
+    // STOP DOUBLE ACTION
+
+    if(deposit.status !== "pending"){
+
+
+        alert("This deposit was already processed");
+
+
+        return;
+
+    }
+
+
+
+
+
+    await update(depositRef,{
+
+        status:"rejected",
+
+        rejectedAt:Date.now()
+
+    });
+
+
+
+
+
+    await set(
+    push(ref(db,"transactions")),
+
+    {
 
 
         uid:deposit.uid,
@@ -1019,31 +1082,31 @@ window.rejectDeposit = async function(id){
 
         status:"rejected",
 
+        reference:id,
+
         date:Date.now()
 
 
-        });
+    });
 
 
 
-    }
 
 
-
-    alert("Deposit Rejected");
-
+    alert("Deposit Rejected Successfully");
 
 
 };
 
 
 
+
+
 // ================================
-// AUTO LOAD
+// START DEPOSIT SYSTEM
 // ================================
 
 loadDeposits();
-
 
 // ======================================
 // WITHDRAW MANAGEMENT
