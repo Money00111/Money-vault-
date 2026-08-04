@@ -170,40 +170,51 @@ console.log("Dashboard Part 1 Ready");
 
 // ======================================
 // dashboard.js
-// PART 2
+// PART 2 (FIXED)
+// TRANSACTIONS + REFERRAL + NOTIFICATIONS
 // ======================================
+
 
 // ======================================
 // ELEMENTS
 // ======================================
 
-const recentTransactions = document.getElementById("recentTransactions");
+const recentTransactions =
+document.getElementById("recentTransactions");
 
-const referralLink = document.getElementById("referralLink");
+const referralLink =
+document.getElementById("referralLink");
 
-const copyReferral = document.getElementById("copyReferral");
+const copyReferral =
+document.getElementById("copyReferral");
 
-const notificationList = document.getElementById("notificationList");
+const notificationList =
+document.getElementById("notificationList");
+
 
 // ======================================
-// LOAD TRANSACTIONS
+// LOAD TRANSACTIONS (FIXED)
 // ======================================
 
 function loadTransactions(user){
 
     const transactionRef = query(
 
-        ref(db,"transactions/" + user.uid),
+        ref(db,"transactions"),
 
-        limitToLast(10)
+        limitToLast(100)
 
     );
 
+
     onValue(transactionRef,(snapshot)=>{
+
 
         recentTransactions.innerHTML="";
 
+
         if(!snapshot.exists()){
+
 
             recentTransactions.innerHTML=`
 
@@ -227,66 +238,142 @@ function loadTransactions(user){
 
         }
 
+
+
         const list=[];
+
+
 
         snapshot.forEach(item=>{
 
-            list.unshift(item.val());
+
+            const tx = item.val();
+
+
+            if(tx.uid === user.uid){
+
+                list.unshift(tx);
+
+            }
+
 
         });
 
-        list.forEach(tx=>{
 
-            recentTransactions.innerHTML+=`
+
+        if(list.length === 0){
+
+
+            recentTransactions.innerHTML=`
 
             <div class="transaction-card">
 
                 <div>
 
-                    <h4>${tx.type || "Transaction"}</h4>
+                    <h4>No Transactions</h4>
 
-                    <p>${tx.date || ""}</p>
+                    <p>Your transactions will appear here.</p>
 
                 </div>
 
-                <span>
-
-                ${Number(tx.amount || 0).toLocaleString()} RWF
-
-                </span>
+                <span>0 RWF</span>
 
             </div>
 
             `;
 
+
+            return;
+
+        }
+
+
+
+        list.forEach(tx=>{
+
+
+            recentTransactions.innerHTML+=`
+
+            <div class="transaction-card">
+
+
+                <div>
+
+                    <h4>
+                    ${tx.type || "Transaction"}
+                    </h4>
+
+
+                    <p>
+                    ${new Date(
+                    tx.createdAt || Date.now()
+                    ).toLocaleString()}
+                    </p>
+
+
+                </div>
+
+
+                <span>
+
+                ${Number(tx.amount || 0)
+                .toLocaleString()} RWF
+
+                </span>
+
+
+            </div>
+
+
+            `;
+
+
         });
+
 
     });
 
+
 }
 
+
+
 // ======================================
-// REFERRAL LINK
+// REFERRAL LINK (FIXED)
 // ======================================
+
 function createReferral(data){
+
 
     if(!referralLink) return;
 
-    const code = data.referralCode || "NONE";
+
+    const code =
+    data.referralCode || "NONE";
+
 
     referralLink.value =
+
     window.location.origin +
+
     "/register.html?ref=" +
+
     code;
 
+
 }
+
+
+
 // ======================================
 // COPY REFERRAL
 // ======================================
 
 copyReferral?.addEventListener("click",async()=>{
 
+
     try{
+
 
         await navigator.clipboard.writeText(
 
@@ -294,7 +381,11 @@ copyReferral?.addEventListener("click",async()=>{
 
         );
 
-        alert("Referral link copied successfully.");
+
+        alert(
+        "Referral link copied successfully."
+        );
+
 
     }
 
@@ -304,7 +395,10 @@ copyReferral?.addEventListener("click",async()=>{
 
     }
 
+
 });
+
+
 
 // ======================================
 // NOTIFICATIONS
@@ -312,72 +406,79 @@ copyReferral?.addEventListener("click",async()=>{
 
 function loadNotifications(){
 
-    const notifyRef = ref(db,"announcements");
+
+    const notifyRef =
+    ref(db,"announcements");
+
+
 
     onValue(notifyRef,(snapshot)=>{
 
+
         notificationList.innerHTML="";
 
+
+
         if(!snapshot.exists()){
+
 
             notificationList.innerHTML=`
 
             <div class="notification-card">
 
-                <div class="notification-icon">
+                <h3>Welcome</h3>
 
-                    <i class="fas fa-bell"></i>
-
-                </div>
-
-                <div class="notification-content">
-
-                    <h3>Welcome</h3>
-
-                    <p>Welcome to Money Vault.</p>
-
-                </div>
+                <p>
+                Welcome to Money Vault.
+                </p>
 
             </div>
 
             `;
+
 
             return;
 
         }
 
+
+
         snapshot.forEach(item=>{
 
+
             const data=item.val();
+
+
 
             notificationList.innerHTML+=`
 
             <div class="notification-card">
 
-                <div class="notification-icon">
 
-                    <i class="fas fa-bullhorn"></i>
+                <h3>
+                ${data.title || "Notification"}
+                </h3>
 
-                </div>
 
-                <div class="notification-content">
+                <p>
+                ${data.message || ""}
+                </p>
 
-                    <h3>${data.title}</h3>
-
-                    <p>${data.message}</p>
-
-                </div>
 
             </div>
 
+
             `;
+
 
         });
 
+
+
     });
 
-}
 
+}
         
 
       // ======================================
