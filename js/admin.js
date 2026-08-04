@@ -2543,6 +2543,860 @@ window.rejectBonus = async function(id){
 
         return
 
+        // ======================================
+// DASHBOARD FINAL SYSTEM
+// PART 14
+// ======================================
+
+
+
+// ================================
+// LOAD FULL DASHBOARD
+// ================================
+
+
+function loadDashboardFinal(){
+
+
+    loadUsersCountFinal();
+
+    loadDepositStatisticsFinal();
+
+    loadWithdrawStatisticsFinal();
+
+    loadSystemBalanceFinal();
+
+    loadRecentActivity();
+
+
+}
+
+
+
+
+
+
+// ================================
+// TOTAL USERS
+// ================================
+
+
+function loadUsersCountFinal(){
+
+
+    const usersRef =
+    ref(db,"users");
+
+
+
+    onValue(usersRef,(snapshot)=>{
+
+
+        let total = 0;
+
+
+
+        if(snapshot.exists()){
+
+
+            total =
+            Object.keys(snapshot.val()).length;
+
+
+        }
+
+
+
+        updateText(
+        "totalUsers",
+        total
+        );
+
+
+    });
+
+
+
+}
+
+
+
+
+
+
+
+// ================================
+// DEPOSIT STATS
+// ================================
+
+
+function loadDepositStatisticsFinal(){
+
+
+    const depositRef =
+    ref(db,"depositRequests");
+
+
+
+    onValue(depositRef,(snapshot)=>{
+
+
+        let total = 0;
+
+        let pending = 0;
+
+        let approved = 0;
+
+        let rejected = 0;
+
+
+
+
+        if(snapshot.exists()){
+
+
+            Object.values(snapshot.val())
+            .forEach(item=>{
+
+
+
+                total++;
+
+
+
+                if(item.status==="pending")
+                pending++;
+
+
+
+                if(item.status==="approved")
+                approved++;
+
+
+
+                if(item.status==="rejected")
+                rejected++;
+
+
+
+            });
+
+
+        }
+
+
+
+
+
+        updateText(
+        "dashboardTotalDeposits",
+        total
+        );
+
+
+        updateText(
+        "dashboardPendingDeposits",
+        pending
+        );
+
+
+        updateText(
+        "dashboardApprovedDeposits",
+        approved
+        );
+
+
+        updateText(
+        "depositTotalCount",
+        total
+        );
+
+
+        updateText(
+        "depositPendingCount",
+        pending
+        );
+
+
+        updateText(
+        "depositApprovedCount",
+        approved
+        );
+
+
+        updateText(
+        "depositRejectedCount",
+        rejected
+        );
+
+
+
+    });
+
+
+
+}
+
+
+
+
+
+
+
+
+
+// ================================
+// WITHDRAW STATS
+// ================================
+
+
+function loadWithdrawStatisticsFinal(){
+
+
+    const withdrawRef =
+    ref(db,"withdrawRequests");
+
+
+
+    onValue(withdrawRef,(snapshot)=>{
+
+
+        let total = 0;
+
+        let pending = 0;
+
+        let approved = 0;
+
+        let rejected = 0;
+
+
+
+
+
+        if(snapshot.exists()){
+
+
+            Object.values(snapshot.val())
+            .forEach(item=>{
+
+
+
+                total++;
+
+
+
+                if(item.status==="pending")
+                pending++;
+
+
+
+                if(item.status==="approved")
+                approved++;
+
+
+
+                if(item.status==="rejected")
+                rejected++;
+
+
+
+            });
+
+
+        }
+
+
+
+
+
+        updateText(
+        "dashboardTotalWithdraws",
+        total
+        );
+
+
+
+        updateText(
+        "withdrawTotalCount",
+        total
+        );
+
+
+
+        updateText(
+        "withdrawPendingCount",
+        pending
+        );
+
+
+
+        updateText(
+        "withdrawApprovedCount",
+        approved
+        );
+
+
+
+        updateText(
+        "withdrawRejectedCount",
+        rejected
+        );
+
+
+
+    });
+
+
+
+}
+
+
+
+
+
+
+
+
+
+// ================================
+// SYSTEM BALANCE
+// ================================
+
+
+function loadSystemBalanceFinal(){
+
+
+    const usersRef =
+    ref(db,"users");
+
+
+
+    onValue(usersRef,(snapshot)=>{
+
+
+        let totalBalance = 0;
+
+
+
+        if(snapshot.exists()){
+
+
+            Object.values(snapshot.val())
+            .forEach(user=>{
+
+
+                totalBalance +=
+                Number(user.balance || 0);
+
+
+            });
+
+
+
+        }
+
+
+
+
+
+        updateText(
+        "systemBalance",
+        totalBalance.toLocaleString()+" RWF"
+        );
+
+
+
+    });
+
+
+
+}
+
+
+
+
+
+
+
+
+
+
+// ================================
+// RECENT ACTIVITY
+// ================================
+
+
+function loadRecentActivity(){
+
+
+
+    const transactionRef =
+    ref(db,"transactions");
+
+
+
+    onValue(transactionRef,(snapshot)=>{
+
+
+        const box =
+        document.getElementById(
+        "recentActivity"
+        );
+
+
+
+        if(!box) return;
+
+
+
+        box.innerHTML="";
+
+
+
+        if(!snapshot.exists()){
+
+
+            box.innerHTML =
+            "<p>No activity found</p>";
+
+
+            return;
+
+        }
+
+
+
+
+
+
+        Object.entries(snapshot.val())
+        .reverse()
+        .slice(0,10)
+        .forEach(([id,item])=>{
+
+
+
+            const div =
+            document.createElement("div");
+
+
+
+            div.className =
+            "activity-item";
+
+
+
+            div.innerHTML=`
+
+
+<p>
+
+<strong>
+${(item.type || "transaction")
+.toUpperCase()}
+
+</strong>
+
+-
+
+${Number(item.amount || 0)
+.toLocaleString()} RWF
+
+</p>
+
+
+<span>
+
+${item.status || "-"}
+
+</span>
+
+
+`;
+
+
+
+            box.appendChild(div);
+
+
+
+        });
+
+
+
+    });
+
+
+
+}
+
+
+
+
+
+
+
+
+
+// ================================
+// FINAL REFRESH BUTTON
+// ================================
+
+
+const finalRefreshBtn =
+document.getElementById(
+"refreshDashboard"
+);
+
+
+
+if(finalRefreshBtn){
+
+
+
+    finalRefreshBtn.onclick = ()=>{
+
+
+        loadDashboardFinal();
+
+
+        loadDeposits();
+
+
+        loadWithdraws();
+
+
+        loadVipRequests();
+
+
+        loadBonusRequests();
+
+
+        loadUsers();
+
+
+        loadTransactions();
+
+
+        alert(
+        "Dashboard refreshed successfully"
+        );
+
+
+    };
+
+
+}
+
+
+
+
+
+
+
+
+// ================================
+// START FINAL DASHBOARD
+// ================================
+
+
+loadDashboardFinal();
+
+// ======================================
+// FINAL CLEANUP & OPTIMIZATION
+// PART 15
+// ======================================
+
+
+
+// ================================
+// GLOBAL ERROR HANDLER
+// ================================
+
+
+window.addEventListener(
+"error",
+(event)=>{
+
+
+    console.error(
+        "ADMIN SYSTEM ERROR:",
+        event.error
+    );
+
+
+});
+
+
+
+
+
+
+// ================================
+// SAFE ADMIN CHECK
+// ================================
+
+
+function checkAdminSession(){
+
+
+    if(!currentAdmin){
+
+
+        console.warn(
+        "Admin session missing"
+        );
+
+
+        return false;
+
+    }
+
+
+
+    return true;
+
+
+}
+
+
+
+
+
+
+
+
+// ================================
+// PREVENT DOUBLE CLICK ACTIONS
+// ================================
+
+
+document.addEventListener(
+"click",
+(event)=>{
+
+
+
+    const button =
+    event.target.closest("button");
+
+
+
+    if(!button) return;
+
+
+
+    if(button.disabled)
+    return;
+
+
+
+    if(
+    button.classList.contains("approveBtn") ||
+    button.classList.contains("rejectBtn")
+    ){
+
+
+
+        button.disabled = true;
+
+
+
+        setTimeout(()=>{
+
+
+            button.disabled = false;
+
+
+        },1500);
+
+
+
+    }
+
+
+
+});
+
+
+
+
+
+
+
+
+
+// ================================
+// CLEAN NUMBER FORMATTER
+// ================================
+
+
+function formatMoney(value){
+
+
+    return Number(value || 0)
+    .toLocaleString()+" RWF";
+
+
+}
+
+
+
+
+
+
+
+// ================================
+// SAFE DATABASE UPDATE
+// ================================
+
+
+async function safeUpdate(path,data){
+
+
+    try{
+
+
+        await update(
+        ref(db,path),
+        data
+        );
+
+
+        return true;
+
+
+
+    }catch(error){
+
+
+
+        console.error(
+        "Database update failed:",
+        error
+        );
+
+
+
+        alert(
+        "Something went wrong"
+        );
+
+
+
+        return false;
+
+
+    }
+
+
+}
+
+
+
+
+
+
+
+// ================================
+// REMOVE DUPLICATE REFRESH ACTION
+// ================================
+
+
+const refreshButton =
+document.getElementById(
+"refreshDashboard"
+);
+
+
+
+if(refreshButton){
+
+
+    refreshButton.replaceWith(
+    refreshButton.cloneNode(true)
+    );
+
+
+
+    const newRefresh =
+    document.getElementById(
+    "refreshDashboard"
+    );
+
+
+
+    newRefresh.addEventListener(
+    "click",
+    ()=>{
+
+
+
+        if(!checkAdminSession())
+        return;
+
+
+
+        loadDashboardFinal();
+
+
+        console.log(
+        "Dashboard refreshed"
+        );
+
+
+
+    });
+
+
+
+}
+
+
+
+
+
+
+
+
+// ================================
+// AUTO SESSION MONITOR
+// ================================
+
+
+setInterval(()=>{
+
+
+    if(!currentAdmin){
+
+
+        console.warn(
+        "Admin session expired"
+        );
+
+
+    }
+
+
+
+},60000);
+
+
+
+
+
+
+
+
+// ================================
+// FINAL READY MESSAGE
+// ================================
+
+
+console.log(
+"Money Vault Admin Panel Loaded Successfully"
+);
+
       // ======================================
 // USERS MANAGEMENT
 // PART 7
