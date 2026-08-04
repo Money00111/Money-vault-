@@ -2084,8 +2084,8 @@ loadVipRequests();
 
 
 // ======================================
-// BONUS REQUEST MANAGEMENT
-// PART 6
+// BONUS REQUEST MANAGEMENT FINAL
+// PART 13
 // ======================================
 
 
@@ -2093,6 +2093,7 @@ loadVipRequests();
 // ================================
 // LOAD BONUS REQUESTS
 // ================================
+
 
 function loadBonusRequests(){
 
@@ -2107,7 +2108,6 @@ function loadBonusRequests(){
 
         const list =
         document.getElementById("bonusRequestList");
-
 
 
         const empty =
@@ -2148,9 +2148,16 @@ function loadBonusRequests(){
 
 
 
+
+
         Object.entries(snapshot.val())
         .reverse()
         .forEach(([id,bonus])=>{
+
+
+
+            const status =
+            bonus.status || "pending";
 
 
 
@@ -2158,7 +2165,9 @@ function loadBonusRequests(){
             document.createElement("div");
 
 
-            card.className="request-card";
+
+            card.className =
+            "request-card";
 
 
 
@@ -2176,15 +2185,16 @@ Bonus Request
 
 
 
-<span class="status ${bonus.status || "pending"}">
+<span class="status ${status}">
 
-${bonus.status || "pending"}
+${status}
 
 </span>
 
 
-
 </div>
+
+
 
 
 
@@ -2198,6 +2208,8 @@ ${bonus.name || "-"}
 
 
 
+
+
 <p>
 
 <strong>Email:</strong>
@@ -2208,13 +2220,18 @@ ${bonus.email || "-"}
 
 
 
+
+
 <p>
 
 <strong>Bonus Amount:</strong>
 
-${Number(bonus.amount || 0).toLocaleString()} RWF
+${Number(bonus.amount || 0)
+.toLocaleString()} RWF
 
 </p>
+
+
 
 
 
@@ -2229,12 +2246,16 @@ ${bonus.reason || "-"}
 
 
 
+
+
 <div class="action-buttons">
 
 
 <button
 
 class="approveBtn"
+
+${status !== "pending" ? "disabled" : ""}
 
 onclick="approveBonus('${id}')">
 
@@ -2249,9 +2270,12 @@ Approve
 
 
 
+
 <button
 
 class="rejectBtn"
+
+${status !== "pending" ? "disabled" : ""}
 
 onclick="rejectBonus('${id}')">
 
@@ -2264,7 +2288,9 @@ Reject
 </button>
 
 
+
 </div>
+
 
 
 `;
@@ -2289,9 +2315,15 @@ Reject
 
 
 
+
+
+
+
+
 // ================================
-// APPROVE BONUS
+// APPROVE BONUS ONCE
 // ================================
+
 
 window.approveBonus = async function(id){
 
@@ -2307,12 +2339,36 @@ window.approveBonus = async function(id){
 
 
 
-    if(!snapshot.exists()) return;
+    if(!snapshot.exists()){
+
+        return;
+
+    }
 
 
 
     const bonus =
     snapshot.val();
+
+
+
+
+
+
+    // BLOCK DOUBLE ACTION
+
+    if(bonus.status !== "pending"){
+
+
+        alert("This bonus request was already processed");
+
+
+        return;
+
+    }
+
+
+
 
 
 
@@ -2338,6 +2394,9 @@ window.approveBonus = async function(id){
 
 
 
+
+
+
     const user =
     userSnap.val();
 
@@ -2353,29 +2412,45 @@ window.approveBonus = async function(id){
 
 
 
-    await update(userRef,{
 
+
+
+
+    // ADD BONUS TO BALANCE
+
+    await update(userRef,{
 
         balance:
         oldBalance + amount
 
-
     });
 
 
+
+
+
+
+
+
+    // UPDATE BONUS STATUS
 
     await update(bonusRef,{
 
-
         status:"approved",
 
-        approvedAt:
-        Date.now()
-
+        approvedAt:Date.now()
 
     });
 
 
+
+
+
+
+
+
+
+    // SAVE TRANSACTION
 
     await set(
     push(ref(db,"transactions")),
@@ -2391,6 +2466,8 @@ window.approveBonus = async function(id){
 
         status:"approved",
 
+        reference:id,
+
         date:Date.now()
 
 
@@ -2398,8 +2475,13 @@ window.approveBonus = async function(id){
 
 
 
-    alert("Bonus Approved");
 
+
+
+
+
+
+    alert("Bonus Approved Successfully");
 
 
 };
@@ -2408,9 +2490,16 @@ window.approveBonus = async function(id){
 
 
 
+
+
+
+
+
+
 // ================================
-// REJECT BONUS
+// REJECT BONUS ONCE
 // ================================
+
 
 window.rejectBonus = async function(id){
 
@@ -2426,7 +2515,11 @@ window.rejectBonus = async function(id){
 
 
 
-    if(!snapshot.exists()) return;
+    if(!snapshot.exists()){
+
+        return;
+
+    }
 
 
 
@@ -2435,54 +2528,20 @@ window.rejectBonus = async function(id){
 
 
 
-    await update(bonusRef,{
-
-
-        status:"rejected",
-
-        rejectedAt:
-        Date.now()
-
-
-    });
-
-
-
-    await set(
-    push(ref(db,"transactions")),
-
-    {
-
-
-        uid:bonus.uid,
-
-        type:"bonus",
-
-        amount:Number(bonus.amount || 0),
-
-        status:"rejected",
-
-        date:Date.now()
-
-
-    });
-
-
-
-    alert("Bonus Rejected");
-
-
-
-};
 
 
 
 
-// ================================
-// AUTO LOAD
-// ================================
 
-loadBonusRequests();
+    // BLOCK DOUBLE ACTION
+
+    if(bonus.status !== "pending"){
+
+
+        alert("This bonus request was already processed");
+
+
+        return
 
       // ======================================
 // USERS MANAGEMENT
