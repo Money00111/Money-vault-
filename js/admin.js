@@ -2805,55 +2805,29 @@ document.getElementById(
 if(refreshDashboard){
 
 
-
-    refreshDashboard.addEventListener(
+refreshDashboard.addEventListener(
     "click",
     ()=>{
 
+        loadDashboardFinal();
 
-        loadDashboard();
+        if (typeof loadDeposits === "function") loadDeposits();
 
+        if (typeof loadWithdraws === "function") loadWithdraws();
 
-        loadDeposits();
+        if (typeof loadVipRequests === "function") loadVipRequests();
 
+        if (typeof loadBonusRequests === "function") loadBonusRequests();
 
-        loadWithdraws();
+        if (typeof loadUsers === "function") loadUsers();
 
+        if (typeof loadTransactions === "function") loadTransactions();
 
-        loadVipRequests();
+        alert("Dashboard Refreshed");
 
-
-        loadBonusRequests();
-
-
-        loadUsers();
-
-
-        loadTransactions();
-
-
-
-
-
-        alert(
-        "Dashboard Refreshed"
-        );
-
-
-
-    });
-
-
-
-}
-
-
-
-
-
-
-
-
+    }
+);
+    
 
 // ================================
 // QUICK OPEN BUTTON
