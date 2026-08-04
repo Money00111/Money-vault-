@@ -91,7 +91,6 @@ onAuthStateChanged(auth,(user)=>{
 
     loadTransactions(user);
 
-    createReferral(user);
 
     loadNotifications();
 
