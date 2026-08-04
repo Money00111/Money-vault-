@@ -194,21 +194,6 @@ function updateText(id, value) {
 
 
 // ================================
-// LOAD DASHBOARD
-// ================================
-
-function loadDashboardFinal() {
-
-    loadUsersCount();
-    loadDepositStatistics();
-    loadWithdrawStatistics();
-    loadSystemBalance();
-    loadRecentActivity();
-
-}
-
-
-// ================================
 // TOTAL USERS
 // ================================
 
