@@ -1108,9 +1108,10 @@ window.rejectDeposit = async function(id){
 
 loadDeposits();
 
+
 // ======================================
-// WITHDRAW MANAGEMENT
-// PART 4
+// WITHDRAW MANAGEMENT FINAL
+// PART 11
 // ======================================
 
 
@@ -1118,6 +1119,7 @@ loadDeposits();
 // ================================
 // LOAD WITHDRAW REQUESTS
 // ================================
+
 
 function loadWithdraws(){
 
@@ -1132,7 +1134,6 @@ function loadWithdraws(){
 
         const list =
         document.getElementById("withdrawList");
-
 
 
         const empty =
@@ -1177,28 +1178,39 @@ function loadWithdraws(){
         .forEach(([id,withdraw])=>{
 
 
+
+            const status =
+            withdraw.status || "pending";
+
+
+
             const card =
             document.createElement("div");
 
 
-            card.className="request-card";
+
+            card.className =
+            "request-card";
 
 
 
-            card.innerHTML=`
+            card.innerHTML = `
 
 
 <div class="request-top">
 
 
 <h3>
+
 Withdraw Request
+
 </h3>
 
 
-<span class="status ${withdraw.status || "pending"}">
 
-${withdraw.status || "pending"}
+<span class="status ${status}">
+
+${status}
 
 </span>
 
@@ -1231,7 +1243,8 @@ ${withdraw.email || "-"}
 
 <strong>Amount:</strong>
 
-${Number(withdraw.amount || 0).toLocaleString()} RWF
+${Number(withdraw.amount || 0)
+.toLocaleString()} RWF
 
 </p>
 
@@ -1257,11 +1270,16 @@ ${withdraw.method || "-"}
 
 
 
+
 <div class="action-buttons">
 
 
-<button 
+<button
+
 class="approveBtn"
+
+${status !== "pending" ? "disabled" : ""}
+
 onclick="approveWithdraw('${id}')">
 
 
@@ -1274,8 +1292,13 @@ Approve
 
 
 
-<button 
+
+<button
+
 class="rejectBtn"
+
+${status !== "pending" ? "disabled" : ""}
+
 onclick="rejectWithdraw('${id}')">
 
 
@@ -1289,7 +1312,6 @@ Reject
 
 
 </div>
-
 
 
 `;
@@ -1314,9 +1336,11 @@ Reject
 
 
 
+
 // ================================
-// APPROVE WITHDRAW
+// APPROVE WITHDRAW ONCE
 // ================================
+
 
 window.approveWithdraw = async function(id){
 
@@ -1332,7 +1356,11 @@ window.approveWithdraw = async function(id){
 
 
 
-    if(!snapshot.exists()) return;
+    if(!snapshot.exists()){
+
+        return;
+
+    }
 
 
 
@@ -1341,15 +1369,18 @@ window.approveWithdraw = async function(id){
 
 
 
-    if(withdraw.status==="approved"){
+    // BLOCK DOUBLE APPROVE
+
+    if(withdraw.status !== "pending"){
 
 
-        alert("Already approved");
+        alert("This withdraw was already processed");
 
 
         return;
 
     }
+
 
 
 
@@ -1390,10 +1421,12 @@ window.approveWithdraw = async function(id){
 
 
 
+
+
     if(balance < amount){
 
 
-        alert("User balance is not enough");
+        alert("Insufficient user balance");
 
 
         return;
@@ -1402,29 +1435,40 @@ window.approveWithdraw = async function(id){
 
 
 
-    await update(userRef,{
 
+
+
+    // REMOVE MONEY
+
+    await update(userRef,{
 
         balance:
         balance - amount
 
-
     });
 
 
+
+
+
+
+    // UPDATE STATUS
 
     await update(withdrawRef,{
 
-
         status:"approved",
 
-        approvedAt:
-        Date.now()
-
+        approvedAt:Date.now()
 
     });
 
 
+
+
+
+
+
+    // SAVE TRANSACTION
 
     await set(
     push(ref(db,"transactions")),
@@ -1440,6 +1484,8 @@ window.approveWithdraw = async function(id){
 
         status:"approved",
 
+        reference:id,
+
         date:Date.now()
 
 
@@ -1447,8 +1493,10 @@ window.approveWithdraw = async function(id){
 
 
 
-    alert("Withdraw Approved");
 
+
+
+    alert("Withdraw Approved Successfully");
 
 
 };
@@ -1457,9 +1505,13 @@ window.approveWithdraw = async function(id){
 
 
 
+
+
+
 // ================================
-// REJECT WITHDRAW
+// REJECT WITHDRAW ONCE
 // ================================
+
 
 window.rejectWithdraw = async function(id){
 
@@ -1475,7 +1527,11 @@ window.rejectWithdraw = async function(id){
 
 
 
-    if(!snapshot.exists()) return;
+    if(!snapshot.exists()){
+
+        return;
+
+    }
 
 
 
@@ -1484,16 +1540,36 @@ window.rejectWithdraw = async function(id){
 
 
 
-    await update(withdrawRef,{
 
+
+
+    // BLOCK DOUBLE REJECT
+
+    if(withdraw.status !== "pending"){
+
+
+        alert("This withdraw was already processed");
+
+
+        return;
+
+    }
+
+
+
+
+
+    await update(withdrawRef,{
 
         status:"rejected",
 
-        rejectedAt:
-        Date.now()
-
+        rejectedAt:Date.now()
 
     });
+
+
+
+
 
 
 
@@ -1511,6 +1587,8 @@ window.rejectWithdraw = async function(id){
 
         status:"rejected",
 
+        reference:id,
+
         date:Date.now()
 
 
@@ -1518,8 +1596,11 @@ window.rejectWithdraw = async function(id){
 
 
 
-    alert("Withdraw Rejected");
 
+
+
+
+    alert("Withdraw Rejected Successfully");
 
 
 };
@@ -1527,12 +1608,16 @@ window.rejectWithdraw = async function(id){
 
 
 
+
+
+
 // ================================
-// AUTO LOAD
+// START WITHDRAW SYSTEM
 // ================================
 
 loadWithdraws();
 
+    
         // ======================================
 // VIP REQUEST MANAGEMENT
 // PART 5
