@@ -1618,9 +1618,9 @@ window.rejectWithdraw = async function(id){
 loadWithdraws();
 
     
-        // ======================================
-// VIP REQUEST MANAGEMENT
-// PART 5
+// ======================================
+// VIP REQUEST MANAGEMENT FINAL
+// PART 12
 // ======================================
 
 
@@ -1628,6 +1628,7 @@ loadWithdraws();
 // ================================
 // LOAD VIP REQUESTS
 // ================================
+
 
 function loadVipRequests(){
 
@@ -1642,7 +1643,6 @@ function loadVipRequests(){
 
         const list =
         document.getElementById("vipRequestList");
-
 
 
         const empty =
@@ -1682,16 +1682,26 @@ function loadVipRequests(){
 
 
 
+
+
         Object.entries(snapshot.val())
         .reverse()
         .forEach(([id,vip])=>{
+
+
+
+            const status =
+            vip.status || "pending";
+
 
 
             const card =
             document.createElement("div");
 
 
-            card.className="request-card";
+
+            card.className =
+            "request-card";
 
 
 
@@ -1708,14 +1718,16 @@ ${vip.vipName || "VIP Plan"}
 </h3>
 
 
-<span class="status ${vip.status || "pending"}">
 
-${vip.status || "pending"}
+<span class="status ${status}">
+
+${status}
 
 </span>
 
 
 </div>
+
 
 
 
@@ -1728,6 +1740,8 @@ ${vip.name || "-"}
 </p>
 
 
+
+
 <p>
 
 <strong>Email:</strong>
@@ -1737,13 +1751,17 @@ ${vip.email || "-"}
 </p>
 
 
+
+
 <p>
 
 <strong>VIP Price:</strong>
 
-${Number(vip.price || 0).toLocaleString()} RWF
+${Number(vip.price || 0)
+.toLocaleString()} RWF
 
 </p>
+
 
 
 
@@ -1751,9 +1769,11 @@ ${Number(vip.price || 0).toLocaleString()} RWF
 
 <strong>Daily Income:</strong>
 
-${Number(vip.dailyIncome || 0).toLocaleString()} RWF
+${Number(vip.dailyIncome || 0)
+.toLocaleString()} RWF
 
 </p>
+
 
 
 
@@ -1767,6 +1787,7 @@ ${vip.duration || 0} Days
 
 
 
+
 <div class="action-buttons">
 
 
@@ -1774,13 +1795,19 @@ ${vip.duration || 0} Days
 
 class="approveBtn"
 
+${status !== "pending" ? "disabled" : ""}
+
 onclick="approveVip('${id}')">
+
 
 <i class="fa-solid fa-circle-check"></i>
 
 Approve VIP
 
+
 </button>
+
+
 
 
 
@@ -1788,11 +1815,15 @@ Approve VIP
 
 class="rejectBtn"
 
+${status !== "pending" ? "disabled" : ""}
+
 onclick="rejectVip('${id}')">
+
 
 <i class="fa-solid fa-circle-xmark"></i>
 
 Reject VIP
+
 
 </button>
 
@@ -1823,9 +1854,15 @@ Reject VIP
 
 
 
+
+
+
+
+
 // ================================
-// APPROVE VIP
+// APPROVE VIP ONCE
 // ================================
+
 
 window.approveVip = async function(id){
 
@@ -1841,7 +1878,11 @@ window.approveVip = async function(id){
 
 
 
-    if(!snapshot.exists()) return;
+    if(!snapshot.exists()){
+
+        return;
+
+    }
 
 
 
@@ -1850,16 +1891,35 @@ window.approveVip = async function(id){
 
 
 
-    await update(vipRef,{
 
+
+    // BLOCK DOUBLE ACTION
+
+    if(vip.status !== "pending"){
+
+
+        alert("This VIP request was already processed");
+
+
+        return;
+
+    }
+
+
+
+
+
+    await update(vipRef,{
 
         status:"approved",
 
-        approvedAt:
-        Date.now()
-
+        approvedAt:Date.now()
 
     });
+
+
+
+
 
 
 
@@ -1877,7 +1937,10 @@ window.approveVip = async function(id){
 
         status:"approved",
 
-        vipName:vip.vipName || "",
+        vipName:
+        vip.vipName || "",
+
+        reference:id,
 
         date:Date.now()
 
@@ -1886,8 +1949,11 @@ window.approveVip = async function(id){
 
 
 
-    alert("VIP Approved");
 
+
+
+
+    alert("VIP Approved Successfully");
 
 
 };
@@ -1896,9 +1962,15 @@ window.approveVip = async function(id){
 
 
 
+
+
+
+
+
 // ================================
-// REJECT VIP
+// REJECT VIP ONCE
 // ================================
+
 
 window.rejectVip = async function(id){
 
@@ -1914,7 +1986,11 @@ window.rejectVip = async function(id){
 
 
 
-    if(!snapshot.exists()) return;
+    if(!snapshot.exists()){
+
+        return;
+
+    }
 
 
 
@@ -1923,16 +1999,39 @@ window.rejectVip = async function(id){
 
 
 
-    await update(vipRef,{
 
+
+
+
+    // BLOCK DOUBLE ACTION
+
+    if(vip.status !== "pending"){
+
+
+        alert("This VIP request was already processed");
+
+
+        return;
+
+    }
+
+
+
+
+
+
+
+    await update(vipRef,{
 
         status:"rejected",
 
-        rejectedAt:
-        Date.now()
-
+        rejectedAt:Date.now()
 
     });
+
+
+
+
 
 
 
@@ -1950,7 +2049,10 @@ window.rejectVip = async function(id){
 
         status:"rejected",
 
-        vipName:vip.vipName || "",
+        vipName:
+        vip.vipName || "",
+
+        reference:id,
 
         date:Date.now()
 
@@ -1959,7 +2061,11 @@ window.rejectVip = async function(id){
 
 
 
-    alert("VIP Rejected");
+
+
+
+
+    alert("VIP Rejected Successfully");
 
 
 };
@@ -1967,11 +2073,15 @@ window.rejectVip = async function(id){
 
 
 
+
+
+
 // ================================
-// AUTO LOAD
+// START VIP SYSTEM
 // ================================
 
 loadVipRequests();
+
 
 // ======================================
 // BONUS REQUEST MANAGEMENT
