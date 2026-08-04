@@ -6,7 +6,11 @@
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
 
-import { getAuth } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+import {
+    getAuth,
+    setPersistence,
+    browserLocalPersistence
+} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 
 import { getDatabase } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
 
@@ -45,6 +49,31 @@ const app = initializeApp(firebaseConfig);
 // ======================================
 
 const auth = getAuth(app);
+
+// ======================================
+// AUTH PERSISTENCE
+// KEEP USER LOGIN
+// ======================================
+
+setPersistence(
+    auth,
+    browserLocalPersistence
+)
+.then(() => {
+
+    console.log(
+        "Auth persistence enabled"
+    );
+
+})
+.catch((error)=>{
+
+    console.error(
+        "Auth persistence error:",
+        error
+    );
+
+});
 
 const db = getDatabase(app);
 
