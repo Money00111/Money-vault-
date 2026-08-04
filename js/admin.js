@@ -1573,7 +1573,7 @@ window.approveBonus = async function(id){
 
 
     const userRef =
-    ref(db,"users/"+bonus.uid");
+    ref(db,"users/"+bonus.uid);
 
 
 
@@ -1819,4 +1819,843 @@ window.rejectBonus = async function(id){
 // ================================
 
 loadBonusRequests();    
+
+// ======================================
+// USERS MANAGEMENT FINAL
+// PART 7
+// ======================================
+
+
+
+// ================================
+// LOAD USERS
+// ================================
+
+function loadUsers(){
+
+
+    const usersRef =
+    ref(db,"users");
+
+
+
+    onValue(usersRef,(snapshot)=>{
+
+
+        const list =
+        document.getElementById("usersList");
+
+
+        const empty =
+        document.getElementById("emptyUsers");
+
+
+
+        if(!list) return;
+
+
+
+        list.innerHTML = "";
+
+
+
+        if(!snapshot.exists()){
+
+
+            if(empty){
+
+                empty.style.display="block";
+
+            }
+
+            return;
+
+        }
+
+
+
+
+        if(empty){
+
+            empty.style.display="none";
+
+        }
+
+
+
+
+
+
+        Object.entries(snapshot.val())
+        .reverse()
+        .forEach(([uid,user])=>{
+
+
+
+            const card =
+            document.createElement("div");
+
+
+
+            card.className =
+            "user-card";
+
+
+
+            card.innerHTML = `
+
+
+<div class="user-header">
+
+
+<i class="fa-solid fa-user"></i>
+
+
+<h3>
+
+${user.name || "User"}
+
+</h3>
+
+
+</div>
+
+
+
+
+<p>
+
+<strong>Email:</strong>
+
+${user.email || "-"}
+
+</p>
+
+
+
+
+<p>
+
+<strong>Phone:</strong>
+
+${user.phone || "-"}
+
+</p>
+
+
+
+
+<p>
+
+<strong>Balance:</strong>
+
+${Number(user.balance || 0)
+.toLocaleString()} RWF
+
+</p>
+
+
+
+
+<p>
+
+<strong>VIP:</strong>
+
+${user.vip || "None"}
+
+</p>
+
+
+
+
+<p>
+
+<strong>Status:</strong>
+
+${user.status || "active"}
+
+</p>
+
+
+
+
+
+
+<div class="action-buttons">
+
+
+<button
+
+class="viewBtn"
+
+onclick="viewUser('${uid}')">
+
+
+<i class="fa-solid fa-eye"></i>
+
+View
+
+</button>
+
+
+
+
+
+<button
+
+class="deleteBtn"
+
+onclick="deleteUser('${uid}')">
+
+
+<i class="fa-solid fa-trash"></i>
+
+Delete
+
+</button>
+
+
+</div>
+
+
+
+`;
+
+
+
+            list.appendChild(card);
+
+
+
+        });
+
+
+
+    });
+
+
+
+}
+
+
+
+
+
+
+
+
+// ================================
+// VIEW USER
+// ================================
+
+window.viewUser = async function(uid){
+
+
+
+    const userRef =
+    ref(db,"users/"+uid);
+
+
+
+    const snapshot =
+    await get(userRef);
+
+
+
+    if(!snapshot.exists()) return;
+
+
+
+    const user =
+    snapshot.val();
+
+
+
+
+
+
+    alert(`
+
+Name:
+${user.name || "-"}
+
+
+Email:
+${user.email || "-"}
+
+
+Phone:
+${user.phone || "-"}
+
+
+Balance:
+${Number(user.balance || 0)
+.toLocaleString()} RWF
+
+
+VIP:
+${user.vip || "None"}
+
+
+Status:
+${user.status || "active"}
+
+`);
+
+
+
+
+};
+
+
+
+
+
+
+
+
+
+// ================================
+// DELETE USER
+// ================================
+
+window.deleteUser = async function(uid){
+
+
+
+    const confirmDelete =
+    confirm(
+    "Are you sure you want to delete this user?"
+    );
+
+
+
+    if(!confirmDelete) return;
+
+
+
+
+
+
+    await remove(
+        ref(db,"users/"+uid)
+    );
+
+
+
+
+
+
+    alert(
+    "User deleted successfully"
+    );
+
+
+
+};
+
+
+
+
+
+
+
+
+
+// ================================
+// USER SEARCH
+// ================================
+
+const userSearch =
+document.getElementById("userSearch");
+
+
+
+if(userSearch){
+
+
+
+    userSearch.addEventListener(
+    "input",
+    ()=>{
+
+
+        const value =
+        userSearch.value
+        .toLowerCase();
+
+
+
+
+        document
+        .querySelectorAll(".user-card")
+        .forEach(card=>{
+
+
+
+            const text =
+            card.innerText
+            .toLowerCase();
+
+
+
+
+            if(text.includes(value)){
+
+
+                card.style.display="block";
+
+
+            }else{
+
+
+                card.style.display="none";
+
+
+            }
+
+
+
+        });
+
+
+
+    });
+
+
+
+}
+
+
+
+
+
+
+
+
+// ================================
+// START USERS SYSTEM
+// ================================
+
+loadUsers();
+
+// ======================================
+// USERS MANAGEMENT FINAL
+// PART 7
+// ======================================
+
+
+
+// ================================
+// LOAD USERS
+// ================================
+
+function loadUsers(){
+
+
+    const usersRef =
+    ref(db,"users");
+
+
+
+    onValue(usersRef,(snapshot)=>{
+
+
+        const list =
+        document.getElementById("usersList");
+
+
+        const empty =
+        document.getElementById("emptyUsers");
+
+
+
+        if(!list) return;
+
+
+
+        list.innerHTML = "";
+
+
+
+        if(!snapshot.exists()){
+
+
+            if(empty){
+
+                empty.style.display="block";
+
+            }
+
+            return;
+
+        }
+
+
+
+
+        if(empty){
+
+            empty.style.display="none";
+
+        }
+
+
+
+
+
+
+        Object.entries(snapshot.val())
+        .reverse()
+        .forEach(([uid,user])=>{
+
+
+
+            const card =
+            document.createElement("div");
+
+
+
+            card.className =
+            "user-card";
+
+
+
+            card.innerHTML = `
+
+
+<div class="user-header">
+
+
+<i class="fa-solid fa-user"></i>
+
+
+<h3>
+
+${user.name || "User"}
+
+</h3>
+
+
+</div>
+
+
+
+
+<p>
+
+<strong>Email:</strong>
+
+${user.email || "-"}
+
+</p>
+
+
+
+
+<p>
+
+<strong>Phone:</strong>
+
+${user.phone || "-"}
+
+</p>
+
+
+
+
+<p>
+
+<strong>Balance:</strong>
+
+${Number(user.balance || 0)
+.toLocaleString()} RWF
+
+</p>
+
+
+
+
+<p>
+
+<strong>VIP:</strong>
+
+${user.vip || "None"}
+
+</p>
+
+
+
+
+<p>
+
+<strong>Status:</strong>
+
+${user.status || "active"}
+
+</p>
+
+
+
+
+
+
+<div class="action-buttons">
+
+
+<button
+
+class="viewBtn"
+
+onclick="viewUser('${uid}')">
+
+
+<i class="fa-solid fa-eye"></i>
+
+View
+
+</button>
+
+
+
+
+
+<button
+
+class="deleteBtn"
+
+onclick="deleteUser('${uid}')">
+
+
+<i class="fa-solid fa-trash"></i>
+
+Delete
+
+</button>
+
+
+</div>
+
+
+
+`;
+
+
+
+            list.appendChild(card);
+
+
+
+        });
+
+
+
+    });
+
+
+
+}
+
+
+
+
+
+
+
+
+// ================================
+// VIEW USER
+// ================================
+
+window.viewUser = async function(uid){
+
+
+
+    const userRef =
+    ref(db,"users/"+uid);
+
+
+
+    const snapshot =
+    await get(userRef);
+
+
+
+    if(!snapshot.exists()) return;
+
+
+
+    const user =
+    snapshot.val();
+
+
+
+
+
+
+    alert(`
+
+Name:
+${user.name || "-"}
+
+
+Email:
+${user.email || "-"}
+
+
+Phone:
+${user.phone || "-"}
+
+
+Balance:
+${Number(user.balance || 0)
+.toLocaleString()} RWF
+
+
+VIP:
+${user.vip || "None"}
+
+
+Status:
+${user.status || "active"}
+
+`);
+
+
+
+
+};
+
+
+
+
+
+
+
+
+
+// ================================
+// DELETE USER
+// ================================
+
+window.deleteUser = async function(uid){
+
+
+
+    const confirmDelete =
+    confirm(
+    "Are you sure you want to delete this user?"
+    );
+
+
+
+    if(!confirmDelete) return;
+
+
+
+
+
+
+    await remove(
+        ref(db,"users/"+uid)
+    );
+
+
+
+
+
+
+    alert(
+    "User deleted successfully"
+    );
+
+
+
+};
+
+
+
+
+
+
+
+
+
+// ================================
+// USER SEARCH
+// ================================
+
+const userSearch =
+document.getElementById("userSearch");
+
+
+
+if(userSearch){
+
+
+
+    userSearch.addEventListener(
+    "input",
+    ()=>{
+
+
+        const value =
+        userSearch.value
+        .toLowerCase();
+
+
+
+
+        document
+        .querySelectorAll(".user-card")
+        .forEach(card=>{
+
+
+
+            const text =
+            card.innerText
+            .toLowerCase();
+
+
+
+
+            if(text.includes(value)){
+
+
+                card.style.display="block";
+
+
+            }else{
+
+
+                card.style.display="none";
+
+
+            }
+
+
+
+        });
+
+
+
+    });
+
+
+
+}
+
+
+
+
+
+
+
+
+// ================================
+// START USERS SYSTEM
+// ================================
+
+loadUsers();
+
 
