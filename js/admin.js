@@ -321,56 +321,6 @@ function loadSystemBalance() {
 
 }
 
-
-// ================================
-// RECENT ACTIVITY
-// ================================
-
-function loadRecentActivity() {
-
-    const activityBox =
-        document.getElementById("recentActivity");
-
-    if (!activityBox) return;
-
-    onValue(ref(db, "transactions"), (snapshot) => {
-
-        activityBox.innerHTML = "";
-
-        if (!snapshot.exists()) {
-
-            activityBox.innerHTML =
-                "<p>No recent activity</p>";
-
-            return;
-
-        }
-
-        Object.entries(snapshot.val())
-            .reverse()
-            .slice(0, 10)
-            .forEach(([id, item]) => {
-
-                const div = document.createElement("div");
-
-                div.className = "activity-item";
-
-                div.innerHTML = `
-                    <strong>${(item.type || "transaction").toUpperCase()}</strong>
-                    - ${Number(item.amount || 0).toLocaleString()} RWF
-                    <span class="status ${item.status}">
-                        ${item.status}
-                    </span>
-                `;
-
-                activityBox.appendChild(div);
-
-            });
-
-    });
-
-}
-
 // ======================================
 // WITHDRAW MANAGEMENT FINAL
 // PART 4
