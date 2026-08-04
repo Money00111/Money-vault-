@@ -75,26 +75,35 @@ logoutBtn?.addEventListener("click", async (e) => {
 });
 
 // ======================================
-// AUTH
+// AUTH CHECK FIXED
 // ======================================
 
-onAuthStateChanged(auth,(user)=>{
+onAuthStateChanged(auth, (user) => {
 
-    if(!user){
+    if (user) {
 
-        location.href="login.html";
-        return;
+        loadUser(user);
+
+        loadTransactions(user);
+
+        loadNotifications();
+
+    } else {
+
+        setTimeout(() => {
+
+            if (!auth.currentUser) {
+
+                location.href = "login.html";
+
+            }
+
+        }, 1500);
 
     }
 
-    loadUser(user);
-
-    loadTransactions(user);
-
-
-    loadNotifications();
-
 });
+
 
 // ======================================
 // LOAD USER
