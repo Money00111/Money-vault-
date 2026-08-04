@@ -3823,6 +3823,202 @@ console.log(
 );
 
 
+// ======================================
+// FINAL VERIFICATION SYSTEM
+// PART 12
+// ======================================
+
+
+
+// ================================
+// FIREBASE CONNECTION CHECK
+// ================================
+
+
+function checkFirebaseConnection(){
+
+
+    if(!db){
+
+
+        console.error(
+        "Firebase database not connected"
+        );
+
+
+        return false;
+
+    }
+
+
+
+    return true;
+
+
+}
+
+
+
+
+
+
+
+
+
+// ================================
+// REQUIRED FUNCTIONS CHECK
+// ================================
+
+
+function checkAdminFunctions(){
+
+
+
+    const requiredFunctions = [
+
+
+        "loadDashboardFinal",
+
+        "loadDeposits",
+
+        "loadWithdraws",
+
+        "loadVipRequests",
+
+        "loadBonusRequests",
+
+        "loadUsers",
+
+        "loadTransactions"
+
+
+    ];
+
+
+
+
+
+    requiredFunctions.forEach(name=>{
+
+
+
+        if(typeof window[name] === "undefined"
+        &&
+        typeof eval(name) !== "function"){
+
+
+
+            console.warn(
+            "Missing function:",
+            name
+            );
+
+
+
+        }
+
+
+
+    });
+
+
+
+}
+
+
+
+
+
+
+
+
+
+// ================================
+// CLEAN EMPTY VALUES
+// ================================
+
+
+function cleanValue(value){
+
+
+    if(
+    value === null ||
+    value === undefined ||
+    value === ""
+    ){
+
+
+        return "-";
+
+
+    }
+
+
+
+    return value;
+
+
+}
+
+
+
+
+
+
+
+
+
+// ================================
+// NUMBER FORMAT HELPER
+// ================================
+
+
+function formatMoney(value){
+
+
+    return Number(value || 0)
+    .toLocaleString()
+    +" RWF";
+
+
+}
+
+
+
+
+
+
+
+
+
+// ================================
+// FINAL START CHECK
+// ================================
+
+
+setTimeout(()=>{
+
+
+
+    if(checkFirebaseConnection()){
+
+
+        checkAdminFunctions();
+
+
+
+        console.log(
+        "Money Vault Admin verification completed"
+        );
+
+
+
+    }
+
+
+
+},2000);
+
 
 
  
