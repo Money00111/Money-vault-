@@ -93,61 +93,64 @@ export async function registerUser(
         });
 
         // ==========================
-        // REFERRAL
-        // ==========================
+// REFERRAL SAVE ONLY
+// BONUS GIVEN AFTER VIP APPROVAL
+// ==========================
 
-        if (referralCode && referralCode.trim() !== "") {
-            const usersRef = ref(db, "users");
+if (referralCode && referralCode.trim() !== "") {
 
-            const snapshot = await get(usersRef);
+    const usersRef = ref(db, "users");
 
-            if (snapshot.exists()) {
+    const snapshot = await get(usersRef);
 
-                snapshot.forEach(async (child) => {
 
-                    const data = child.val();
+    if (snapshot.exists()) {
 
-                    if (data.referralCode === referralCode) {
 
-                        await update(
-                            ref(db, "users/" + user.uid),
-                            {
-                                referredBy: child.key
-                            }
-                        );
+        snapshot.forEach(async (child) => {
 
-                        await update(
-                            ref(db, "users/" + child.key),
-                            {
-                                referralCount:
-                                    Number(data.referralCount || 0) + 1,
 
-                                referralBonus:
-                                    Number(data.referralBonus || 0) + 500
-                            }
-                        );
+            const data = child.val();
+
+
+            if (data.referralCode === referralCode) {
+
+
+                await update(
+                    ref(db, "users/" + user.uid),
+                    {
+
+                        referredBy:
+                        child.key,
+
+                        referralBonusGiven:
+                        false
 
                     }
+                );
 
-                });
+
+                await update(
+                    ref(db, "users/" + child.key),
+                    {
+
+                        referralCount:
+                        Number(data.referralCount || 0) + 1
+
+                    }
+                );
+
 
             }
 
-        }
 
-        alert("Registration Successful!\n500 RWF Bonus Added.");
+        });
 
-        return true;
-
-    } catch (error) {
-
-        alert(error.message);
-
-        return false;
 
     }
 
-  }
+}
+
 // ======================================
 // auth.js - PART 2
 // LOGIN • LOGOUT • RESET PASSWORD
