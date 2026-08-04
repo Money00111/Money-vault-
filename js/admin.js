@@ -387,215 +387,1436 @@ function loadRecentActivity() {
 }
 
 // ======================================
-// ADMIN.JS - PART 2
-// DASHBOARD FUNCTIONS
+// WITHDRAW MANAGEMENT FINAL
+// PART 4
 // ======================================
 
-// ================================
-// UPDATE TEXT HELPER
-// ================================
-
-function updateText(id, value) {
-
-    const element = document.getElementById(id);
-
-    if (element) {
-        element.textContent = value;
-    }
-
-}
-
 
 // ================================
-// LOAD DASHBOARD
+// LOAD WITHDRAW REQUESTS
 // ================================
 
-function loadDashboardFinal() {
+function loadWithdraws(){
 
-    loadUsersCount();
-    loadDepositStatistics();
-    loadWithdrawStatistics();
-    loadSystemBalance();
-    loadRecentActivity();
-
-}
+    const withdrawRef =
+    ref(db,"withdrawRequests");
 
 
-// ================================
-// TOTAL USERS
-// ================================
-
-function loadUsersCount() {
-
-    onValue(ref(db, "users"), (snapshot) => {
-
-        const total = snapshot.exists()
-            ? Object.keys(snapshot.val()).length
-            : 0;
-
-        updateText("totalUsers", total);
-
-    });
-
-}
+    onValue(withdrawRef,(snapshot)=>{
 
 
-// ================================
-// DEPOSIT STATISTICS
-// ================================
-
-function loadDepositStatistics() {
-
-    onValue(ref(db, "depositRequests"), (snapshot) => {
-
-        let total = 0;
-        let pending = 0;
-        let approved = 0;
-        let rejected = 0;
-
-        if (snapshot.exists()) {
-
-            Object.values(snapshot.val()).forEach(item => {
-
-                total++;
-
-                if (item.status === "pending") pending++;
-                else if (item.status === "approved") approved++;
-                else if (item.status === "rejected") rejected++;
-
-            });
-
-        }
-
-        updateText("dashboardTotalDeposits", total);
-        updateText("dashboardPendingDeposits", pending);
-        updateText("dashboardApprovedDeposits", approved);
-
-        updateText("depositTotalCount", total);
-        updateText("depositPendingCount", pending);
-        updateText("depositApprovedCount", approved);
-        updateText("depositRejectedCount", rejected);
-
-    });
-
-}
+        const list =
+        document.getElementById("withdrawList");
 
 
-// ================================
-// WITHDRAW STATISTICS
-// ================================
-
-function loadWithdrawStatistics() {
-
-    onValue(ref(db, "withdrawRequests"), (snapshot) => {
-
-        let total = 0;
-        let pending = 0;
-        let approved = 0;
-        let rejected = 0;
-
-        if (snapshot.exists()) {
-
-            Object.values(snapshot.val()).forEach(item => {
-
-                total++;
-
-                if (item.status === "pending") pending++;
-                else if (item.status === "approved") approved++;
-                else if (item.status === "rejected") rejected++;
-
-            });
-
-        }
-
-        updateText("dashboardTotalWithdraws", total);
-
-        updateText("withdrawTotalCount", total);
-        updateText("withdrawPendingCount", pending);
-        updateText("withdrawApprovedCount", approved);
-        updateText("withdrawRejectedCount", rejected);
-
-    });
-
-}
+        const empty =
+        document.getElementById("emptyWithdraw");
 
 
-// ================================
-// SYSTEM BALANCE
-// ================================
-
-function loadSystemBalance() {
-
-    onValue(ref(db, "users"), (snapshot) => {
-
-        let totalBalance = 0;
-
-        if (snapshot.exists()) {
-
-            Object.values(snapshot.val()).forEach(user => {
-
-                totalBalance += Number(user.balance || 0);
-
-            });
-
-        }
-
-        updateText(
-            "systemBalance",
-            totalBalance.toLocaleString() + " RWF"
-        );
-
-    });
-
-}
+        if(!list) return;
 
 
-// ================================
-// RECENT ACTIVITY
-// ================================
+        list.innerHTML="";
 
-function loadRecentActivity() {
 
-    const activityBox =
-        document.getElementById("recentActivity");
+        if(!snapshot.exists()){
 
-    if (!activityBox) return;
 
-    onValue(ref(db, "transactions"), (snapshot) => {
+            if(empty){
 
-        activityBox.innerHTML = "";
+                empty.style.display="block";
 
-        if (!snapshot.exists()) {
-
-            activityBox.innerHTML =
-                "<p>No recent activity</p>";
+            }
 
             return;
 
         }
 
+
+
+        if(empty){
+
+            empty.style.display="none";
+
+        }
+
+
+
         Object.entries(snapshot.val())
-            .reverse()
-            .slice(0, 10)
-            .forEach(([id, item]) => {
+        .reverse()
+        .forEach(([id,withdraw])=>{
 
-                const div = document.createElement("div");
 
-                div.className = "activity-item";
+            const status =
+            withdraw.status || "pending";
 
-                div.innerHTML = `
-                    <strong>${(item.type || "transaction").toUpperCase()}</strong>
-                    - ${Number(item.amount || 0).toLocaleString()} RWF
-                    <span class="status ${item.status}">
-                        ${item.status}
-                    </span>
-                `;
 
-                activityBox.appendChild(div);
+            const card =
+            document.createElement("div");
 
-            });
+
+            card.className =
+            "request-card";
+
+
+
+            card.innerHTML = `
+
+
+<div class="request-top">
+
+<h3>
+Withdraw Request
+</h3>
+
+
+<span class="status ${status}">
+${status}
+</span>
+
+
+</div>
+
+
+
+<p>
+<strong>Name:</strong>
+${withdraw.name || "-"}
+</p>
+
+
+<p>
+<strong>Email:</strong>
+${withdraw.email || "-"}
+</p>
+
+
+<p>
+<strong>Amount:</strong>
+${Number(withdraw.amount || 0)
+.toLocaleString()} RWF
+</p>
+
+
+<p>
+<strong>Phone:</strong>
+${withdraw.phone || "-"}
+</p>
+
+
+<p>
+<strong>Method:</strong>
+${withdraw.method || "-"}
+</p>
+
+
+
+<div class="action-buttons">
+
+
+<button
+
+class="approveBtn"
+
+${status !== "pending" ? "disabled" : ""}
+
+onclick="approveWithdraw('${id}')">
+
+<i class="fa-solid fa-circle-check"></i>
+
+Approve
+
+</button>
+
+
+
+<button
+
+class="rejectBtn"
+
+${status !== "pending" ? "disabled" : ""}
+
+onclick="rejectWithdraw('${id}')">
+
+<i class="fa-solid fa-circle-xmark"></i>
+
+Reject
+
+</button>
+
+
+</div>
+
+
+`;
+
+
+
+            list.appendChild(card);
+
+
+        });
+
+
 
     });
 
+
+
 }
+
+
+
+
+
+
+// ================================
+// APPROVE WITHDRAW ONCE
+// ================================
+
+window.approveWithdraw = async function(id){
+
+
+    const withdrawRef =
+    ref(db,"withdrawRequests/"+id);
+
+
+
+    const snapshot =
+    await get(withdrawRef);
+
+
+
+    if(!snapshot.exists()) return;
+
+
+
+    const withdraw =
+    snapshot.val();
+
+
+
+    // BLOCK DOUBLE APPROVE
+
+    if(withdraw.status !== "pending"){
+
+
+        alert(
+        "Withdraw already processed"
+        );
+
+
+        return;
+
+    }
+
+
+
+    const userRef =
+    ref(db,"users/"+withdraw.uid);
+
+
+
+    const userSnap =
+    await get(userRef);
+
+
+
+    if(!userSnap.exists()){
+
+
+        alert("User not found");
+
+
+        return;
+
+    }
+
+
+
+    const user =
+    userSnap.val();
+
+
+
+    const balance =
+    Number(user.balance || 0);
+
+
+
+    const amount =
+    Number(withdraw.amount || 0);
+
+
+
+    if(balance < amount){
+
+
+        alert(
+        "Insufficient balance"
+        );
+
+
+        return;
+
+    }
+
+
+
+
+
+    // REMOVE MONEY
+
+    await update(userRef,{
+
+        balance:
+        balance - amount
+
+    });
+
+
+
+
+
+
+    // CHANGE STATUS
+
+    await update(withdrawRef,{
+
+        status:"approved",
+
+        approvedAt:
+        Date.now()
+
+    });
+
+
+
+
+
+
+
+    // SAVE TRANSACTION
+
+    await set(
+
+        push(ref(db,"transactions")),
+
+        {
+
+            uid:withdraw.uid,
+
+            type:"withdraw",
+
+            amount:amount,
+
+            status:"approved",
+
+            reference:id,
+
+            date:Date.now()
+
+        }
+
+    );
+
+
+
+
+
+    alert(
+    "Withdraw Approved Successfully"
+    );
+
+
+};
+
+
+
+
+
+
+
+
+
+// ================================
+// REJECT WITHDRAW ONCE
+// ================================
+
+window.rejectWithdraw = async function(id){
+
+
+
+    const withdrawRef =
+    ref(db,"withdrawRequests/"+id);
+
+
+
+    const snapshot =
+    await get(withdrawRef);
+
+
+
+    if(!snapshot.exists()) return;
+
+
+
+    const withdraw =
+    snapshot.val();
+
+
+
+
+    // BLOCK DOUBLE REJECT
+
+    if(withdraw.status !== "pending"){
+
+
+        alert(
+        "Withdraw already processed"
+        );
+
+
+        return;
+
+    }
+
+
+
+
+
+
+    await update(withdrawRef,{
+
+        status:"rejected",
+
+        rejectedAt:
+        Date.now()
+
+    });
+
+
+
+
+
+
+    await set(
+
+        push(ref(db,"transactions")),
+
+        {
+
+            uid:withdraw.uid,
+
+            type:"withdraw",
+
+            amount:Number(withdraw.amount || 0),
+
+            status:"rejected",
+
+            reference:id,
+
+            date:Date.now()
+
+        }
+
+    );
+
+
+
+
+
+
+    alert(
+    "Withdraw Rejected Successfully"
+    );
+
+
+};
+
+
+
+
+
+
+
+// ================================
+// START WITHDRAW SYSTEM
+// ================================
+
+loadWithdraws();
+
+    // ======================================
+// VIP REQUEST MANAGEMENT FINAL
+// PART 5
+// ======================================
+
+
+// ================================
+// LOAD VIP REQUESTS
+// ================================
+
+function loadVipRequests(){
+
+
+    const vipRef =
+    ref(db,"vipRequests");
+
+
+
+    onValue(vipRef,(snapshot)=>{
+
+
+        const list =
+        document.getElementById("vipRequestList");
+
+
+        const empty =
+        document.getElementById("emptyVipRequest");
+
+
+
+        if(!list) return;
+
+
+
+        list.innerHTML = "";
+
+
+
+        if(!snapshot.exists()){
+
+
+            if(empty){
+
+                empty.style.display="block";
+
+            }
+
+            return;
+
+        }
+
+
+
+        if(empty){
+
+            empty.style.display="none";
+
+        }
+
+
+
+
+        Object.entries(snapshot.val())
+        .reverse()
+        .forEach(([id,vip])=>{
+
+
+            const status =
+            vip.status || "pending";
+
+
+
+            const card =
+            document.createElement("div");
+
+
+
+            card.className =
+            "request-card";
+
+
+
+            card.innerHTML = `
+
+
+<div class="request-top">
+
+
+<h3>
+
+${vip.vipName || "VIP Plan"}
+
+</h3>
+
+
+
+<span class="status ${status}">
+
+${status}
+
+</span>
+
+
+</div>
+
+
+
+
+<p>
+
+<strong>User:</strong>
+
+${vip.name || "-"}
+
+</p>
+
+
+
+<p>
+
+<strong>Email:</strong>
+
+${vip.email || "-"}
+
+</p>
+
+
+
+<p>
+
+<strong>VIP Price:</strong>
+
+${Number(vip.price || 0)
+.toLocaleString()} RWF
+
+</p>
+
+
+
+<p>
+
+<strong>Daily Income:</strong>
+
+${Number(vip.dailyIncome || 0)
+.toLocaleString()} RWF
+
+</p>
+
+
+
+<p>
+
+<strong>Duration:</strong>
+
+${vip.duration || 0} Days
+
+</p>
+
+
+
+
+<div class="action-buttons">
+
+
+<button
+
+class="approveBtn"
+
+${status !== "pending" ? "disabled" : ""}
+
+onclick="approveVip('${id}')">
+
+
+<i class="fa-solid fa-circle-check"></i>
+
+Approve VIP
+
+</button>
+
+
+
+
+<button
+
+class="rejectBtn"
+
+${status !== "pending" ? "disabled" : ""}
+
+onclick="rejectVip('${id}')">
+
+
+<i class="fa-solid fa-circle-xmark"></i>
+
+Reject VIP
+
+</button>
+
+
+</div>
+
+
+`;
+
+
+
+            list.appendChild(card);
+
+
+
+        });
+
+
+
+    });
+
+
+
+}
+
+
+
+
+
+
+
+// ================================
+// APPROVE VIP ONCE
+// ================================
+
+window.approveVip = async function(id){
+
+
+
+    const vipRef =
+    ref(db,"vipRequests/"+id);
+
+
+
+    const snapshot =
+    await get(vipRef);
+
+
+
+    if(!snapshot.exists()) return;
+
+
+
+    const vip =
+    snapshot.val();
+
+
+
+
+
+    // STOP DOUBLE APPROVE
+
+    if(vip.status !== "pending"){
+
+
+        alert(
+        "VIP request already processed"
+        );
+
+
+        return;
+
+    }
+
+
+
+
+
+
+    await update(vipRef,{
+
+
+        status:"approved",
+
+        approvedAt:
+        Date.now()
+
+
+    });
+
+
+
+
+
+
+
+
+    await set(
+
+        push(ref(db,"transactions")),
+
+        {
+
+
+            uid:vip.uid,
+
+            type:"vip",
+
+            amount:Number(vip.price || 0),
+
+            status:"approved",
+
+            vipName:
+            vip.vipName || "",
+
+            reference:id,
+
+            date:Date.now()
+
+
+        }
+
+    );
+
+
+
+
+
+
+
+    alert(
+    "VIP Approved Successfully"
+    );
+
+
+};
+
+
+
+
+
+
+
+
+
+// ================================
+// REJECT VIP ONCE
+// ================================
+
+window.rejectVip = async function(id){
+
+
+
+    const vipRef =
+    ref(db,"vipRequests/"+id);
+
+
+
+    const snapshot =
+    await get(vipRef);
+
+
+
+    if(!snapshot.exists()) return;
+
+
+
+    const vip =
+    snapshot.val();
+
+
+
+
+
+
+
+    // STOP DOUBLE REJECT
+
+    if(vip.status !== "pending"){
+
+
+        alert(
+        "VIP request already processed"
+        );
+
+
+        return;
+
+    }
+
+
+
+
+
+
+    await update(vipRef,{
+
+
+        status:"rejected",
+
+        rejectedAt:
+        Date.now()
+
+
+    });
+
+
+
+
+
+
+
+
+    await set(
+
+        push(ref(db,"transactions")),
+
+        {
+
+
+            uid:vip.uid,
+
+            type:"vip",
+
+            amount:Number(vip.price || 0),
+
+            status:"rejected",
+
+            vipName:
+            vip.vipName || "",
+
+            reference:id,
+
+            date:Date.now()
+
+
+        }
+
+    );
+
+
+
+
+
+
+
+
+    alert(
+    "VIP Rejected Successfully"
+    );
+
+
+};
+
+
+
+
+
+
+
+// ================================
+// START VIP SYSTEM
+// ================================
+
+loadVipRequests();
+
+      // ======================================
+// BONUS REQUEST MANAGEMENT FINAL
+// PART 6
+// ======================================
+
+
+
+// ================================
+// LOAD BONUS REQUESTS
+// ================================
+
+function loadBonusRequests(){
+
+
+    const bonusRef =
+    ref(db,"bonusRequests");
+
+
+
+    onValue(bonusRef,(snapshot)=>{
+
+
+        const list =
+        document.getElementById("bonusRequestList");
+
+
+        const empty =
+        document.getElementById("emptyBonusRequest");
+
+
+
+        if(!list) return;
+
+
+
+        list.innerHTML="";
+
+
+
+        if(!snapshot.exists()){
+
+
+            if(empty){
+
+                empty.style.display="block";
+
+            }
+
+            return;
+
+        }
+
+
+
+        if(empty){
+
+            empty.style.display="none";
+
+        }
+
+
+
+        Object.entries(snapshot.val())
+        .reverse()
+        .forEach(([id,bonus])=>{
+
+
+            const status =
+            bonus.status || "pending";
+
+
+
+            const card =
+            document.createElement("div");
+
+
+
+            card.className =
+            "request-card";
+
+
+
+            card.innerHTML = `
+
+
+<div class="request-top">
+
+
+<h3>
+Bonus Request
+</h3>
+
+
+
+<span class="status ${status}">
+
+${status}
+
+</span>
+
+
+</div>
+
+
+
+
+<p>
+
+<strong>Name:</strong>
+
+${bonus.name || "-"}
+
+</p>
+
+
+
+
+<p>
+
+<strong>Email:</strong>
+
+${bonus.email || "-"}
+
+</p>
+
+
+
+
+<p>
+
+<strong>Amount:</strong>
+
+${Number(bonus.amount || 0)
+.toLocaleString()} RWF
+
+</p>
+
+
+
+
+<p>
+
+<strong>Reason:</strong>
+
+${bonus.reason || "-"}
+
+</p>
+
+
+
+
+
+<div class="action-buttons">
+
+
+<button
+
+class="approveBtn"
+
+${status !== "pending" ? "disabled" : ""}
+
+onclick="approveBonus('${id}')">
+
+
+<i class="fa-solid fa-circle-check"></i>
+
+Approve
+
+</button>
+
+
+
+
+<button
+
+class="rejectBtn"
+
+${status !== "pending" ? "disabled" : ""}
+
+onclick="rejectBonus('${id}')">
+
+
+<i class="fa-solid fa-circle-xmark"></i>
+
+Reject
+
+</button>
+
+
+</div>
+
+
+
+`;
+
+
+
+            list.appendChild(card);
+
+
+
+        });
+
+
+
+    });
+
+
+
+}
+
+
+
+
+
+
+
+
+// ================================
+// APPROVE BONUS ONCE
+// ================================
+
+window.approveBonus = async function(id){
+
+
+
+    const bonusRef =
+    ref(db,"bonusRequests/"+id);
+
+
+
+    const snapshot =
+    await get(bonusRef);
+
+
+
+    if(!snapshot.exists()) return;
+
+
+
+    const bonus =
+    snapshot.val();
+
+
+
+
+
+    // STOP DOUBLE APPROVE
+
+    if(bonus.status !== "pending"){
+
+
+        alert(
+        "Bonus request already processed"
+        );
+
+
+        return;
+
+    }
+
+
+
+
+
+
+    const userRef =
+    ref(db,"users/"+bonus.uid");
+
+
+
+    const userSnap =
+    await get(userRef);
+
+
+
+    if(!userSnap.exists()){
+
+
+        alert(
+        "User not found"
+        );
+
+
+        return;
+
+    }
+
+
+
+
+
+
+    const user =
+    userSnap.val();
+
+
+
+    const oldBalance =
+    Number(user.balance || 0);
+
+
+
+    const amount =
+    Number(bonus.amount || 0);
+
+
+
+
+
+
+    // ADD BONUS
+
+    await update(userRef,{
+
+
+        balance:
+        oldBalance + amount
+
+
+    });
+
+
+
+
+
+
+
+    // UPDATE STATUS
+
+    await update(bonusRef,{
+
+
+        status:"approved",
+
+        approvedAt:
+        Date.now()
+
+
+    });
+
+
+
+
+
+
+
+
+    // SAVE TRANSACTION
+
+    await set(
+
+        push(ref(db,"transactions")),
+
+        {
+
+
+            uid:bonus.uid,
+
+            type:"bonus",
+
+            amount:amount,
+
+            status:"approved",
+
+            reference:id,
+
+            date:Date.now()
+
+
+        }
+
+    );
+
+
+
+
+
+
+
+    alert(
+    "Bonus Approved Successfully"
+    );
+
+
+};
+
+
+
+
+
+
+
+
+
+// ================================
+// REJECT BONUS ONCE
+// ================================
+
+window.rejectBonus = async function(id){
+
+
+
+    const bonusRef =
+    ref(db,"bonusRequests/"+id);
+
+
+
+    const snapshot =
+    await get(bonusRef);
+
+
+
+    if(!snapshot.exists()) return;
+
+
+
+    const bonus =
+    snapshot.val();
+
+
+
+
+
+
+
+    // STOP DOUBLE REJECT
+
+    if(bonus.status !== "pending"){
+
+
+        alert(
+        "Bonus request already processed"
+        );
+
+
+        return;
+
+    }
+
+
+
+
+
+
+
+
+    await update(bonusRef,{
+
+
+        status:"rejected",
+
+        rejectedAt:
+        Date.now()
+
+
+    });
+
+
+
+
+
+
+
+
+    await set(
+
+        push(ref(db,"transactions")),
+
+        {
+
+
+            uid:bonus.uid,
+
+            type:"bonus",
+
+            amount:Number(bonus.amount || 0),
+
+            status:"rejected",
+
+            reference:id,
+
+            date:Date.now()
+
+
+        }
+
+    );
+
+
+
+
+
+
+
+    alert(
+    "Bonus Rejected Successfully"
+    );
+
+
+};
+
+
+
+
+
+
+
+// ================================
+// START BONUS SYSTEM
+// ================================
+
+loadBonusRequests();    
 
