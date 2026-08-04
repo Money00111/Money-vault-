@@ -92,10 +92,10 @@ export async function registerUser(
 
         });
 
-        // ==========================
+       // ======================================
 // REFERRAL SAVE ONLY
 // BONUS GIVEN AFTER VIP APPROVAL
-// ==========================
+// ======================================
 
 if (referralCode && referralCode.trim() !== "") {
 
@@ -150,6 +150,30 @@ if (referralCode && referralCode.trim() !== "") {
     }
 
 }
+
+
+// ======================================
+// REGISTER SUCCESS
+// ======================================
+
+return true;
+
+
+} catch (error) {
+
+
+    console.error(error);
+
+    alert(error.message);
+
+
+    return false;
+
+
+}
+
+} 
+
 
 // ======================================
 // auth.js - PART 2
