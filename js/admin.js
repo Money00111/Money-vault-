@@ -2599,6 +2599,1229 @@ if(transactionFilter){
 loadTransactions();
 
 
+// ======================================
+// SETTINGS + QUICK ACTIONS FINAL
+// PART 9
+// ======================================
+
+
+
+// ================================
+// SAVE ADMIN SETTINGS
+// ================================
+
+
+const saveSettings =
+document.getElementById("saveSettings");
+
+
+
+if(saveSettings){
+
+
+
+    saveSettings.addEventListener(
+    "click",
+    async()=>{
+
+
+        if(!currentAdmin) return;
+
+
+
+
+        const nameInput =
+        document.getElementById(
+        "adminNameInput"
+        );
+
+
+
+        const name =
+        nameInput
+        ?
+        nameInput.value.trim()
+        :
+        "";
+
+
+
+
+
+        await update(
+
+            ref(
+            db,
+            "admins/"+currentAdmin.uid
+            ),
+
+            {
+
+                name:name
+
+            }
+
+        );
+
+
+
+
+
+        alert(
+        "Settings Saved Successfully"
+        );
+
+
+
+    });
+
+
+
+}
+
+
+
+
+
+
+
+
+
+// ================================
+// LOAD ADMIN SETTINGS
+// ================================
+
+
+function loadAdminSettings(){
+
+
+
+    if(!currentAdmin) return;
+
+
+
+
+
+    const adminRef =
+    ref(
+    db,
+    "admins/"+currentAdmin.uid
+    );
+
+
+
+
+
+    onValue(adminRef,(snapshot)=>{
+
+
+
+        if(!snapshot.exists())
+        return;
+
+
+
+
+
+        const data =
+        snapshot.val();
+
+
+
+
+
+
+        const nameInput =
+        document.getElementById(
+        "adminNameInput"
+        );
+
+
+
+        const emailInput =
+        document.getElementById(
+        "adminEmailInput"
+        );
+
+
+
+
+
+
+
+        if(nameInput){
+
+
+            nameInput.value =
+            data.name || "";
+
+
+        }
+
+
+
+
+
+        if(emailInput){
+
+
+            emailInput.value =
+            currentAdmin.email || "";
+
+
+        }
+
+
+
+
+    });
+
+
+
+}
+
+
+
+
+
+
+
+
+
+// ================================
+// REFRESH ALL DATA
+// ================================
+
+
+const refreshDashboard =
+document.getElementById(
+"refreshDashboard"
+);
+
+
+
+
+
+if(refreshDashboard){
+
+
+
+    refreshDashboard.addEventListener(
+    "click",
+    ()=>{
+
+
+        loadDashboard();
+
+
+        loadDeposits();
+
+
+        loadWithdraws();
+
+
+        loadVipRequests();
+
+
+        loadBonusRequests();
+
+
+        loadUsers();
+
+
+        loadTransactions();
+
+
+
+
+
+        alert(
+        "Dashboard Refreshed"
+        );
+
+
+
+    });
+
+
+
+}
+
+
+
+
+
+
+
+
+
+// ================================
+// QUICK OPEN BUTTON
+// ================================
+
+
+function quickOpen(button,page){
+
+
+
+    const element =
+    document.getElementById(button);
+
+
+
+
+    if(element){
+
+
+
+        element.addEventListener(
+        "click",
+        ()=>{
+
+
+            openPage(page);
+
+
+
+        });
+
+
+
+    }
+
+
+
+}
+
+
+
+
+
+
+
+
+
+// ================================
+// QUICK BUTTON LINKS
+// ================================
+
+
+quickOpen(
+"openDeposits",
+"deposits"
+);
+
+
+
+quickOpen(
+"openWithdraws",
+"withdraws"
+);
+
+
+
+quickOpen(
+"openVipRequests",
+"vipRequests"
+);
+
+
+
+quickOpen(
+"openUsers",
+"users"
+);
+
+
+
+quickOpen(
+"openTransactions",
+"transactions"
+);
+
+
+
+quickOpen(
+"openSettings",
+"settings"
+);
+
+
+
+
+
+
+
+
+// ================================
+// START SETTINGS SYSTEM
+// ================================
+
+
+setTimeout(()=>{
+
+
+    loadAdminSettings();
+
+
+
+},1000);
+
+// ======================================
+// DASHBOARD FINAL SYSTEM
+// PART 10
+// ======================================
+
+
+
+// ================================
+// LOAD DASHBOARD FINAL
+// ================================
+
+
+function loadDashboardFinal(){
+
+
+    loadUsersCountFinal();
+
+
+    loadDepositStatisticsFinal();
+
+
+    loadWithdrawStatisticsFinal();
+
+
+    loadSystemBalanceFinal();
+
+
+    loadRecentActivity();
+
+
+}
+
+
+
+
+
+
+
+
+// ================================
+// TOTAL USERS
+// ================================
+
+
+function loadUsersCountFinal(){
+
+
+
+    const usersRef =
+    ref(db,"users");
+
+
+
+    onValue(usersRef,(snapshot)=>{
+
+
+        let total = 0;
+
+
+
+        if(snapshot.exists()){
+
+
+            total =
+            Object.keys(snapshot.val())
+            .length;
+
+
+        }
+
+
+
+
+
+        updateText(
+        "totalUsers",
+        total
+        );
+
+
+
+    });
+
+
+
+}
+
+
+
+
+
+
+
+
+// ================================
+// DEPOSIT STATISTICS
+// ================================
+
+
+function loadDepositStatisticsFinal(){
+
+
+
+    const depositRef =
+    ref(db,"depositRequests");
+
+
+
+    onValue(depositRef,(snapshot)=>{
+
+
+
+        let total = 0;
+
+        let pending = 0;
+
+        let approved = 0;
+
+        let rejected = 0;
+
+
+
+
+
+        if(snapshot.exists()){
+
+
+            Object.values(snapshot.val())
+            .forEach(item=>{
+
+
+
+                total++;
+
+
+
+                if(item.status==="pending")
+                pending++;
+
+
+
+                if(item.status==="approved")
+                approved++;
+
+
+
+                if(item.status==="rejected")
+                rejected++;
+
+
+
+
+            });
+
+
+
+        }
+
+
+
+
+
+
+        updateText(
+        "dashboardTotalDeposits",
+        total
+        );
+
+
+
+        updateText(
+        "dashboardPendingDeposits",
+        pending
+        );
+
+
+
+        updateText(
+        "dashboardApprovedDeposits",
+        approved
+        );
+
+
+
+        updateText(
+        "depositTotalCount",
+        total
+        );
+
+
+
+        updateText(
+        "depositPendingCount",
+        pending
+        );
+
+
+
+        updateText(
+        "depositApprovedCount",
+        approved
+        );
+
+
+
+        updateText(
+        "depositRejectedCount",
+        rejected
+        );
+
+
+
+    });
+
+
+
+}
+
+
+
+
+
+
+
+
+
+// ================================
+// WITHDRAW STATISTICS
+// ================================
+
+
+function loadWithdrawStatisticsFinal(){
+
+
+
+    const withdrawRef =
+    ref(db,"withdrawRequests");
+
+
+
+    onValue(withdrawRef,(snapshot)=>{
+
+
+
+        let total = 0;
+
+        let pending = 0;
+
+        let approved = 0;
+
+        let rejected = 0;
+
+
+
+
+
+        if(snapshot.exists()){
+
+
+            Object.values(snapshot.val())
+            .forEach(item=>{
+
+
+
+                total++;
+
+
+
+                if(item.status==="pending")
+                pending++;
+
+
+
+                if(item.status==="approved")
+                approved++;
+
+
+
+                if(item.status==="rejected")
+                rejected++;
+
+
+
+
+            });
+
+
+
+        }
+
+
+
+
+
+
+        updateText(
+        "dashboardTotalWithdraws",
+        total
+        );
+
+
+
+        updateText(
+        "withdrawTotalCount",
+        total
+        );
+
+
+
+        updateText(
+        "withdrawPendingCount",
+        pending
+        );
+
+
+
+        updateText(
+        "withdrawApprovedCount",
+        approved
+        );
+
+
+
+        updateText(
+        "withdrawRejectedCount",
+        rejected
+        );
+
+
+
+    });
+
+
+
+}
+
+
+
+
+
+
+
+
+
+// ================================
+// SYSTEM BALANCE
+// ================================
+
+
+function loadSystemBalanceFinal(){
+
+
+
+    const usersRef =
+    ref(db,"users");
+
+
+
+    onValue(usersRef,(snapshot)=>{
+
+
+
+        let balance = 0;
+
+
+
+        if(snapshot.exists()){
+
+
+            Object.values(snapshot.val())
+            .forEach(user=>{
+
+
+
+                balance +=
+                Number(
+                user.balance || 0
+                );
+
+
+
+            });
+
+
+
+        }
+
+
+
+
+
+
+        updateText(
+
+        "systemBalance",
+
+        balance.toLocaleString()
+        +" RWF"
+
+        );
+
+
+
+    });
+
+
+
+}
+
+
+
+
+
+
+
+
+
+// ================================
+// RECENT ACTIVITY
+// ================================
+
+
+function loadRecentActivity(){
+
+
+
+    const transactionRef =
+    ref(db,"transactions");
+
+
+
+    onValue(transactionRef,(snapshot)=>{
+
+
+
+        const box =
+        document.getElementById(
+        "recentActivity"
+        );
+
+
+
+        if(!box) return;
+
+
+
+
+
+        box.innerHTML = "";
+
+
+
+
+
+
+        if(!snapshot.exists()){
+
+
+            box.innerHTML =
+            "<p>No activity found</p>";
+
+
+            return;
+
+        }
+
+
+
+
+
+
+        Object.entries(snapshot.val())
+        .reverse()
+        .slice(0,10)
+        .forEach(([id,item])=>{
+
+
+
+            const div =
+            document.createElement("div");
+
+
+
+            div.className =
+            "activity-item";
+
+
+
+            div.innerHTML = `
+
+
+<p>
+
+<strong>
+${(
+item.type || "transaction"
+)
+.toUpperCase()}
+
+</strong>
+
+
+-
+
+${Number(item.amount || 0)
+.toLocaleString()} RWF
+
+</p>
+
+
+
+<span>
+
+${item.status || "-"}
+
+</span>
+
+
+
+`;
+
+
+
+            box.appendChild(div);
+
+
+
+        });
+
+
+
+    });
+
+
+
+}
+
+
+
+
+
+
+
+
+// ================================
+// START DASHBOARD
+// ================================
+
+
+loadDashboardFinal();
+
+// ======================================
+// FINAL CLEANUP & OPTIMIZATION
+// PART 11
+// ======================================
+
+
+
+// ================================
+// GLOBAL ERROR HANDLER
+// ================================
+
+
+window.addEventListener(
+"error",
+(event)=>{
+
+
+    console.error(
+    "Money Vault Admin Error:",
+    event.error
+    );
+
+
+});
+
+
+
+
+
+
+
+
+// ================================
+// CHECK ADMIN SESSION
+// ================================
+
+
+function checkAdminSession(){
+
+
+    if(!currentAdmin){
+
+
+        console.warn(
+        "Admin session expired"
+        );
+
+
+        return false;
+
+    }
+
+
+
+    return true;
+
+
+}
+
+
+
+
+
+
+
+
+
+// ================================
+// PREVENT DOUBLE CLICK
+// ================================
+
+
+document.addEventListener(
+"click",
+(event)=>{
+
+
+
+    const button =
+    event.target.closest("button");
+
+
+
+    if(!button)
+    return;
+
+
+
+    if(button.disabled)
+    return;
+
+
+
+    if(
+    button.classList.contains("approveBtn")
+    ||
+    button.classList.contains("rejectBtn")
+    ){
+
+
+
+        button.disabled = true;
+
+
+
+        setTimeout(()=>{
+
+
+            button.disabled = false;
+
+
+        },2000);
+
+
+
+    }
+
+
+
+});
+
+
+
+
+
+
+
+
+
+// ================================
+// SAFE DATABASE UPDATE
+// ================================
+
+
+async function safeUpdate(path,data){
+
+
+    try{
+
+
+        await update(
+        ref(db,path),
+        data
+        );
+
+
+
+        return true;
+
+
+
+    }catch(error){
+
+
+
+        console.error(
+        "Firebase update error:",
+        error
+        );
+
+
+
+        alert(
+        "Database error occurred"
+        );
+
+
+
+        return false;
+
+
+    }
+
+
+}
+
+
+
+
+
+
+
+
+
+// ================================
+// FINAL REFRESH
+// ================================
+
+
+const finalRefresh =
+document.getElementById(
+"refreshDashboard"
+);
+
+
+
+
+if(finalRefresh){
+
+
+
+    finalRefresh.onclick = ()=>{
+
+
+
+        if(!checkAdminSession())
+        return;
+
+
+
+
+
+        loadDashboardFinal();
+
+
+
+        loadDeposits();
+
+
+
+        loadWithdraws();
+
+
+
+        loadVipRequests();
+
+
+
+        loadBonusRequests();
+
+
+
+        loadUsers();
+
+
+
+        loadTransactions();
+
+
+
+
+
+
+        console.log(
+        "Admin data refreshed"
+        );
+
+
+
+    };
+
+
+
+}
+
+
+
+
+
+
+
+
+
+// ================================
+// SESSION MONITOR
+// ================================
+
+
+setInterval(()=>{
+
+
+
+    if(!currentAdmin){
+
+
+
+        console.warn(
+        "No active admin session"
+        );
+
+
+
+    }
+
+
+
+},60000);
+
+
+
+
+
+
+
+
+// ================================
+// FINAL READY
+// ================================
+
+
+console.log(
+"Money Vault Admin Panel Ready"
+);
+
 
 
 
