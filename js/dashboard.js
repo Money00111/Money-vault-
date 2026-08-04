@@ -74,33 +74,36 @@ logoutBtn?.addEventListener("click", async (e) => {
 
 });
 
+
+
 // ======================================
-// AUTH CHECK FIXED
+// AUTH CHECK FINAL
 // ======================================
 
-onAuthStateChanged(auth, (user) => {
+onAuthStateChanged(auth, async (user) => {
 
-    if (user) {
+    if (!user) {
 
-        loadUser(user);
+        console.log("No user logged in");
 
-        loadTransactions(user);
+        location.href = "login.html";
 
-        loadNotifications();
-
-    } else {
-
-        setTimeout(() => {
-
-            if (!auth.currentUser) {
-
-                location.href = "login.html";
-
-            }
-
-        }, 1500);
+        return;
 
     }
+
+
+    console.log(
+        "Logged user:",
+        user.uid
+    );
+
+
+    loadUser(user);
+
+    loadTransactions(user);
+
+    loadNotifications();
 
 });
 
