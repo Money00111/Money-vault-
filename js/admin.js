@@ -344,6 +344,424 @@ openVipRequests?.addEventListener("click", () => {
 
 console.log("VIP REQUEST QUICK ACTION READY");
 
+// ======================================
+// ADMIN.JS - PART BONUS REQUESTS
+// REGISTER BONUS APPROVAL SYSTEM
+// ======================================
+
+const bonusRequestList =
+document.getElementById("bonusRequestList");
+
+const emptyBonusRequest =
+document.getElementById("emptyBonusRequest");
+
+
+let bonusRequestsData = {};
+
+
+// ======================================
+// LOAD BONUS REQUESTS
+// ======================================
+
+function loadBonusRequests(){
+
+    onValue(
+        ref(db,"bonusRequests"),
+        (snapshot)=>{
+
+
+            bonusRequestsData = {};
+
+            if(bonusRequestList){
+
+                bonusRequestList.innerHTML = "";
+
+            }
+
+
+            if(!snapshot.exists()){
+
+
+                if(emptyBonusRequest){
+
+                    emptyBonusRequest.style.display="block";
+
+                }
+
+                return;
+
+            }
+
+
+            if(emptyBonusRequest){
+
+                emptyBonusRequest.style.display="none";
+
+            }
+
+
+
+            snapshot.forEach((child)=>{
+
+
+                bonusRequestsData[child.key] =
+                child.val();
+
+
+            });
+
+
+
+            renderBonusRequests(
+                bonusRequestsData
+            );
+
+
+        }
+    );
+
+}
+
+
+loadBonusRequests();
+
+
+
+// ======================================
+// RENDER BONUS REQUESTS
+// ======================================
+
+function renderBonusRequests(data){
+
+
+    if(!bonusRequestList) return;
+
+
+    bonusRequestList.innerHTML="";
+
+
+    Object.entries(data).forEach(([id,bonus])=>{
+
+
+        const status =
+        bonus.status || "pending";
+
+
+
+        const card =
+        document.createElement("div");
+
+
+        card.className =
+        "request-card";
+
+
+
+        card.innerHTML = `
+
+        <div class="request-top">
+
+        <h3>
+        ${bonus.fullName || "New User"}
+        </h3>
+
+
+        <span class="status ${status}">
+        ${status.toUpperCase()}
+        </span>
+
+        </div>
+
+
+        <p>
+        <strong>Email:</strong>
+        ${bonus.email || "-"}
+        </p>
+
+
+        <p>
+        <strong>Phone:</strong>
+        ${bonus.phone || "-"}
+        </p>
+
+
+        <p>
+        <strong>Bonus:</strong>
+        ${Number(bonus.amount || 0)
+        .toLocaleString()} RWF
+        </p>
+
+
+        <p>
+        <strong>Date:</strong>
+        ${
+        new Date(
+        bonus.createdAt
+        ).toLocaleString()
+        }
+        </p>
+
+
+
+        <div class="action-buttons">
+
+
+        ${
+        status==="pending"
+
+        ?
+
+        `
+
+        <button
+        class="approveBonusBtn"
+        data-id="${id}">
+
+        Approve
+
+        </button>
+
+
+        <button
+        class="rejectBonusBtn"
+        data-id="${id}">
+
+        Reject
+
+        </button>
+
+        `
+
+        :
+
+        `
+
+        <button disabled>
+        ${status.toUpperCase()}
+        </button>
+
+        `
+
+        }
+
+
+        </div>
+
+        `;
+
+
+        bonusRequestList.appendChild(card);
+
+
+    });
+
+
+}
+
+
+
+// ======================================
+// APPROVE BONUS
+// ======================================
+
+async function approveBonus(id){
+
+
+    const bonusRef =
+    ref(db,"bonusRequests/"+id);
+
+
+
+    const snap =
+    await get(bonusRef);
+
+
+
+    if(!snap.exists()) return;
+
+
+
+    const bonus =
+    snap.val();
+
+
+
+    if(bonus.status !== "pending"){
+
+        alert("Already processed");
+
+        return;
+
+    }
+
+
+
+    const userRef =
+    ref(db,"users/"+bonus.uid);
+
+
+
+    const userSnap =
+    await get(userRef);
+
+
+
+    if(!userSnap.exists()){
+
+        alert("User not found");
+
+        return;
+
+    }
+
+
+
+    const user =
+    userSnap.val();
+
+
+
+    const oldBalance =
+    Number(user.balance || 0);
+
+
+
+    const amount =
+    Number(bonus.amount || 0);
+
+
+
+    await update(userRef,{
+
+        balance:
+        oldBalance + amount,
+
+        bonus:
+        amount,
+
+        bonusStatus:
+        "approved"
+
+    });
+
+
+
+    await update(bonusRef,{
+
+        status:"approved",
+
+        approvedAt:
+        Date.now(),
+
+        approvedBy:
+        auth.currentUser.uid
+
+    });
+
+
+
+    const transactionRef =
+    push(ref(db,"transactions"));
+
+
+
+    await set(transactionRef,{
+
+        uid:bonus.uid,
+
+        type:"bonus",
+
+        amount:amount,
+
+        status:"approved",
+
+        createdAt:Date.now()
+
+    });
+
+
+
+    alert("Bonus Approved");
+
+
+}
+
+
+
+
+// ======================================
+// REJECT BONUS
+// ======================================
+
+async function rejectBonus(id){
+
+
+    await update(
+
+        ref(db,"bonusRequests/"+id),
+
+        {
+
+        status:"rejected",
+
+        rejectedAt:
+        Date.now(),
+
+        rejectedBy:
+        auth.currentUser.uid
+
+        }
+
+    );
+
+
+    alert("Bonus Rejected");
+
+
+}
+
+
+
+
+// ======================================
+// BUTTON EVENTS
+// ======================================
+
+bonusRequestList?.addEventListener(
+"click",
+(e)=>{
+
+
+const approve =
+e.target.closest(".approveBonusBtn");
+
+
+if(approve){
+
+    approveBonus(
+    approve.dataset.id
+    );
+
+    return;
+
+}
+
+
+
+const reject =
+e.target.closest(".rejectBonusBtn");
+
+
+if(reject){
+
+    rejectBonus(
+    reject.dataset.id
+    );
+
+}
+
+
+});
 
 // ======================================
 // ADMIN.JS PART 3A.1
