@@ -1902,8 +1902,10 @@ function renderVipRequests(data){
 
 }
 
-// ======================================
-// ADMIN.JS - PART 5B FINAL FIXED
+
+
+       // ======================================
+// ADMIN.JS - PART 5B FINAL CLEAN
 // APPROVE + REJECT VIP PURCHASE REQUESTS
 // WITH REFERRAL BONUS SYSTEM
 // ======================================
@@ -1915,15 +1917,17 @@ function renderVipRequests(data){
 
 window.approveVipRequest = async function(id) {
 
+
     const requestRef =
-        ref(db, "vipPurchaseRequests/" + id);
+    ref(db,"vipPurchaseRequests/" + id);
 
 
     const requestSnap =
-        await get(requestRef);
+    await get(requestRef);
 
 
-    if (!requestSnap.exists()) {
+
+    if(!requestSnap.exists()){
 
         alert("VIP Request not found");
         return;
@@ -1931,23 +1935,26 @@ window.approveVipRequest = async function(id) {
     }
 
 
+
     const request =
-        requestSnap.val();
+    requestSnap.val();
 
 
-    if (request.status !== "pending") {
 
-        alert("This request already processed");
+    if(request.status !== "pending"){
+
+        alert("Already processed");
         return;
 
     }
 
 
+
     const confirmApprove =
-        confirm("Approve this VIP purchase?");
+    confirm("Approve this VIP purchase?");
 
 
-    if (!confirmApprove) return;
+    if(!confirmApprove) return;
 
 
 
@@ -1955,14 +1962,16 @@ window.approveVipRequest = async function(id) {
 
 
         const userRef =
-            ref(db, "users/" + request.uid);
+        ref(db,"users/" + request.uid);
+
 
 
         const userSnap =
-            await get(userRef);
+        await get(userRef);
 
 
-        if (!userSnap.exists()) {
+
+        if(!userSnap.exists()){
 
             alert("User not found");
             return;
@@ -1970,24 +1979,25 @@ window.approveVipRequest = async function(id) {
         }
 
 
+
         const user =
-            userSnap.val();
+        userSnap.val();
 
 
 
         const balance =
-            Number(user.balance || 0);
+        Number(user.balance || 0);
+
 
 
         const price =
-            Number(request.price || 0);
+        Number(request.price || 0);
 
 
 
-        if (balance < price) {
+        if(balance < price){
 
             alert("User balance is not enough");
-
             return;
 
         }
@@ -1998,7 +2008,8 @@ window.approveVipRequest = async function(id) {
         // REMOVE VIP PAYMENT
         // ======================================
 
-        await update(userRef, {
+
+        await update(userRef,{
 
             balance:
             balance - price
@@ -2008,22 +2019,25 @@ window.approveVipRequest = async function(id) {
 
 
 
+
         // ======================================
         // ADD VIP TO USER
         // ======================================
 
+
         const vipUserRef =
-            push(
-                ref(
-                    db,
-                    "users/" +
-                    request.uid +
-                    "/vipPlans"
-                )
-            );
+        push(
+            ref(
+                db,
+                "users/" +
+                request.uid +
+                "/vipPlans"
+            )
+        );
 
 
-        await set(vipUserRef, {
+
+        await set(vipUserRef,{
 
 
             name:
@@ -2081,120 +2095,138 @@ window.approveVipRequest = async function(id) {
         // ======================================
 
 
-        await update(requestRef, {
-
+        await update(requestRef,{
 
             status:
             "approved",
-
 
             approvedAt:
             Date.now(),
 
-
             approvedBy:
             auth.currentUser.uid
 
-
-        });
-
-
-// ======================================
-// REFERRAL BONUS 1000 RWF
-// ONLY ONCE AFTER VIP APPROVAL
-// ======================================
-
-if (
-    user.referredBy &&
-    user.referralBonusGiven !== true
-) {
-
-
-    const inviterRef =
-    ref(
-        db,
-        "users/" + user.referredBy
-    );
-
-
-    const inviterSnap =
-    await get(inviterRef);
-
-
-
-    if (inviterSnap.exists()) {
-
-
-        const inviter =
-        inviterSnap.val();
-
-
-
-        const oldReferral =
-        Number(inviter.referralBonus || 0);
-
-
-
-        await update(inviterRef, {
-
-
-            referralBonus:
-            oldReferral + 1000
-
-
         });
 
 
 
-        // STOP DOUBLE BONUS
-
-        await update(userRef, {
-
-            referralBonusGiven:
-            true
-
-        });
 
 
 
-        // SAVE REFERRAL TRANSACTION
-
-        const referralTx =
-        push(
-            ref(db,"transactions")
-        );
+        // ======================================
+        // REFERRAL BONUS 1000 RWF
+        // ONLY ONCE
+        // ======================================
 
 
-        await set(referralTx, {
+        if(
+            user.referredBy &&
+            user.referralBonusGiven !== true
+        ){
 
 
-            uid:
-            user.referredBy,
+            const inviterRef =
+            ref(
+                db,
+                "users/" + user.referredBy
+            );
 
 
-            type:
-            "referral_bonus",
+
+            const inviterSnap =
+            await get(inviterRef);
 
 
-            amount:
-            1000,
+
+            if(inviterSnap.exists()){
 
 
-            status:
-            "approved",
+                const inviter =
+                inviterSnap.val();
 
 
-            createdAt:
-            Date.now()
+
+                const oldBonus =
+                Number(
+                    inviter.referralBonus || 0
+                );
 
 
-        });
+
+                const oldEarnings =
+                Number(
+                    inviter.referralEarnings || 0
+                );
 
 
-    }
+
+                await update(inviterRef,{
 
 
-}
+                    referralBonus:
+                    oldBonus + 1000,
+
+
+                    referralEarnings:
+                    oldEarnings + 1000
+
+
+                });
+
+
+
+
+                await update(userRef,{
+
+                    referralBonusGiven:
+                    true
+
+                });
+
+
+
+
+
+                const referralTx =
+                push(
+                    ref(db,"transactions")
+                );
+
+
+
+                await set(referralTx,{
+
+                    uid:
+                    user.referredBy,
+
+
+                    type:
+                    "referral_bonus",
+
+
+                    amount:
+                    1000,
+
+
+                    status:
+                    "approved",
+
+
+                    createdAt:
+                    Date.now()
+
+
+                });
+
+
+            }
+
+
+        }
+
+
+
+
 
 
 
@@ -2209,7 +2241,8 @@ if (
         );
 
 
-        await set(transactionRef, {
+
+        await set(transactionRef,{
 
 
             uid:
@@ -2247,6 +2280,7 @@ if (
 
 
 
+
         // ======================================
         // NOTIFICATION
         // ======================================
@@ -2262,7 +2296,8 @@ if (
         );
 
 
-        await set(notificationRef, {
+
+        await set(notificationRef,{
 
 
             title:
@@ -2297,10 +2332,11 @@ if (
         );
 
 
+
     }
 
 
-    catch(error) {
+    catch(error){
 
 
         console.error(error);
@@ -2317,12 +2353,14 @@ if (
 
 
 
+
 // ======================================
 // REJECT VIP REQUEST
 // ======================================
 
 
-window.rejectVipRequest = async function(id) {
+window.rejectVipRequest = async function(id){
+
 
 
     const ok =
@@ -2331,7 +2369,9 @@ window.rejectVipRequest = async function(id) {
     );
 
 
+
     if(!ok) return;
+
 
 
 
@@ -2368,7 +2408,8 @@ window.rejectVipRequest = async function(id) {
     );
 
 
-};
+};     
+
 // ======================================
 // ADMIN.JS - PART 5C
 // VIP BUTTON EVENTS
