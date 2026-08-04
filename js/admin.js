@@ -2239,34 +2239,35 @@ if(userSearch){
 
 loadUsers();
 
+
 // ======================================
-// USERS MANAGEMENT FINAL
-// PART 7
+// TRANSACTIONS MANAGEMENT FINAL
+// PART 8
 // ======================================
 
 
 
 // ================================
-// LOAD USERS
+// LOAD TRANSACTIONS
 // ================================
 
-function loadUsers(){
+function loadTransactions(){
 
 
-    const usersRef =
-    ref(db,"users");
+    const transactionRef =
+    ref(db,"transactions");
 
 
 
-    onValue(usersRef,(snapshot)=>{
+    onValue(transactionRef,(snapshot)=>{
 
 
         const list =
-        document.getElementById("usersList");
+        document.getElementById("transactionList");
 
 
         const empty =
-        document.getElementById("emptyUsers");
+        document.getElementById("emptyTransaction");
 
 
 
@@ -2307,7 +2308,7 @@ function loadUsers(){
 
         Object.entries(snapshot.val())
         .reverse()
-        .forEach(([uid,user])=>{
+        .forEach(([id,transaction])=>{
 
 
 
@@ -2317,24 +2318,46 @@ function loadUsers(){
 
 
             card.className =
-            "user-card";
+            "transaction-card";
+
+
+
+
+            const date =
+            transaction.date
+            ?
+            new Date(transaction.date)
+            .toLocaleString()
+            :
+            "-";
+
+
+
 
 
 
             card.innerHTML = `
 
 
-<div class="user-header">
-
-
-<i class="fa-solid fa-user"></i>
+<div class="transaction-header">
 
 
 <h3>
 
-${user.name || "User"}
+${(transaction.type || "transaction")
+.toUpperCase()}
 
 </h3>
+
+
+
+
+<span class="status ${transaction.status || "pending"}">
+
+${transaction.status || "pending"}
+
+</span>
+
 
 
 </div>
@@ -2342,33 +2365,24 @@ ${user.name || "User"}
 
 
 
+
 <p>
 
-<strong>Email:</strong>
+<strong>User ID:</strong>
 
-${user.email || "-"}
+${transaction.uid || "-"}
 
 </p>
 
 
 
 
-<p>
-
-<strong>Phone:</strong>
-
-${user.phone || "-"}
-
-</p>
-
-
-
 
 <p>
 
-<strong>Balance:</strong>
+<strong>Amount:</strong>
 
-${Number(user.balance || 0)
+${Number(transaction.amount || 0)
 .toLocaleString()} RWF
 
 </p>
@@ -2376,65 +2390,30 @@ ${Number(user.balance || 0)
 
 
 
+
+<p>
+
+<strong>Date:</strong>
+
+${date}
+
+</p>
+
+
+
+
+
+${transaction.vipName ? `
+
 <p>
 
 <strong>VIP:</strong>
 
-${user.vip || "None"}
+${transaction.vipName}
 
 </p>
 
-
-
-
-<p>
-
-<strong>Status:</strong>
-
-${user.status || "active"}
-
-</p>
-
-
-
-
-
-
-<div class="action-buttons">
-
-
-<button
-
-class="viewBtn"
-
-onclick="viewUser('${uid}')">
-
-
-<i class="fa-solid fa-eye"></i>
-
-View
-
-</button>
-
-
-
-
-
-<button
-
-class="deleteBtn"
-
-onclick="deleteUser('${uid}')">
-
-
-<i class="fa-solid fa-trash"></i>
-
-Delete
-
-</button>
-
-
-</div>
+` : ""}
 
 
 
@@ -2464,150 +2443,34 @@ Delete
 
 
 // ================================
-// VIEW USER
+// TRANSACTION SEARCH
 // ================================
 
-window.viewUser = async function(uid){
+const transactionSearch =
+document.getElementById("transactionSearch");
 
 
 
-    const userRef =
-    ref(db,"users/"+uid);
+if(transactionSearch){
 
 
 
-    const snapshot =
-    await get(userRef);
-
-
-
-    if(!snapshot.exists()) return;
-
-
-
-    const user =
-    snapshot.val();
-
-
-
-
-
-
-    alert(`
-
-Name:
-${user.name || "-"}
-
-
-Email:
-${user.email || "-"}
-
-
-Phone:
-${user.phone || "-"}
-
-
-Balance:
-${Number(user.balance || 0)
-.toLocaleString()} RWF
-
-
-VIP:
-${user.vip || "None"}
-
-
-Status:
-${user.status || "active"}
-
-`);
-
-
-
-
-};
-
-
-
-
-
-
-
-
-
-// ================================
-// DELETE USER
-// ================================
-
-window.deleteUser = async function(uid){
-
-
-
-    const confirmDelete =
-    confirm(
-    "Are you sure you want to delete this user?"
-    );
-
-
-
-    if(!confirmDelete) return;
-
-
-
-
-
-
-    await remove(
-        ref(db,"users/"+uid)
-    );
-
-
-
-
-
-
-    alert(
-    "User deleted successfully"
-    );
-
-
-
-};
-
-
-
-
-
-
-
-
-
-// ================================
-// USER SEARCH
-// ================================
-
-const userSearch =
-document.getElementById("userSearch");
-
-
-
-if(userSearch){
-
-
-
-    userSearch.addEventListener(
+    transactionSearch.addEventListener(
     "input",
     ()=>{
 
 
+
         const value =
-        userSearch.value
+        transactionSearch.value
         .toLowerCase();
 
 
 
 
+
         document
-        .querySelectorAll(".user-card")
+        .querySelectorAll(".transaction-card")
         .forEach(card=>{
 
 
@@ -2653,9 +2516,90 @@ if(userSearch){
 
 
 // ================================
-// START USERS SYSTEM
+// TRANSACTION FILTER
 // ================================
 
-loadUsers();
+const transactionFilter =
+document.getElementById("transactionFilter");
 
 
+
+if(transactionFilter){
+
+
+
+    transactionFilter.addEventListener(
+    "change",
+    ()=>{
+
+
+
+        const value =
+        transactionFilter.value
+        .toLowerCase();
+
+
+
+
+
+        document
+        .querySelectorAll(".transaction-card")
+        .forEach(card=>{
+
+
+
+            const text =
+            card.innerText
+            .toLowerCase();
+
+
+
+
+
+            if(
+            value==="all" ||
+            text.includes(value)
+            ){
+
+
+                card.style.display="block";
+
+
+            }else{
+
+
+                card.style.display="none";
+
+
+            }
+
+
+
+        });
+
+
+
+    });
+
+
+
+}
+
+
+
+
+
+
+
+
+// ================================
+// START TRANSACTIONS SYSTEM
+// ================================
+
+loadTransactions();
+
+
+
+
+
+ 
