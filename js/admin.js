@@ -2736,33 +2736,25 @@ document.getElementById(
 
 
 
+if (refreshDashboard) {
 
-if(refreshDashboard){
-
-
-refreshDashboard.addEventListener(
-    "click",
-    ()=>{
+    refreshDashboard.addEventListener("click", () => {
 
         loadDashboardFinal();
 
         if (typeof loadDeposits === "function") loadDeposits();
-
         if (typeof loadWithdraws === "function") loadWithdraws();
-
         if (typeof loadVipRequests === "function") loadVipRequests();
-
         if (typeof loadBonusRequests === "function") loadBonusRequests();
-
         if (typeof loadUsers === "function") loadUsers();
-
         if (typeof loadTransactions === "function") loadTransactions();
 
         alert("Dashboard Refreshed");
 
-    }
-);
-    
+    });
+
+} 
+
 
 // ================================
 // QUICK OPEN BUTTON
