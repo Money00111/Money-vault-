@@ -320,6 +320,334 @@ function loadSystemBalance() {
     });
 
 }
+// ======================================
+// ADMIN.JS - PART 3
+// DEPOSIT MANAGEMENT FINAL
+// ======================================
+
+// ================================
+// LOAD DEPOSIT REQUESTS
+// ================================
+
+function loadDeposits() {
+
+    const depositRef = ref(db, "depositRequests");
+
+    onValue(depositRef, (snapshot) => {
+
+        const list = document.getElementById("depositList");
+        const empty = document.getElementById("emptyDeposit");
+
+        if (!list) return;
+
+        list.innerHTML = "";
+
+        if (!snapshot.exists()) {
+
+            if (empty) empty.style.display = "block";
+
+            return;
+        }
+
+        if (empty) empty.style.display = "none";
+
+        Object.entries(snapshot.val())
+            .reverse()
+            .forEach(([id, deposit]) => {
+
+                const status = deposit.status || "pending";
+
+                const card = document.createElement("div");
+
+                card.className = "request-card";
+
+                card.innerHTML = `
+
+<div class="request-top">
+
+<h3>Deposit Request</h3>
+
+<span class="status ${status}">
+${status}
+</span>
+
+</div>
+
+<p><strong>Name:</strong> ${deposit.name || "-"}</p>
+
+<p><strong>Email:</strong> ${deposit.email || "-"}</p>
+
+<p><strong>Amount:</strong>
+${Number(deposit.amount || 0).toLocaleString()} RWF
+</p>
+
+<p><strong>Phone:</strong>
+${deposit.phone || "-"}
+</p>
+
+<p><strong>Method:</strong>
+${deposit.method || "-"}
+</p>
+
+<p><strong>Transaction ID:</strong>
+${deposit.transactionId || "-"}
+</p>
+
+<div class="action-buttons">
+
+<button
+class="approveBtn"
+${status !== "pending" ? "disabled" : ""}
+onclick="approveDeposit('${id}')">
+
+<i class="fa-solid fa-circle-check"></i>
+
+Approve
+
+</button>
+
+<button
+class="rejectBtn"
+${status !== "pending" ? "disabled" : ""}
+onclick="rejectDeposit('${id}')">
+
+<i class="fa-solid fa-circle-xmark"></i>
+
+Reject
+
+</button>
+
+</div>
+
+`;
+
+                list.appendChild(card);
+
+            });
+
+    });
+
+}
+
+
+
+// ================================
+// APPROVE DEPOSIT
+// ================================
+
+window.approveDeposit = async function(id) {
+
+    const depositRef = ref(db, "depositRequests/" + id);
+
+    const snapshot = await get(depositRef);
+
+    if (!snapshot.exists()) return;
+
+    const deposit = snapshot.val();
+
+    if (deposit.status !== "pending") {
+
+        alert("Deposit already processed");
+
+        return;
+    }
+
+    const userRef = ref(db, "users/" + deposit.uid);
+
+    const userSnap = await get(userRef);
+
+    if (!userSnap.exists()) {
+
+        alert("User not found");
+
+        return;
+    }
+
+    const user = userSnap.val();
+
+    const balance = Number(user.balance || 0);
+
+    const amount = Number(deposit.amount || 0);
+
+    await update(userRef, {
+
+        balance: balance + amount
+
+    });
+
+    await update(depositRef, {
+
+        status: "approved",
+
+        approvedAt: Date.now()
+
+    });
+
+    await set(
+
+        push(ref(db, "transactions")),
+
+        {
+
+            uid: deposit.uid,
+
+            type: "deposit",
+
+            amount: amount,
+
+            status: "approved",
+
+            reference: id,
+
+            date: Date.now()
+
+        }
+
+    );
+
+    alert("Deposit Approved Successfully");
+
+};
+
+
+
+
+// ================================
+// REJECT DEPOSIT
+// ================================
+
+window.rejectDeposit = async function(id) {
+
+    const depositRef = ref(db, "depositRequests/" + id);
+
+    const snapshot = await get(depositRef);
+
+    if (!snapshot.exists()) return;
+
+    const deposit = snapshot.val();
+
+    if (deposit.status !== "pending") {
+
+        alert("Deposit already processed");
+
+        return;
+    }
+
+    await update(depositRef, {
+
+        status: "rejected",
+
+        rejectedAt: Date.now()
+
+    });
+
+    await set(
+
+        push(ref(db, "transactions")),
+
+        {
+
+            uid: deposit.uid,
+
+            type: "deposit",
+
+            amount: Number(deposit.amount || 0),
+
+            status: "rejected",
+
+            reference: id,
+
+            date: Date.now()
+
+        }
+
+    );
+
+    alert("Deposit Rejected Successfully");
+
+};
+
+
+
+
+// ================================
+// SEARCH DEPOSITS
+// ================================
+
+const depositSearch = document.getElementById("depositSearch");
+
+if (depositSearch) {
+
+    depositSearch.addEventListener("input", () => {
+
+        const value = depositSearch.value.toLowerCase();
+
+        document.querySelectorAll(".request-card").forEach(card => {
+
+            if (card.innerText.toLowerCase().includes(value)) {
+
+                card.style.display = "block";
+
+            } else {
+
+                card.style.display = "none";
+
+            }
+
+        });
+
+    });
+
+}
+
+
+
+// ================================
+// FILTER DEPOSITS
+// ================================
+
+const depositFilter = document.getElementById("depositFilter");
+
+if (depositFilter) {
+
+    depositFilter.addEventListener("change", () => {
+
+        const value = depositFilter.value;
+
+        document.querySelectorAll("#depositList .request-card").forEach(card => {
+
+            if (value === "all") {
+
+                card.style.display = "block";
+
+            } else {
+
+                if (card.innerHTML.toLowerCase().includes(value)) {
+
+                    card.style.display = "block";
+
+                } else {
+
+                    card.style.display = "none";
+
+                }
+
+            }
+
+        });
+
+    });
+
+}
+
+
+
+// ================================
+// START DEPOSIT SYSTEM
+// ================================
+
+loadDeposits();
+
 
 // ======================================
 // WITHDRAW MANAGEMENT FINAL
