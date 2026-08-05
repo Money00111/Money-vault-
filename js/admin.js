@@ -18,10 +18,13 @@ import {
 
 import {
     ref,
-    get
+    get,
+    onValue,
+    update,
+    push,
+    set,
+    remove
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
-
-
 
 // ================================
 // GLOBAL VARIABLES
