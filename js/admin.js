@@ -85,7 +85,7 @@ function showError(error){
 
 }
 
-    // ======================================
+// ======================================
 // PART 2
 // ADMIN AUTHENTICATION SYSTEM
 // ======================================
@@ -242,7 +242,6 @@ async function logoutAdmin(){
 // Global export
 
 window.logoutAdmin = logoutAdmin;
-
 
     // ======================================
 // PART 3
@@ -917,7 +916,7 @@ async function rejectDeposit(id,button){
 window.loadDeposits =
 loadDeposits;
 
-      // ======================================
+// ======================================
 // PART 5
 // WITHDRAW REQUEST MANAGEMENT
 // ======================================
@@ -1255,7 +1254,109 @@ async function approveWithdraw(id,button){
             status:"approved",
             approvedAt:Date.now()
 
-           
+        }
+
+        );
+
+
+
+
+
+        await push(
+
+        ref(
+        db,
+        "transactions"
+        ),
+
+        {
+
+            uid:withdraw.uid,
+            type:"withdraw",
+            amount:amount,
+            status:"approved",
+            date:Date.now()
+
+        }
+
+        );
+
+
+
+
+
+        button.style.display =
+        "none";
+
+
+
+        loadDashboardFinal();
+
+
+
+    }
+
+
+
+    catch(error){
+
+
+        console.error(
+        "Approve Withdraw Error:",
+        error
+        );
+
+
+        alert(error.message);
+
+
+    }
+
+
+}
+
+
+
+
+// ================================
+// REJECT WITHDRAW
+// ================================
+
+async function rejectWithdraw(id,button){
+
+
+    try{
+
+
+        const withdraw =
+        withdrawsData[id];
+
+
+
+        if(!withdraw ||
+        withdraw.status !== "pending"){
+
+
+            return;
+
+
+        }
+
+
+
+
+        await update(
+
+        ref(
+        db,
+        "withdrawRequests/" + id
+        ),
+
+        {
+
+            status:"rejected",
+            rejectedAt:Date.now()
+
         }
 
         );
@@ -1297,8 +1398,750 @@ async function approveWithdraw(id,button){
 
 window.loadWithdraws =
 loadWithdraws;
+// ======================================
+// PART 6
+// VIP REQUESTS + VIP BUYERS MANAGEMENT
+// ======================================
+
+
+// ================================
+// LOAD VIP REQUESTS
+// ================================
+
+function loadVipRequests(){
+
+
+    if(!adminReady){
+
+        return;
+
+    }
+
+
+
+    const vipRef = ref(
+        db,
+        "vipRequests"
+    );
+
+
+
+    onValue(vipRef,(snapshot)=>{
+
+
+        vipRequestsData =
+        snapshot.exists()
+        ? snapshot.val()
+        : {};
+
+
+
+        renderVipRequests();
+
+
+    });
+
+
+}
 
 
 
 
+// ================================
+// RENDER VIP REQUESTS
+// ================================
+
+function renderVipRequests(){
+
+
+    const container =
+    $("vipRequestList");
+
+
+
+    if(!container){
+
+        return;
+
+    }
+
+
+
+    container.innerHTML = "";
+
+
+
+    Object.entries(vipRequestsData)
+    .forEach(([id,vip])=>{
+
+
+        const status =
+        vip.status || "pending";
+
+
+
+        const div =
+        document.createElement("div");
+
+
+
+        div.className =
+        "request-card";
+
+
+
+        div.innerHTML = `
+
+        <p>
+        User:
+        ${vip.userEmail || vip.uid}
+        </p>
+
+
+        <p>
+        VIP:
+        ${vip.vipName || vip.name}
+        </p>
+
+
+        <p>
+        Price:
+        ${Number(vip.price || 0)
+        .toLocaleString()}
+        RWF
+        </p>
+
+
+        <p>
+        Status:
+        ${status}
+        </p>
+
+
+
+        ${
+        status === "pending"
+
+        ?
+
+        `
+
+        <button
+        class="approveVip"
+        data-id="${id}">
+        Approve
+        </button>
+
+
+        <button
+        class="rejectVip"
+        data-id="${id}">
+        Reject
+        </button>
+
+        `
+
+        :
+
+        ""
+
+        }
+
+
+        `;
+
+
+
+        container.appendChild(div);
+
+
+    });
+
+
+
+    attachVipButtons();
+
+
+}
+
+
+
+
+// ================================
+// VIP BUTTON EVENTS
+// ================================
+
+function attachVipButtons(){
+
+
+    document
+    .querySelectorAll(".approveVip")
+    .forEach(button=>{
+
+
+        button.onclick = async ()=>{
+
+
+            const id =
+            button.dataset.id;
+
+
+
+            button.style.display =
+            "none";
+
+
+
+            await approveVipRequest(
+            id,
+            button
+            );
+
+
+        };
+
+
+    });
+
+
+
+
+    document
+    .querySelectorAll(".rejectVip")
+    .forEach(button=>{
+
+
+        button.onclick = async ()=>{
+
+
+            const id =
+            button.dataset.id;
+
+
+
+            button.style.display =
+            "none";
+
+
+
+            await rejectVipRequest(
+            id,
+            button
+            );
+
+
+        };
+
+
+    });
+
+
+}
+
+
+
+
+
+// ================================
+// APPROVE VIP REQUEST
+// ================================
+
+async function approveVipRequest(id,button){
+
+
+    try{
+
+
+        const vip =
+        vipRequestsData[id];
+
+
+
+        if(!vip ||
+        vip.status !== "pending"){
+
+            return;
+
+        }
+
+
+
+
+        await update(
+
+        ref(
+        db,
+        "vipRequests/" + id
+        ),
+
+        {
+
+            status:"approved",
+            approvedAt:Date.now()
+
+        }
+
+        );
+
+
+
+
+        // save user active VIP
+
+        await push(
+
+        ref(
+        db,
+        "users/" + vip.uid + "/activeVips"
+        ),
+
+        {
+
+            vipName:
+            vip.vipName || vip.name,
+
+            price:
+            Number(vip.price || 0),
+
+            dailyIncome:
+            Number(vip.dailyIncome || 0),
+
+            duration:
+            Number(vip.duration || 0),
+
+            startDate:
+            Date.now()
+
+        }
+
+        );
+
+
+
+
+        await push(
+
+        ref(
+        db,
+        "transactions"
+        ),
+
+        {
+
+            uid:vip.uid,
+            type:"vip_purchase",
+            amount:Number(vip.price || 0),
+            status:"approved",
+            date:Date.now()
+
+        }
+
+        );
+
+
+
+        button.style.display =
+        "none";
+
+
+
+    }
+
+
+
+    catch(error){
+
+
+        console.error(
+        "Approve VIP Error:",
+        error
+        );
+
+
+        alert(error.message);
+
+
+    }
+
+
+}
+
+
+
+
+
+// ================================
+// REJECT VIP REQUEST
+// ================================
+
+async function rejectVipRequest(id,button){
+
+
+    try{
+
+
+        const vip =
+        vipRequestsData[id];
+
+
+
+        if(!vip ||
+        vip.status !== "pending"){
+
+            return;
+
+        }
+
+
+
+
+        await update(
+
+        ref(
+        db,
+        "vipRequests/" + id
+        ),
+
+        {
+
+            status:"rejected",
+            rejectedAt:Date.now()
+
+        }
+
+        );
+
+
+
+        button.style.display =
+        "none";
+
+
+    }
+
+
+
+    catch(error){
+
+
+        console.error(
+        "Reject VIP Error:",
+        error
+        );
+
+
+        alert(error.message);
+
+
+    }
+
+
+}
+
+
+
+
+// ================================
+// LOAD VIP BUYERS
+// ================================
+
+function loadVipBuyers(){
+
+
+    if(!adminReady){
+
+        return;
+
+    }
+
+
+
+    const usersRef =
+    ref(
+    db,
+    "users"
+    );
+
+
+
+    onValue(usersRef,(snapshot)=>{
+
+
+        const container =
+        $("vipBuyerList");
+
+
+
+        if(!container){
+
+            return;
+
+        }
+
+
+
+        container.innerHTML = "";
+
+
+
+        if(!snapshot.exists()){
+
+            return;
+
+        }
+
+
+
+        const users =
+        snapshot.val();
+
+
+
+        Object.entries(users)
+        .forEach(([uid,user])=>{
+
+
+            if(user.activeVips){
+
+
+                const div =
+                document.createElement("div");
+
+
+
+                div.className =
+                "request-card";
+
+
+
+                div.innerHTML = `
+
+                <p>
+                User:
+                ${user.email || uid}
+                </p>
+
+
+                <p>
+                Active VIPs:
+                ${Object.keys(user.activeVips).length}
+                </p>
+
+                `;
+
+
+
+                container.appendChild(div);
+
+
+            }
+
+
+        });
+
+
+    });
+
+
+}
+
+
+
+// ================================
+// EXPORT
+// ================================
+
+window.loadVipRequests =
+loadVipRequests;
+
+window.loadVipBuyers =
+loadVipBuyers;
+
+// ======================================
+// PART 7
+// USERS MANAGEMENT + DELETE USER
+// ======================================
+
+
+// ================================
+// LOAD USERS
+// ================================
+
+function loadUsers() {
+
+    if (!adminReady) return;
+
+    const usersRef = ref(db, "users");
+
+    onValue(usersRef, (snapshot) => {
+
+        usersData = snapshot.exists() ? snapshot.val() : {};
+
+        renderUsers();
+
+    });
+
+}
+
+
+
+// ================================
+// RENDER USERS
+// ================================
+
+function renderUsers() {
+
+    const container = $("usersList");
+
+    if (!container) return;
+
+    container.innerHTML = "";
+
+    Object.entries(usersData).forEach(([uid, user]) => {
+
+        const div = document.createElement("div");
+
+        div.className = "user-card";
+
+        div.innerHTML = `
+
+            <p><strong>Name:</strong> ${user.fullName || user.name || "Unknown"}</p>
+
+            <p><strong>Email:</strong> ${user.email || "No Email"}</p>
+
+            <p><strong>Phone:</strong> ${user.phone || "-"}</p>
+
+            <p><strong>Balance:</strong>
+                ${Number(user.balance || 0).toLocaleString()} RWF
+            </p>
+
+            <p><strong>Status:</strong>
+                ${user.status || "active"}
+            </p>
+
+            <button
+                class="deleteUserBtn"
+                data-uid="${uid}">
+                Delete
+            </button>
+
+        `;
+
+        container.appendChild(div);
+
+    });
+
+    attachUserButtons();
+
+}
+
+
+
+// ================================
+// DELETE BUTTON EVENTS
+// ================================
+
+function attachUserButtons() {
+
+    document.querySelectorAll(".deleteUserBtn")
+        .forEach(button => {
+
+            button.onclick = async () => {
+
+                const uid = button.dataset.uid;
+
+                const ok = confirm(
+                    "Delete this user permanently?"
+                );
+
+                if (!ok) return;
+
+                button.disabled = true;
+
+                try {
+
+                    await deleteUser(uid);
+
+                    button.style.display = "none";
+
+                } catch (error) {
+
+                    button.disabled = false;
+
+                    showError(error);
+
+                }
+
+            };
+
+        });
+
+}
+
+
+
+// ================================
+// DELETE USER
+// ================================
+
+async function deleteUser(uid) {
+
+    try {
+
+        await remove(
+            ref(db, "users/" + uid)
+        );
+
+        // Optional cleanup
+
+        const paths = [
+            "depositRequests",
+            "withdrawRequests",
+            "vipRequests"
+        ];
+
+        for (const path of paths) {
+
+            const listRef = ref(db, path);
+
+            const snap = await get(listRef);
+
+            if (!snap.exists()) continue;
+
+            const data = snap.val();
+
+            for (const [key, value] of Object.entries(data)) {
+
+                if (value.uid === uid) {
+
+                    await remove(
+                        ref(db, `${path}/${key}`)
+                    );
+
+                }
+
+            }
+
+        }
+
+        console.log("User deleted:", uid);
+
+        loadDashboardFinal();
+
+    } catch (error) {
+
+        throw error;
+
+    }
+
+}
+
+
+
+// ================================
+// EXPORT
+// ================================
+
+window.loadUsers = loadUsers;
+window.deleteUser = deleteUser;
             
