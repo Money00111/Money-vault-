@@ -2631,3 +2631,134 @@ window.saveSystemSettings = saveSystemSettings;
 window.loadSystemSettings = loadSystemSettings
 
 
+// ======================================
+// PART 10
+// FINAL STARTUP + GLOBAL EXPORTS
+// ======================================
+
+
+// ================================
+// STARTUP CHECK
+// ================================
+
+function initializeAdmin() {
+
+    console.log("=================================");
+    console.log("Money Vault Admin Initialized");
+    console.log("=================================");
+
+    // Irinda gutangira kabiri
+    if (window.__ADMIN_INITIALIZED__) {
+        return;
+    }
+
+    window.__ADMIN_INITIALIZED__ = true;
+
+}
+
+
+// ================================
+// SAFE FUNCTION CHECK
+// ================================
+
+const requiredFunctions = [
+
+    "loadDashboardFinal",
+    "loadDeposits",
+    "loadWithdraws",
+    "loadVipRequests",
+    "loadVipBuyers",
+    "loadBonusRequests",
+    "loadUsers",
+    "loadTransactions",
+    "logoutAdmin"
+
+];
+
+requiredFunctions.forEach(name => {
+
+    if (typeof window[name] !== "function") {
+
+        console.warn(
+            `${name} is missing`
+        );
+
+    }
+
+});
+
+
+// ================================
+// GLOBAL EXPORTS
+// ================================
+
+window.loadDashboardFinal = loadDashboardFinal;
+
+window.loadDeposits = loadDeposits;
+
+window.loadWithdraws = loadWithdraws;
+
+window.loadVipRequests = loadVipRequests;
+
+window.loadVipBuyers = loadVipBuyers;
+
+window.loadBonusRequests = loadBonusRequests;
+
+window.loadUsers = loadUsers;
+
+window.loadTransactions = loadTransactions;
+
+window.logoutAdmin = logoutAdmin;
+
+window.approveDeposit = approveDeposit;
+
+window.rejectDeposit = rejectDeposit;
+
+window.approveWithdraw = approveWithdraw;
+
+window.rejectWithdraw = rejectWithdraw;
+
+window.approveVipRequest = approveVipRequest;
+
+window.rejectVipRequest = rejectVipRequest;
+
+window.deleteUser = deleteUser;
+
+window.sendNotification = sendNotification;
+
+window.saveSystemSettings = saveSystemSettings;
+
+window.loadSystemSettings = loadSystemSettings;
+
+
+// ================================
+// GLOBAL ERROR HANDLER
+// ================================
+
+window.addEventListener("error", (event) => {
+console.error(
+        "JavaScript Error:",
+        event.error || event.message
+    );
+
+});
+
+
+window.addEventListener("unhandledrejection", (event) => {
+
+    console.error(
+        "Unhandled Promise:",
+        event.reason
+    );
+
+});
+
+
+// ================================
+// START
+// ================================
+
+initializeAdmin();
+
+console.log("Admin.js loaded successfully.");
+                        
