@@ -189,6 +189,11 @@ alert("Users OK");
 
 loadTransactions();
 alert("Transactions OK");
+        const loading = document.getElementById("loadingScreen");
+
+if(loading){
+    loading.style.display = "none";
+}
 
     }
 
