@@ -2893,6 +2893,78 @@ document.getElementById("openVipRequests")
     document.querySelector('[data-page="vipRequests"]')?.click();
 
 });
+
+                   // ================================
+// PAGE NAVIGATION
+// ================================
+
+document.querySelectorAll(".menu-link")
+.forEach(link => {
+
+    link.addEventListener("click", (e)=>{
+
+        e.preventDefault();
+
+
+        const page =
+        link.dataset.page;
+
+
+        // remove active
+
+        document.querySelectorAll(".page-section")
+        .forEach(section=>{
+
+            section.classList.remove("active");
+
+        });
+
+
+
+        // show selected page
+
+        const section =
+        document.getElementById(page + "Section");
+
+
+        if(section){
+
+            section.classList.add("active");
+
+        }
+
+
+
+        // active menu
+
+        document.querySelectorAll(".menu-link")
+        .forEach(item=>{
+
+            item.classList.remove("active");
+
+        });
+
+
+        link.classList.add("active");
+
+
+        // title
+
+        const title =
+        document.getElementById("pageTitle");
+
+
+        if(title){
+
+            title.innerText =
+            link.innerText.trim();
+
+        }
+
+
+    });
+
+});
 // ================================
 // START
 // ================================
