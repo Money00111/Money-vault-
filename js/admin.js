@@ -2145,3 +2145,162 @@ async function deleteUser(uid) {
 window.loadUsers = loadUsers;
 window.deleteUser = deleteUser;
             
+// ======================================
+// PART 8
+// TRANSACTIONS + NOTIFICATIONS
+// ======================================
+
+
+// ================================
+// LOAD TRANSACTIONS
+// ================================
+
+function loadTransactions() {
+
+    if (!adminReady) return;
+
+    const transactionsRef = ref(db, "transactions");
+
+    onValue(transactionsRef, (snapshot) => {
+
+        transactionsData = snapshot.exists()
+            ? snapshot.val()
+            : {};
+
+        renderTransactions();
+
+    });
+
+}
+
+
+// ================================
+// RENDER TRANSACTIONS
+// ================================
+
+function renderTransactions() {
+
+    const container = $("transactionsList");
+
+    if (!container) return;
+
+    container.innerHTML = "";
+
+    const transactions = Object.entries(transactionsData)
+        .sort((a, b) => {
+
+            const timeA = a[1].date || 0;
+            const timeB = b[1].date || 0;
+
+            return timeB - timeA;
+
+        });
+
+    transactions.forEach(([id, tx]) => {
+
+        const card = document.createElement("div");
+
+        card.className = "transaction-card";
+
+        card.innerHTML = `
+
+            <p><strong>User:</strong> ${tx.userEmail || tx.uid || "-"}</p>
+
+            <p><strong>Type:</strong> ${tx.type || "-"}</p>
+
+            <p><strong>Amount:</strong> ${Number(tx.amount || 0).toLocaleString()} RWF</p>
+
+            <p><strong>Status:</strong> ${tx.status || "-"}</p>
+
+            <p><strong>Date:</strong> ${tx.date ? new Date(tx.date).toLocaleString() : "-"}</p>
+
+        `;
+
+        container.appendChild(card);
+
+    });
+
+}
+
+
+// ================================
+// SEND USER NOTIFICATION
+// ================================
+
+async function sendNotification(uid, title, message) {
+
+    try {
+
+        if (!uid) return;
+
+        await push(
+            ref(db, `notifications/${uid}`),
+            {
+                title,
+                message,
+                read: false,
+                createdAt: Date.now()
+            }
+        );
+
+    } catch (error) {
+
+        console.error(
+            "Notification Error:",
+            error
+        );
+
+    }
+
+}
+
+
+// ================================
+// HELPER NOTIFICATIONS
+// ================================
+
+async function notifyDepositApproved(deposit) {
+
+    await sendNotification(
+        deposit.uid,
+        "Deposit Approved",
+        `Your deposit of ${Number(deposit.amount).toLocaleString()} RWF has been approved.`
+    );
+
+}
+
+
+async function notifyWithdrawApproved(withdraw) {
+
+    await sendNotification(
+        withdraw.uid,
+        "Withdraw Approved",
+        `Your withdrawal of ${Number(withdraw.amount).toLocaleString()} RWF has been approved.`
+    );
+
+}
+
+
+async function notifyVipApproved(vip) {
+
+    await sendNotification(
+        vip.uid,
+        "VIP Approved",
+        `${vip.vipName || vip.name} has been activated successfully.`
+    );
+
+}
+
+
+// ================================
+// EXPORT
+// ================================
+
+window.loadTransactions = loadTransactions;
+window.sendNotification = sendNotification;
+window.notifyDepositApproved = notifyDepositApproved;
+window.notifyWithdrawApproved = notifyWithdrawApproved;
+window.notifyVipApproved = notifyVipApproved;
+
+
+
