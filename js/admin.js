@@ -545,100 +545,184 @@ function renderDeposits(data) {
 
 // ======================================
 // ADMIN.JS PART 3C
-// REJECT + SEARCH + FILTER
+// APPROVE + REJECT + SEARCH + FILTER
 // ======================================
 
-// REJECT DEPOSIT
+// APPROVE / REJECT DEPOSIT
 
-depositList.addEventListener("click", async(e)=>{
+depositList.addEventListener("click", async (e) => {
 
-const btn = e.target.closest(".approveBtn");
+    // ==========================
+    // APPROVE
+    // ==========================
 
-if(!btn) return;
+    const approveBtn = e.target.closest(".approveBtn");
 
+    if (approveBtn) {
 
-const id = btn.dataset.id;
+        const id = approveBtn.dataset.id;
 
-const deposit = depositsData[id];
+        const deposit = depositsData[id];
 
-if(!deposit) return;
+        if (!deposit) return;
 
+        if (deposit.status !== "pending") {
+            alert("Already processed");
+            return;
+        }
 
-if(deposit.status !== "pending"){
-alert("Already processed");
-return;
-}
+        if (!confirm("Approve this deposit?")) return;
 
+        try {
 
-const userRef = ref(db,"users/"+deposit.uid);
+            const userRef = ref(db, "users/" + deposit.uid);
 
+            const snap = await get(userRef);
 
-const snap = await get(userRef);
+            if (!snap.exists()) {
+                alert("User not found");
+                return;
+            }
 
+            const user = snap.val();
 
-if(!snap.exists()){
-alert("User not found");
-return;
-}
+            const amount = Number(deposit.amount || 0);
 
+            const balance = Number(user.balance || 0);
 
-const user = snap.val();
+            await update(userRef, {
+                balance: balance + amount
+            });
 
+            await update(ref(db, "depositRequests/" + id), {
+                status: "approved",
+                approvedAt: Date.now(),
+                approvedBy: auth.currentUser.uid
+            });
 
-const oldBalance =
-Number(user.balance || 0);
+            const transactionRef =
+                push(ref(db, "transactions"));
 
+            await set(transactionRef, {
+                uid: deposit.uid,
+                email: deposit.email,
+                type: "deposit",
+                amount: amount,
+                status: "approved",
+                createdAt: Date.now()
+            });
 
-const amount =
-Number(deposit.amount || 0);
+            const notificationRef =
+                push(ref(db, "notifications/" + deposit.uid));
 
+            await set(notificationRef, {
+                title: "Deposit Approved",
+                message:
+                    "Your deposit of " +
+                    amount.toLocaleString() +
+                    " RWF has been approved.",
+                type: "deposit",
+                read: false,
+                createdAt: Date.now()
+            });
 
+            alert("Deposit Approved Successfully");
 
-await update(userRef,{
+        } catch (error) {
 
-balance:
-oldBalance + amount
+            console.error(error);
+
+            alert(error.message);
+
+        }
+
+        return;
+
+    }
+
+    // ==========================
+    // REJECT
+    // ==========================
+
+    const rejectBtn = e.target.closest(".rejectBtn");
+
+    if (rejectBtn) {
+
+        const id = rejectBtn.dataset.id;
+
+        const deposit = depositsData[id];
+
+        if (!deposit) return;
+
+        if (deposit.status !== "pending") {
+            alert("Already processed");
+            return;
+        }
+
+        if (!confirm("Reject this deposit?")) return;
+
+        try {
+
+            await update(ref(db, "depositRequests/" + id), {
+                status: "rejected",
+                rejectedAt: Date.now(),
+                rejectedBy: auth.currentUser.uid
+            });
+
+            const notificationRef =
+                push(ref(db, "notifications/" + deposit.uid));
+
+            await set(notificationRef, {
+                title: "Deposit Rejected",
+                message: "Your deposit request has been rejected.",
+                type: "deposit",
+                read: false,
+                createdAt: Date.now()
+            });
+
+            alert("Deposit Rejected Successfully");
+
+        } catch (error) {
+
+            console.error(error);
+
+            alert(error.message);
+
+        }
+
+    }
 
 });
 
 
+// ======================================
+// SEARCH
+// ======================================
 
-await update(
-ref(db,"depositRequests/"+id),
-{
+const depositSearch =
+document.getElementById("depositSearch");
 
-status:"approved",
-
-approvedAt:Date.now(),
-
-approvedBy:auth.currentUser.uid
-
-});
+depositSearch?.addEventListener("input", applyDepositFilter);
 
 
+// ======================================
+// FILTER
+// ======================================
 
-const transactionRef =
-push(ref(db,"transactions"));
+const depositFilter =
+document.getElementById("depositFilter");
+
+depositFilter?.addEventListener("change", applyDepositFilter);
 
 
-await set(transactionRef,{
+// ======================================
+// APPLY FILTER
+// ======================================
 
-uid:deposit.uid,
+function applyDepositFilter() {
 
-email:deposit.email,
-
-type:"deposit",
-
-amount:amount,
-
-status:"approved",
-
-createdAt:Date.now()
-
-});
-
-alert("Deposit Approved Successfully");
-
+    const keyword =
+        (
 
 // ======================================
 // SEND DEPOSIT APPROVED NOTIFICATION
