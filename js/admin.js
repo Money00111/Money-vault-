@@ -2712,196 +2712,150 @@ window.loadBonusRequests = loadBonusRequests;
 window.saveSystemSettings = saveSystemSettings;
 window.loadSystemSettings = loadSystemSettings
 
-
 // ======================================
 // PART 10
-// FINAL STARTUP + GLOBAL EXPORTS
+// FINAL STARTUP + CLEAN NAVIGATION
+// QUICK ACTIONS FIXED
 // ======================================
 
 
 // ================================
-// STARTUP CHECK
+// INITIALIZE ADMIN
 // ================================
 
-function initializeAdmin() {
+function initializeAdmin(){
 
-    console.log("=================================");
-    console.log("Money Vault Admin Initialized");
-    console.log("=================================");
+    console.log(
+        "================================="
+    );
 
-    // Irinda gutangira kabiri
-    if (window.__ADMIN_INITIALIZED__) {
+    console.log(
+        "Money Vault Admin Initialized"
+    );
+
+    console.log(
+        "================================="
+    );
+
+
+    if(window.__ADMIN_INITIALIZED__){
+
         return;
+
     }
 
+
     window.__ADMIN_INITIALIZED__ = true;
+
 
 }
 
 
+
 // ================================
-// SAFE FUNCTION CHECK
+// OPEN PAGE FUNCTION
 // ================================
 
-const requiredFunctions = [
+function openAdminPage(page){
 
-    "loadDashboardFinal",
-    "loadDeposits",
-    "loadWithdraws",
-    "loadVipRequests",
-    "loadVipBuyers",
-    "loadBonusRequests",
-    "loadUsers",
-    "loadTransactions",
-    "logoutAdmin"
 
-];
+    // Hide all sections
 
-requiredFunctions.forEach(name => {
+    document
+    .querySelectorAll(".page-section")
+    .forEach(section=>{
 
-    if (typeof window[name] !== "function") {
 
-        console.warn(
-            `${name} is missing`
+        section.classList.remove(
+            "active"
+        );
+
+
+    });
+
+
+
+    // Show selected section
+
+    const target =
+    document.getElementById(
+        page + "Section"
+    );
+
+
+    if(target){
+
+        target.classList.add(
+            "active"
         );
 
     }
 
-});
 
 
-// ================================
-// GLOBAL EXPORTS
-// ================================
+    // Update menu active
 
-window.loadDashboardFinal = loadDashboardFinal;
-
-window.loadDeposits = loadDeposits;
-
-window.loadWithdraws = loadWithdraws;
-
-window.loadVipRequests = loadVipRequests;
-
-window.loadVipBuyers = loadVipBuyers;
-
-window.loadBonusRequests = loadBonusRequests;
-
-window.loadUsers = loadUsers;
-
-window.loadTransactions = loadTransactions;
-
-window.logoutAdmin = logoutAdmin;
-
-window.approveDeposit = approveDeposit;
-
-window.rejectDeposit = rejectDeposit;
-
-window.approveWithdraw = approveWithdraw;
-
-window.rejectWithdraw = rejectWithdraw;
-
-window.approveVipRequest = approveVipRequest;
-
-window.rejectVipRequest = rejectVipRequest;
-
-window.deleteUser = deleteUser;
-
-window.sendNotification = sendNotification;
-
-window.saveSystemSettings = saveSystemSettings;
-
-window.loadSystemSettings = loadSystemSettings;
+    document
+    .querySelectorAll(".menu-link")
+    .forEach(link=>{
 
 
-// ================================
-// GLOBAL ERROR HANDLER
-// ================================
+        link.classList.remove(
+            "active"
+        );
 
-window.addEventListener("error", (event) => {
-console.error(
-        "JavaScript Error:",
-        event.error || event.message
+
+        if(
+            link.dataset.page === page
+        ){
+
+            link.classList.add(
+                "active"
+            );
+
+        }
+
+
+    });
+
+
+
+    // Change title
+
+    const title =
+    document.getElementById(
+        "pageTitle"
     );
 
-});
+
+    if(title){
+
+        title.innerText =
+        page.charAt(0).toUpperCase()
+        +
+        page.slice(1);
+
+    }
 
 
-window.addEventListener("unhandledrejection", (event) => {
+}
 
-    console.error(
-        "Unhandled Promise:",
-        event.reason
-    );
 
-});
 
 // ================================
-// QUICK ACTION BUTTONS
+// MENU NAVIGATION
 // ================================
 
-document.getElementById("refreshDashboard")
-?.addEventListener("click", ()=>{
 
-    loadDashboardFinal();
-
-});
+document
+.querySelectorAll(".menu-link")
+.forEach(link=>{
 
 
-document.getElementById("openDeposits")
-?.addEventListener("click", ()=>{
+    link.addEventListener(
+    "click",
+    (e)=>{
 
-    document.querySelector('[data-page="deposits"]')?.click();
-
-});
-
-
-document.getElementById("openWithdraws")
-?.addEventListener("click", ()=>{
-
-    document.querySelector('[data-page="withdraws"]')?.click();
-
-});
-
-
-document.getElementById("openUsers")
-?.addEventListener("click", ()=>{
-
-    document.querySelector('[data-page="users"]')?.click();
-
-});
-
-
-document.getElementById("openTransactions")
-?.addEventListener("click", ()=>{
-
-    document.querySelector('[data-page="transactions"]')?.click();
-
-});
-
-
-document.getElementById("openSettings")
-?.addEventListener("click", ()=>{
-
-    document.querySelector('[data-page="settings"]')?.click();
-
-});
-
-
-document.getElementById("openVipRequests")
-?.addEventListener("click", ()=>{
-
-    document.querySelector('[data-page="vipRequests"]')?.click();
-
-});
-
-                   // ================================
-// PAGE NAVIGATION
-// ================================
-
-document.querySelectorAll(".menu-link")
-.forEach(link => {
-
-    link.addEventListener("click", (e)=>{
 
         e.preventDefault();
 
@@ -2910,101 +2864,347 @@ document.querySelectorAll(".menu-link")
         link.dataset.page;
 
 
-        // remove active
+        openAdminPage(page);
 
-        document.querySelectorAll(".page-section")
-        .forEach(section=>{
-
-            section.classList.remove("active");
-
-        });
-
-
-
-        // show selected page
-
-        const section =
-        document.getElementById(page + "Section");
-
-
-        if(section){
-
-            section.classList.add("active");
-
-        }
-
-
-
-        // active menu
-
-        document.querySelectorAll(".menu-link")
-        .forEach(item=>{
-
-            item.classList.remove("active");
-
-        });
-
-
-        link.classList.add("active");
-
-
-        // title
-
-        const title =
-        document.getElementById("pageTitle");
-
-
-        if(title){
-
-            title.innerText =
-            link.innerText.trim();
-
-        }
 
 
     });
 
-});
-
-// TEST PAGE NAVIGATION
-
-document.querySelectorAll(".menu-link").forEach(link=>{
-
-    link.onclick = function(e){
-
-        e.preventDefault();
-
-        console.log("CLICKED:", this.dataset.page);
-
-        const page = this.dataset.page;
-
-        document.querySelectorAll(".page-section")
-        .forEach(section=>{
-            section.classList.remove("active");
-        });
-
-
-        const target =
-        document.getElementById(page + "Section");
-
-
-        console.log("TARGET:", target);
-
-
-        if(target){
-
-            target.classList.add("active");
-
-        }
-
-    };
 
 });
+
+
+
+
 // ================================
-// START
+// QUICK ACTIONS
 // ================================
+
+
+
+document
+.getElementById("refreshDashboard")
+?.addEventListener(
+"click",
+()=>{
+
+
+    loadDashboardFinal();
+
+
+});
+
+
+
+
+
+document
+.getElementById("openDeposits")
+?.addEventListener(
+"click",
+()=>{
+
+
+    openAdminPage(
+        "deposits"
+    );
+
+
+});
+
+
+
+
+
+document
+.getElementById("openWithdraws")
+?.addEventListener(
+"click",
+()=>{
+
+
+    openAdminPage(
+        "withdraws"
+    );
+
+
+});
+
+
+
+
+
+document
+.getElementById("openUsers")
+?.addEventListener(
+"click",
+()=>{
+
+
+    openAdminPage(
+        "users"
+    );
+
+
+});
+
+
+
+
+
+document
+.getElementById("openTransactions")
+?.addEventListener(
+"click",
+()=>{
+
+
+    openAdminPage(
+        "transactions"
+    );
+
+
+});
+
+
+
+
+
+document
+.getElementById("openSettings")
+?.addEventListener(
+"click",
+()=>{
+
+
+    openAdminPage(
+        "settings"
+    );
+
+
+});
+
+
+
+
+
+document
+.getElementById("openVipRequests")
+?.addEventListener(
+"click",
+()=>{
+
+
+    openAdminPage(
+        "vipRequests"
+    );
+
+
+});
+
+
+
+
+// ================================
+// SECOND QUICK ACTION IDs
+// ================================
+
+
+document
+.getElementById("openUsersBtn")
+?.addEventListener(
+"click",
+()=>{
+
+    openAdminPage(
+        "users"
+    );
+
+});
+
+
+
+document
+.getElementById("openTransactionsBtn")
+?.addEventListener(
+"click",
+()=>{
+
+    openAdminPage(
+        "transactions"
+    );
+
+});
+
+
+
+document
+.getElementById("openSettingsBtn")
+?.addEventListener(
+"click",
+()=>{
+
+    openAdminPage(
+        "settings"
+    );
+
+});
+
+
+
+
+// ================================
+// LOGOUT BUTTON
+// ================================
+
+
+document
+.getElementById("logoutBtn")
+?.addEventListener(
+"click",
+()=>{
+
+
+    logoutAdmin();
+
+
+});
+
+
+
+
+// ================================
+// GLOBAL EXPORTS
+// ================================
+
+
+window.loadDashboardFinal =
+loadDashboardFinal;
+
+
+window.loadDeposits =
+loadDeposits;
+
+
+window.loadWithdraws =
+loadWithdraws;
+
+
+window.loadVipRequests =
+loadVipRequests;
+
+
+window.loadVipBuyers =
+loadVipBuyers;
+
+
+window.loadBonusRequests =
+loadBonusRequests;
+
+
+window.loadUsers =
+loadUsers;
+
+
+window.loadTransactions =
+loadTransactions;
+
+
+window.logoutAdmin =
+logoutAdmin;
+
+
+window.openAdminPage =
+openAdminPage;
+
+
+
+window.approveDeposit =
+approveDeposit;
+
+
+window.rejectDeposit =
+rejectDeposit;
+
+
+window.approveWithdraw =
+approveWithdraw;
+
+
+window.rejectWithdraw =
+rejectWithdraw;
+
+
+window.approveVipRequest =
+approveVipRequest;
+
+
+window.rejectVipRequest =
+rejectVipRequest;
+
+
+window.deleteUser =
+deleteUser;
+
+
+window.sendNotification =
+sendNotification;
+
+
+window.saveSystemSettings =
+saveSystemSettings;
+
+
+window.loadSystemSettings =
+loadSystemSettings;
+
+
+
+// ================================
+// ERROR HANDLERS
+// ================================
+
+
+window.addEventListener(
+"error",
+(event)=>{
+
+
+console.error(
+"JavaScript Error:",
+event.error || event.message
+);
+
+
+});
+
+
+
+
+window.addEventListener(
+"unhandledrejection",
+(event)=>{
+
+
+console.error(
+"Promise Error:",
+event.reason
+);
+
+
+});
+
+
+
+
+// ================================
+// START ADMIN
+// ================================
+
 
 initializeAdmin();
 
-console.log("Admin.js loaded successfully.");
-                        
+
+console.log(
+"Admin.js loaded successfully."
+);
