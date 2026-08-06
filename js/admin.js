@@ -2192,48 +2192,115 @@ function loadTransactions() {
 // ================================
 
 function renderTransactions() {
+
     console.log("RENDER TRANSACTIONS START");
-console.log(transactionsData);
+    console.log(transactionsData);
+
 
     const container = $("transactionList");
 
-    if (!container) return;
+
+    if (!container) {
+
+        console.log("transactionList not found");
+
+        return;
+
+    }
+
 
     container.innerHTML = "";
 
-    const transactions = Object.entries(transactionsData)
-        .sort((a, b) => {
 
-            const timeA = a[1].date || 0;
-            const timeB = b[1].date || 0;
+    const transactions = Object.entries(transactionsData || {})
+    .sort((a,b)=>{
 
-            return timeB - timeA;
+        const timeA = a[1]?.date || 0;
+        const timeB = b[1]?.date || 0;
 
-        });
+        return timeB - timeA;
 
-    transactions.forEach(([id, tx]) => {
+    });
+
+
+
+    if(transactions.length === 0){
+
+        container.innerHTML = `
+        <div class="empty-state">
+
+        <h3>No Transactions</h3>
+
+        <p>
+        Transactions will appear here.
+        </p>
+
+        </div>
+        `;
+
+        return;
+
+    }
+
+
+
+
+    transactions.forEach(([id,tx])=>{
+
 
         const card = document.createElement("div");
 
-        card.className = "transaction-card";
+
+        card.className =
+        "transaction-card";
+
+
 
         card.innerHTML = `
 
-            <p><strong>User:</strong> ${tx.userEmail || tx.uid || "-"}</p>
+        <p>
+        <strong>User:</strong>
+        ${tx.userEmail || tx.uid || "-"}
+        </p>
 
-            <p><strong>Type:</strong> ${tx.type || "-"}</p>
 
-            <p><strong>Amount:</strong> ${Number(tx.amount || 0).toLocaleString()} RWF</p>
+        <p>
+        <strong>Type:</strong>
+        ${tx.type || "-"}
+        </p>
 
-            <p><strong>Status:</strong> ${tx.status || "-"}</p>
 
-            <p><strong>Date:</strong> ${tx.date ? new Date(tx.date).toLocaleString() : "-"}</p>
+        <p>
+        <strong>Amount:</strong>
+        ${Number(tx.amount || 0).toLocaleString()}
+        RWF
+        </p>
+
+
+        <p>
+        <strong>Status:</strong>
+        ${tx.status || "-"}
+        </p>
+
+
+        <p>
+        <strong>Date:</strong>
+        ${
+        tx.date
+        ? new Date(tx.date).toLocaleString()
+        : "-"
+        }
+        </p>
+
 
         `;
 
+
         container.appendChild(card);
 
+
     });
+
 
 }
 
