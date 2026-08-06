@@ -402,24 +402,23 @@ async function loadDashboardFinal(){
 
 
 
-        if($("totalDeposits")){
+        if($("dashboardTotalDeposits")){
 
-            $("totalDeposits").innerText =
-            totalDeposits.toLocaleString()
-            + " RWF";
+    $("dashboardTotalDeposits").innerText =
+    totalDeposits.toLocaleString()
+    + " RWF";
 
-        }
+    }
 
 
 
-        if($("totalWithdraws")){
+        if($("dashboardTotalWithdraws")){
 
-            $("totalWithdraws").innerText =
-            totalWithdraws.toLocaleString()
-            + " RWF";
+    $("dashboardTotalWithdraws").innerText =
+    totalWithdraws.toLocaleString()
+    + " RWF";
 
-        }
-
+    }
 
 
         // System balance
