@@ -710,10 +710,9 @@ setTimeout(()=>{
 
 console.log("ADMIN PART 2 READY");
 
-    
-     // ======================================
+    // ======================================
 // ADMIN.JS - PART 3
-// DEPOSIT MANAGEMENT
+// DEPOSIT MANAGEMENT SYSTEM
 // ======================================
 
 
@@ -721,23 +720,16 @@ console.log("ADMIN PART 2 READY");
 // ELEMENTS
 // ================================
 
-const depositList =
-$("depositList");
+const depositList = $("depositList");
 
-const emptyDeposit =
-$("emptyDeposit");
+const emptyDeposit = $("emptyDeposit");
 
-const depositTotalCount =
-$("depositTotalCount");
+const depositTotalCount = $("depositTotalCount");
+const depositPendingCount = $("depositPendingCount");
+const depositApprovedCount = $("depositApprovedCount");
+const depositRejectedCount = $("depositRejectedCount");
 
-const depositPendingCount =
-$("depositPendingCount");
 
-const depositApprovedCount =
-$("depositApprovedCount");
-
-const depositRejectedCount =
-$("depositRejectedCount");
 
 
 // ================================
@@ -745,7 +737,6 @@ $("depositRejectedCount");
 // ================================
 
 function loadDeposits(){
-
 
     onValue(
         ref(db,"depositRequests"),
@@ -767,13 +758,13 @@ function loadDeposits(){
         }
     );
 
-
 }
 
 
 
+
 // ================================
-// RENDER DEPOSIT CARDS
+// RENDER DEPOSITS
 // ================================
 
 function renderDeposits(data){
@@ -782,24 +773,20 @@ function renderDeposits(data){
     if(!depositList) return;
 
 
-    depositList.innerHTML = "";
+    depositList.innerHTML="";
 
 
 
-    const deposits =
+    const list =
     Object.entries(data);
 
 
 
-    if(deposits.length === 0){
+    if(list.length===0){
 
 
-        if(emptyDeposit){
-
-            emptyDeposit.style.display =
-            "block";
-
-        }
+        if(emptyDeposit)
+        emptyDeposit.style.display="block";
 
 
         return;
@@ -808,30 +795,13 @@ function renderDeposits(data){
 
 
 
-    if(emptyDeposit){
-
-        emptyDeposit.style.display =
-        "none";
-
-    }
+    if(emptyDeposit)
+    emptyDeposit.style.display="none";
 
 
 
-    deposits.sort((a,b)=>{
 
-        return (
-            b[1].createdAt || 0
-        )
-        -
-        (
-            a[1].createdAt || 0
-        );
-
-    });
-
-
-
-    deposits.forEach(([id,dep])=>{
+    list.forEach(([id,dep])=>{
 
 
         const status =
@@ -842,6 +812,7 @@ function renderDeposits(data){
         const card =
         document.createElement("div");
 
+
         card.className =
         "request-card";
 
@@ -849,110 +820,108 @@ function renderDeposits(data){
 
         card.innerHTML = `
 
-        <div class="request-top">
 
-        <h3>
-        ${dep.email || "Unknown"}
-        </h3>
+<div class="request-top">
 
-
-        <span class="status ${status}">
-        ${status.toUpperCase()}
-        </span>
-
-        </div>
+<h3>
+${dep.email || "Unknown User"}
+</h3>
 
 
-        <p>
-        <strong>Amount:</strong>
-        ${formatMoney(dep.amount)}
-        </p>
+<span class="status ${status}">
+${status.toUpperCase()}
+</span>
 
-
-        <p>
-        <strong>Method:</strong>
-        ${dep.paymentMethod || "-"}
-        </p>
-
-
-        <p>
-        <strong>Phone:</strong>
-        ${dep.senderPhone || "-"}
-        </p>
-
-
-        <p>
-        <strong>Transaction ID:</strong>
-        ${dep.transactionId || "-"}
-        </p>
-
-
-        <p>
-        <strong>Date:</strong>
-        ${formatDate(dep.createdAt)}
-        </p>
-
-
-        <div class="action-buttons">
-
-
-        ${
-        status === "pending"
-
-        ?
-
-        `
-
-        <button
-        class="approveDepositBtn"
-        data-id="${id}">
-
-        <i class="fa-solid fa-check"></i>
-        Approve
-
-        </button>
-
-
-        <button
-        class="rejectDepositBtn"
-        data-id="${id}">
-
-        <i class="fa-solid fa-xmark"></i>
-        Reject
-
-        </button>
-
-        `
-
-        :
-
-        `
-
-        <button disabled>
-
-        ${status.toUpperCase()}
-
-        </button>
-
-        `
-
-        }
-
-
-        </div>
-
-
-        `;
+</div>
 
 
 
-        depositList.appendChild(card);
+<p>
+<strong>Amount:</strong>
+${formatMoney(dep.amount)}
+</p>
+
+
+<p>
+<strong>Method:</strong>
+${dep.paymentMethod || "-"}
+</p>
+
+
+<p>
+<strong>Phone:</strong>
+${dep.senderPhone || "-"}
+</p>
+
+
+<p>
+<strong>Transaction ID:</strong>
+${dep.transactionId || "-"}
+</p>
+
+
+
+<div class="action-buttons">
+
+
+${
+status==="pending"
+
+?
+
+`
+
+<button
+class="approveDepositBtn"
+data-id="${id}">
+
+<i class="fa-solid fa-check"></i>
+Approve
+
+</button>
+
+
+
+<button
+class="rejectDepositBtn"
+data-id="${id}">
+
+<i class="fa-solid fa-xmark"></i>
+Reject
+
+</button>
+
+`
+
+:
+
+`
+
+<button disabled>
+${status.toUpperCase()}
+</button>
+
+`
+
+}
+
+
+</div>
+
+
+`;
+
+
+
+depositList.appendChild(card);
 
 
     });
 
 
 }
+
+
 
 
 
@@ -964,228 +933,350 @@ function renderDeposits(data){
 function updateDepositSummary(){
 
 
-    let total = 0;
-    let pending = 0;
-    let approved = 0;
-    let rejected = 0;
+let total=0;
+let pending=0;
+let approved=0;
+let rejected=0;
 
 
 
-    Object.values(
-        depositsData
-    )
-    .forEach(dep=>{
+Object.values(depositsData)
+.forEach(dep=>{
 
 
-        total++;
+total++;
 
 
-        if(dep.status==="pending")
-            pending++;
+if(dep.status==="pending")
+pending++;
 
 
-        if(dep.status==="approved")
-            approved++;
+if(dep.status==="approved")
+approved++;
 
 
-        if(dep.status==="rejected")
-            rejected++;
-
-
-    });
-
-
-
-    if(depositTotalCount)
-        depositTotalCount.textContent = total;
-
-
-    if(depositPendingCount)
-        depositPendingCount.textContent = pending;
-
-
-    if(depositApprovedCount)
-        depositApprovedCount.textContent = approved;
-
-
-    if(depositRejectedCount)
-        depositRejectedCount.textContent = rejected;
-
-
-}
-
-
-
-
-// ================================
-// APPROVE / REJECT BUTTONS
-// ================================
-
-
-depositList?.addEventListener("click", async (e)=>{
-
-
-    const approve =
-    e.target.closest(".approveDepositBtn");
-
-
-    const reject =
-    e.target.closest(".rejectDepositBtn");
-
-
-
-    if(approve){
-
-        await approveDeposit(
-            approve.dataset.id
-        );
-
-        return;
-
-    }
-
-
-
-    if(reject){
-
-        await rejectDeposit(
-            reject.dataset.id
-        );
-
-        return;
-
-    }
+if(dep.status==="rejected")
+rejected++;
 
 
 });
 
 
 
+depositTotalCount.textContent=total;
+
+depositPendingCount.textContent=pending;
+
+depositApprovedCount.textContent=approved;
+
+depositRejectedCount.textContent=rejected;
+
+
+}
+
+
+
+
+
+
 // ================================
-// APPROVE FUNCTION
+// BUTTON EVENTS
+// ================================
+
+depositList.addEventListener(
+"click",
+async(e)=>{
+
+
+const approveBtn =
+e.target.closest(".approveDepositBtn");
+
+
+const rejectBtn =
+e.target.closest(".rejectDepositBtn");
+
+
+
+
+if(approveBtn){
+
+await approveDeposit(
+approveBtn.dataset.id
+);
+
+return;
+
+}
+
+
+
+if(rejectBtn){
+
+await rejectDeposit(
+rejectBtn.dataset.id
+);
+
+return;
+
+}
+
+
+
+});
+
+
+
+
+
+
+
+// ================================
+// APPROVE DEPOSIT
 // ================================
 
 async function approveDeposit(id){
 
 
-    const dep =
-    depositsData[id];
-
-
-    if(!dep) return;
+const deposit =
+depositsData[id];
 
 
 
-    if(dep.status!=="pending"){
-
-        alert("Already processed");
-
-        return;
-
-    }
+if(!deposit) return;
 
 
 
-    if(!confirm("Approve Deposit?"))
-        return;
+if(deposit.status!=="pending"){
+
+alert("Already processed");
+
+return;
+
+}
 
 
 
-    const userRef =
-    ref(db,"users/"+dep.uid);
+if(!confirm("Approve this deposit?"))
+return;
 
 
 
-    const snap =
-    await get(userRef);
+
+const userRef =
+ref(
+db,
+"users/"+deposit.uid
+);
 
 
 
-    if(!snap.exists()){
-
-        alert("User not found");
-
-        return;
-
-    }
+const userSnap =
+await get(userRef);
 
 
 
-    const user =
-    snap.val();
+if(!userSnap.exists()){
+
+alert("User not found");
+
+return;
+
+}
 
 
 
-    const amount =
-    Number(dep.amount || 0);
+const user =
+userSnap.val();
 
 
 
-    await update(
-        userRef,
-        {
-
-        balance:
-        Number(user.balance||0)
-        + amount
-
-        }
-    );
+const amount =
+Number(deposit.amount || 0);
 
 
 
-    await update(
-        ref(db,"depositRequests/"+id),
-        {
+await update(
+userRef,
+{
 
-        status:"approved",
+balance:
+Number(user.balance||0)
++
+amount
 
-        approvedAt:
-        Date.now()
-
-        }
-    );
-
+});
 
 
-    alert(
-    "Deposit Approved"
-    );
+
+
+// UPDATE REQUEST
+
+await update(
+ref(db,"depositRequests/"+id),
+{
+
+status:"approved",
+
+approvedAt:Date.now(),
+
+approvedBy:
+auth.currentUser.uid
+
+});
+
+
+
+
+
+// TRANSACTION
+
+const transaction =
+push(ref(db,"transactions"));
+
+
+
+await set(transaction,{
+
+uid:deposit.uid,
+
+email:deposit.email,
+
+type:"deposit",
+
+amount:amount,
+
+status:"approved",
+
+createdAt:Date.now()
+
+});
+
+
+
+
+
+// NOTIFICATION
+
+const notification =
+push(
+ref(db,
+"notifications/"+deposit.uid)
+);
+
+
+
+await set(notification,{
+
+title:"Deposit Approved",
+
+message:
+"Your deposit of "
++
+amount.toLocaleString()
++
+" RWF approved.",
+
+type:"deposit",
+
+read:false,
+
+createdAt:Date.now()
+
+});
+
+
+
+alert(
+"Deposit Approved Successfully"
+);
 
 
 }
 
 
 
+
+
+
+
 // ================================
-// REJECT FUNCTION
+// REJECT DEPOSIT
 // ================================
 
 async function rejectDeposit(id){
 
 
-    if(!confirm("Reject Deposit?"))
-        return;
+const deposit =
+depositsData[id];
 
 
 
-    await update(
-        ref(db,"depositRequests/"+id),
-        {
-
-        status:"rejected",
-
-        rejectedAt:
-        Date.now()
-
-        }
-    );
+if(!deposit) return;
 
 
 
-    alert(
-    "Deposit Rejected"
-    );
+if(deposit.status!=="pending"){
+
+alert("Already processed");
+
+return;
+
+}
+
+
+
+if(!confirm("Reject this deposit?"))
+return;
+
+
+
+
+await update(
+ref(db,"depositRequests/"+id),
+{
+
+status:"rejected",
+
+rejectedAt:Date.now(),
+
+rejectedBy:
+auth.currentUser.uid
+
+});
+
+
+
+
+
+
+const notification =
+push(
+ref(db,
+"notifications/"+deposit.uid)
+);
+
+
+
+await set(notification,{
+
+title:"Deposit Rejected",
+
+message:
+"Your deposit request was rejected.",
+
+type:"deposit",
+
+read:false,
+
+createdAt:Date.now()
+
+});
+
+
+
+alert(
+"Deposit Rejected Successfully"
+);
 
 
 }
@@ -1193,8 +1284,11 @@ async function rejectDeposit(id){
 
 
 
+
+
+
 // ================================
-// SEARCH + FILTER
+// SEARCH
 // ================================
 
 $("depositSearch")
@@ -1204,6 +1298,11 @@ applyDepositFilter
 );
 
 
+
+// ================================
+// FILTER
+// ================================
+
 $("depositFilter")
 ?.addEventListener(
 "change",
@@ -1212,65 +1311,68 @@ applyDepositFilter
 
 
 
+
+
+
 function applyDepositFilter(){
 
 
-    const word =
-    ($("depositSearch")?.value || "")
-    .toLowerCase();
+const keyword =
+($("depositSearch")?.value || "")
+.toLowerCase();
 
 
 
-    const filter =
-    $("depositFilter")?.value || "all";
+const filter =
+$("depositFilter")?.value || "all";
 
 
 
-    const result = {};
+const result={};
 
 
 
-    Object.entries(
-        depositsData
-    )
-    .forEach(([id,dep])=>{
+Object.entries(depositsData)
+.forEach(([id,dep])=>{
 
 
-        const text =
+const searchText =
 
-        (
-        dep.email+
-        dep.senderPhone+
-        dep.transactionId
-        )
-        .toLowerCase();
-
-
-
-        const searchOk =
-        text.includes(word);
+(
+dep.email
++
+dep.senderPhone
++
+dep.transactionId
+)
+.toLowerCase();
 
 
 
-        const filterOk =
-        filter==="all"
-        ||
-        dep.status===filter;
+const searchMatch =
+searchText.includes(keyword);
 
 
 
-        if(searchOk && filterOk){
-
-            result[id]=dep;
-
-        }
-
-
-    });
+const filterMatch =
+filter==="all"
+||
+dep.status===filter;
 
 
 
-    renderDeposits(result);
+if(searchMatch && filterMatch){
+
+result[id]=dep;
+
+}
+
+
+});
+
+
+
+renderDeposits(result);
 
 
 }
@@ -1278,11 +1380,12 @@ function applyDepositFilter(){
 
 
 
-// START
 
 loadDeposits();
 
 
+
 console.log(
-"ADMIN PART 3 READY"
-);                        
+"ADMIN PART 3 NEW READY"
+);
+
