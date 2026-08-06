@@ -1285,6 +1285,7 @@ async function approveWithdraw(id,button){
         );
 
 
+await notifyWithdrawApproved(withdraw);
 
 
 
@@ -1319,7 +1320,6 @@ async function approveWithdraw(id,button){
 }
 
 
-await notifyWithdrawApproved(withdraw);
 
 // ================================
 // REJECT WITHDRAW
@@ -2185,7 +2185,7 @@ function loadTransactions() {
 
 function renderTransactions() {
 
-    const container = $("transactionsList");
+    const container = $("transactionList");
 
     if (!container) return;
 
