@@ -1086,6 +1086,7 @@ auth.currentUser.uid
 
 );
 
+    console.log("APPROVED SET", id);
 
 
 
@@ -1226,6 +1227,7 @@ processingAt:Date.now()
 
 );
 
+    console.log("PROCESSING SET", id);
 
 
 try{
