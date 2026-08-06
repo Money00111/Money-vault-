@@ -2175,6 +2175,8 @@ function loadTransactions() {
 
     onValue(transactionsRef, (snapshot) => {
 
+        console.log("TRANSACTION DATA:", snapshot.val());
+
         transactionsData = snapshot.exists()
             ? snapshot.val()
             : {};
@@ -2185,12 +2187,13 @@ function loadTransactions() {
 
 }
 
-
 // ================================
 // RENDER TRANSACTIONS
 // ================================
 
 function renderTransactions() {
+    console.log("RENDER TRANSACTIONS START");
+console.log(transactionsData);
 
     const container = $("transactionList");
 
