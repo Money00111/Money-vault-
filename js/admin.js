@@ -2965,6 +2965,41 @@ document.querySelectorAll(".menu-link")
     });
 
 });
+
+// TEST PAGE NAVIGATION
+
+document.querySelectorAll(".menu-link").forEach(link=>{
+
+    link.onclick = function(e){
+
+        e.preventDefault();
+
+        console.log("CLICKED:", this.dataset.page);
+
+        const page = this.dataset.page;
+
+        document.querySelectorAll(".page-section")
+        .forEach(section=>{
+            section.classList.remove("active");
+        });
+
+
+        const target =
+        document.getElementById(page + "Section");
+
+
+        console.log("TARGET:", target);
+
+
+        if(target){
+
+            target.classList.add("active");
+
+        }
+
+    };
+
+});
 // ================================
 // START
 // ================================
