@@ -164,23 +164,31 @@ alert("ADMIN AUTH OK");
 
         // Tangiza system nyuma ya auth gusa
 
-        loadDashboardFinal();
+        
 
-        loadDeposits();
+loadDashboardFinal();
+alert("Dashboard OK");
 
-        loadWithdraws();
+loadDeposits();
+alert("Deposits OK");
 
-        loadVipRequests();
+loadWithdraws();
+alert("Withdraws OK");
 
-        loadVipBuyers();
+loadVipRequests();
+alert("VIP Requests OK");
 
-        loadBonusRequests();
+loadVipBuyers();
+alert("VIP Buyers OK");
 
-        loadUsers();
+loadBonusRequests();
+alert("Bonus OK");
 
-        loadTransactions();
+loadUsers();
+alert("Users OK");
 
-
+loadTransactions();
+alert("Transactions OK");
 
     }
 
