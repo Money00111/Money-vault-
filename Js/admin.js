@@ -1021,21 +1021,16 @@ function updateDepositSummary(){
 // APPROVE / REJECT BUTTONS
 // ================================
 
-depositList?.addEventListener(
-"click",
-async(e)=>{
+
+depositList?.addEventListener("click", async (e)=>{
 
 
     const approve =
-    e.target.closest(
-        ".approveDepositBtn"
-    );
+    e.target.closest(".approveDepositBtn");
 
 
     const reject =
-    e.target.closest(
-        ".rejectDepositBtn"
-    );
+    e.target.closest(".rejectDepositBtn");
 
 
 
@@ -1044,6 +1039,8 @@ async(e)=>{
         await approveDeposit(
             approve.dataset.id
         );
+
+        return;
 
     }
 
@@ -1055,11 +1052,12 @@ async(e)=>{
             reject.dataset.id
         );
 
+        return;
+
     }
 
 
 });
-
 
 
 
