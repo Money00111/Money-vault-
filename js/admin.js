@@ -805,6 +805,7 @@ async function approveDeposit(id,button){
 
         );
 
+await notifyDepositApproved(deposit);
 
 
         button.style.display =
@@ -836,7 +837,6 @@ async function approveDeposit(id,button){
 
 }
 
-await notifyDepositApproved(deposit);
 
 
 
@@ -1620,7 +1620,7 @@ function attachVipButtons(){
             const id =
             button.dataset.id;
 
-
+await notifyVipApproved(vip);
 
             button.style.display =
             "none";
@@ -1686,7 +1686,7 @@ async function approveVipRequest(id,button){
 
         );
 
-                await notifyVipApproved(vip);
+                
 
 
 
