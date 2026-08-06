@@ -2835,7 +2835,64 @@ window.addEventListener("unhandledrejection", (event) => {
 
 });
 
+// ================================
+// QUICK ACTION BUTTONS
+// ================================
 
+document.getElementById("refreshDashboard")
+?.addEventListener("click", ()=>{
+
+    loadDashboardFinal();
+
+});
+
+
+document.getElementById("openDeposits")
+?.addEventListener("click", ()=>{
+
+    document.querySelector('[data-page="deposits"]')?.click();
+
+});
+
+
+document.getElementById("openWithdraws")
+?.addEventListener("click", ()=>{
+
+    document.querySelector('[data-page="withdraws"]')?.click();
+
+});
+
+
+document.getElementById("openUsers")
+?.addEventListener("click", ()=>{
+
+    document.querySelector('[data-page="users"]')?.click();
+
+});
+
+
+document.getElementById("openTransactions")
+?.addEventListener("click", ()=>{
+
+    document.querySelector('[data-page="transactions"]')?.click();
+
+});
+
+
+document.getElementById("openSettings")
+?.addEventListener("click", ()=>{
+
+    document.querySelector('[data-page="settings"]')?.click();
+
+});
+
+
+document.getElementById("openVipRequests")
+?.addEventListener("click", ()=>{
+
+    document.querySelector('[data-page="vipRequests"]')?.click();
+
+});
 // ================================
 // START
 // ================================
