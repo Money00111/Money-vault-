@@ -1619,7 +1619,7 @@ function attachVipButtons(){
             const id =
             button.dataset.id;
 
-await notifyVipApproved(vip);
+
 
             button.style.display =
             "none";
@@ -1742,7 +1742,7 @@ async function approveVipRequest(id,button){
 
         );
 
-
+await notifyVipApproved(vip);
 
         button.style.display =
         "none";
