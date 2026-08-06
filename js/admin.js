@@ -836,6 +836,8 @@ async function approveDeposit(id,button){
 
 }
 
+await notifyDepositApproved(deposit);
+
 
 
 
@@ -915,6 +917,7 @@ async function rejectDeposit(id,button){
 
 window.loadDeposits =
 loadDeposits;
+
 
 // ======================================
 // PART 5
@@ -1316,7 +1319,7 @@ async function approveWithdraw(id,button){
 }
 
 
-
+await notifyWithdrawApproved(withdraw);
 
 // ================================
 // REJECT WITHDRAW
@@ -1682,6 +1685,8 @@ async function approveVipRequest(id,button){
         }
 
         );
+
+                await notifyVipApproved(vip);
 
 
 
