@@ -160,7 +160,7 @@ onAuthStateChanged(auth, async (user) => {
             user.email
         );
 
-alert("ADMIN AUTH OK");
+
 
         // Tangiza system nyuma ya auth gusa
 
