@@ -2308,4 +2308,326 @@ window.notifyWithdrawApproved = notifyWithdrawApproved;
 window.notifyVipApproved = notifyVipApproved;
 
 
+// ======================================
+// PART 9
+// BONUS REQUESTS + SYSTEM SETTINGS
+// ======================================
+
+
+// ================================
+// LOAD BONUS REQUESTS
+// ================================
+
+function loadBonusRequests() {
+
+    if (!adminReady) return;
+
+    const bonusRef = ref(db, "bonusRequests");
+
+    onValue(bonusRef, (snapshot) => {
+
+        const bonusData = snapshot.exists()
+            ? snapshot.val()
+            : {};
+
+        renderBonusRequests(bonusData);
+
+    });
+
+}
+
+
+
+// ================================
+// RENDER BONUS REQUESTS
+// ================================
+
+function renderBonusRequests(bonusData) {
+
+    const container = $("bonusRequestList");
+
+    if (!container) return;
+
+    container.innerHTML = "";
+
+    Object.entries(bonusData).forEach(([id, bonus]) => {
+
+        const status = bonus.status || "pending";
+
+        const card = document.createElement("div");
+
+        card.className = "request-card";
+
+        card.innerHTML = `
+
+            <p><strong>User:</strong> ${bonus.userEmail || bonus.uid}</p>
+
+            <p><strong>Amount:</strong> ${Number(bonus.amount || 0).toLocaleString()} RWF</p>
+
+            <p><strong>Reason:</strong> ${bonus.reason || "-"}</p>
+
+            <p><strong>Status:</strong> ${status}</p>
+
+            ${
+                status === "pending"
+                    ? `
+                        <button class="approveBonusBtn" data-id="${id}">
+                            Approve
+                        </button>
+
+                        <button class="rejectBonusBtn" data-id="${id}">
+                            Reject
+                        </button>
+                    `
+                    : ""
+            }
+
+        `;
+
+        container.appendChild(card);
+
+    });
+
+    attachBonusButtons();
+
+}
+
+
+
+// ================================
+// BONUS BUTTONS
+// ================================
+
+function attachBonusButtons() {
+
+    document.querySelectorAll(".approveBonusBtn")
+        .forEach(button => {
+
+            button.onclick = async () => {
+
+                button.disabled = true;
+
+                await approveBonus(
+                    button.dataset.id,
+                    button
+                );
+
+            };
+
+        });
+
+
+    document.querySelectorAll(".rejectBonusBtn")
+        .forEach(button => {
+
+            button.onclick = async () => {
+
+                button.disabled = true;
+
+                await rejectBonus(
+                    button.dataset.id,
+                    button
+                );
+
+            };
+
+        });
+
+}
+
+
+
+// ================================
+// APPROVE BONUS
+// ================================
+
+async function approveBonus(id, button) {
+
+    try {
+
+        const bonusRef = ref(db, "bonusRequests/" + id);
+
+        const snap = await get(bonusRef);
+
+        if (!snap.exists()) return;
+
+        const bonus = snap.val();
+                if (bonus.status !== "pending") return;
+
+        const userRef = ref(db, "users/" + bonus.uid);
+
+        const userSnap = await get(userRef);
+
+        if (!userSnap.exists()) {
+
+            throw new Error("User not found");
+
+        }
+
+        const balance =
+            Number(userSnap.val().balance || 0);
+
+        const amount =
+            Number(bonus.amount || 0);
+
+        await update(userRef, {
+
+            balance: balance + amount
+
+        });
+
+        await update(bonusRef, {
+
+            status: "approved",
+            approvedAt: Date.now()
+
+        });
+
+        await push(ref(db, "transactions"), {
+
+            uid: bonus.uid,
+            type: "bonus",
+            amount: amount,
+            status: "approved",
+            date: Date.now()
+
+        });
+
+        await sendNotification(
+
+            bonus.uid,
+
+            "Bonus Approved",
+
+            `You received ${amount.toLocaleString()} RWF bonus.`
+
+        );
+
+        button.style.display = "none";
+
+        loadDashboardFinal();
+
+    }
+
+    catch (error) {
+
+        showError(error);
+
+    }
+
+}
+
+
+
+// ================================
+// REJECT BONUS
+// ================================
+
+async function rejectBonus(id, button) {
+
+    try {
+
+        const bonusRef =
+            ref(db, "bonusRequests/" + id);
+
+        const snap = await get(bonusRef);
+
+        if (!snap.exists()) return;
+
+        const bonus = snap.val();
+
+        if (bonus.status !== "pending") return;
+
+        await update(bonusRef, {
+
+            status: "rejected",
+            rejectedAt: Date.now()
+
+        });
+
+        await sendNotification(
+
+            bonus.uid,
+
+            "Bonus Rejected",
+
+            "Your bonus request was rejected."
+
+        );
+
+        button.style.display = "none";
+
+    }
+
+    catch (error) {
+
+        showError(error);
+
+    }
+
+}
+
+
+
+// ================================
+// SYSTEM SETTINGS
+// ================================
+
+async function saveSystemSettings(settings) {
+
+    try {
+
+        await update(
+            ref(db, "systemSettings"),
+            settings
+        );
+
+        alert("Settings saved successfully.");
+
+    }
+
+    catch (error) {
+
+        showError(error);
+
+    }
+
+}
+
+
+
+async function loadSystemSettings() {
+
+    try {
+
+        const snap = await get(
+            ref(db, "systemSettings")
+        );
+
+        return snap.exists()
+            ? snap.val()
+            : {};
+
+    }
+
+    catch (error) {
+
+        showError(error);
+
+        return {};
+
+    }
+
+}
+
+
+
+// ================================
+// EXPORT
+// ================================
+
+window.loadBonusRequests = loadBonusRequests;
+window.saveSystemSettings = saveSystemSettings;
+window.loadSystemSettings = loadSystemSettings
+
 
