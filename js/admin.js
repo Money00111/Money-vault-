@@ -1664,7 +1664,412 @@ console.log("Quick Actions Ready");
 
     
 
+// ======================================
+// ADMIN.JS - PART 5
+// WITHDRAW MANAGEMENT FINAL
+// ======================================
 
+
+// ================================
+// LOAD WITHDRAWS
+// ================================
+
+function loadWithdraws(){
+
+const withdrawRef =
+ref(db,"withdrawRequests");
+
+
+onValue(withdrawRef, async(snapshot)=>{
+
+
+const list =
+document.getElementById("withdrawList");
+
+
+const empty =
+document.getElementById("emptyWithdraw");
+
+
+if(!list) return;
+
+
+list.innerHTML="";
+
+
+if(!snapshot.exists()){
+
+if(empty)
+empty.style.display="block";
+
+return;
+
+}
+
+
+if(empty)
+empty.style.display="none";
+
+
+
+const withdraws =
+Object.entries(snapshot.val()).reverse();
+
+
+
+for(const [id,withdraw] of withdraws){
+
+
+let userData={};
+
+
+
+if(withdraw.uid){
+
+const userSnap =
+await get(
+ref(db,"users/"+withdraw.uid)
+);
+
+
+if(userSnap.exists()){
+
+userData=userSnap.val();
+
+}
+
+}
+
+
+
+const status =
+withdraw.status || "pending";
+
+
+
+const card =
+document.createElement("div");
+
+
+card.className="request-card";
+
+
+
+card.innerHTML=`
+
+<div class="request-top">
+
+<h3>
+Withdraw Request
+</h3>
+
+<span class="status ${status}">
+${status}
+</span>
+
+</div>
+
+
+<p>
+<strong>Name:</strong>
+${withdraw.fullName || userData.name || userData.fullName || "-"}
+</p>
+
+
+<p>
+<strong>Email:</strong>
+${withdraw.email || userData.email || "-"}
+</p>
+
+
+<p>
+<strong>Phone:</strong>
+${withdraw.phone || userData.phone || "-"}
+</p>
+
+
+<p>
+<strong>Amount:</strong>
+${Number(withdraw.amount || 0).toLocaleString()} RWF
+</p>
+
+
+<p>
+<strong>Payment Method:</strong>
+${withdraw.paymentMethod || "-"}
+</p>
+
+
+<p>
+<strong>Account:</strong>
+${withdraw.account || withdraw.phone || "-"}
+</p>
+
+
+<p>
+<strong>Date:</strong>
+${withdraw.createdAt || "-"}
+</p>
+
+
+
+<div class="action-buttons">
+
+
+<button
+
+class="approveBtn"
+
+${status!=="pending"?"disabled":""}
+
+onclick="approveWithdraw('${id}')">
+
+Approve
+
+</button>
+
+
+
+<button
+
+class="rejectBtn"
+
+${status!=="pending"?"disabled":""}
+
+onclick="rejectWithdraw('${id}')">
+
+Reject
+
+</button>
+
+
+</div>
+
+
+`;
+
+
+list.appendChild(card);
+
+
+}
+
+
+});
+
+
+}
+
+
+
+
+
+
+// ================================
+// APPROVE WITHDRAW ONCE
+// ================================
+
+window.approveWithdraw =
+async function(id){
+
+
+const withdrawRef =
+ref(db,"withdrawRequests/"+id);
+
+
+const snap =
+await get(withdrawRef);
+
+
+if(!snap.exists()) return;
+
+
+const withdraw =
+snap.val();
+
+
+
+if(withdraw.status !== "pending"){
+
+alert("Withdraw already processed");
+
+return;
+
+}
+
+
+
+await update(withdrawRef,{
+
+status:"approved",
+
+approvedAt:Date.now(),
+
+approvedBy:currentAdmin.uid
+
+});
+
+
+
+
+
+await set(
+
+push(ref(db,"transactions")),
+
+{
+
+uid:withdraw.uid,
+
+type:"withdraw",
+
+amount:Number(withdraw.amount || 0),
+
+status:"approved",
+
+reference:id,
+
+date:Date.now()
+
+}
+
+);
+
+
+
+alert(
+"Withdraw Approved Successfully"
+);
+
+
+
+loadWithdraws();
+
+
+if(window.loadDashboard){
+
+window.loadDashboard();
+
+}
+
+
+};
+
+
+
+
+
+
+
+
+// ================================
+// REJECT WITHDRAW ONCE
+// ================================
+
+window.rejectWithdraw =
+async function(id){
+
+
+const withdrawRef =
+ref(db,"withdrawRequests/"+id);
+
+
+const snap =
+await get(withdrawRef);
+
+
+if(!snap.exists()) return;
+
+
+const withdraw =
+snap.val();
+
+
+
+if(withdraw.status !== "pending"){
+
+alert("Withdraw already processed");
+
+return;
+
+}
+
+
+
+
+await update(withdrawRef,{
+
+status:"rejected",
+
+rejectedAt:Date.now(),
+
+rejectedBy:currentAdmin.uid
+
+});
+
+
+
+
+
+await set(
+
+push(ref(db,"transactions")),
+
+{
+
+uid:withdraw.uid,
+
+type:"withdraw",
+
+amount:Number(withdraw.amount || 0),
+
+status:"rejected",
+
+reference:id,
+
+date:Date.now()
+
+}
+
+);
+
+
+
+alert(
+"Withdraw Rejected Successfully"
+);
+
+
+
+loadWithdraws();
+
+
+if(window.loadDashboard){
+
+window.loadDashboard();
+
+}
+
+
+};
+
+
+
+
+
+// ================================
+// EXPORT
+// ================================
+
+window.loadWithdraws =
+loadWithdraws;
+
+
+console.log(
+"Withdraw System Ready"
+);
+
+    
 
 
 
