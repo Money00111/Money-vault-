@@ -142,7 +142,15 @@ onAuthStateChanged(auth, async(user)=>{
 
     adminReady = true;
 
+    
 
+// START ADMIN SYSTEMS AFTER AUTH ONLY
+
+if(window.startAdminSystems){
+
+    window.startAdminSystems();
+
+    }
 
 
 
