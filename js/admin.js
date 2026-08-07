@@ -139,7 +139,8 @@ onAuthStateChanged(auth, async(user)=>{
 
     currentAdmin = user;
 
-
+     loadDeposits()
+    
     adminReady = true;
 
     
@@ -1607,7 +1608,7 @@ alert(
 // START DEPOSIT SYSTEM
 // ================================
 
-loadDeposits();
+
 
 
 
