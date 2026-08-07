@@ -1351,7 +1351,9 @@ if(!snap.exists()) return;
 const deposit =
 snap.val();
 
-
+console.log(id);
+console.log(deposit);
+console.log(currentAdmin);
 
 
 // BLOCK DOUBLE APPROVE
@@ -1509,8 +1511,9 @@ if(!snap.exists()) return;
 const deposit =
 snap.val();
 
-
-
+    console.log(id);
+console.log(deposit);
+console.log(currentAdmin);
 
 
 // BLOCK DOUBLE REJECT
