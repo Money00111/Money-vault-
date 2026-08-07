@@ -1468,17 +1468,15 @@ async function(id){
     // ADD MONEY ONCE
 
     await update(
-        userRef,
-        {
-
+    userRef,
+    {
         balance:
-        oldBalance + amount
+        oldBalance + amount,
 
-        }
-    );
-
-
-
+        lastDepositApproved:
+        Date.now()
+    }
+);
 
 
 
@@ -1821,5 +1819,15 @@ loadDeposits;
 console.log(
 "Admin Part 3 Deposit Ready"
 );
+// ======================================
+// START ADMIN SYSTEMS
+// ======================================
 
-   loadDeposits(); 
+window.startAdminSystems = function(){
+
+    loadDeposits();
+
+};
+
+
+   
