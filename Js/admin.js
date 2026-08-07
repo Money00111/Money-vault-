@@ -1002,11 +1002,15 @@ depositList?.addEventListener("click", async (e) => {
 console.log("ADMIN PART 3A-3 READY");
 
 // ======================================
-// ADMIN.JS - PART 3B-1
-// APPROVE DEPOSIT (SECURE)
+// ADMIN.JS - PART 3B
+// SECURE APPROVE DEPOSIT COMPLETE
 // ======================================
 
 async function approveDeposit(id) {
+
+    const depositRef =
+        ref(db, "depositRequests/" + id);
+
 
     try {
 
@@ -1014,193 +1018,285 @@ async function approveDeposit(id) {
         // GET LATEST DEPOSIT
         // ==========================
 
-        const depositRef = ref(db, "depositRequests/" + id);
+        const depositSnap =
+            await get(depositRef);
 
-        const depositSnap = await get(depositRef);
 
         if (!depositSnap.exists()) {
 
-            throw new Error("Deposit request not found.");
+            throw new Error(
+                "Deposit request not found."
+            );
 
         }
 
-        const deposit = depositSnap.val();
+
+        const deposit =
+            depositSnap.val();
+
+
 
         // ==========================
-        // ALREADY PROCESSED?
+        // CHECK STATUS
         // ==========================
 
         if (deposit.status !== "pending") {
 
-            alert("This deposit has already been processed.");
+            alert(
+                "This deposit has already been processed."
+            );
 
             return;
 
         }
 
-        // ==========================
-        // LOCK REQUEST
-        // ==========================
 
-        await update(depositRef, {
-
-            status: "processing",
-            processingAt: Date.now(),
-            processingBy: auth.currentUser.uid
-
-        });
 
         // ==========================
-        // LOAD USER
+        // LOCK FIRST
         // ==========================
 
-        const userRef = ref(db, "users/" + deposit.uid);
+        await update(
+            depositRef,
+            {
 
-        const userSnap = await get(userRef);
+                status:"processing",
 
-        if (!userSnap.exists()) {
+                processingAt:Date.now(),
 
-            // Subiza deposit kuri pending niba user adabonetse
-            await update(depositRef, {
+                processingBy:
+                auth.currentUser.uid
 
-                status: "pending"
-
-            });
-
-            throw new Error("User not found.");
-
-        }
-
-        const user = userSnap.val();
-
-        const currentBalance = Number(user.balance || 0);
-
-        const depositAmount = Number(deposit.amount || 0);
-
-        const newBalance = currentBalance + depositAmount;
-
-        // ==========================
-        // UPDATE USER BALANCE
-        // ==========================
-
-        await update(userRef, {
-
-            balance: newBalance
-
-        });
-
-        // Part 3B-2 ikomereza hano:
-        // - Final approve status
-        // - Transaction
-        // - Notification
-        // - Success message
-        // - Error recovery
-
-    } catch (error) {
-
-        console.error(error);
-        throw error;
-
-    }
-
-}
-
-console.log("ADMIN PART 3B-1 READY");
-
-// ======================================
-// ADMIN.JS - PART 3B-2
-// APPROVE DEPOSIT (FINALIZE)
-// ======================================
-
-        // ==========================
-        // FINAL APPROVE STATUS
-        // ==========================
-
-        await update(depositRef, {
-
-            status: "approved",
-            approvedAt: Date.now(),
-            approvedBy: auth.currentUser.uid
-
-        });
-
-        // ==========================
-        // SAVE TRANSACTION
-        // ==========================
-
-        const transactionRef = push(
-            ref(db, "transactions")
+            }
         );
 
-        await set(transactionRef, {
 
-            uid: deposit.uid,
-            email: deposit.email || "",
-            name: deposit.name || "",
-            type: "deposit",
-            amount: depositAmount,
-            status: "approved",
-            createdAt: Date.now(),
-            approvedBy: auth.currentUser.uid
-
-        });
 
         // ==========================
-        // SEND NOTIFICATION
+        // GET USER
         // ==========================
 
-        const notificationRef = push(
-            ref(db, "notifications/" + deposit.uid)
-        );
+        const userRef =
+            ref(db,"users/"+deposit.uid);
 
-        await set(notificationRef, {
 
-            title: "Deposit Approved",
-            message:
-                "Your deposit of " +
-                formatMoney(depositAmount) +
-                " has been approved.",
 
-            type: "deposit",
-            read: false,
-            createdAt: Date.now()
+        const userSnap =
+            await get(userRef);
 
-        });
 
-        alert("Deposit approved successfully.");
 
-        // onValue() izahita ivugurura list na status
+        if(!userSnap.exists()){
 
-    } catch (error) {
-
-        console.error(error);
-
-        // ==========================
-        // RESTORE STATUS IF FAILED
-        // ==========================
-
-        try {
 
             await update(
-                ref(db, "depositRequests/" + id),
+                depositRef,
                 {
-                    status: "pending",
-                    processingAt: null,
-                    processingBy: null
+                    status:"pending"
                 }
             );
 
-        } catch (restoreError) {
 
-            console.error("Restore failed:", restoreError);
+            throw new Error(
+                "User not found."
+            );
 
         }
 
+
+
+        const user =
+            userSnap.val();
+
+
+
+        const amount =
+            Number(deposit.amount || 0);
+
+
+
+        const oldBalance =
+            Number(user.balance || 0);
+
+
+
+        const newBalance =
+            oldBalance + amount;
+
+
+
+        // ==========================
+        // UPDATE BALANCE
+        // ==========================
+
+        await update(
+            userRef,
+            {
+
+                balance:newBalance
+
+            }
+        );
+
+
+
+        // ==========================
+        // FINAL APPROVED
+        // ==========================
+
+        await update(
+            depositRef,
+            {
+
+                status:"approved",
+
+                approvedAt:Date.now(),
+
+                approvedBy:
+                auth.currentUser.uid
+
+            }
+        );
+
+
+
+        // ==========================
+        // TRANSACTION
+        // ==========================
+
+        const transactionRef =
+            push(
+                ref(db,"transactions")
+            );
+
+
+
+        await set(
+            transactionRef,
+            {
+
+                uid:deposit.uid,
+
+                email:
+                deposit.email || "",
+
+                name:
+                deposit.name || "",
+
+                type:"deposit",
+
+                amount:amount,
+
+                status:"approved",
+
+                createdAt:Date.now(),
+
+                approvedBy:
+                auth.currentUser.uid
+
+            }
+        );
+
+
+
+        // ==========================
+        // NOTIFICATION
+        // ==========================
+
+        const noteRef =
+            push(
+                ref(db,
+                "notifications/"+deposit.uid)
+            );
+
+
+
+        await set(
+            noteRef,
+            {
+
+                title:"Deposit Approved",
+
+                message:
+                "Your deposit of "
+                +
+                formatMoney(amount)
+                +
+                " has been approved.",
+
+
+                type:"deposit",
+
+                read:false,
+
+                createdAt:Date.now()
+
+            }
+        );
+
+
+
+        alert(
+            "Deposit Approved Successfully"
+        );
+
+
+
+    }
+
+
+    catch(error){
+
+
+        console.error(
+            "Approve Deposit Error:",
+            error
+        );
+
+
+
+        // SUBIZA STATUS NIBA BYANZE
+
+        try{
+
+
+            await update(
+                depositRef,
+                {
+
+                    status:"pending",
+
+                    processingAt:null,
+
+                    processingBy:null
+
+                }
+            );
+
+
+        }
+
+        catch(e){
+
+            console.error(
+                "Restore error:",
+                e
+            );
+
+        }
+
+
+
         throw error;
+
 
     }
 
 }
 
-console.log("ADMIN PART 3B-2 READY");
+
+
+console.log(
+"ADMIN PART 3B COMPLETE READY"
+);
 
