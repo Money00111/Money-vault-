@@ -1604,7 +1604,62 @@ console.log(
 );
 
 
+// ======================================
+// ADMIN.JS - PART 4
+// QUICK ACTIONS
+// ======================================
 
+function goToPage(page){
+    openPage(page);
+}
+
+document.getElementById("refreshDashboard")?.addEventListener("click", () => {
+    loadDashboard();
+});
+
+document.getElementById("refreshDashboardQuick")?.addEventListener("click", () => {
+    loadDashboard();
+});
+
+document.getElementById("openDeposits")?.addEventListener("click", () => {
+    goToPage("deposits");
+});
+
+document.getElementById("openWithdraws")?.addEventListener("click", () => {
+    goToPage("withdraws");
+});
+
+document.getElementById("openUsers")?.addEventListener("click", () => {
+    goToPage("users");
+});
+
+document.getElementById("openTransactions")?.addEventListener("click", () => {
+    goToPage("transactions");
+});
+
+document.getElementById("openSettings")?.addEventListener("click", () => {
+    goToPage("settings");
+});
+
+document.getElementById("openVipRequests")?.addEventListener("click", () => {
+    goToPage("vipRequests");
+});
+
+document.getElementById("openUsersBtn")?.addEventListener("click", () => {
+    goToPage("users");
+});
+
+document.getElementById("openTransactionsBtn")?.addEventListener("click", () => {
+    goToPage("transactions");
+});
+
+document.getElementById("openSettingsBtn")?.addEventListener("click", () => {
+    goToPage("settings");
+});
+
+console.log("Quick Actions Ready");
+
+    
 
 
 
