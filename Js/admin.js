@@ -710,18 +710,18 @@ setTimeout(()=>{
 
 console.log("ADMIN PART 2 READY");
 
-    // ======================================
-// ADMIN.JS - PART 3
-// SECURE DEPOSIT MANAGEMENT
-// ======================================
 
+
+// ======================================
+// ADMIN.JS - PART 3A-1
+// DEPOSIT MANAGEMENT SETUP + LOAD
+// ======================================
 
 // ================================
 // ELEMENTS
 // ================================
 
 const depositList = $("depositList");
-
 const emptyDeposit = $("emptyDeposit");
 
 const depositTotalCount = $("depositTotalCount");
@@ -729,706 +729,275 @@ const depositPendingCount = $("depositPendingCount");
 const depositApprovedCount = $("depositApprovedCount");
 const depositRejectedCount = $("depositRejectedCount");
 
+const depositSearch = $("depositSearch");
+const depositFilter = $("depositFilter");
 
+// ================================
+// GLOBAL DATA
+// ================================
+
+let depositsData = {};
+let unsubscribeDeposits = null;
 
 // ================================
 // LOAD DEPOSITS
 // ================================
 
-function loadDeposits(){
+function loadDeposits() {
 
-    onValue(
-        ref(db,"depositRequests"),
-        (snapshot)=>{
+    if (!adminReady) return;
 
-            depositsData =
-            snapshot.val() || {};
+    // Irinda gushyiraho listener nyinshi
+    if (typeof unsubscribeDeposits === "function") {
+        unsubscribeDeposits();
+    }
 
-            renderDeposits(
-                depositsData
-            );
+    const depositsRef = ref(db, "depositRequests");
 
-            updateDepositSummary();
+    unsubscribeDeposits = onValue(depositsRef, (snapshot) => {
 
-        }
-    );
+        depositsData = snapshot.val() || {};
+
+        renderDeposits(depositsData);
+
+        updateDepositSummary();
+
+    }, (error) => {
+
+        console.error(error);
+
+        showError(error);
+
+    });
 
 }
 
-
-
 // ================================
-// RENDER
+// RELOAD CURRENT FILTER
 // ================================
 
-function renderDeposits(data){
+function refreshDepositView() {
 
-    if(!depositList) return;
+    if (
+        (depositSearch && depositSearch.value.trim() !== "") ||
+        (depositFilter && depositFilter.value !== "all")
+    ) {
 
+        applyDepositFilter();
 
-    depositList.innerHTML="";
+    } else {
 
-
-    const list =
-    Object.entries(data);
-
-
-
-    if(list.length === 0){
-
-        if(emptyDeposit)
-        emptyDeposit.style.display="block";
-
-        return;
+        renderDeposits(depositsData);
 
     }
 
+    updateDepositSummary();
 
-    if(emptyDeposit)
-    emptyDeposit.style.display="none";
+}
 
+console.log("ADMIN PART 3A-1 READY");
 
+    // ======================================
+// ADMIN.JS - PART 3A-2
+// RENDER DEPOSITS (SAFE)
+// ======================================
 
-    list.forEach(([id,dep])=>{
+function renderDeposits(data) {
 
+    if (!depositList) return;
 
-        const status =
-        dep.status || "pending";
+    depositList.innerHTML = "";
 
+    const list = Object.entries(data || {});
 
+    if (list.length === 0) {
 
-        const card =
-        document.createElement("div");
+        if (emptyDeposit) {
+            emptyDeposit.style.display = "block";
+        }
 
+        return;
+    }
 
-        card.className =
-        "request-card";
+    if (emptyDeposit) {
+        emptyDeposit.style.display = "none";
+    }
 
+    // Latest first
+    list.sort((a, b) => {
+        return Number(b[1]?.createdAt || 0) - Number(a[1]?.createdAt || 0);
+    });
 
+    list.forEach(([id, dep]) => {
+
+        const status = dep.status || "pending";
+
+        const isPending = status === "pending";
+
+        const card = document.createElement("div");
+        card.className = "request-card";
 
         card.innerHTML = `
 
-
 <div class="request-top">
 
-<h3>
-${dep.email || "Unknown User"}
-</h3>
+    <h3>${dep.name || "Unknown User"}</h3>
 
-
-<span class="status ${status}">
-${status.toUpperCase()}
-</span>
+    <span class="status ${status}">
+        ${status.toUpperCase()}
+    </span>
 
 </div>
 
-
 <p>
-<strong>Amount:</strong>
-${formatMoney(dep.amount)}
+    <strong>Email:</strong>
+    ${dep.email || "-"}
 </p>
 
-
 <p>
-<strong>Method:</strong>
-${dep.paymentMethod || "-"}
+    <strong>Amount:</strong>
+    ${formatMoney(dep.amount)}
 </p>
 
-
 <p>
-<strong>Phone:</strong>
-${dep.senderPhone || "-"}
+    <strong>Phone:</strong>
+    ${dep.senderPhone || "-"}
 </p>
 
-
 <p>
-<strong>Transaction ID:</strong>
-${dep.transactionId || "-"}
+    <strong>Payment Method:</strong>
+    ${dep.paymentMethod || "-"}
 </p>
 
+<p>
+    <strong>Transaction ID:</strong>
+    ${dep.transactionId || "-"}
+</p>
 
+<p>
+    <strong>Date:</strong>
+    ${formatDate(dep.createdAt)}
+</p>
 
 <div class="action-buttons">
 
+    ${
+        isPending
+            ? `
 
-${
-status === "pending"
-
-?
-
-`
-
-<button 
+ <button
 class="approveDepositBtn"
 data-id="${id}">
-
+<i class="fa-solid fa-circle-check"></i>
 Approve
-
 </button>
 
-
-<button 
+<button
 class="rejectDepositBtn"
 data-id="${id}">
-
+<i class="fa-solid fa-circle-xmark"></i>
 Reject
-
 </button>
-
 `
-
-:
-
-`
-
+            : `
 <button disabled>
-
 ${status.toUpperCase()}
-
 </button>
-
 `
-
-}
-
+    }
 
 </div>
 
-
 `;
 
+        depositList.appendChild(card);
 
-
-depositList.appendChild(card);
-
-
-
-});
-
+    });
 
 }
 
+console.log("ADMIN PART 3A-2 READY");                     
 
-
+// ======================================
+// ADMIN.JS - PART 3A-3
+// DEPOSIT BUTTON EVENTS (SECURE)
+// ======================================
 
 // ================================
 // BUTTON EVENTS
 // ================================
 
-depositList.addEventListener(
-"click",
-async(e)=>{
+depositList?.addEventListener("click", async (e) => {
 
+    const approveBtn = e.target.closest(".approveDepositBtn");
+    const rejectBtn = e.target.closest(".rejectDepositBtn");
 
-const approve =
-e.target.closest(
-".approveDepositBtn"
-);
+    if (!approveBtn && !rejectBtn) return;
 
+    const button = approveBtn || rejectBtn;
+    const id = button.dataset.id;
 
-const reject =
-e.target.closest(
-".rejectDepositBtn"
-);
+    if (!id) return;
 
+    // Irinda gukanda button inshuro nyinshi
+    if (button.dataset.processing === "true") return;
 
+    button.dataset.processing = "true";
+    button.disabled = true;
 
-if(approve){
+    const oldText = button.innerHTML;
 
-approve.disabled=true;
+    button.innerHTML =
+        '<i class="fa-solid fa-spinner fa-spin"></i> Processing...';
 
-approve.innerHTML=
-"Processing...";
+    // Disable na button ya kabiri iri kuri card
+    const card = button.closest(".request-card");
 
+      if (card) {
 
-await approveDeposit(
-approve.dataset.id
-);
+        card.querySelectorAll("button").forEach(btn => {
 
+            btn.disabled = true;
 
-return;
+        });
 
-}
+    }
 
+    try {
 
+        if (approveBtn) {
 
+            await approveDeposit(id);
 
-if(reject){
+        } else {
 
-reject.disabled=true;
+            await rejectDeposit(id);
 
-reject.innerHTML=
-"Processing...";
+        }
 
+    } catch (error) {
 
-await rejectDeposit(
-reject.dataset.id
-);
+        console.error(error);
 
+        showError(error);
 
-return;
+        // Subiza button uko yari imeze niba habaye ikosa
+        if (card) {
 
-}
+            card.querySelectorAll("button").forEach(btn => {
 
+                btn.disabled = false;
+                btn.dataset.processing = "false";
 
+            });
+
+        }
+
+        button.innerHTML = oldText;
+
+    }
 
 });
 
+console.log("ADMIN PART 3A-3 READY");
 
-
-
-
-// ================================
-// APPROVE
-// ================================
-
-async function approveDeposit(id){
-
-
-const deposit =
-depositsData[id];
-
-
-if(!deposit) return;
-
-
-
-if(deposit.status !== "pending"){
-
-alert("Already processed");
-
-return;
-
-}
-
-
-
-
-// LOCK FIRST
-
-await update(
-ref(db,"depositRequests/"+id),
-{
-
-status:"processing",
-
-processingAt:Date.now()
-
-}
-
-);
-
-
-
-try{
-
-
-const userRef =
-ref(db,"users/"+deposit.uid);
-
-
-
-const userSnap =
-await get(userRef);
-
-
-
-if(!userSnap.exists()){
-
-throw new Error(
-"User not found"
-);
-
-}
-
-
-
-const user =
-userSnap.val();
-
-
-
-const amount =
-Number(deposit.amount || 0);
-
-
-
-await update(
-userRef,
-{
-
-balance:
-Number(user.balance || 0)
-+
-amount
-
-}
-
-);
-
-
-
-
-// FINAL STATUS
-
-await update(
-ref(db,"depositRequests/"+id),
-{
-
-status:"approved",
-
-approvedAt:Date.now(),
-
-approvedBy:
-auth.currentUser.uid
-
-}
-
-);
-
-    console.log("APPROVED SET", id);
-
-
-
-// TRANSACTION
-
-const trans =
-push(
-ref(db,"transactions")
-);
-
-
-
-await set(trans,{
-
-uid:deposit.uid,
-
-email:deposit.email,
-
-type:"deposit",
-
-amount:amount,
-
-status:"approved",
-
-createdAt:Date.now()
-
-});
-
-
-
-
-// NOTIFICATION
-
-const note =
-push(
-ref(db,
-"notifications/"+deposit.uid)
-);
-
-
-
-await set(note,{
-
-title:"Deposit Approved",
-
-message:
-"Deposit of "
-+
-amount.toLocaleString()
-+
-" RWF approved.",
-
-type:"deposit",
-
-read:false,
-
-createdAt:Date.now()
-
-});
-
-
-
-alert(
-"Deposit Approved Successfully"
-);
-
-
-
-}
-
-catch(error){
-
-
-console.error(error);
-
-
-await update(
-ref(db,"depositRequests/"+id),
-{
-
-status:"pending"
-
-}
-
-);
-
-
-alert(error.message);
-
-
-}
-
-
-
-}
-
-
-
-
-
-
-// ================================
-// REJECT
-// ================================
-
-async function rejectDeposit(id){
-
-
-const deposit =
-depositsData[id];
-
-
-if(!deposit) return;
-
-
-
-if(
-deposit.status !== "pending"
-){
-
-alert("Already processed");
-
-return;
-
-}
-
-
-
-await update(
-ref(db,"depositRequests/"+id),
-{
-
-status:"processing",
-
-processingAt:Date.now()
-
-}
-
-);
-
-    console.log("PROCESSING SET", id);
-
-
-try{
-
-
-await update(
-ref(db,"depositRequests/"+id),
-{
-
-status:"rejected",
-
-rejectedAt:Date.now(),
-
-rejectedBy:
-auth.currentUser.uid
-
-}
-
-);
-
-
-
-const note =
-push(
-ref(db,
-"notifications/"+deposit.uid)
-);
-
-
-
-await set(note,{
-
-title:"Deposit Rejected",
-
-message:
-"Your deposit request was rejected.",
-
-type:"deposit",
-
-read:false,
-
-createdAt:Date.now()
-
-});
-
-
-
-alert(
-"Deposit Rejected Successfully"
-);
-
-
-
-}
-
-catch(error){
-
-console.error(error);
-
-alert(error.message);
-
-}
-
-
-
-}
-
-
-
-
-
-// ================================
-// SUMMARY
-// ================================
-
-function updateDepositSummary(){
-
-let total=0;
-let pending=0;
-let approved=0;
-let rejected=0;
-
-
-Object.values(depositsData)
-.forEach(dep=>{
-
-
-total++;
-
-
-if(dep.status==="pending")
-pending++;
-
-
-if(dep.status==="approved")
-approved++;
-
-
-if(dep.status==="rejected")
-rejected++;
-
-
-});
-
-
-
-depositTotalCount.textContent=total;
-
-depositPendingCount.textContent=pending;
-
-depositApprovedCount.textContent=approved;
-
-depositRejectedCount.textContent=rejected;
-
-
-}
-
-
-
-
-// ================================
-// SEARCH + FILTER
-// ================================
-
-$("depositSearch")
-?.addEventListener(
-"input",
-applyDepositFilter
-);
-
-
-$("depositFilter")
-?.addEventListener(
-"change",
-applyDepositFilter
-);
-
-
-
-function applyDepositFilter(){
-
-
-const key =
-($("depositSearch")?.value || "")
-.toLowerCase();
-
-
-
-const filter =
-$("depositFilter")?.value || "all";
-
-
-const result={};
-
-
-
-Object.entries(depositsData)
-.forEach(([id,dep])=>{
-
-
-const text =
-(
-dep.email+
-dep.senderPhone+
-dep.transactionId
-)
-.toLowerCase();
-
-
-
-if(
-text.includes(key)
-&&
-(
-filter==="all"
-||
-dep.status===filter
-)
-
-){
-
-result[id]=dep;
-
-}
-
-
-});
-
-
-
-renderDeposits(result);
-
-
-}
-
-
-
-
-loadDeposits();
-
-
-console.log(
-"PART 3 SECURE READY"
-);
