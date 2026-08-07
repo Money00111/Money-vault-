@@ -147,6 +147,8 @@ loadDashboard();
 loadDeposits();
 loadWithdraws();
     loadVipRequests();
+loadVipBuyers();
+    
 // START ADMIN SYSTEMS AFTER AUTH ONLY
 
 if(window.startAdminSystems){
