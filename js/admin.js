@@ -1122,8 +1122,26 @@ console.log(
 
 
 
+
+
+}
+
+}
+
+
+
+const status =
+deposit.status || "pending";
+
+
+
+const card =
+document.createElement("div");
+
+
+
 // ======================================
-// PART 3
+// ADMIN.JS - PART 3
 // DEPOSIT MANAGEMENT FINAL
 // ======================================
 
@@ -1166,7 +1184,6 @@ return;
 }
 
 
-
 if(empty)
 empty.style.display="none";
 
@@ -1186,12 +1203,10 @@ let userData={};
 
 if(deposit.uid){
 
-
 const userSnap =
 await get(
 ref(db,"users/"+deposit.uid)
 );
-
 
 
 if(userSnap.exists()){
@@ -1219,19 +1234,15 @@ card.className="request-card";
 
 card.innerHTML=`
 
-
 <div class="request-top">
-
 
 <h3>
 Deposit Request
 </h3>
 
-
 <span class="status ${status}">
 ${status}
 </span>
-
 
 </div>
 
@@ -1243,12 +1254,10 @@ ${deposit.fullName || userData.name || userData.fullName || "-"}
 </p>
 
 
-
 <p>
 <strong>Email:</strong>
 ${deposit.email || userData.email || "-"}
 </p>
-
 
 
 <p>
@@ -1257,12 +1266,10 @@ ${Number(deposit.amount || 0).toLocaleString()} RWF
 </p>
 
 
-
 <p>
 <strong>Phone:</strong>
 ${deposit.senderPhone || userData.phone || "-"}
 </p>
-
 
 
 <p>
@@ -1271,12 +1278,10 @@ ${deposit.paymentMethod || "-"}
 </p>
 
 
-
 <p>
 <strong>Transaction ID:</strong>
 ${deposit.transactionId || "-"}
 </p>
-
 
 
 <p>
@@ -1286,44 +1291,32 @@ ${deposit.paymentDate || deposit.createdAt || "-"}
 
 
 
-
 <div class="action-buttons">
 
 
 <button
-
 class="approveBtn"
-
 ${status!=="pending"?"disabled":""}
-
 onclick="approveDeposit('${id}')">
-
 
 <i class="fa-solid fa-circle-check"></i>
 
 Approve
 
-
 </button>
 
 
 
 <button
-
 class="rejectBtn"
-
 ${status!=="pending"?"disabled":""}
-
 onclick="rejectDeposit('${id}')">
-
 
 <i class="fa-solid fa-circle-xmark"></i>
 
 Reject
 
-
 </button>
-
 
 
 </div>
@@ -1336,9 +1329,7 @@ Reject
 list.appendChild(card);
 
 
-
 }
-
 
 
 });
@@ -1351,19 +1342,17 @@ list.appendChild(card);
 
 
 
+
 // ================================
 // APPROVE DEPOSIT ONCE
 // ================================
-
 
 window.approveDeposit =
 async function(id){
 
 
-
 const depositRef =
 ref(db,"depositRequests/"+id);
-
 
 
 const snap =
@@ -1383,25 +1372,82 @@ snap.val();
 
 // BLOCK DOUBLE APPROVE
 
-
 if(deposit.status !== "pending"){
 
-    alert("Deposit already processed");
+alert("Deposit already processed");
 
-    return;
+return;
 
 }
 
 
-await update(depositRef,{
 
-    status:"rejected",
+const userRef =
+ref(db,"users/"+deposit.uid);
 
-    rejectedAt:Date.now(),
 
-    rejectedBy:currentAdmin.uid
+
+const userSnap =
+await get(userRef);
+
+
+
+if(!userSnap.exists()){
+
+alert("User not found");
+
+return;
+
+}
+
+
+
+const user =
+userSnap.val();
+
+
+
+const oldBalance =
+Number(user.balance || 0);
+
+
+
+const amount =
+Number(deposit.amount || 0);
+
+
+
+
+// ADD MONEY ONLY ONCE
+
+await update(userRef,{
+
+balance:
+oldBalance + amount,
+
+
+totalDeposit:
+Number(user.totalDeposit || 0)
++ amount
 
 });
+
+
+
+
+
+await update(depositRef,{
+
+status:"approved",
+
+approvedAt:Date.now(),
+
+approvedBy:currentAdmin.uid
+
+});
+
+
+
 
 
 await set(
@@ -1410,40 +1456,52 @@ push(ref(db,"transactions")),
 
 {
 
-    uid:deposit.uid,
+uid:deposit.uid,
 
-    type:"deposit",
+type:"deposit",
 
-    amount:Number(deposit.amount || 0),
+amount:amount,
 
-    status:"rejected",
+status:"approved",
 
-    reference:id,
+reference:id,
 
-    date:Date.now()
+date:Date.now()
 
 }
 
 );
 
 
+
 alert(
-"Deposit Rejected Successfully"
+"Deposit Approved Successfully"
 );
+
 
 
 loadDeposits();
 
+
 if(window.loadDashboard){
 
-    window.loadDashboard();
+window.loadDashboard();
 
 }
+
+
+};
+
+
+
+
+
+
+
 
 // ================================
 // REJECT DEPOSIT ONCE
 // ================================
-
 
 window.rejectDeposit =
 async function(id){
@@ -1469,22 +1527,15 @@ snap.val();
 
 
 
+
+
+// BLOCK DOUBLE REJECT
+
 if(deposit.status !== "pending"){
 
-
-alert(
-"Deposit already processed"
-);
-
-
+alert("Deposit already processed");
 
 return;
-
-    loadDeposits();
-
-if(window.loadDashboard){
-    window.loadDashboard();
-}
 
 }
 
@@ -1530,22 +1581,46 @@ date:Date.now()
 
 
 
+
 alert(
 "Deposit Rejected Successfully"
 );
 
 
 
+loadDeposits();
+
+
+if(window.loadDashboard){
+
+window.loadDashboard();
+
+}
+
+
+
 };
 
 
+
+
+
+
 // ================================
-// EXPORT LOAD DEPOSITS
+// EXPORT
 // ================================
 
-window.loadDeposits = loadDeposits;
 
-console.log("Deposit System Ready");
+window.loadDeposits =
+loadDeposits;
+
+
+console.log(
+"Deposit System Ready"
+);
+
+
+
 
 
 
