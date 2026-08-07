@@ -142,7 +142,9 @@ onAuthStateChanged(auth, async(user)=>{
     
     adminReady = true;
 
-    loadDeposits();
+
+loadDashboard();
+loadDeposits();
 
 // START ADMIN SYSTEMS AFTER AUTH ONLY
 
