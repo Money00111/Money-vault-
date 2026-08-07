@@ -2753,3 +2753,942 @@ if(
 
 setupWithdrawSearch();
 
+// ======================================
+// ADMIN.JS - PART 7
+// VIP PURCHASE REQUESTS
+// LIST + USER PROFILE + APPROVE + REJECT
+// ======================================
+
+
+// ======================================
+// LOAD VIP REQUESTS
+// ======================================
+
+function loadVipRequests(){
+
+    const list =
+        document.getElementById("vipRequestList");
+
+    const empty =
+        document.getElementById("emptyVipRequest");
+
+
+    if(!list){
+
+        console.error(
+            "vipRequestList not found"
+        );
+
+        return;
+    }
+
+
+    const vipRef =
+        ref(
+            db,
+            "vipPurchaseRequests"
+        );
+
+
+    onValue(
+        vipRef,
+        async(snapshot)=>{
+
+            list.innerHTML = "";
+
+
+            // ================================
+            // NO REQUESTS
+            // ================================
+
+            if(!snapshot.exists()){
+
+                if(empty){
+                    empty.style.display = "block";
+                }
+
+                return;
+            }
+
+
+            if(empty){
+                empty.style.display = "none";
+            }
+
+
+            const requests =
+                Object.entries(
+                    snapshot.val()
+                ).reverse();
+
+
+            // ================================
+            // COUNTERS
+            // ================================
+
+            let total = 0;
+            let pending = 0;
+            let approved = 0;
+            let rejected = 0;
+
+
+            requests.forEach(([id,request])=>{
+
+                total++;
+
+                const status =
+                    String(
+                        request.status ||
+                        "pending"
+                    ).toLowerCase();
+
+
+                if(status === "pending"){
+                    pending++;
+                }
+
+                else if(status === "approved"){
+                    approved++;
+                }
+
+                else if(status === "rejected"){
+                    rejected++;
+                }
+
+            });
+
+
+            updateText(
+                "vipTotalCount",
+                total
+            );
+
+            updateText(
+                "vipPendingCount",
+                pending
+            );
+
+            updateText(
+                "vipApprovedCount",
+                approved
+            );
+
+            updateText(
+                "vipRejectedCount",
+                rejected
+            );
+
+
+            // ================================
+            // RENDER REQUESTS
+            // ================================
+
+            for(
+                const [id,request]
+                of requests
+            ){
+
+                const vip =
+                    request || {};
+
+
+                const uid =
+                    vip.uid ||
+                    vip.userId ||
+                    vip.userUID ||
+                    "";
+
+
+                // ================================
+                // USER PROFILE
+                // ================================
+
+                let userData = {};
+
+
+                if(uid){
+
+                    try{
+
+                        const userSnap =
+                            await get(
+                                ref(
+                                    db,
+                                    "users/" + uid
+                                )
+                            );
+
+
+                        if(userSnap.exists()){
+
+                            userData =
+                                userSnap.val() || {};
+
+                        }
+
+                    }catch(error){
+
+                        console.error(
+                            "VIP user profile error:",
+                            error
+                        );
+
+                    }
+
+                }
+
+
+                // ================================
+                // USER DETAILS
+                // ================================
+
+                const name =
+                    vip.fullName ||
+                    vip.name ||
+                    userData.fullName ||
+                    userData.name ||
+                    userData.username ||
+                    "Unknown User";
+
+
+                const email =
+                    vip.email ||
+                    userData.email ||
+                    "-";
+
+
+                const phone =
+                    vip.phone ||
+                    vip.phoneNumber ||
+                    userData.phone ||
+                    userData.phoneNumber ||
+                    "-";
+
+
+                // ================================
+                // VIP DETAILS
+                // ================================
+
+                const vipName =
+                    vip.vipName ||
+                    vip.planName ||
+                    vip.namePlan ||
+                    vip.plan ||
+                    vip.vip ||
+                    "VIP Plan";
+
+
+                const price =
+                    Number(
+                        vip.price ||
+                        vip.vipPrice ||
+                        vip.amount ||
+                        0
+                    );
+
+
+                const dailyIncome =
+                    Number(
+                        vip.dailyIncome ||
+                        vip.daily ||
+                        0
+                    );
+
+
+                const duration =
+                    Number(
+                        vip.duration ||
+                        vip.days ||
+                        0
+                    );
+
+
+                const totalProfit =
+                    Number(
+                        vip.totalProfit ||
+                        vip.profit ||
+                        0
+                    );
+
+
+                const date =
+                    vip.createdAt ||
+                    vip.requestDate ||
+                    vip.date ||
+                    "-";
+
+
+                const status =
+                    String(
+                        vip.status ||
+                        "pending"
+                    ).toLowerCase();
+
+
+                // ================================
+                // CARD
+                // ================================
+
+                const card =
+                    document.createElement("div");
+
+
+                card.className =
+                    "request-card";
+
+
+                card.dataset.vipId =
+                    id;
+
+
+                card.innerHTML = `
+
+                    <div class="request-top">
+
+                        <h3>
+
+                            <i class="fa-solid fa-crown"></i>
+
+                            VIP Purchase Request
+
+                        </h3>
+
+
+                        <span class="status ${status}">
+
+                            ${escapeHTML(status)}
+
+                        </span>
+
+                    </div>
+
+
+                    <div class="user-profile-box">
+
+                        <h4>
+
+                            <i class="fa-solid fa-user"></i>
+
+                            User Information
+
+                        </h4>
+
+
+                        <p>
+
+                            <strong>Name:</strong>
+
+                            ${escapeHTML(name)}
+
+                        </p>
+
+
+                        <p>
+
+                            <strong>Email:</strong>
+
+                            ${escapeHTML(email)}
+
+                        </p>
+
+
+                        <p>
+
+                            <strong>Phone:</strong>
+
+                            ${escapeHTML(phone)}
+
+                        </p>
+
+
+                        <p>
+
+                            <strong>User ID:</strong>
+
+                            ${escapeHTML(uid || "-")}
+
+                        </p>
+
+                    </div>
+
+
+                    <div class="withdraw-info">
+
+                        <p>
+
+                            <strong>VIP Plan:</strong>
+
+                            ${escapeHTML(vipName)}
+
+                        </p>
+
+
+                        <p>
+
+                            <strong>Price:</strong>
+
+                            ${price.toLocaleString()} RWF
+
+                        </p>
+
+
+                        <p>
+
+                            <strong>Daily Income:</strong>
+
+                            ${dailyIncome.toLocaleString()} RWF
+
+                        </p>
+
+
+                        <p>
+
+                            <strong>Duration:</strong>
+
+                            ${duration} Days
+
+                        </p>
+
+
+                        <p>
+
+                            <strong>Total Profit:</strong>
+
+                            ${totalProfit.toLocaleString()} RWF
+
+                        </p>
+
+
+                        <p>
+
+                            <strong>Request Date:</strong>
+
+                            ${escapeHTML(date)}
+
+                        </p>
+
+                    </div>
+
+
+                    <div class="action-buttons">
+
+                        <button
+
+                            class="approveBtn vipApproveBtn"
+
+                            data-id="${escapeHTML(id)}"
+
+                            ${status !== "pending"
+                                ? "disabled"
+                                : ""}>
+
+                            <i class="fa-solid fa-circle-check"></i>
+
+                            ${status === "approved"
+                                ? "Approved"
+                                : "Approve VIP"}
+
+                        </button>
+
+
+                        <button
+
+                            class="rejectBtn vipRejectBtn"
+
+                            data-id="${escapeHTML(id)}"
+
+                            ${status !== "pending"
+                                ? "disabled"
+                                : ""}>
+
+                            <i class="fa-solid fa-circle-xmark"></i>
+
+                            ${status === "rejected"
+                                ? "Rejected"
+                                : "Reject VIP"}
+
+                        </button>
+
+                    </div>
+
+                `;
+
+
+                list.appendChild(card);
+
+            }
+
+
+            // ================================
+            // APPROVE BUTTONS
+            // ================================
+
+            list
+                .querySelectorAll(
+                    ".vipApproveBtn"
+                )
+                .forEach(button=>{
+
+                    button.addEventListener(
+                        "click",
+                        ()=>{
+
+                            approveVipRequest(
+                                button.dataset.id
+                            );
+
+                        }
+                    );
+
+                });
+
+
+            // ================================
+            // REJECT BUTTONS
+            // ================================
+
+            list
+                .querySelectorAll(
+                    ".vipRejectBtn"
+                )
+                .forEach(button=>{
+
+                    button.addEventListener(
+                        "click",
+                        ()=>{
+
+                            rejectVipRequest(
+                                button.dataset.id
+                            );
+
+                        }
+                    );
+
+                });
+
+        },
+
+        (error)=>{
+
+            console.error(
+                "VIP request listener error:",
+                error
+            );
+
+        }
+    );
+
+}
+
+
+// ======================================
+// APPROVE VIP REQUEST
+// ONCE ONLY
+// ======================================
+
+window.approveVipRequest =
+async function(id){
+
+    try{
+
+        if(!id){
+
+            alert(
+                "VIP request ID is missing."
+            );
+
+            return;
+        }
+
+
+        if(
+            !currentAdmin ||
+            !currentAdmin.uid
+        ){
+
+            alert(
+                "Admin session is not ready."
+            );
+
+            return;
+        }
+
+
+        const requestRef =
+            ref(
+                db,
+                "vipPurchaseRequests/" + id
+            );
+
+
+        const snap =
+            await get(requestRef);
+
+
+        if(!snap.exists()){
+
+            alert(
+                "VIP request not found."
+            );
+
+            return;
+        }
+
+
+        const request =
+            snap.val();
+
+
+        // ================================
+        // ONLY PENDING
+        // ================================
+
+        if(
+            String(
+                request.status ||
+                "pending"
+            ).toLowerCase()
+            !== "pending"
+        ){
+
+            alert(
+                "VIP request already processed."
+            );
+
+            return;
+        }
+
+
+        const uid =
+            request.uid ||
+            request.userId ||
+            request.userUID ||
+            "";
+
+
+        if(!uid){
+
+            alert(
+                "VIP request has no user ID."
+            );
+
+            return;
+        }
+
+
+        // ================================
+        // USER MUST EXIST
+        // ================================
+
+        const userRef =
+            ref(
+                db,
+                "users/" + uid
+            );
+
+
+        const userSnap =
+            await get(userRef);
+
+
+        if(!userSnap.exists()){
+
+            alert(
+                "User not found."
+            );
+
+            return;
+        }
+
+
+        // ================================
+        // MARK APPROVED
+        // ================================
+
+        await update(
+            requestRef,
+            {
+
+                status:
+                    "approved",
+
+                approvedAt:
+                    Date.now(),
+
+                approvedBy:
+                    currentAdmin.uid
+
+            }
+        );
+
+
+        // ================================
+        // TRANSACTION
+        // ================================
+
+        const transactionRef =
+            push(
+                ref(
+                    db,
+                    "transactions"
+                )
+            );
+
+
+        await set(
+            transactionRef,
+            {
+
+                uid:
+                    uid,
+
+                type:
+                    "vip_purchase",
+
+                amount:
+                    Number(
+                        request.price ||
+                        request.vipPrice ||
+                        request.amount ||
+                        0
+                    ),
+
+                status:
+                    "approved",
+
+                reference:
+                    id,
+
+                approvedBy:
+                    currentAdmin.uid,
+
+                date:
+                    Date.now()
+
+            }
+        );
+
+
+        alert(
+            "VIP Request Approved Successfully"
+        );
+
+
+        if(window.loadDashboard){
+
+            window.loadDashboard();
+
+        }
+
+    }
+
+    catch(error){
+
+        console.error(
+            "Approve VIP error:",
+            error
+        );
+
+
+        alert(
+            "Approve VIP failed: " +
+            error.message
+        );
+
+    }
+
+};
+
+
+// ======================================
+// REJECT VIP REQUEST
+// ONCE ONLY
+// ======================================
+
+window.rejectVipRequest =
+async function(id){
+
+    try{
+
+        if(!id){
+
+            alert(
+                "VIP request ID is missing."
+            );
+
+            return;
+        }
+
+
+        if(
+            !currentAdmin ||
+            !currentAdmin.uid
+        ){
+
+            alert(
+                "Admin session is not ready."
+            );
+
+            return;
+        }
+
+
+        const requestRef =
+            ref(
+                db,
+                "vipPurchaseRequests/" + id
+            );
+
+
+        const snap =
+            await get(requestRef);
+
+
+        if(!snap.exists()){
+
+            alert(
+                "VIP request not found."
+            );
+
+            return;
+        }
+
+
+        const request =
+            snap.val();
+
+
+        // ================================
+        // ONLY PENDING
+        // ================================
+
+        if(
+            String(
+                request.status ||
+                "pending"
+            ).toLowerCase()
+            !== "pending"
+        ){
+
+            alert(
+                "VIP request already processed."
+            );
+
+            return;
+        }
+
+
+        // ================================
+        // REJECT
+        // ================================
+
+        await update(
+            requestRef,
+            {
+
+                status:
+                    "rejected",
+
+                rejectedAt:
+                    Date.now(),
+
+                rejectedBy:
+                    currentAdmin.uid
+
+            }
+        );
+
+
+        // ================================
+        // TRANSACTION
+        // ================================
+
+        const transactionRef =
+            push(
+                ref(
+                    db,
+                    "transactions"
+                )
+            );
+
+
+        await set(
+            transactionRef,
+            {
+
+                uid:
+                    request.uid ||
+                    request.userId ||
+                    request.userUID ||
+                    "",
+
+                type:
+                    "vip_purchase",
+
+                amount:
+                    Number(
+                        request.price ||
+                        request.vipPrice ||
+                        request.amount ||
+                        0
+                    ),
+
+                status:
+                    "rejected",
+
+                reference:
+                    id,
+
+                rejectedBy:
+                    currentAdmin.uid,
+
+                date:
+                    Date.now()
+
+            }
+        );
+
+
+        alert(
+            "VIP Request Rejected Successfully"
+        );
+
+
+        if(window.loadDashboard){
+
+            window.loadDashboard();
+
+        }
+
+    }
+
+    catch(error){
+
+        console.error(
+            "Reject VIP error:",
+            error
+        );
+
+
+        alert(
+            "Reject VIP failed: " +
+            error.message
+        );
+
+    }
+
+};
+
+
+// ======================================
+// EXPORT
+// ======================================
+
+window.loadVipRequests =
+    loadVipRequests;
+
+
+console.log(
+    "Admin Part 7 VIP Requests Ready"
+);
+
