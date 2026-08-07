@@ -3692,3 +3692,632 @@ console.log(
     "Admin Part 7 VIP Requests Ready"
 );
 
+// ======================================
+// ADMIN.JS - PART 8
+// VIP BUYERS / APPROVED VIP LIST
+// USER PROFILE + VIP DETAILS
+// SEARCH + FILTER
+// ======================================
+
+
+// ======================================
+// LOAD VIP BUYERS
+// ======================================
+
+function loadVipBuyers(){
+
+    const list =
+        document.getElementById(
+            "vipBuyerList"
+        );
+
+    const empty =
+        document.getElementById(
+            "emptyVipBuyer"
+        );
+
+
+    if(!list){
+
+        console.error(
+            "vipBuyerList not found"
+        );
+
+        return;
+
+    }
+
+
+    const vipRef =
+        ref(
+            db,
+            "vipPurchaseRequests"
+        );
+
+
+    onValue(
+        vipRef,
+        async(snapshot)=>{
+
+            list.innerHTML = "";
+
+
+            if(!snapshot.exists()){
+
+                if(empty){
+                    empty.style.display =
+                        "block";
+                }
+
+                return;
+
+            }
+
+
+            if(empty){
+                empty.style.display =
+                    "none";
+            }
+
+
+            const allRequests =
+                Object.entries(
+                    snapshot.val()
+                ).reverse();
+
+
+            // ==================================
+            // ONLY APPROVED VIP REQUESTS
+            // ==================================
+
+            const approvedRequests =
+                allRequests.filter(
+                    ([id,request]) => {
+
+                        return String(
+                            request?.status ||
+                            ""
+                        ).toLowerCase()
+                        === "approved";
+
+                    }
+                );
+
+
+            // ==================================
+            // COUNTERS
+            // ==================================
+
+            updateText(
+                "vipBuyerTotalCount",
+                approvedRequests.length
+            );
+
+
+            // ==================================
+            // NO APPROVED VIP
+            // ==================================
+
+            if(
+                approvedRequests.length === 0
+            ){
+
+                if(empty){
+
+                    empty.style.display =
+                        "block";
+
+                }
+
+                list.innerHTML = `
+
+                    <div class="empty-state">
+
+                        <i class="fa-solid fa-crown"></i>
+
+                        <h3>
+                            No Approved VIP Buyers
+                        </h3>
+
+                        <p>
+                            Approved VIP purchases
+                            will appear here.
+                        </p>
+
+                    </div>
+
+                `;
+
+                return;
+
+            }
+
+
+            // ==================================
+            // RENDER APPROVED VIP BUYERS
+            // ==================================
+
+            for(
+                const [id,request]
+                of approvedRequests
+            ){
+
+                const vip =
+                    request || {};
+
+
+                // ==================================
+                // UID
+                // ==================================
+
+                const uid =
+                    vip.uid ||
+                    vip.userId ||
+                    vip.userUID ||
+                    "";
+
+
+                // ==================================
+                // USER PROFILE
+                // ==================================
+
+                let userData = {};
+
+
+                if(uid){
+
+                    try{
+
+                        const userSnap =
+                            await get(
+                                ref(
+                                    db,
+                                    "users/" + uid
+                                )
+                            );
+
+
+                        if(
+                            userSnap.exists()
+                        ){
+
+                            userData =
+                                userSnap.val() || {};
+
+                        }
+
+                    }
+                    catch(error){
+
+                        console.error(
+                            "VIP buyer user error:",
+                            error
+                        );
+
+                    }
+
+                }
+
+
+                // ==================================
+                // USER DETAILS
+                // ==================================
+
+                const name =
+                    vip.fullName ||
+                    vip.name ||
+                    userData.fullName ||
+                    userData.name ||
+                    userData.username ||
+                    "Unknown User";
+
+
+                const email =
+                    vip.email ||
+                    userData.email ||
+                    "-";
+
+
+                const phone =
+                    vip.phone ||
+                    vip.phoneNumber ||
+                    userData.phone ||
+                    userData.phoneNumber ||
+                    "-";
+
+
+                // ==================================
+                // VIP DETAILS
+                // ==================================
+
+                const vipName =
+                    vip.vipName ||
+                    vip.planName ||
+                    vip.namePlan ||
+                    vip.plan ||
+                    vip.vip ||
+                    "VIP Plan";
+
+
+                const price =
+                    Number(
+                        vip.price ||
+                        vip.vipPrice ||
+                        vip.amount ||
+                        0
+                    );
+
+
+                const dailyIncome =
+                    Number(
+                        vip.dailyIncome ||
+                        vip.daily ||
+                        0
+                    );
+
+
+                const duration =
+                    Number(
+                        vip.duration ||
+                        vip.days ||
+                        0
+                    );
+
+
+                const totalProfit =
+                    Number(
+                        vip.totalProfit ||
+                        vip.profit ||
+                        0
+                    );
+
+
+                const approvedAt =
+                    vip.approvedAt ||
+                    vip.createdAt ||
+                    vip.requestDate ||
+                    vip.date ||
+                    "-";
+
+
+                // ==================================
+                // CARD
+                // ==================================
+
+                const card =
+                    document.createElement(
+                        "div"
+                    );
+
+
+                card.className =
+                    "request-card";
+
+
+                card.dataset.vipBuyerId =
+                    id;
+
+
+                card.innerHTML = `
+
+                    <div class="request-top">
+
+                        <h3>
+
+                            <i class="fa-solid fa-crown"></i>
+
+                            VIP Buyer
+
+                        </h3>
+
+
+                        <span class="status approved">
+
+                            approved
+
+                        </span>
+
+                    </div>
+
+
+                    <!-- USER PROFILE -->
+
+                    <div class="user-profile-box">
+
+                        <h4>
+
+                            <i class="fa-solid fa-user"></i>
+
+                            User Information
+
+                        </h4>
+
+
+                        <p>
+
+                            <strong>Name:</strong>
+
+                            ${escapeHTML(name)}
+
+                        </p>
+
+
+                        <p>
+
+                            <strong>Email:</strong>
+
+                            ${escapeHTML(email)}
+
+                        </p>
+
+
+                        <p>
+
+                            <strong>Phone:</strong>
+
+                            ${escapeHTML(phone)}
+
+                        </p>
+
+
+                        <p>
+
+                            <strong>User ID:</strong>
+
+                            ${escapeHTML(
+                                uid || "-"
+                            )}
+
+                        </p>
+
+                    </div>
+
+
+                    <!-- VIP INFORMATION -->
+
+                    <div class="withdraw-info">
+
+                        <p>
+
+                            <strong>VIP Plan:</strong>
+
+                            ${escapeHTML(vipName)}
+
+                        </p>
+
+
+                        <p>
+
+                            <strong>Price:</strong>
+
+                            ${price.toLocaleString()}
+                            RWF
+
+                        </p>
+
+
+                        <p>
+
+                            <strong>Daily Income:</strong>
+
+                            ${dailyIncome.toLocaleString()}
+                            RWF
+
+                        </p>
+
+
+                        <p>
+
+                            <strong>Duration:</strong>
+
+                            ${duration}
+                            Days
+
+                        </p>
+
+
+                        <p>
+
+                            <strong>Total Profit:</strong>
+
+                            ${totalProfit.toLocaleString()}
+                            RWF
+
+                        </p>
+
+
+                        <p>
+
+                            <strong>Approved Date:</strong>
+
+                            ${escapeHTML(
+                                String(approvedAt)
+                            )}
+
+                        </p>
+
+                    </div>
+
+
+                    <!-- NO ACTION BUTTONS -->
+
+                    <div class="action-buttons">
+
+                        <span class="status approved">
+
+                            <i class="fa-solid fa-circle-check"></i>
+
+                            VIP Approved
+
+                        </span>
+
+                    </div>
+
+                `;
+
+
+                list.appendChild(card);
+
+            }
+
+
+            console.log(
+                "VIP buyers loaded:",
+                approvedRequests.length
+            );
+
+        },
+
+        (error)=>{
+
+            console.error(
+                "VIP buyers listener error:",
+                error
+            );
+
+        }
+
+    );
+
+}
+
+
+
+// ======================================
+// VIP BUYER SEARCH + FILTER
+// ======================================
+
+function setupVipBuyerSearch(){
+
+    const search =
+        document.getElementById(
+            "vipBuyerSearch"
+        );
+
+
+    const filter =
+        document.getElementById(
+            "vipBuyerFilter"
+        );
+
+
+    if(!search && !filter){
+
+        return;
+
+    }
+
+
+    function applyVipBuyerFilter(){
+
+        const cards =
+            document.querySelectorAll(
+                "#vipBuyerList .request-card"
+            );
+
+
+        const searchText =
+            (
+                search?.value || ""
+            )
+            .toLowerCase()
+            .trim();
+
+
+        const selected =
+            filter?.value ||
+            "all";
+
+
+        cards.forEach(card=>{
+
+            const text =
+                card.textContent
+                .toLowerCase();
+
+
+            const statusElement =
+                card.querySelector(
+                    ".status"
+                );
+
+
+            const status =
+                statusElement
+                ?.textContent
+                .toLowerCase()
+                .trim() || "";
+
+
+            const matchesSearch =
+                !searchText ||
+                text.includes(
+                    searchText
+                );
+
+
+            const matchesStatus =
+                selected === "all" ||
+                status === selected;
+
+
+            card.style.display =
+                matchesSearch &&
+                matchesStatus
+                ? ""
+                : "none";
+
+        });
+
+    }
+
+
+    search?.addEventListener(
+        "input",
+        applyVipBuyerFilter
+    );
+
+
+    filter?.addEventListener(
+        "change",
+        applyVipBuyerFilter
+    );
+
+}
+
+
+
+// ======================================
+// EXPORT
+// ======================================
+
+window.loadVipBuyers =
+    loadVipBuyers;
+
+
+// ======================================
+// START AFTER ADMIN AUTH
+// ======================================
+
+if(
+    window.adminState &&
+    window.adminState.ready
+){
+
+    loadVipBuyers();
+
+}
+
+
+setupVipBuyerSearch();
+
+
+// ======================================
+// PART 8 READY
+// ======================================
+
+console.log(
+    "Admin Part 8 VIP Buyers Ready"
+);
+
+
