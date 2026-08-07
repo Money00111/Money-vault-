@@ -1122,24 +1122,6 @@ console.log(
 
 
 
-
-
-}
-
-}
-
-
-
-const status =
-deposit.status || "pending";
-
-
-
-const card =
-document.createElement("div");
-
-
-
 // ======================================
 // ADMIN.JS - PART 3
 // DEPOSIT MANAGEMENT FINAL
