@@ -139,11 +139,10 @@ onAuthStateChanged(auth, async(user)=>{
 
     currentAdmin = user;
 
-     loadDeposits()
     
     adminReady = true;
 
-    
+    loadDeposits();
 
 // START ADMIN SYSTEMS AFTER AUTH ONLY
 
@@ -1499,6 +1498,11 @@ alert(
 "Deposit Approved Successfully"
 );
 
+    loadDeposits();
+
+if(window.loadDashboard){
+    window.loadDashboard();
+    }
 
 };
 
@@ -1545,7 +1549,14 @@ alert(
 );
 
 
+
 return;
+
+    loadDeposits();
+
+if(window.loadDashboard){
+    window.loadDashboard();
+}
 
 }
 
@@ -1600,13 +1611,13 @@ alert(
 };
 
 
-
-
-
-
 // ================================
-// START DEPOSIT SYSTEM
+// EXPORT LOAD DEPOSITS
 // ================================
+
+window.loadDeposits = loadDeposits;
+
+console.log("Deposit System Ready");
 
 
 
