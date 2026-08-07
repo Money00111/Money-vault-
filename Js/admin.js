@@ -1001,3 +1001,206 @@ depositList?.addEventListener("click", async (e) => {
 
 console.log("ADMIN PART 3A-3 READY");
 
+// ======================================
+// ADMIN.JS - PART 3B-1
+// APPROVE DEPOSIT (SECURE)
+// ======================================
+
+async function approveDeposit(id) {
+
+    try {
+
+        // ==========================
+        // GET LATEST DEPOSIT
+        // ==========================
+
+        const depositRef = ref(db, "depositRequests/" + id);
+
+        const depositSnap = await get(depositRef);
+
+        if (!depositSnap.exists()) {
+
+            throw new Error("Deposit request not found.");
+
+        }
+
+        const deposit = depositSnap.val();
+
+        // ==========================
+        // ALREADY PROCESSED?
+        // ==========================
+
+        if (deposit.status !== "pending") {
+
+            alert("This deposit has already been processed.");
+
+            return;
+
+        }
+
+        // ==========================
+        // LOCK REQUEST
+        // ==========================
+
+        await update(depositRef, {
+
+            status: "processing",
+            processingAt: Date.now(),
+            processingBy: auth.currentUser.uid
+
+        });
+
+        // ==========================
+        // LOAD USER
+        // ==========================
+
+        const userRef = ref(db, "users/" + deposit.uid);
+
+        const userSnap = await get(userRef);
+
+        if (!userSnap.exists()) {
+
+            // Subiza deposit kuri pending niba user adabonetse
+            await update(depositRef, {
+
+                status: "pending"
+
+            });
+
+            throw new Error("User not found.");
+
+        }
+
+        const user = userSnap.val();
+
+        const currentBalance = Number(user.balance || 0);
+
+        const depositAmount = Number(deposit.amount || 0);
+
+        const newBalance = currentBalance + depositAmount;
+
+        // ==========================
+        // UPDATE USER BALANCE
+        // ==========================
+
+        await update(userRef, {
+
+            balance: newBalance
+
+        });
+
+        // Part 3B-2 ikomereza hano:
+        // - Final approve status
+        // - Transaction
+        // - Notification
+        // - Success message
+        // - Error recovery
+
+    } catch (error) {
+
+        console.error(error);
+        throw error;
+
+    }
+
+}
+
+console.log("ADMIN PART 3B-1 READY");
+
+// ======================================
+// ADMIN.JS - PART 3B-2
+// APPROVE DEPOSIT (FINALIZE)
+// ======================================
+
+        // ==========================
+        // FINAL APPROVE STATUS
+        // ==========================
+
+        await update(depositRef, {
+
+            status: "approved",
+            approvedAt: Date.now(),
+            approvedBy: auth.currentUser.uid
+
+        });
+
+        // ==========================
+        // SAVE TRANSACTION
+        // ==========================
+
+        const transactionRef = push(
+            ref(db, "transactions")
+        );
+
+        await set(transactionRef, {
+
+            uid: deposit.uid,
+            email: deposit.email || "",
+            name: deposit.name || "",
+            type: "deposit",
+            amount: depositAmount,
+            status: "approved",
+            createdAt: Date.now(),
+            approvedBy: auth.currentUser.uid
+
+        });
+
+        // ==========================
+        // SEND NOTIFICATION
+        // ==========================
+
+        const notificationRef = push(
+            ref(db, "notifications/" + deposit.uid)
+        );
+
+        await set(notificationRef, {
+
+            title: "Deposit Approved",
+            message:
+                "Your deposit of " +
+                formatMoney(depositAmount) +
+                " has been approved.",
+
+            type: "deposit",
+            read: false,
+            createdAt: Date.now()
+
+        });
+
+        alert("Deposit approved successfully.");
+
+        // onValue() izahita ivugurura list na status
+
+    } catch (error) {
+
+        console.error(error);
+
+        // ==========================
+        // RESTORE STATUS IF FAILED
+        // ==========================
+
+        try {
+
+            await update(
+                ref(db, "depositRequests/" + id),
+                {
+                    status: "pending",
+                    processingAt: null,
+                    processingBy: null
+                }
+            );
+
+        } catch (restoreError) {
+
+            console.error("Restore failed:", restoreError);
+
+        }
+
+        throw error;
+
+    }
+
+}
+
+console.log("ADMIN PART 3B-2 READY");
+
