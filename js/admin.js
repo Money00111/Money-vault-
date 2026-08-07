@@ -1383,90 +1383,25 @@ snap.val();
 
 // BLOCK DOUBLE APPROVE
 
+
 if(deposit.status !== "pending"){
 
+    alert("Deposit already processed");
 
-alert(
-"Deposit already processed"
-);
-
-
-return;
+    return;
 
 }
-
-
-
-
-const userRef =
-ref(db,"users/"+deposit.uid);
-
-
-
-const userSnap =
-await get(userRef);
-
-
-
-if(!userSnap.exists()){
-
-
-alert("User not found");
-
-
-return;
-
-}
-
-
-
-const user =
-userSnap.val();
-
-
-
-const oldBalance =
-Number(user.balance || 0);
-
-
-
-const amount =
-Number(deposit.amount || 0);
-
-
-
-
-
-// ADD MONEY ONCE
-
-await update(userRef,{
-
-balance:
-oldBalance + amount,
-
-
-totalDeposit:
-Number(user.totalDeposit || 0)
-+ amount
-
-});
-
-
-
 
 
 await update(depositRef,{
 
-status:"approved",
+    status:"rejected",
 
-approvedAt:Date.now(),
+    rejectedAt:Date.now(),
 
-approvedBy:currentAdmin.uid
+    rejectedBy:currentAdmin.uid
 
 });
-
-
-
 
 
 await set(
@@ -1475,42 +1410,35 @@ push(ref(db,"transactions")),
 
 {
 
-uid:deposit.uid,
+    uid:deposit.uid,
 
-type:"deposit",
+    type:"deposit",
 
-amount:amount,
+    amount:Number(deposit.amount || 0),
 
-status:"approved",
+    status:"rejected",
 
-reference:id,
+    reference:id,
 
-date:Date.now()
+    date:Date.now()
 
 }
 
 );
 
 
-
-
 alert(
-"Deposit Approved Successfully"
+"Deposit Rejected Successfully"
 );
 
-    loadDeposits();
+
+loadDeposits();
 
 if(window.loadDashboard){
+
     window.loadDashboard();
-    }
 
-};
-
-
-
-
-
-
+}
 
 // ================================
 // REJECT DEPOSIT ONCE
