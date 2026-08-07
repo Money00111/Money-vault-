@@ -1121,89 +1121,107 @@ console.log(
 );
 
 
-   // ======================================
-// ADMIN.JS - PART 3
+
+// ======================================
+// PART 3
 // DEPOSIT MANAGEMENT FINAL
 // ======================================
 
 
-// ======================================
+// ================================
 // LOAD DEPOSITS
-// ======================================
+// ================================
 
 function loadDeposits(){
 
-
-    const list =
-    document.getElementById("depositList");
+const depositRef = ref(db,"depositRequests");
 
 
-    const empty =
-    document.getElementById("emptyDeposit");
+onValue(depositRef, async(snapshot)=>{
 
 
-    if(!list) return;
+const list =
+document.getElementById("depositList");
 
 
-
-    onValue(
-        ref(db,"depositRequests"),
-        (snapshot)=>{
+const empty =
+document.getElementById("emptyDeposit");
 
 
-            list.innerHTML="";
+if(!list) return;
 
 
-
-            if(!snapshot.exists()){
-
-
-                if(empty)
-                empty.style.display="block";
+list.innerHTML="";
 
 
-                return;
+if(!snapshot.exists()){
 
-            }
+
+if(empty)
+empty.style.display="block";
+
+
+return;
+
+}
 
 
 
-
-            if(empty)
-            empty.style.display="none";
-
+if(empty)
+empty.style.display="none";
 
 
 
-
-            Object.entries(snapshot.val())
-            .reverse()
-            .forEach(([id,deposit])=>{
+const deposits =
+Object.entries(snapshot.val()).reverse();
 
 
 
-                const status =
-                deposit.status || "pending";
+for(const [id,deposit] of deposits){
+
+
+let userData={};
 
 
 
-                const card =
-                document.createElement(
-                    "div"
-                );
+if(deposit.uid){
 
 
-                card.className =
-                "request-card";
-
-
+const userSnap =
+await get(
+ref(db,"users/"+deposit.uid)
+);
 
 
 
-                card.innerHTML = `
+if(userSnap.exists()){
+
+userData=userSnap.val();
+
+}
+
+}
+
+
+
+const status =
+deposit.status || "pending";
+
+
+
+const card =
+document.createElement("div");
+
+
+card.className="request-card";
+
+
+
+card.innerHTML=`
 
 
 <div class="request-top">
+
 
 <h3>
 Deposit Request
@@ -1214,41 +1232,42 @@ Deposit Request
 ${status}
 </span>
 
+
 </div>
 
 
 
 <p>
 <strong>Name:</strong>
-${deposit.name || "-"}
+${deposit.fullName || userData.name || userData.fullName || "-"}
 </p>
 
 
 
 <p>
 <strong>Email:</strong>
-${deposit.email || "-"}
-</p>
-
-
-
-<p>
-<strong>Phone:</strong>
-${deposit.phone || "-"}
+${deposit.email || userData.email || "-"}
 </p>
 
 
 
 <p>
 <strong>Amount:</strong>
-${formatMoney(deposit.amount)}
+${Number(deposit.amount || 0).toLocaleString()} RWF
+</p>
+
+
+
+<p>
+<strong>Phone:</strong>
+${deposit.senderPhone || userData.phone || "-"}
 </p>
 
 
 
 <p>
 <strong>Payment Method:</strong>
-${deposit.method || "-"}
+${deposit.paymentMethod || "-"}
 </p>
 
 
@@ -1262,23 +1281,8 @@ ${deposit.transactionId || "-"}
 
 <p>
 <strong>Date:</strong>
-${
-deposit.date
-?
-new Date(deposit.date)
-.toLocaleString()
-:
-"-"
-}
+${deposit.paymentDate || deposit.createdAt || "-"}
 </p>
-
-
-
-<p>
-<strong>Note:</strong>
-${deposit.note || "-"}
-</p>
-
 
 
 
@@ -1287,57 +1291,57 @@ ${deposit.note || "-"}
 
 
 <button
+
 class="approveBtn"
 
-${status !== "pending" ? "disabled":""}
+${status!=="pending"?"disabled":""}
 
 onclick="approveDeposit('${id}')">
+
 
 <i class="fa-solid fa-circle-check"></i>
 
 Approve
 
+
 </button>
 
 
 
-
-
 <button
+
 class="rejectBtn"
 
-${status !== "pending" ? "disabled":""}
+${status!=="pending"?"disabled":""}
 
 onclick="rejectDeposit('${id}')">
+
 
 <i class="fa-solid fa-circle-xmark"></i>
 
 Reject
 
+
 </button>
 
 
-</div>
 
+</div>
 
 
 `;
 
 
 
-
-
-                list.appendChild(card);
-
-
-
-            });
+list.appendChild(card);
 
 
 
-        }
+}
 
-    );
+
+
+});
 
 
 }
@@ -1347,12 +1351,9 @@ Reject
 
 
 
-
-
-
-// ======================================
-// APPROVE DEPOSIT ONE TIME
-// ======================================
+// ================================
+// APPROVE DEPOSIT ONCE
+// ================================
 
 
 window.approveDeposit =
@@ -1360,180 +1361,142 @@ async function(id){
 
 
 
-    const depositRef =
-    ref(db,"depositRequests/"+id);
+const depositRef =
+ref(db,"depositRequests/"+id);
 
 
 
+const snap =
+await get(depositRef);
 
-    const snapshot =
-    await get(depositRef);
 
 
+if(!snap.exists()) return;
 
 
 
-    if(!snapshot.exists()) return;
+const deposit =
+snap.val();
 
 
 
 
+// BLOCK DOUBLE APPROVE
 
-    const deposit =
-    snapshot.val();
+if(deposit.status !== "pending"){
 
 
+alert(
+"Deposit already processed"
+);
 
 
+return;
 
+}
 
-    // STOP DOUBLE APPROVE
 
-    if(deposit.status !== "pending"){
 
 
-        alert(
-        "This deposit was already processed"
-        );
+const userRef =
+ref(db,"users/"+deposit.uid);
 
 
-        return;
 
-    }
+const userSnap =
+await get(userRef);
 
 
 
+if(!userSnap.exists()){
 
 
+alert("User not found");
 
 
+return;
 
-    const userRef =
-    ref(db,"users/"+deposit.uid);
+}
 
 
 
+const user =
+userSnap.val();
 
 
-    const userSnap =
-    await get(userRef);
 
+const oldBalance =
+Number(user.balance || 0);
 
 
 
+const amount =
+Number(deposit.amount || 0);
 
-    if(!userSnap.exists()){
 
 
-        alert(
-        "User not found"
-        );
 
 
-        return;
+// ADD MONEY ONCE
 
+await update(userRef,{
 
-    }
+balance:
+oldBalance + amount,
 
 
+totalDeposit:
+Number(user.totalDeposit || 0)
++ amount
 
+});
 
 
 
 
-    const user =
-    userSnap.val();
 
+await update(depositRef,{
 
+status:"approved",
 
+approvedAt:Date.now(),
 
+approvedBy:currentAdmin.uid
 
-    const oldBalance =
-    Number(user.balance || 0);
+});
 
 
 
 
 
-    const amount =
-    Number(deposit.amount || 0);
+await set(
 
+push(ref(db,"transactions")),
 
+{
 
+uid:deposit.uid,
 
+type:"deposit",
 
+amount:amount,
 
+status:"approved",
 
+reference:id,
 
-    // ADD MONEY ONCE
+date:Date.now()
 
-    await update(
-    userRef,
-    {
-        balance:
-        oldBalance + amount,
+}
 
-        lastDepositApproved:
-        Date.now()
-    }
 );
 
 
 
 
-
-    // CHANGE STATUS
-
-    await update(
-        depositRef,
-        {
-
-        status:"approved",
-
-        approvedAt:
-        Date.now()
-
-        }
-    );
-
-
-
-
-
-
-
-    // SAVE TRANSACTION
-
-    await set(
-        push(ref(db,"transactions")),
-        {
-
-
-        uid:deposit.uid,
-
-        type:"deposit",
-
-        amount:amount,
-
-        status:"approved",
-
-        reference:id,
-
-        date:Date.now()
-
-
-        }
-    );
-
-
-
-
-
-
-
-    alert(
-    "Deposit Approved Successfully"
-    );
+alert(
+"Deposit Approved Successfully"
+);
 
 
 };
@@ -1544,11 +1507,9 @@ async function(id){
 
 
 
-
-
-// ======================================
-// REJECT DEPOSIT ONE TIME
-// ======================================
+// ================================
+// REJECT DEPOSIT ONCE
+// ================================
 
 
 window.rejectDeposit =
@@ -1556,108 +1517,83 @@ async function(id){
 
 
 
-    const depositRef =
-    ref(db,"depositRequests/"+id);
+const depositRef =
+ref(db,"depositRequests/"+id);
 
 
 
+const snap =
+await get(depositRef);
 
-    const snapshot =
-    await get(depositRef);
 
 
+if(!snap.exists()) return;
 
 
 
-    if(!snapshot.exists())
-    return;
+const deposit =
+snap.val();
 
 
 
+if(deposit.status !== "pending"){
 
 
-    const deposit =
-    snapshot.val();
+alert(
+"Deposit already processed"
+);
 
 
+return;
 
+}
 
 
 
-    // STOP DOUBLE REJECT
 
-    if(deposit.status !== "pending"){
+await update(depositRef,{
 
+status:"rejected",
 
-        alert(
-        "This deposit was already processed"
-        );
+rejectedAt:Date.now(),
 
+rejectedBy:currentAdmin.uid
 
-        return;
+});
 
-    }
 
 
 
 
+await set(
 
+push(ref(db,"transactions")),
 
+{
 
-    await update(
-        depositRef,
-        {
+uid:deposit.uid,
 
+type:"deposit",
 
-        status:"rejected",
+amount:Number(deposit.amount || 0),
 
-        rejectedAt:
-        Date.now()
+status:"rejected",
 
+reference:id,
 
-        }
-    );
+date:Date.now()
 
+}
 
+);
 
 
 
 
+alert(
+"Deposit Rejected Successfully"
+);
 
-
-    // SAVE REJECT HISTORY
-
-    await set(
-        push(ref(db,"transactions")),
-        {
-
-
-        uid:deposit.uid,
-
-        type:"deposit",
-
-        amount:Number(deposit.amount || 0),
-
-        status:"rejected",
-
-        reference:id,
-
-        date:Date.now()
-
-
-        }
-    );
-
-
-
-
-
-
-
-
-    alert(
-    "Deposit Rejected Successfully"
-    );
 
 
 };
@@ -1667,167 +1603,13 @@ async function(id){
 
 
 
-
-
-
-// ======================================
-// SEARCH DEPOSITS
-// ======================================
-
-
-const depositSearch =
-document.getElementById(
-"depositSearch"
-);
-
-
-
-if(depositSearch){
-
-
-depositSearch.addEventListener(
-"input",
-()=>{
-
-
-const value =
-depositSearch.value
-.toLowerCase();
-
-
-
-document
-.querySelectorAll("#depositList .request-card")
-.forEach(card=>{
-
-
-const text =
-card.innerText
-.toLowerCase();
-
-
-
-card.style.display =
-text.includes(value)
-?
-"block"
-:
-"none";
-
-
-
-});
-
-
-
-});
-
-
-}
-
-
-
-
-
-
-
-
-
-// ======================================
-// FILTER DEPOSITS
-// ======================================
-
-
-const depositFilter =
-document.getElementById(
-"depositFilter"
-);
-
-
-
-if(depositFilter){
-
-
-
-depositFilter.addEventListener(
-"change",
-()=>{
-
-
-const value =
-depositFilter.value;
-
-
-
-document
-.querySelectorAll("#depositList .request-card")
-.forEach(card=>{
-
-
-const status =
-card.querySelector(".status")
-.innerText
-.toLowerCase();
-
-
-
-if(
-value==="all" ||
-status===value
-){
-
-
-card.style.display="block";
-
-
-}else{
-
-
-card.style.display="none";
-
-
-}
-
-
-
-});
-
-
-
-});
-
-
-}
-
-
-
-
-
-
-
-
-
-// ======================================
+// ================================
 // START DEPOSIT SYSTEM
-// ======================================
+// ================================
+
+loadDeposits();
 
 
-window.loadDeposits =
-loadDeposits;
 
 
-console.log(
-"Admin Part 3 Deposit Ready"
-);
-// ======================================
-// START ADMIN SYSTEMS
-// ======================================
 
-window.startAdminSystems = function(){
-
-    loadDeposits();
-
-};
-
-
-   
