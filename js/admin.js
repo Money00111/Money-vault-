@@ -1662,18 +1662,38 @@ document.getElementById("openSettingsBtn")?.addEventListener("click", () => {
 
 console.log("Quick Actions Ready");
 
-    
+      
+
 // ======================================
 // ADMIN.JS - PART 5
 // WITHDRAW MANAGEMENT
+// LIST + USER PROFILE + APPROVE + REJECT
+// SEARCH + FILTER
 // ======================================
 
 
 // ======================================
-// LOAD WITHDRAWS
+// HTML ESCAPE
 // ======================================
 
-async function loadWithdraws(){
+function escapeHTML(value){
+
+    return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+
+}
+
+
+
+// ======================================
+// LOAD WITHDRAW LIST
+// ======================================
+
+function loadWithdraws(){
 
     const list =
         document.getElementById("withdrawList");
@@ -1693,648 +1713,8 @@ async function loadWithdraws(){
     }
 
 
-    list.innerHTML = "";
-
-
     const withdrawRef =
         ref(db,"withdrawRequests");
-
-
-    const snapshot =
-        await get(withdrawRef);
-
-
-    if(!snapshot.exists()){
-
-        if(empty){
-
-            empty.style.display = "block";
-
-        }
-
-        list.innerHTML = `
-            <div class="empty-state">
-                <h3>No Withdraw Requests</h3>
-                <p>There are no withdraw requests yet.</p>
-            </div>
-        `;
-
-        return;
-
-    }
-
-
-    if(empty){
-
-        empty.style.display = "none";
-
-    }
-
-
-    const withdraws =
-        Object.entries(snapshot.val())
-        .reverse();
-
-
-    for(const [id, withdraw] of withdraws){
-
-        let userData = {};
-
-
-        // ================================
-        // GET USER PROFILE
-        // ================================
-
-        if(withdraw.uid){
-
-            try{
-
-                const userSnap =
-                    await get(
-                        ref(
-                            db,
-                            "users/" + withdraw.uid
-                        )
-                    );
-
-
-                if(userSnap.exists()){
-
-                    userData =
-                        userSnap.val();
-
-                }
-
-            }catch(error){
-
-                console.error(
-                    "User profile error:",
-                    error
-                );
-
-            }
-
-        }
-
-
-        const status =
-            withdraw.status || "pending";
-
-
-        // ================================
-        // USER INFORMATION
-        // ================================
-
-        const name =
-            withdraw.fullName ||
-            withdraw.name ||
-            userData.fullName ||
-            userData.name ||
-            "Unknown User";
-
-
-        const email =
-            withdraw.email ||
-            userData.email ||
-            "-";
-
-
-        const phone =
-            withdraw.phone ||
-            withdraw.senderPhone ||
-            userData.phone ||
-            "-";
-
-
-        const amount =
-            Number(
-                withdraw.amount || 0
-            );
-
-
-        const paymentMethod =
-            withdraw.paymentMethod ||
-            withdraw.method ||
-            "-";
-
-
-        const account =
-            withdraw.account ||
-            withdraw.accountNumber ||
-            withdraw.phone ||
-            "-";
-
-
-        const date =
-            withdraw.createdAt ||
-            withdraw.date ||
-            withdraw.requestDate ||
-            "-";
-
-
-        // ================================
-        // CREATE CARD
-        // ================================
-
-        const card =
-            document.createElement("div");
-
-
-        card.className =
-            "request-card";
-
-
-        card.innerHTML = `
-
-            <div class="request-top">
-
-                <h3>
-                    Withdraw Request
-                </h3>
-
-                <span class="status ${status}">
-                    ${status}
-                </span>
-
-            </div>
-
-
-            <div class="user-profile">
-
-                <p>
-                    <strong>Name:</strong>
-                    ${name}
-                </p>
-
-                <p>
-                    <strong>Email:</strong>
-                    ${email}
-                </p>
-
-                <p>
-                    <strong>Phone:</strong>
-                    ${phone}
-                </p>
-
-            </div>
-
-
-            <div class="withdraw-details">
-
-                <p>
-                    <strong>Amount:</strong>
-                    ${amount.toLocaleString()} RWF
-                </p>
-
-                <p>
-                    <strong>Payment Method:</strong>
-                    ${paymentMethod}
-                </p>
-
-                <p>
-                    <strong>Account:</strong>
-                    ${account}
-                </p>
-
-                <p>
-                    <strong>Date:</strong>
-                    ${date}
-                </p>
-
-            </div>
-
-
-            <div class="action-buttons">
-
-                <button
-                    class="approveBtn"
-                    ${status !== "pending" ? "disabled" : ""}
-                    onclick="approveWithdraw('${id}')">
-
-                    <i class="fa-solid fa-circle-check"></i>
-
-                    Approve
-
-                </button>
-
-
-                <button
-                    class="rejectBtn"
-                    ${status !== "pending" ? "disabled" : ""}
-                    onclick="rejectWithdraw('${id}')">
-
-                    <i class="fa-solid fa-circle-xmark"></i>
-
-                    Reject
-
-                </button>
-
-            </div>
-
-        `;
-
-
-        list.appendChild(card);
-
-    }
-
-
-    console.log(
-        "Withdraw list loaded:",
-        withdraws.length
-    );
-
-}
-
-
-
-
-// ======================================
-// APPROVE WITHDRAW - ONCE ONLY
-// ======================================
-
-window.approveWithdraw =
-async function(id){
-
-    try{
-
-        const withdrawRef =
-            ref(
-                db,
-                "withdrawRequests/" + id
-            );
-
-
-        const snap =
-            await get(withdrawRef);
-
-
-        if(!snap.exists()){
-
-            alert(
-                "Withdraw request not found"
-            );
-
-            return;
-
-        }
-
-
-        const withdraw =
-            snap.val();
-
-
-        console.log(
-            "Approve Withdraw:",
-            id,
-            withdraw
-        );
-
-
-        // ================================
-        // BLOCK DOUBLE APPROVE
-        // ================================
-
-        if(
-            withdraw.status !== "pending"
-        ){
-
-            alert(
-                "Withdraw already processed"
-            );
-
-            return;
-
-        }
-
-
-        if(
-            !currentAdmin ||
-            !currentAdmin.uid
-        ){
-
-            alert(
-                "Admin session not ready"
-            );
-
-            return;
-
-        }
-
-
-        // ================================
-        // MARK APPROVED
-        // ================================
-
-        await update(
-            withdrawRef,
-            {
-
-                status: "approved",
-
-                approvedAt:
-                    Date.now(),
-
-                approvedBy:
-                    currentAdmin.uid
-
-            }
-        );
-
-
-        // ================================
-        // TRANSACTION
-        // ================================
-
-        await set(
-
-            push(
-                ref(
-                    db,
-                    "transactions"
-                )
-            ),
-
-            {
-
-                uid:
-                    withdraw.uid,
-
-                type:
-                    "withdraw",
-
-                amount:
-                    Number(
-                        withdraw.amount || 0
-                    ),
-
-                status:
-                    "approved",
-
-                reference:
-                    id,
-
-                date:
-                    Date.now()
-
-            }
-
-        );
-
-
-        alert(
-            "Withdraw Approved Successfully"
-        );
-
-
-        await loadWithdraws();
-
-
-        if(window.loadDashboard){
-
-            window.loadDashboard();
-
-        }
-
-
-    }catch(error){
-
-        console.error(
-            "Approve withdraw error:",
-            error
-        );
-
-        alert(
-            "Approve failed: " +
-            error.message
-        );
-
-    }
-
-};
-
-
-
-
-// ======================================
-// REJECT WITHDRAW - ONCE ONLY
-// ======================================
-
-window.rejectWithdraw =
-async function(id){
-
-    try{
-
-        const withdrawRef =
-            ref(
-                db,
-                "withdrawRequests/" + id
-            );
-
-
-        const snap =
-            await get(withdrawRef);
-
-
-        if(!snap.exists()){
-
-            alert(
-                "Withdraw request not found"
-            );
-
-            return;
-
-        }
-
-
-        const withdraw =
-            snap.val();
-
-
-        console.log(
-            "Reject Withdraw:",
-            id,
-            withdraw
-        );
-
-
-        // ================================
-        // BLOCK DOUBLE REJECT
-        // ================================
-
-        if(
-            withdraw.status !== "pending"
-        ){
-
-            alert(
-                "Withdraw already processed"
-            );
-
-            return;
-
-        }
-
-
-        if(
-            !currentAdmin ||
-            !currentAdmin.uid
-        ){
-
-            alert(
-                "Admin session not ready"
-            );
-
-            return;
-
-        }
-
-
-        // ================================
-        // MARK REJECTED
-        // ================================
-
-        await update(
-            withdrawRef,
-            {
-
-                status: "rejected",
-
-                rejectedAt:
-                    Date.now(),
-
-                rejectedBy:
-                    currentAdmin.uid
-
-            }
-        );
-
-
-        // ================================
-        // TRANSACTION
-        // ================================
-
-        await set(
-
-            push(
-                ref(
-                    db,
-                    "transactions"
-                )
-            ),
-
-            {
-
-                uid:
-                    withdraw.uid,
-
-                type:
-                    "withdraw",
-
-                amount:
-                    Number(
-                        withdraw.amount || 0
-                    ),
-
-                status:
-                    "rejected",
-
-                reference:
-                    id,
-
-                date:
-                    Date.now()
-
-            }
-
-        );
-
-
-        alert(
-            "Withdraw Rejected Successfully"
-        );
-
-
-        await loadWithdraws();
-
-
-        if(window.loadDashboard){
-
-            window.loadDashboard();
-
-        }
-
-
-    }catch(error){
-
-        console.error(
-            "Reject withdraw error:",
-            error
-        );
-
-        alert(
-            "Reject failed: " +
-            error.message
-        );
-
-    }
-
-};
-
-
-
-
-// ======================================
-// EXPORT
-// ======================================
-
-window.loadWithdraws =
-    loadWithdraws;
-
-
-console.log(
-    "Admin Part 5 Withdraw Ready"
-);
-
-
-// ======================================
-// ADMIN.JS - PART 6
-// WITHDRAW MANAGEMENT
-// LIST + USER DETAILS + APPROVE + REJECT
-// ======================================
-
-
-// ======================================
-// LOAD WITHDRAW LIST
-// ======================================
-
-function loadWithdraws(){
-
-    const list =
-        document.getElementById(
-            "withdrawList"
-        );
-
-    const empty =
-        document.getElementById(
-            "emptyWithdraw"
-        );
-
-
-    if(!list){
-
-        console.error(
-            "withdrawList not found"
-        );
-
-        return;
-    }
-
-
-    const withdrawRef =
-        ref(
-            db,
-            "withdrawRequests"
-        );
 
 
     onValue(
@@ -2345,23 +1725,38 @@ function loadWithdraws(){
 
 
             // ==================================
-            // NO REQUESTS
+            // NO DATA
             // ==================================
 
             if(!snapshot.exists()){
 
                 if(empty){
-                    empty.style.display =
-                        "block";
+                    empty.style.display = "block";
                 }
+
+                list.innerHTML = `
+                    <div class="empty-state">
+
+                        <i class="fa-solid fa-money-bill-transfer"></i>
+
+                        <h3>
+                            No Withdraw Requests
+                        </h3>
+
+                        <p>
+                            Withdraw requests from users
+                            will appear here.
+                        </p>
+
+                    </div>
+                `;
 
                 return;
             }
 
 
             if(empty){
-                empty.style.display =
-                    "none";
+                empty.style.display = "none";
             }
 
 
@@ -2372,7 +1767,7 @@ function loadWithdraws(){
 
 
             // ==================================
-            // RENDER REQUESTS
+            // RENDER EACH REQUEST
             // ==================================
 
             for(
@@ -2384,6 +1779,10 @@ function loadWithdraws(){
                     withdraw || {};
 
 
+                // ==================================
+                // USER UID
+                // ==================================
+
                 const uid =
                     request.uid ||
                     request.userId ||
@@ -2392,7 +1791,7 @@ function loadWithdraws(){
 
 
                 // ==================================
-                // USER DATA
+                // LOAD USER PROFILE
                 // ==================================
 
                 let userData = {};
@@ -2400,19 +1799,31 @@ function loadWithdraws(){
 
                 if(uid){
 
-                    const userSnap =
-                        await get(
-                            ref(
-                                db,
-                                "users/" + uid
-                            )
+                    try{
+
+                        const userSnap =
+                            await get(
+                                ref(
+                                    db,
+                                    "users/" + uid
+                                )
+                            );
+
+
+                        if(userSnap.exists()){
+
+                            userData =
+                                userSnap.val() || {};
+
+                        }
+
+                    }
+                    catch(error){
+
+                        console.error(
+                            "User profile error:",
+                            error
                         );
-
-
-                    if(userSnap.exists()){
-
-                        userData =
-                            userSnap.val() || {};
 
                     }
 
@@ -2420,7 +1831,7 @@ function loadWithdraws(){
 
 
                 // ==================================
-                // USER DETAILS
+                // USER INFORMATION
                 // ==================================
 
                 const name =
@@ -2447,6 +1858,10 @@ function loadWithdraws(){
                     "-";
 
 
+                // ==================================
+                // WITHDRAW INFORMATION
+                // ==================================
+
                 const amount =
                     Number(
                         request.amount || 0
@@ -2462,8 +1877,9 @@ function loadWithdraws(){
                 const accountNumber =
                     request.accountNumber ||
                     request.account ||
-                    request.phoneNumber ||
                     request.destination ||
+                    request.phoneNumber ||
+                    request.phone ||
                     "-";
 
 
@@ -2482,13 +1898,11 @@ function loadWithdraws(){
 
 
                 // ==================================
-                // CARD
+                // CREATE CARD
                 // ==================================
 
                 const card =
-                    document.createElement(
-                        "div"
-                    );
+                    document.createElement("div");
 
 
                 card.className =
@@ -2511,15 +1925,16 @@ function loadWithdraws(){
 
                         </h3>
 
+                        <span class="status ${escapeHTML(status)}">
 
-                        <span class="status ${status}">
-
-                            ${status}
+                            ${escapeHTML(status)}
 
                         </span>
 
                     </div>
 
+
+                    <!-- USER PROFILE -->
 
                     <div class="user-profile-box">
 
@@ -2570,6 +1985,8 @@ function loadWithdraws(){
                     </div>
 
 
+                    <!-- WITHDRAW DETAILS -->
+
                     <div class="withdraw-info">
 
                         <p>
@@ -2610,8 +2027,9 @@ function loadWithdraws(){
                     </div>
 
 
-                    <div class="action-buttons">
+                    <!-- ACTION BUTTONS -->
 
+                    <div class="action-buttons">
 
                         <button
 
@@ -2619,9 +2037,7 @@ function loadWithdraws(){
 
                             data-id="${escapeHTML(id)}"
 
-                            ${status !== "pending"
-                                ? "disabled"
-                                : ""}>
+                            ${status !== "pending" ? "disabled" : ""}>
 
                             <i class="fa-solid fa-circle-check"></i>
 
@@ -2632,16 +2048,13 @@ function loadWithdraws(){
                         </button>
 
 
-
                         <button
 
                             class="rejectBtn withdrawRejectBtn"
 
                             data-id="${escapeHTML(id)}"
 
-                            ${status !== "pending"
-                                ? "disabled"
-                                : ""}>
+                            ${status !== "pending" ? "disabled" : ""}>
 
                             <i class="fa-solid fa-circle-xmark"></i>
 
@@ -2650,7 +2063,6 @@ function loadWithdraws(){
                                 : "Reject Withdraw"}
 
                         </button>
-
 
                     </div>
 
@@ -2709,6 +2121,12 @@ function loadWithdraws(){
 
                 });
 
+
+            console.log(
+                "Withdraw list loaded:",
+                withdraws.length
+            );
+
         },
 
         (error)=>{
@@ -2719,9 +2137,11 @@ function loadWithdraws(){
             );
 
         }
+
     );
 
 }
+
 
 
 // ======================================
@@ -2740,6 +2160,7 @@ async function(id){
             );
 
             return;
+
         }
 
 
@@ -2753,6 +2174,7 @@ async function(id){
             );
 
             return;
+
         }
 
 
@@ -2774,18 +2196,12 @@ async function(id){
             );
 
             return;
+
         }
 
 
         const withdraw =
             snap.val();
-
-
-        console.log(
-            "APPROVE WITHDRAW:",
-            id,
-            withdraw
-        );
 
 
         // ==================================
@@ -2805,11 +2221,12 @@ async function(id){
             );
 
             return;
+
         }
 
 
         // ==================================
-        // USER UID
+        // GET UID
         // ==================================
 
         const uid =
@@ -2826,6 +2243,7 @@ async function(id){
             );
 
             return;
+
         }
 
 
@@ -2851,6 +2269,7 @@ async function(id){
             );
 
             return;
+
         }
 
 
@@ -2874,6 +2293,7 @@ async function(id){
             );
 
             return;
+
         }
 
 
@@ -2894,6 +2314,7 @@ async function(id){
             );
 
             return;
+
         }
 
 
@@ -2908,7 +2329,7 @@ async function(id){
 
 
         // ==================================
-        // UPDATE USER + REQUEST
+        // UPDATE EVERYTHING TOGETHER
         // ==================================
 
         await update(
@@ -2981,6 +2402,8 @@ async function(id){
         );
 
 
+        // RELOAD LIST
+
         loadWithdraws();
 
 
@@ -2991,7 +2414,6 @@ async function(id){
         }
 
     }
-
     catch(error){
 
         console.error(
@@ -3010,6 +2432,7 @@ async function(id){
 };
 
 
+
 // ======================================
 // REJECT WITHDRAW
 // ======================================
@@ -3026,6 +2449,7 @@ async function(id){
             );
 
             return;
+
         }
 
 
@@ -3039,6 +2463,7 @@ async function(id){
             );
 
             return;
+
         }
 
 
@@ -3060,18 +2485,12 @@ async function(id){
             );
 
             return;
+
         }
 
 
         const withdraw =
             snap.val();
-
-
-        console.log(
-            "REJECT WITHDRAW:",
-            id,
-            withdraw
-        );
 
 
         // ==================================
@@ -3091,11 +2510,12 @@ async function(id){
             );
 
             return;
+
         }
 
 
         // ==================================
-        // REJECT
+        // REJECT REQUEST
         // ==================================
 
         await update(
@@ -3116,7 +2536,7 @@ async function(id){
 
 
         // ==================================
-        // TRANSACTION
+        // SAVE TRANSACTION
         // ==================================
 
         const transactionRef =
@@ -3167,6 +2587,8 @@ async function(id){
         );
 
 
+        // RELOAD
+
         loadWithdraws();
 
 
@@ -3177,7 +2599,6 @@ async function(id){
         }
 
     }
-
     catch(error){
 
         console.error(
@@ -3194,6 +2615,7 @@ async function(id){
     }
 
 };
+
 
 
 // ======================================
@@ -3217,6 +2639,7 @@ function setupWithdrawSearch(){
     if(!search && !filter){
 
         return;
+
     }
 
 
@@ -3263,9 +2686,7 @@ function setupWithdrawSearch(){
 
             const matchesSearch =
                 !searchText ||
-                text.includes(
-                    searchText
-                );
+                text.includes(searchText);
 
 
             const matchesStatus =
@@ -3298,6 +2719,7 @@ function setupWithdrawSearch(){
 }
 
 
+
 // ======================================
 // EXPORT
 // ======================================
@@ -3307,13 +2729,17 @@ window.loadWithdraws =
 
 
 // ======================================
-// START
+// PART 5 READY
 // ======================================
 
 console.log(
-    "Admin Part 6 Withdraw System Ready"
+    "Admin Part 5 Withdraw System Ready"
 );
 
+
+// ======================================
+// START AFTER ADMIN AUTH
+// ======================================
 
 if(
     window.adminState &&
@@ -3326,3 +2752,4 @@ if(
 
 
 setupWithdrawSearch();
+
