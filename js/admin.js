@@ -146,6 +146,7 @@ onAuthStateChanged(auth, async(user)=>{
 loadDashboard();
 loadDeposits();
 loadWithdraws();
+    loadVipRequests();
 // START ADMIN SYSTEMS AFTER AUTH ONLY
 
 if(window.startAdminSystems){
@@ -3686,7 +3687,22 @@ async function(id){
 
 window.loadVipRequests =
     loadVipRequests;
+// ======================================
+// START VIP REQUESTS AFTER ADMIN AUTH
+// ======================================
 
+if(
+    window.adminState &&
+    window.adminState.ready
+){
+
+    loadVipRequests();
+
+}
+
+console.log(
+    "VIP Request List Started"
+);
 
 console.log(
     "Admin Part 7 VIP Requests Ready"
