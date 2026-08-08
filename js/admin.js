@@ -1,5 +1,603 @@
 
 
+// ======================================
+// ADMIN.JS - PART 6
+// VIP BUYERS
+// LIST + USER PROFILE + VIP DETAILS
+// ======================================
+
+// ======================================
+// LOAD VIP BUYERS
+// ======================================
+
+function loadVipBuyers(){
+
+const list =
+    document.getElementById("vipBuyerList");
+
+const empty =
+    document.getElementById("emptyVipBuyer");
+
+
+if(!list){
+
+    console.error(
+        "vipBuyerList not found"
+    );
+
+    return;
+}
+
+
+const usersRef =
+    ref(db,"users");
+
+
+onValue(
+    usersRef,
+    async(snapshot)=>{
+
+        list.innerHTML = "";
+
+
+        if(!snapshot.exists()){
+
+            if(empty){
+                empty.style.display = "block";
+            }
+
+            updateText(
+                "vipBuyerTotalCount",
+                0
+            );
+
+            updateText(
+                "vipBuyerActiveCount",
+                0
+            );
+
+            updateText(
+                "vipBuyerExpiredCount",
+                0
+            );
+
+            return;
+        }
+
+
+        const users =
+            Object.entries(
+                snapshot.val()
+            );
+
+
+        let buyers = [];
+
+        let active = 0;
+
+        let expired = 0;
+
+
+        // ==================================
+        // FIND USERS WITH VIP
+        // ==================================
+
+        users.forEach(
+            ([uid,user])=>{
+
+                if(!user) return;
+
+
+                /*
+                 * Supported VIP structures:
+                 *
+                 * user.vip
+                 * user.vipPlan
+                 * user.vipData
+                 * user.vipPurchases
+                 * user.vips
+                 */
+
+                let vipData =
+                    user.vip ||
+                    user.vipPlan ||
+                    user.vipData ||
+                    null;
+
+
+                // ==============================
+                // ARRAY / OBJECT VIP PURCHASES
+                // ==============================
+
+                if(
+                    !vipData &&
+                    user.vipPurchases
+                ){
+
+                    const purchases =
+                        user.vipPurchases;
+
+
+                    if(
+                        typeof purchases ===
+                        "object"
+                    ){
+
+                        const entries =
+                            Object.values(
+                                purchases
+                            );
+
+
+                        if(entries.length){
+
+                            vipData =
+                                entries[
+                                    entries.length - 1
+                                ];
+
+                        }
+
+                    }
+
+                }
+
+
+                if(
+                    !vipData &&
+                    user.vips
+                ){
+
+                    const purchases =
+                        user.vips;
+
+
+                    if(
+                        typeof purchases ===
+                        "object"
+                    ){
+
+                        const entries =
+                            Object.values(
+                                purchases
+                            );
+
+
+                        if(entries.length){
+
+                            vipData =
+                                entries[
+                                    entries.length - 1
+                                ];
+
+                        }
+
+                    }
+
+                }
+
+
+                // ==================================
+                // CHECK VIP
+                // ==================================
+
+                if(
+                    !vipData ||
+                    typeof vipData !== "object"
+                ){
+
+                    return;
+
+                }
+
+
+                const status =
+                    String(
+                        vipData.status ||
+                        "active"
+                    ).toLowerCase();
+
+
+                const duration =
+                    Number(
+                        vipData.duration ||
+                        vipData.days ||
+                        0
+                    );
+
+
+                const startDate =
+                    Number(
+                        vipData.startDate ||
+                        vipData.startedAt ||
+                        vipData.approvedAt ||
+                        vipData.createdAt ||
+                        0
+                    );
+
+
+                let isExpired = false;
+
+
+                if(
+                    duration > 0 &&
+                    startDate > 0
+                ){
+
+                    const durationMs =
+                        duration *
+                        24 *
+                        60 *
+                        60 *
+                        1000;
+
+
+                    isExpired =
+                        Date.now() >
+                        startDate +
+                        durationMs;
+
+                }
+
+
+                if(
+                    status === "expired" ||
+                    isExpired
+                ){
+
+                    expired++;
+
+                }
+                else{
+
+                    active++;
+
+                }
+
+
+                buyers.push({
+
+                    uid,
+                    user,
+                    vip: vipData,
+                    expired:
+                        isExpired ||
+                        status === "expired"
+
+                });
+
+            }
+        );
+
+
+        // ==================================
+        // COUNTERS
+        // ==================================
+
+        updateText(
+            "vipBuyerTotalCount",
+            buyers.length
+        );
+
+
+        updateText(
+            "vipBuyerActiveCount",
+            active
+        );
+
+
+        updateText(
+            "vipBuyerExpiredCount",
+            expired
+        );
+
+
+        // ==================================
+        // NO BUYERS
+        // ==================================
+
+        if(!buyers.length){
+
+            if(empty){
+                empty.style.display = "block";
+            }
+
+            return;
+
+        }
+
+
+        if(empty){
+            empty.style.display = "none";
+        }
+
+
+        // ==================================
+        // RENDER BUYERS
+        // ==================================
+
+        buyers
+        .reverse()
+        .forEach(
+            ({uid,user,vip,expired})=>{
+
+                const name =
+                    user.fullName ||
+                    user.name ||
+                    user.username ||
+                    vip.fullName ||
+                    vip.name ||
+                    "Unknown User";
+
+
+                const email =
+                    user.email ||
+                    vip.email ||
+                    "-";
+
+
+                const phone =
+                    user.phone ||
+                    user.phoneNumber ||
+                    vip.phone ||
+                    "-";
+
+
+                const vipName =
+                    vip.vipName ||
+                    vip.planName ||
+                    vip.name ||
+                    vip.plan ||
+                    "VIP Plan";
+
+
+                const price =
+                    Number(
+                        vip.price ||
+                        vip.vipPrice ||
+                        vip.amount ||
+                        0
+                    );
+
+
+                const dailyIncome =
+                    Number(
+                        vip.dailyIncome ||
+                        vip.daily ||
+                        0
+                    );
+
+
+                const duration =
+                    Number(
+                        vip.duration ||
+                        vip.days ||
+                        0
+                    );
+
+
+                const totalProfit =
+                    Number(
+                        vip.totalProfit ||
+                        vip.profit ||
+                        0
+                    );
+
+
+                const startDate =
+                    vip.startDate ||
+                    vip.startedAt ||
+                    vip.approvedAt ||
+                    vip.createdAt ||
+                    "-";
+
+
+                const status =
+                    expired
+                    ? "expired"
+                    : (
+                        vip.status ||
+                        "active"
+                    );
+
+
+                const card =
+                    document.createElement(
+                        "div"
+                    );
+
+
+                card.className =
+                    "request-card";
+
+
+                card.innerHTML = `
+
+                    <div class="request-top">
+
+                        <h3>
+
+                            <i class="fa-solid fa-crown"></i>
+
+                            VIP Buyer
+
+                        </h3>
+
+                        <span
+                            class="status ${escapeHTML(
+                                String(status).toLowerCase()
+                            )}">
+
+                            ${escapeHTML(
+                                String(status)
+                            )}
+
+                        </span>
+
+                    </div>
+
+
+                    <div class="user-profile-box">
+
+                        <h4>
+
+                            <i class="fa-solid fa-user"></i>
+
+                            User Information
+
+                        </h4>
+
+
+                        <p>
+
+                            <strong>Name:</strong>
+
+                            ${escapeHTML(name)}
+
+                        </p>
+
+
+                        <p>
+
+                            <strong>Email:</strong>
+
+                            ${escapeHTML(email)}
+
+                        </p>
+
+
+                        <p>
+
+                            <strong>Phone:</strong>
+
+                            ${escapeHTML(phone)}
+
+                        </p>
+
+
+                        <p>
+
+                            <strong>User ID:</strong>
+
+                            ${escapeHTML(uid)}
+
+                        </p>
+
+                    </div>
+
+
+                    <div class="withdraw-info">
+
+                        <p>
+
+                            <strong>VIP Plan:</strong>
+
+                            ${escapeHTML(vipName)}
+
+                        </p>
+
+
+                        <p>
+
+                            <strong>Price:</strong>
+
+                            ${price.toLocaleString()} RWF
+
+                        </p>
+
+
+                        <p>
+
+                            <strong>Daily Income:</strong>
+
+                            ${dailyIncome.toLocaleString()} RWF
+
+                        </p>
+
+
+                        <p>
+
+                            <strong>Duration:</strong>
+
+                            ${duration} Days
+
+                        </p>
+
+
+                        <p>
+
+                            <strong>Total Profit:</strong>
+
+                            ${totalProfit.toLocaleString()} RWF
+
+                        </p>
+
+
+                        <p>
+
+                            <strong>Start Date:</strong>
+
+                            ${escapeHTML(
+                                String(startDate)
+                            )}
+
+                        </p>
+
+                    </div>
+
+                `;
+
+
+                list.appendChild(card);
+
+            }
+        );
+
+
+        console.log(
+            "VIP Buyers loaded:",
+            buyers.length
+        );
+
+    },
+
+    (error)=>{
+
+        console.error(
+            "VIP Buyers listener error:",
+            error
+        );
+
+    }
+
+);
+
+}
+
+// ======================================
+// EXPORT
+// ======================================
+
+window.loadVipBuyers =
+loadVipBuyers;
+
+// ======================================
+// START VIP BUYERS
+// ======================================
+
+if(
+window.adminState &&
+window.adminState.ready
+){
+
+loadVipBuyers();
+
+}
+
+console.log(
+"Admin Part 6 VIP Buyers Ready"
+);
+
        // ======================================
 // ADMIN.JS - PART 7
 // VIP REQUESTS + VIP BUYERS
