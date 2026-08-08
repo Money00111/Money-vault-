@@ -1,5 +1,658 @@
 
+// ======================================
+// ADMIN.JS - PART 2
+// DASHBOARD SYSTEM FINAL
+// ======================================
 
+
+
+// ======================================
+// NUMBER FORMAT
+// ======================================
+
+function formatMoney(amount){
+
+    return Number(amount || 0)
+    .toLocaleString()
+    + " RWF";
+
+}
+
+
+
+// ======================================
+// UPDATE TEXT HELPER
+// ======================================
+
+function updateText(id,value){
+
+    const element =
+    document.getElementById(id);
+
+
+    if(element){
+
+        element.textContent = value;
+
+    }
+
+}
+
+
+
+
+
+
+
+// ======================================
+// TOTAL USERS
+// ======================================
+
+function loadDashboardUsers(){
+
+
+    onValue(
+        ref(db,"users"),
+        (snapshot)=>{
+
+
+            let totalUsers = 0;
+
+
+            if(snapshot.exists()){
+
+
+                totalUsers =
+                Object.keys(
+                    snapshot.val()
+                ).length;
+
+
+            }
+
+
+
+            updateText(
+                "totalUsers",
+                totalUsers
+            );
+
+
+        }
+
+    );
+
+
+}
+
+
+
+
+
+
+
+
+
+// ======================================
+// DEPOSIT STATISTICS
+// ======================================
+
+function loadDashboardDeposits(){
+
+
+
+    onValue(
+        ref(db,"depositRequests"),
+        (snapshot)=>{
+
+
+
+            let total = 0;
+
+            let pending = 0;
+
+            let approved = 0;
+
+            let rejected = 0;
+
+
+
+
+
+            if(snapshot.exists()){
+
+
+
+                Object.values(
+                    snapshot.val()
+                )
+                .forEach(deposit=>{
+
+
+                    total++;
+
+
+
+                    if(deposit.status === "pending"){
+
+                        pending++;
+
+                    }
+
+
+
+                    else if(
+                    deposit.status === "approved"
+                    ){
+
+                        approved++;
+
+                    }
+
+
+
+                    else if(
+                    deposit.status === "rejected"
+                    ){
+
+                        rejected++;
+
+                    }
+
+
+
+                });
+
+
+
+            }
+
+
+
+
+
+
+
+            updateText(
+                "dashboardTotalDeposits",
+                total
+            );
+
+
+            updateText(
+                "dashboardPendingDeposits",
+                pending
+            );
+
+
+            updateText(
+                "dashboardApprovedDeposits",
+                approved
+            );
+
+
+
+
+
+            updateText(
+                "depositTotalCount",
+                total
+            );
+
+
+            updateText(
+                "depositPendingCount",
+                pending
+            );
+
+
+            updateText(
+                "depositApprovedCount",
+                approved
+            );
+
+
+            updateText(
+                "depositRejectedCount",
+                rejected
+            );
+
+
+
+        }
+
+    );
+
+
+
+}
+
+
+
+
+
+
+
+
+
+// ======================================
+// WITHDRAW STATISTICS
+// ======================================
+
+function loadDashboardWithdraws(){
+
+
+
+    onValue(
+        ref(db,"withdrawRequests"),
+        (snapshot)=>{
+
+
+
+            let total = 0;
+
+            let pending = 0;
+
+            let approved = 0;
+
+            let rejected = 0;
+
+
+
+
+
+
+
+            if(snapshot.exists()){
+
+
+
+                Object.values(
+                    snapshot.val()
+                )
+                .forEach(withdraw=>{
+
+
+
+                    total++;
+
+
+
+                    if(withdraw.status==="pending"){
+
+
+                        pending++;
+
+
+                    }
+
+
+
+                    else if(
+                    withdraw.status==="approved"
+                    ){
+
+
+                        approved++;
+
+
+                    }
+
+
+
+                    else if(
+                    withdraw.status==="rejected"
+                    ){
+
+
+                        rejected++;
+
+
+                    }
+
+
+
+                });
+
+
+
+            }
+
+
+
+
+
+
+
+            updateText(
+                "dashboardTotalWithdraws",
+                total
+            );
+
+
+
+            updateText(
+                "withdrawTotalCount",
+                total
+            );
+
+
+
+            updateText(
+                "withdrawPendingCount",
+                pending
+            );
+
+
+
+            updateText(
+                "withdrawApprovedCount",
+                approved
+            );
+
+
+
+            updateText(
+                "withdrawRejectedCount",
+                rejected
+            );
+
+
+
+        }
+
+    );
+
+
+
+}
+
+
+
+
+
+
+
+
+
+// ======================================
+// SYSTEM BALANCE
+// ======================================
+
+function loadSystemBalance(){
+
+
+
+    onValue(
+        ref(db,"users"),
+        (snapshot)=>{
+
+
+
+            let totalBalance = 0;
+
+
+
+
+
+            if(snapshot.exists()){
+
+
+
+                Object.values(
+                    snapshot.val()
+                )
+                .forEach(user=>{
+
+
+
+                    totalBalance +=
+                    Number(
+                    user.balance || 0
+                    );
+
+
+
+                });
+
+
+
+            }
+
+
+
+
+
+
+
+            updateText(
+                "systemBalance",
+                formatMoney(totalBalance)
+            );
+
+
+
+
+        }
+
+    );
+
+
+
+}
+
+
+
+
+
+
+
+
+
+// ======================================
+// RECENT ACTIVITY
+// ======================================
+
+function loadRecentActivity(){
+
+
+
+    const box =
+    document.getElementById(
+        "recentActivity"
+    );
+
+
+
+    if(!box) return;
+
+
+
+
+
+    onValue(
+        ref(db,"transactions"),
+        (snapshot)=>{
+
+
+
+            box.innerHTML = "";
+
+
+
+
+
+            if(!snapshot.exists()){
+
+
+                box.innerHTML = `
+
+                <div class="empty-state">
+
+                <h3>
+                No Recent Activity
+                </h3>
+
+                </div>
+
+                `;
+
+
+                return;
+
+
+            }
+
+
+
+
+
+
+
+            Object.entries(
+                snapshot.val()
+            )
+            .reverse()
+            .slice(0,10)
+            .forEach(([id,item])=>{
+
+
+
+
+
+                const date =
+                item.date
+                ?
+                new Date(item.date)
+                .toLocaleString()
+                :
+                "-";
+
+
+
+
+
+
+
+                const activity =
+                document.createElement(
+                    "div"
+                );
+
+
+
+                activity.className =
+                "activity-item";
+
+
+
+
+
+
+                activity.innerHTML = `
+
+                <p>
+
+                <strong>
+                ${(item.type || "TRANSACTION")
+                .toUpperCase()}
+                </strong>
+
+                -
+                ${formatMoney(item.amount)}
+
+                </p>
+
+
+                <span>
+                ${item.status || "-"}
+                |
+                ${date}
+                </span>
+
+
+                `;
+
+
+
+
+
+                box.appendChild(activity);
+
+
+
+            });
+
+
+
+        }
+
+    );
+
+
+
+}
+
+
+
+
+
+
+
+
+
+// ======================================
+// START DASHBOARD
+// ======================================
+
+
+function loadDashboard(){
+
+
+    if(
+    !window.adminState ||
+    !window.adminState.ready
+    ){
+
+        return;
+
+    }
+
+
+
+    loadDashboardUsers();
+
+
+    loadDashboardDeposits();
+
+
+    loadDashboardWithdraws();
+
+
+    loadSystemBalance();
+
+
+    loadRecentActivity();
+
+
+}
+
+
+
+
+
+
+// EXPORT
+window.loadDashboard =
+loadDashboard;
+
+
+
+
+
+console.log(
+"Admin Part 2 Dashboard Ready"
+);
 
 // ======================================
 // ADMIN.JS - PART 3
