@@ -1,5 +1,484 @@
 
 
+
+// ======================================
+// ADMIN.JS - PART 3
+// DEPOSIT MANAGEMENT FINAL
+// ======================================
+
+
+// ================================
+// LOAD DEPOSITS
+// ================================
+
+function loadDeposits(){
+
+const depositRef = ref(db,"depositRequests");
+
+
+onValue(depositRef, async(snapshot)=>{
+
+
+const list =
+document.getElementById("depositList");
+
+
+const empty =
+document.getElementById("emptyDeposit");
+
+
+if(!list) return;
+
+
+list.innerHTML="";
+
+
+if(!snapshot.exists()){
+
+
+if(empty)
+empty.style.display="block";
+
+
+return;
+
+}
+
+
+if(empty)
+empty.style.display="none";
+
+
+
+const deposits =
+Object.entries(snapshot.val()).reverse();
+
+
+
+for(const [id,deposit] of deposits){
+
+
+let userData={};
+
+
+
+if(deposit.uid){
+
+const userSnap =
+await get(
+ref(db,"users/"+deposit.uid)
+);
+
+
+if(userSnap.exists()){
+
+userData=userSnap.val();
+
+}
+
+}
+
+
+
+const status =
+deposit.status || "pending";
+
+
+
+const card =
+document.createElement("div");
+
+
+card.className="request-card";
+
+
+
+card.innerHTML=`
+
+<div class="request-top">
+
+<h3>
+Deposit Request
+</h3>
+
+<span class="status ${status}">
+${status}
+</span>
+
+</div>
+
+
+
+<p>
+<strong>Name:</strong>
+${deposit.fullName || userData.name || userData.fullName || "-"}
+</p>
+
+
+<p>
+<strong>Email:</strong>
+${deposit.email || userData.email || "-"}
+</p>
+
+
+<p>
+<strong>Amount:</strong>
+${Number(deposit.amount || 0).toLocaleString()} RWF
+</p>
+
+
+<p>
+<strong>Phone:</strong>
+${deposit.senderPhone || userData.phone || "-"}
+</p>
+
+
+<p>
+<strong>Payment Method:</strong>
+${deposit.paymentMethod || "-"}
+</p>
+
+
+<p>
+<strong>Transaction ID:</strong>
+${deposit.transactionId || "-"}
+</p>
+
+
+<p>
+<strong>Date:</strong>
+${deposit.paymentDate || deposit.createdAt || "-"}
+</p>
+
+
+
+<div class="action-buttons">
+
+
+<button
+class="approveBtn"
+${status!=="pending"?"disabled":""}
+onclick="approveDeposit('${id}')">
+
+<i class="fa-solid fa-circle-check"></i>
+
+Approve
+
+</button>
+
+
+
+<button
+class="rejectBtn"
+${status!=="pending"?"disabled":""}
+onclick="rejectDeposit('${id}')">
+
+<i class="fa-solid fa-circle-xmark"></i>
+
+Reject
+
+</button>
+
+
+</div>
+
+
+`;
+
+
+
+list.appendChild(card);
+
+
+}
+
+
+});
+
+
+}
+
+
+
+
+
+
+
+// ================================
+// APPROVE DEPOSIT ONCE
+// ================================
+
+window.approveDeposit =
+async function(id){
+
+
+const depositRef =
+ref(db,"depositRequests/"+id);
+
+
+const snap =
+await get(depositRef);
+
+
+
+if(!snap.exists()) return;
+
+
+
+const deposit =
+snap.val();
+
+
+
+
+// BLOCK DOUBLE APPROVE
+
+if(deposit.status !== "pending"){
+
+alert("Deposit already processed");
+
+return;
+
+}
+
+
+
+const userRef =
+ref(db,"users/"+deposit.uid);
+
+
+
+const userSnap =
+await get(userRef);
+
+
+
+if(!userSnap.exists()){
+
+alert("User not found");
+
+return;
+
+}
+
+
+
+const user =
+userSnap.val();
+
+
+
+const oldBalance =
+Number(user.balance || 0);
+
+
+
+const amount =
+Number(deposit.amount || 0);
+
+
+
+
+// ADD MONEY ONLY ONCE
+
+await update(userRef,{
+
+balance:
+oldBalance + amount,
+
+
+totalDeposit:
+Number(user.totalDeposit || 0)
++ amount
+
+});
+
+
+
+
+
+await update(depositRef,{
+
+status:"approved",
+
+approvedAt:Date.now(),
+
+approvedBy:currentAdmin.uid
+
+});
+
+
+
+
+
+await set(
+
+push(ref(db,"transactions")),
+
+{
+
+uid:deposit.uid,
+
+type:"deposit",
+
+amount:amount,
+
+status:"approved",
+
+reference:id,
+
+date:Date.now()
+
+}
+
+);
+
+
+
+alert(
+"Deposit Approved Successfully"
+);
+
+
+
+loadDeposits();
+
+
+if(window.loadDashboard){
+
+window.loadDashboard();
+
+}
+
+
+};
+
+
+
+
+
+
+
+
+// ================================
+// REJECT DEPOSIT ONCE
+// ================================
+
+window.rejectDeposit =
+async function(id){
+
+
+
+const depositRef =
+ref(db,"depositRequests/"+id);
+
+
+
+const snap =
+await get(depositRef);
+
+
+
+if(!snap.exists()) return;
+
+
+
+const deposit =
+snap.val();
+
+
+
+
+
+// BLOCK DOUBLE REJECT
+
+if(deposit.status !== "pending"){
+
+alert("Deposit already processed");
+
+return;
+
+}
+
+
+
+
+await update(depositRef,{
+
+status:"rejected",
+
+rejectedAt:Date.now(),
+
+rejectedBy:currentAdmin.uid
+
+});
+
+
+
+
+
+await set(
+
+push(ref(db,"transactions")),
+
+{
+
+uid:deposit.uid,
+
+type:"deposit",
+
+amount:Number(deposit.amount || 0),
+
+status:"rejected",
+
+reference:id,
+
+date:Date.now()
+
+}
+
+);
+
+
+
+
+
+alert(
+"Deposit Rejected Successfully"
+);
+
+
+
+loadDeposits();
+
+
+if(window.loadDashboard){
+
+window.loadDashboard();
+
+}
+
+
+
+};
+
+
+
+
+
+
+// ================================
+// EXPORT
+// ================================
+
+
+window.loadDeposits =
+loadDeposits;
+
+
+console.log(
+"Deposit System Ready"
+);
 // ======================================
 // ADMIN.JS - PART 4
 // QUICK ACTIONS
