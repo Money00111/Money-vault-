@@ -752,7 +752,8 @@ console.log(
 
 // ======================================
 // ADMIN.JS - PART 3
-// DEPOSITS
+// DEPOSIT MANAGEMENT - SAFE VERSION
+// APPROVE + REJECT ONCE ONLY
 // ======================================
 
 
@@ -768,17 +769,16 @@ function loadDeposits() {
 
 
     const list =
-        document.getElementById(
-            "depositList"
-        );
+        document.getElementById("depositList");
 
     const empty =
-        document.getElementById(
-            "emptyDeposit"
-        );
+        document.getElementById("emptyDeposit");
 
 
-    if (!list) return;
+    if (!list) {
+        console.warn("depositList not found.");
+        return;
+    }
 
 
     onValue(
@@ -788,64 +788,157 @@ function loadDeposits() {
             list.innerHTML = "";
 
 
+            // ==================================
+            // NO DEPOSITS
+            // ==================================
+
             if (!snapshot.exists()) {
 
-                empty &&
-                    (empty.style.display = "block");
+                if (empty) {
+                    empty.style.display = "block";
+                }
 
                 return;
-
             }
 
 
-            empty &&
-                (empty.style.display = "none");
+            if (empty) {
+                empty.style.display = "none";
+            }
 
 
             const entries =
-                Object.entries(
-                    snapshot.val()
-                ).reverse();
+                Object.entries(snapshot.val())
+                    .reverse();
 
+
+            // ==================================
+            // RENDER EACH DEPOSIT
+            // ==================================
 
             for (const [id, deposit] of entries) {
+
+                const item =
+                    deposit || {};
+
 
                 let user = {};
 
 
-                if (deposit?.uid) {
+                // ==================================
+                // GET USER
+                // ==================================
 
-                    const userSnap =
-                        await get(
-                            ref(
-                                db,
-                                "users/" +
-                                deposit.uid
-                            )
+                if (item.uid) {
+
+                    try {
+
+                        const userSnap =
+                            await get(
+                                ref(
+                                    db,
+                                    "users/" + item.uid
+                                )
+                            );
+
+
+                        if (userSnap.exists()) {
+
+                            user =
+                                userSnap.val() || {};
+
+                        }
+
+                    }
+                    catch (error) {
+
+                        console.error(
+                            "Error loading deposit user:",
+                            error
                         );
 
-                    if (userSnap.exists()) {
-                        user = userSnap.val();
                     }
 
                 }
 
 
+                // ==================================
+                // STATUS
+                // ==================================
+
                 const status =
                     String(
-                        deposit?.status ||
-                        "pending"
+                        item.status || "pending"
                     ).toLowerCase();
 
 
+                // ==================================
+                // USER INFORMATION
+                // ==================================
+
+                const name =
+                    item.fullName ||
+                    item.name ||
+                    user.fullName ||
+                    user.name ||
+                    user.username ||
+                    "-";
+
+
+                const email =
+                    item.email ||
+                    user.email ||
+                    "-";
+
+
+                const phone =
+                    item.senderPhone ||
+                    item.phone ||
+                    item.phoneNumber ||
+                    user.phone ||
+                    user.phoneNumber ||
+                    "-";
+
+
+                const amount =
+                    Number(item.amount || 0);
+
+
+                const paymentMethod =
+                    item.paymentMethod ||
+                    item.method ||
+                    "-";
+
+
+                const transactionId =
+                    item.transactionId ||
+                    item.transactionID ||
+                    item.reference ||
+                    "-";
+
+
+                const date =
+                    item.createdAt ||
+                    item.requestDate ||
+                    item.date ||
+                    item.timestamp ||
+                    "-";
+
+
+                // ==================================
+                // CARD
+                // ==================================
+
                 const card =
-                    document.createElement(
-                        "div"
-                    );
+                    document.createElement("div");
 
 
                 card.className =
                     "request-card";
+
+
+                card.dataset.requestId =
+                    id;
 
 
                 card.innerHTML = `
@@ -853,6 +946,7 @@ function loadDeposits() {
                     <div class="request-top">
 
                         <h3>
+                            <i class="fa-solid fa-money-bill-transfer"></i>
                             Deposit Request
                         </h3>
 
@@ -862,56 +956,69 @@ function loadDeposits() {
 
                     </div>
 
-                    <p>
-                        <strong>Name:</strong>
-                        ${escapeHTML(
-                            deposit?.fullName ||
-                            user?.fullName ||
-                            user?.name ||
-                            "-"
-                        )}
-                    </p>
 
-                    <p>
-                        <strong>Email:</strong>
-                        ${escapeHTML(
-                            deposit?.email ||
-                            user?.email ||
-                            "-"
-                        )}
-                    </p>
+                    <div class="user-profile-box">
 
-                    <p>
-                        <strong>Phone:</strong>
-                        ${escapeHTML(
-                            deposit?.senderPhone ||
-                            user?.phone ||
-                            "-"
-                        )}
-                    </p>
+                        <h4>
+                            <i class="fa-solid fa-user"></i>
+                            User Information
+                        </h4>
 
-                    <p>
-                        <strong>Amount:</strong>
-                        ${Number(
-                            deposit?.amount || 0
-                        ).toLocaleString()} RWF
-                    </p>
+                        <p>
+                            <strong>Name:</strong>
+                            ${escapeHTML(name)}
+                        </p>
 
-                    <p>
-                        <strong>Payment Method:</strong>
-                        ${escapeHTML(
-                            deposit?.paymentMethod ||
-                            "-"
-                        )}
-                    </p>
+                        <p>
+                            <strong>Email:</strong>
+                            ${escapeHTML(email)}
+                        </p>
 
-                    <p>
-                        <strong>Transaction ID:</strong>
-                        ${escapeHTML(
-                            deposit?.transactionId ||
-                            "-"
-                        )}
-                    </p>
+                        <p>
+                            <strong>Phone:</strong>
+                            ${escapeHTML(phone)}
+                        </p>
+
+                        <p>
+                            <strong>User ID:</strong>
+                            ${escapeHTML(
+                                item.uid || "-"
+                            )}
+                        </p>
+
+                    </div>
+
+
+                    <div class="withdraw-info">
+
+                        <p>
+                            <strong>Amount:</strong>
+                            ${amount.toLocaleString()} RWF
+                        </p>
+
+                        <p>
+                            <strong>Payment Method:</strong>
+                            ${escapeHTML(
+                                paymentMethod
+                            )}
+                        </p>
+
+                        <p>
+                            <strong>Transaction ID:</strong>
+                            ${escapeHTML(
+                                transactionId
+                            )}
+                        </p>
+
+                        <p>
+                            <strong>Date:</strong>
+                            ${escapeHTML(
+                                String(date)
+                            )}
+                        </p>
+
+                    </div>
+
 
                     <div class="action-buttons">
 
@@ -921,11 +1028,19 @@ function loadDeposits() {
                             data-id="${escapeHTML(id)}"
                             ${status !== "pending" ? "disabled" : ""}
                         >
+
                             <i class="fa-solid fa-circle-check"></i>
-                            ${status === "approved"
+
+                            ${
+                                status === "approved"
                                 ? "Approved"
-                                : "Approve"}
+                                : status === "processing"
+                                ? "Processing..."
+                                : "Approve"
+                            }
+
                         </button>
+
 
                         <button
                             class="rejectBtn"
@@ -933,10 +1048,17 @@ function loadDeposits() {
                             data-id="${escapeHTML(id)}"
                             ${status !== "pending" ? "disabled" : ""}
                         >
+
                             <i class="fa-solid fa-circle-xmark"></i>
-                            ${status === "rejected"
+
+                            ${
+                                status === "rejected"
                                 ? "Rejected"
-                                : "Reject"}
+                                : status === "processing"
+                                ? "Processing..."
+                                : "Reject"
+                            }
+
                         </button>
 
                     </div>
@@ -949,7 +1071,7 @@ function loadDeposits() {
 
 
             // ==================================
-            // BUTTONS
+            // BUTTON EVENTS
             // ==================================
 
             list.querySelectorAll(
@@ -958,31 +1080,65 @@ function loadDeposits() {
 
                 button.addEventListener(
                     "click",
-                    () => {
+                    async () => {
 
-                        if (button.disabled) {
+                        // ==========================
+                        // PREVENT DOUBLE CLICK
+                        // ==========================
+
+                        if (
+                            button.disabled ||
+                            button.dataset.busy === "true"
+                        ) {
+
                             return;
+
                         }
+
+
+                        button.dataset.busy =
+                            "true";
+
+
+                        button.disabled =
+                            true;
 
 
                         const id =
                             button.dataset.id;
 
-                        button.disabled = true;
+
+                        const action =
+                            button.dataset.action;
 
 
-                        if (
-                            button.dataset.action ===
-                            "approveDeposit"
-                        ) {
+                        try {
 
-                            approveDeposit(id);
+                            if (
+                                action ===
+                                "approveDeposit"
+                            ) {
+
+                                await approveDeposit(id);
+
+                            }
+
+                            else if (
+                                action ===
+                                "rejectDeposit"
+                            ) {
+
+                                await rejectDeposit(id);
+
+                            }
 
                         }
+                        catch (error) {
 
-                        else {
-
-                            rejectDeposit(id);
+                            console.error(
+                                "Deposit button error:",
+                                error
+                            );
 
                         }
 
@@ -999,11 +1155,27 @@ function loadDeposits() {
 
 // ======================================
 // APPROVE DEPOSIT
+// SAFE - ONCE ONLY
 // ======================================
 
 async function approveDeposit(id) {
 
-    if (!currentAdmin) return;
+    if (!currentAdmin) {
+
+        alert("Admin session not ready.");
+
+        return;
+
+    }
+
+
+    if (!id) {
+
+        alert("Invalid deposit request.");
+
+        return;
+
+    }
 
 
     const requestRef =
@@ -1013,43 +1185,83 @@ async function approveDeposit(id) {
         );
 
 
-    const claim =
-        await runTransaction(
-            requestRef,
-            current => {
+    // ==================================
+    // STEP 1
+    // CLAIM REQUEST
+    // ==================================
 
-                if (!current) {
-                    return;
+    let claim;
+
+
+    try {
+
+        claim =
+            await runTransaction(
+                requestRef,
+                current => {
+
+                    if (!current) {
+                        return;
+                    }
+
+
+                    const status =
+                        String(
+                            current.status ||
+                            "pending"
+                        ).toLowerCase();
+
+
+                    // IMPORTANT:
+                    // ONLY PENDING CAN BE APPROVED
+
+                    if (status !== "pending") {
+                        return;
+                    }
+
+
+                    return {
+
+                        ...current,
+
+                        status: "processing",
+
+                        processingAt:
+                            Date.now(),
+
+                        processingBy:
+                            currentAdmin.uid
+
+                    };
+
                 }
+            );
 
+    }
+    catch (error) {
 
-                const status =
-                    String(
-                        current.status ||
-                        "pending"
-                    ).toLowerCase();
-
-
-                if (status !== "pending") {
-                    return;
-                }
-
-
-                return {
-                    ...current,
-                    status: "processing",
-                    processingAt: Date.now(),
-                    processingBy: currentAdmin.uid
-                };
-
-            }
+        console.error(
+            "Deposit claim error:",
+            error
         );
 
+        alert(
+            "Could not process deposit."
+        );
+
+        return;
+
+    }
+
+
+    // ==================================
+    // CLAIM FAILED
+    // ==================================
 
     if (!claim.committed) {
 
         alert(
-            "Deposit already processed."
+            "This deposit has already been processed."
         );
 
         return;
@@ -1058,35 +1270,56 @@ async function approveDeposit(id) {
 
 
     const deposit =
-        claim.snapshot.val();
+        claim.snapshot.val() || {};
 
 
     try {
 
+        // ==================================
+        // USER ID
+        // ==================================
+
         const uid =
-            deposit.uid;
+            deposit.uid ||
+            deposit.userId ||
+            deposit.userUID ||
+            "";
 
 
         if (!uid) {
+
             throw new Error(
                 "Deposit has no user ID."
             );
+
         }
 
 
+        // ==================================
+        // AMOUNT
+        // ==================================
+
         const amount =
-            Number(deposit.amount || 0);
+            Number(
+                deposit.amount || 0
+            );
 
 
         if (
             !Number.isFinite(amount) ||
             amount <= 0
         ) {
+
             throw new Error(
                 "Invalid deposit amount."
             );
+
         }
 
+
+        // ==================================
+        // USER REF
+        // ==================================
 
         const userRef =
             ref(
@@ -1095,44 +1328,76 @@ async function approveDeposit(id) {
             );
 
 
-        const userSnap =
-            await get(userRef);
+        // ==================================
+        // STEP 2
+        // UPDATE USER BALANCE SAFELY
+        // ==================================
+
+        const balanceTransaction =
+            await runTransaction(
+                userRef,
+                user => {
+
+                    if (!user) {
+                        return;
+                    }
 
 
-        if (!userSnap.exists()) {
-            throw new Error(
-                "User not found."
+                    const currentBalance =
+                        Number(
+                            user.balance || 0
+                        );
+
+
+                    const currentTotalDeposit =
+                        Number(
+                            user.totalDeposit || 0
+                        );
+
+
+                    return {
+
+                        ...user,
+
+                        balance:
+                            currentBalance +
+                            amount,
+
+                        totalDeposit:
+                            currentTotalDeposit +
+                            amount
+
+                    };
+
+                }
             );
+
+
+        if (
+            !balanceTransaction.committed
+        ) {
+
+            throw new Error(
+                "Could not update user balance."
+            );
+
         }
 
 
-        const user =
-            userSnap.val() || {};
-
-
-        await update(
-            userRef,
-            {
-
-                balance:
-                    Number(user.balance || 0) +
-                    amount,
-
-                totalDeposit:
-                    Number(user.totalDeposit || 0) +
-                    amount
-
-            }
-        );
-
+        // ==================================
+        // STEP 3
+        // MARK REQUEST APPROVED
+        // ==================================
 
         await update(
             requestRef,
             {
 
-                status: "approved",
+                status:
+                    "approved",
 
-                approvedAt: Date.now(),
+                approvedAt:
+                    Date.now(),
 
                 approvedBy:
                     currentAdmin.uid
@@ -1141,35 +1406,65 @@ async function approveDeposit(id) {
         );
 
 
-        await set(
+        // ==================================
+        // STEP 4
+        // TRANSACTION RECORD
+        // ==================================
+
+        const transactionRef =
             push(
-                ref(db, "transactions")
-            ),
+                ref(
+                    db,
+                    "transactions"
+                )
+            );
+
+
+        await set(
+            transactionRef,
             {
 
                 uid,
 
-                type: "deposit",
+                type:
+                    "deposit",
 
                 amount,
 
-                status: "approved",
+                status:
+                    "approved",
 
-                reference: id,
+                reference:
+                    id,
+
+                requestId:
+                    id,
 
                 approvedBy:
                     currentAdmin.uid,
 
-                date: Date.now()
+                date:
+                    Date.now()
 
             }
         );
 
 
+        // ==================================
+        // SUCCESS
+        // ==================================
+
         alert(
             "Deposit Approved Successfully"
         );
 
+
+        console.log(
+            "Deposit approved:",
+            id,
+            amount,
+            uid
+        );
 
     }
     catch (error) {
@@ -1180,12 +1475,32 @@ async function approveDeposit(id) {
         );
 
 
-        await update(
-            requestRef,
-            {
-                status: "pending"
-            }
-        );
+        // ==================================
+        // RETURN TO PENDING
+        // ONLY IF PROCESSING FAILED
+        // ==================================
+
+        try {
+
+            await update(
+                requestRef,
+                {
+
+                    status:
+                        "pending"
+
+                }
+            );
+
+        }
+        catch (rollbackError) {
+
+            console.error(
+                "Deposit rollback error:",
+                rollbackError
+            );
+
+        }
 
 
         alert(
@@ -1200,11 +1515,27 @@ async function approveDeposit(id) {
 
 // ======================================
 // REJECT DEPOSIT
+// SAFE - ONCE ONLY
 // ======================================
 
 async function rejectDeposit(id) {
 
-    if (!currentAdmin) return;
+    if (!currentAdmin) {
+
+        alert("Admin session not ready.");
+
+        return;
+
+    }
+
+
+    if (!id) {
+
+        alert("Invalid deposit request.");
+
+        return;
+
+    }
 
 
     const requestRef =
@@ -1214,43 +1545,69 @@ async function rejectDeposit(id) {
         );
 
 
-    const claim =
-        await runTransaction(
-            requestRef,
-            current => {
+    // ==================================
+    // STEP 1
+    // CLAIM REQUEST
+    // ==================================
 
-                if (!current) {
-                    return;
+    let claim;
+
+
+    try {
+
+        claim =
+            await runTransaction(
+                requestRef,
+                current => {
+
+                    if (!current) {
+                        return;
+                    }
+
+
+                    const status =
+                        String(
+                            current.status ||
+                            "pending"
+                        ).toLowerCase();
+
+
+                    // ONLY PENDING CAN BE REJECTED
+
+                    if (status !== "pending") {
+                        return;
+                    }
+
+
+                    return {
+
+                        ...current,
+
+                        status:
+                            "processing",
+
+                        processingAt:
+                            Date.now(),
+
+                        processingBy:
+                            currentAdmin.uid
+
+                    };
+
                 }
+            );
 
+    }
+    catch (error) {
 
-                const status =
-                    String(
-                        current.status ||
-                        "pending"
-                    ).toLowerCase();
-
-
-                if (status !== "pending") {
-                    return;
-                }
-
-
-                return {
-                    ...current,
-                    status: "processing",
-                    processingAt: Date.now(),
-                    processingBy: currentAdmin.uid
-                };
-
-            }
+        console.error(
+            "Reject claim error:",
+            error
         );
 
 
-    if (!claim.committed) {
-
         alert(
-            "Deposit already processed."
+            "Could not process rejection."
         );
 
         return;
@@ -1258,19 +1615,40 @@ async function rejectDeposit(id) {
     }
 
 
+    // ==================================
+    // CLAIM FAILED
+    // ==================================
+
+    if (!claim.committed) {
+
+        alert(
+            "This deposit has already been processed."
+        );
+
+        return;
+
+    }
+
+
+    const deposit =
+        claim.snapshot.val() || {};
+
+
     try {
 
-        const deposit =
-            claim.snapshot.val();
-
+        // ==================================
+        // MARK REJECTED
+        // ==================================
 
         await update(
             requestRef,
             {
 
-                status: "rejected",
+                status:
+                    "rejected",
 
-                rejectedAt: Date.now(),
+                rejectedAt:
+                    Date.now(),
 
                 rejectedBy:
                     currentAdmin.uid
@@ -1279,37 +1657,68 @@ async function rejectDeposit(id) {
         );
 
 
-        await set(
+        // ==================================
+        // TRANSACTION RECORD
+        // ==================================
+
+        const transactionRef =
             push(
-                ref(db, "transactions")
-            ),
+                ref(
+                    db,
+                    "transactions"
+                )
+            );
+
+
+        await set(
+            transactionRef,
             {
 
                 uid:
-                    deposit.uid || "",
+                    deposit.uid ||
+                    deposit.userId ||
+                    deposit.userUID ||
+                    "",
 
-                type: "deposit",
+                type:
+                    "deposit",
 
                 amount:
                     Number(
                         deposit.amount || 0
                     ),
 
-                status: "rejected",
+                status:
+                    "rejected",
 
-                reference: id,
+                reference:
+                    id,
+
+                requestId:
+                    id,
 
                 rejectedBy:
                     currentAdmin.uid,
 
-                date: Date.now()
+                date:
+                    Date.now()
 
             }
         );
 
 
+        // ==================================
+        // SUCCESS
+        // ==================================
+
         alert(
             "Deposit Rejected Successfully"
+        );
+
+
+        console.log(
+            "Deposit rejected:",
+            id
         );
 
     }
@@ -1321,16 +1730,35 @@ async function rejectDeposit(id) {
         );
 
 
-        await update(
-            requestRef,
-            {
-                status: "pending"
-            }
-        );
+        // ==================================
+        // RETURN TO PENDING
+        // ==================================
+
+        try {
+
+            await update(
+                requestRef,
+                {
+
+                    status:
+                        "pending"
+
+                }
+            );
+
+        }
+        catch (rollbackError) {
+
+            console.error(
+                "Reject rollback error:",
+                rollbackError
+            );
+
+        }
 
 
         alert(
-            "Reject deposit failed: " +
+            "Deposit rejection failed: " +
             error.message
         );
 
@@ -1339,21 +1767,30 @@ async function rejectDeposit(id) {
 }
 
 
+// ======================================
+// GLOBAL FUNCTIONS
+// ======================================
+
 window.loadDeposits =
     loadDeposits;
 
+
 window.approveDeposit =
     approveDeposit;
+
 
 window.rejectDeposit =
     rejectDeposit;
 
 
+// ======================================
+// PART 3 READY
+// ======================================
+
 console.log(
-    "ADMIN
-    
-    PART 3 READY"
+    "ADMIN PART 3 READY"
 );
+
 // ======================================
 // ADMIN.JS - PART 4
 // QUICK ACTIONS
