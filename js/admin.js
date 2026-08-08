@@ -1,4 +1,136 @@
 // ======================================
+// ADMIN.JS - PART 4
+// QUICK ACTIONS SYSTEM
+// ======================================
+
+
+// ================================
+// GO TO PAGE
+// ================================
+
+function goToPage(page){
+
+    if(typeof openPage === "function"){
+
+        openPage(page);
+
+    }
+
+}
+
+
+
+// ================================
+// REFRESH DASHBOARD
+// ================================
+
+document
+.getElementById("refreshDashboard")
+?.addEventListener("click",()=>{
+
+    if(window.loadDashboard){
+
+        window.loadDashboard();
+
+    }
+
+});
+
+
+
+document
+.getElementById("refreshDashboardQuick")
+?.addEventListener("click",()=>{
+
+    if(window.loadDashboard){
+
+        window.loadDashboard();
+
+    }
+
+});
+
+
+
+
+// ================================
+// QUICK ACTION BUTTONS
+// ================================
+
+
+document
+.getElementById("openDeposits")
+?.addEventListener("click",()=>{
+
+    goToPage("deposits");
+
+});
+
+
+
+document
+.getElementById("openWithdraws")
+?.addEventListener("click",()=>{
+
+    goToPage("withdraws");
+
+});
+
+
+
+document
+.getElementById("openUsers")
+?.addEventListener("click",()=>{
+
+    goToPage("users");
+
+});
+
+
+
+document
+.getElementById("openTransactions")
+?.addEventListener("click",()=>{
+
+    goToPage("transactions");
+
+});
+
+
+
+document
+.getElementById("openVipRequests")
+?.addEventListener("click",()=>{
+
+    goToPage("vipRequests");
+
+});
+
+
+
+document
+.getElementById("openSettings")
+?.addEventListener("click",()=>{
+
+    goToPage("settings");
+
+});
+
+
+
+
+// ================================
+// EXPORT
+// ================================
+
+window.goToPage = goToPage;
+
+
+console.log(
+"Admin Part 4 Quick Actions Ready"
+);
+
+// ======================================
 // ADMIN.JS - PART 5
 // WITHDRAW MANAGEMENT
 // LIST + USER PROFILE + APPROVE + REJECT
