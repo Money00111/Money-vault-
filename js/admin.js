@@ -5132,6 +5132,11 @@ if(
 }             
 
 
+console.log(
+    "VIP Request List Started"
+);
+
+
 // ======================================
 // ADMIN.JS - PART 8
 // VIP BUYERS / APPROVED VIP LIST
