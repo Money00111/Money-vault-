@@ -1,11 +1,6 @@
 // ======================================
 // ADMIN.JS - PART 1
-// FIREBASE + ADMIN AUTH + GLOBAL SETUP
-// ======================================
-
-
-// ======================================
-// FIREBASE IMPORTS
+// FIREBASE + ADMIN AUTH + STARTUP
 // ======================================
 
 import { auth, db } from "./firebase.js";
@@ -15,449 +10,346 @@ import {
     signOut
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 
-
 import {
     ref,
     get,
     set,
     update,
     push,
-    onValue
+    onValue,
+    runTransaction
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
 
 
-
 // ======================================
-// GLOBAL VARIABLES
+// GLOBAL STATE
 // ======================================
 
 let currentAdmin = null;
-
 let adminReady = false;
 
+let resolveAdminReady;
+
+const adminReadyPromise =
+    new Promise(resolve => {
+        resolveAdminReady = resolve;
+    });
 
 
 // ======================================
-// DOM ELEMENTS
+// GLOBAL HELPERS
+// ======================================
+
+window.adminState = {
+
+    get currentAdmin() {
+        return currentAdmin;
+    },
+
+    get ready() {
+        return adminReady;
+    },
+
+    readyPromise: adminReadyPromise
+
+};
+
+
+// ======================================
+// DOM
 // ======================================
 
 const loadingScreen =
-document.getElementById("loadingScreen");
-
+    document.getElementById("loadingScreen");
 
 const adminName =
-document.getElementById("adminName");
-
+    document.getElementById("adminName");
 
 const adminEmail =
-document.getElementById("adminEmail");
-
+    document.getElementById("adminEmail");
 
 const logoutBtn =
-document.getElementById("logoutBtn");
-
+    document.getElementById("logoutBtn");
 
 const menuBtn =
-document.getElementById("menuBtn");
-
+    document.getElementById("menuBtn");
 
 const sidebar =
-document.getElementById("sidebar");
-
+    document.getElementById("sidebar");
 
 const pageTitle =
-document.getElementById("pageTitle");
-
-
+    document.getElementById("pageTitle");
 
 const menuLinks =
-document.querySelectorAll(".menu-link");
-
+    document.querySelectorAll(".menu-link");
 
 const sections =
-document.querySelectorAll(".page-section");
-
-
-
+    document.querySelectorAll(".page-section");
 
 
 // ======================================
-// AUTH CHECK
+// WAIT FOR ADMIN
 // ======================================
 
-onAuthStateChanged(auth, async(user)=>{
+window.waitForAdmin = function () {
+
+    return adminReadyPromise;
+
+};
 
 
-    if(!user){
+// ======================================
+// AUTH
+// ======================================
+
+onAuthStateChanged(auth, async user => {
+
+    try {
+
+        if (!user) {
+
+            window.location.href = "login.html";
+
+            return;
+        }
 
 
-        window.location.href =
-        "login.html";
+        const adminSnap =
+            await get(
+                ref(db, "admins/" + user.uid)
+            );
 
 
-        return;
+        if (!adminSnap.exists()) {
 
-    }
+            alert("Access denied. Admin only.");
 
+            await signOut(auth);
 
+            window.location.href = "login.html";
 
-
-    const adminSnapshot =
-    await get(
-        ref(db,"admins/"+user.uid)
-    );
-
+            return;
+        }
 
 
+        currentAdmin = user;
+
+        adminReady = true;
 
 
-    if(!adminSnapshot.exists()){
+        const adminData =
+            adminSnap.val() || {};
 
 
-        alert(
-        "Access denied. Admin only."
+        if (adminName) {
+
+            adminName.textContent =
+                adminData.name ||
+                user.displayName ||
+                "Administrator";
+
+        }
+
+
+        if (adminEmail) {
+
+            adminEmail.textContent =
+                user.email || "";
+
+        }
+
+
+        if (loadingScreen) {
+
+            loadingScreen.style.display = "none";
+
+        }
+
+
+        console.log(
+            "ADMIN AUTH READY:",
+            user.email
         );
 
 
-        await signOut(auth);
+        resolveAdminReady();
 
 
-        window.location.href =
-        "login.html";
+        // ==================================
+        // START ALL SYSTEMS ONLY NOW
+        // ==================================
 
+        if (window.loadDashboard) {
+            window.loadDashboard();
+        }
 
-        return;
+        if (window.loadDeposits) {
+            window.loadDeposits();
+        }
 
+        if (window.loadWithdraws) {
+            window.loadWithdraws();
+        }
 
-    }
+        if (window.loadVipRequests) {
+            window.loadVipRequests();
+        }
 
+        if (window.loadVipBuyers) {
+            window.loadVipBuyers();
+        }
 
+        if (window.loadUsers) {
+            window.loadUsers();
+        }
 
-
-
-
-    currentAdmin = user;
-
-
-    adminReady = true;
-
-
-
-
-
-    const adminData =
-    adminSnapshot.val();
-
-
-
-
-
-    if(adminName){
-
-
-        adminName.textContent =
-        adminData.name ||
-        "Administrator";
+        if (window.loadTransactions) {
+            window.loadTransactions();
+        }
 
 
     }
+    catch (error) {
 
+        console.error(
+            "Admin authentication error:",
+            error
+        );
 
-
-
-
-    if(adminEmail){
-
-
-        adminEmail.textContent =
-        user.email || "";
-
-
-    }
-
-
-
-
-
-
-
-    if(loadingScreen){
-
-
-        loadingScreen.style.display =
-        "none";
-
+        alert(
+            "Admin authentication failed: " +
+            error.message
+        );
 
     }
-
-
-
-
-
-
-    console.log(
-    "Admin authenticated:",
-    user.email
-    );
-
-
 
 });
-
-
-
-
-
-
 
 
 // ======================================
 // LOGOUT
 // ======================================
 
-
-if(logoutBtn){
-
-
-    logoutBtn.addEventListener(
+logoutBtn?.addEventListener(
     "click",
-    async()=>{
+    async () => {
 
+        try {
 
-        await signOut(auth);
+            await signOut(auth);
 
+            window.location.href =
+                "login.html";
 
-        window.location.href =
-        "login.html";
+        }
+        catch (error) {
 
+            console.error(
+                "Logout error:",
+                error
+            );
 
-    });
+        }
 
-
-}
-
-
-
-
-
-
+    }
+);
 
 
 // ======================================
 // MOBILE SIDEBAR
 // ======================================
 
-
-if(menuBtn && sidebar){
-
-
-    menuBtn.addEventListener(
+menuBtn?.addEventListener(
     "click",
-    ()=>{
+    () => {
 
+        sidebar?.classList.toggle("active");
 
-        sidebar.classList.toggle(
-        "active"
-        );
-
-
-    });
-
-
-}
-
-
-
-
-
-
+    }
+);
 
 
 // ======================================
-// PAGE NAVIGATION
+// NAVIGATION
 // ======================================
 
-
-menuLinks.forEach(link=>{
-
+menuLinks.forEach(link => {
 
     link.addEventListener(
-    "click",
-    (event)=>{
+        "click",
+        event => {
 
+            event.preventDefault();
 
-        event.preventDefault();
+            const page =
+                link.dataset.page;
 
+            openPage(page);
 
-
-        const page =
-        link.dataset.page;
-
-
-
-        openPage(page);
-
-
-
-    });
-
-
+        }
+    );
 
 });
 
 
+function openPage(page) {
 
+    sections.forEach(section => {
 
-
-
-
-
-
-function openPage(page){
-
-
-
-    sections.forEach(section=>{
-
-
-        section.classList.remove(
-        "active"
-        );
-
+        section.classList.remove("active");
 
     });
 
 
+    menuLinks.forEach(link => {
 
-
-
-    menuLinks.forEach(link=>{
-
-
-        link.classList.remove(
-        "active"
-        );
-
+        link.classList.remove("active");
 
     });
-
-
-
-
 
 
     const target =
-    document.getElementById(
-    page+"Section"
-    );
-
-
-
-
-
-    if(target){
-
-
-        target.classList.add(
-        "active"
+        document.getElementById(
+            page + "Section"
         );
 
 
+    if (target) {
+
+        target.classList.add("active");
+
     }
-
-
-
-
 
 
     const activeLink =
-    document.querySelector(
-    `[data-page="${page}"]`
-    );
-
-
-
-
-
-    if(activeLink){
-
-
-        activeLink.classList.add(
-        "active"
+        document.querySelector(
+            `[data-page="${page}"]`
         );
 
 
+    if (activeLink) {
+
+        activeLink.classList.add("active");
+
     }
 
 
-
-
-
-
-
-    if(pageTitle){
-
+    if (pageTitle) {
 
         pageTitle.textContent =
-        page
-        .charAt(0)
-        .toUpperCase()
-        +
-        page.slice(1);
-
+            page.charAt(0).toUpperCase() +
+            page.slice(1);
 
     }
-
-
-
 
 }
 
 
-
-
-
-
-
 // ======================================
-// EXPORT FOR OTHER PARTS
+// GLOBAL PAGE FUNCTION
 // ======================================
 
-
-window.adminState = {
-
-
-    get currentAdmin(){
-
-
-        return currentAdmin;
-
-
-    },
-
-
-    get ready(){
-
-
-        return adminReady;
-
-
-    }
-
-
-};
-
-loadDashboard();
-loadDeposits();
-loadWithdraws();
-
-if(window.loadVipRequests){
-window.loadVipRequests();
-}
-
-if(window.loadVipBuyers){
-window.loadVipBuyers();
-    }
+window.openPage = openPage;
 
 
 // ======================================
@@ -465,43 +357,37 @@ window.loadVipBuyers();
 // ======================================
 
 console.log(
-"Admin Part 1 Ready"
+    "ADMIN PART 1 READY"
 );
-
-    
 
 // ======================================
 // ADMIN.JS - PART 2
-// DASHBOARD SYSTEM FINAL
+// HELPERS + DASHBOARD
 // ======================================
 
 
-
 // ======================================
-// NUMBER FORMAT
+// MONEY
 // ======================================
 
-function formatMoney(amount){
+function formatMoney(amount) {
 
     return Number(amount || 0)
-    .toLocaleString()
-    + " RWF";
+        .toLocaleString() + " RWF";
 
 }
 
 
-
 // ======================================
-// UPDATE TEXT HELPER
+// TEXT UPDATE
 // ======================================
 
-function updateText(id,value){
+function updateText(id, value) {
 
     const element =
-    document.getElementById(id);
+        document.getElementById(id);
 
-
-    if(element){
+    if (element) {
 
         element.textContent = value;
 
@@ -510,1167 +396,11 @@ function updateText(id,value){
 }
 
 
-
-
-
-
-
 // ======================================
-// TOTAL USERS
+// ESCAPE HTML
 // ======================================
 
-function loadDashboardUsers(){
-
-
-    onValue(
-        ref(db,"users"),
-        (snapshot)=>{
-
-
-            let totalUsers = 0;
-
-
-            if(snapshot.exists()){
-
-
-                totalUsers =
-                Object.keys(
-                    snapshot.val()
-                ).length;
-
-
-            }
-
-
-
-            updateText(
-                "totalUsers",
-                totalUsers
-            );
-
-
-        }
-
-    );
-
-
-}
-
-
-
-
-
-
-
-
-
-// ======================================
-// DEPOSIT STATISTICS
-// ======================================
-
-function loadDashboardDeposits(){
-
-
-
-    onValue(
-        ref(db,"depositRequests"),
-        (snapshot)=>{
-
-
-
-            let total = 0;
-
-            let pending = 0;
-
-            let approved = 0;
-
-            let rejected = 0;
-
-
-
-
-
-            if(snapshot.exists()){
-
-
-
-                Object.values(
-                    snapshot.val()
-                )
-                .forEach(deposit=>{
-
-
-                    total++;
-
-
-
-                    if(deposit.status === "pending"){
-
-                        pending++;
-
-                    }
-
-
-
-                    else if(
-                    deposit.status === "approved"
-                    ){
-
-                        approved++;
-
-                    }
-
-
-
-                    else if(
-                    deposit.status === "rejected"
-                    ){
-
-                        rejected++;
-
-                    }
-
-
-
-                });
-
-
-
-            }
-
-
-
-
-
-
-
-            updateText(
-                "dashboardTotalDeposits",
-                total
-            );
-
-
-            updateText(
-                "dashboardPendingDeposits",
-                pending
-            );
-
-
-            updateText(
-                "dashboardApprovedDeposits",
-                approved
-            );
-
-
-
-
-
-            updateText(
-                "depositTotalCount",
-                total
-            );
-
-
-            updateText(
-                "depositPendingCount",
-                pending
-            );
-
-
-            updateText(
-                "depositApprovedCount",
-                approved
-            );
-
-
-            updateText(
-                "depositRejectedCount",
-                rejected
-            );
-
-
-
-        }
-
-    );
-
-
-
-}
-
-
-
-
-
-
-
-
-
-// ======================================
-// WITHDRAW STATISTICS
-// ======================================
-
-function loadDashboardWithdraws(){
-
-
-
-    onValue(
-        ref(db,"withdrawRequests"),
-        (snapshot)=>{
-
-
-
-            let total = 0;
-
-            let pending = 0;
-
-            let approved = 0;
-
-            let rejected = 0;
-
-
-
-
-
-
-
-            if(snapshot.exists()){
-
-
-
-                Object.values(
-                    snapshot.val()
-                )
-                .forEach(withdraw=>{
-
-
-
-                    total++;
-
-
-
-                    if(withdraw.status==="pending"){
-
-
-                        pending++;
-
-
-                    }
-
-
-
-                    else if(
-                    withdraw.status==="approved"
-                    ){
-
-
-                        approved++;
-
-
-                    }
-
-
-
-                    else if(
-                    withdraw.status==="rejected"
-                    ){
-
-
-                        rejected++;
-
-
-                    }
-
-
-
-                });
-
-
-
-            }
-
-
-
-
-
-
-
-            updateText(
-                "dashboardTotalWithdraws",
-                total
-            );
-
-
-
-            updateText(
-                "withdrawTotalCount",
-                total
-            );
-
-
-
-            updateText(
-                "withdrawPendingCount",
-                pending
-            );
-
-
-
-            updateText(
-                "withdrawApprovedCount",
-                approved
-            );
-
-
-
-            updateText(
-                "withdrawRejectedCount",
-                rejected
-            );
-
-
-
-        }
-
-    );
-
-
-
-}
-
-
-
-
-
-
-
-
-
-// ======================================
-// SYSTEM BALANCE
-// ======================================
-
-function loadSystemBalance(){
-
-
-
-    onValue(
-        ref(db,"users"),
-        (snapshot)=>{
-
-
-
-            let totalBalance = 0;
-
-
-
-
-
-            if(snapshot.exists()){
-
-
-
-                Object.values(
-                    snapshot.val()
-                )
-                .forEach(user=>{
-
-
-
-                    totalBalance +=
-                    Number(
-                    user.balance || 0
-                    );
-
-
-
-                });
-
-
-
-            }
-
-
-
-
-
-
-
-            updateText(
-                "systemBalance",
-                formatMoney(totalBalance)
-            );
-
-
-
-
-        }
-
-    );
-
-
-
-}
-
-
-
-
-
-
-
-
-
-// ======================================
-// RECENT ACTIVITY
-// ======================================
-
-function loadRecentActivity(){
-
-
-
-    const box =
-    document.getElementById(
-        "recentActivity"
-    );
-
-
-
-    if(!box) return;
-
-
-
-
-
-    onValue(
-        ref(db,"transactions"),
-        (snapshot)=>{
-
-
-
-            box.innerHTML = "";
-
-
-
-
-
-            if(!snapshot.exists()){
-
-
-                box.innerHTML = `
-
-                <div class="empty-state">
-
-                <h3>
-                No Recent Activity
-                </h3>
-
-                </div>
-
-                `;
-
-
-                return;
-
-
-            }
-
-
-
-
-
-
-
-            Object.entries(
-                snapshot.val()
-            )
-            .reverse()
-            .slice(0,10)
-            .forEach(([id,item])=>{
-
-
-
-
-
-                const date =
-                item.date
-                ?
-                new Date(item.date)
-                .toLocaleString()
-                :
-                "-";
-
-
-
-
-
-
-
-                const activity =
-                document.createElement(
-                    "div"
-                );
-
-
-
-                activity.className =
-                "activity-item";
-
-
-
-
-
-
-                activity.innerHTML = `
-
-                <p>
-
-                <strong>
-                ${(item.type || "TRANSACTION")
-                .toUpperCase()}
-                </strong>
-
-                -
-                ${formatMoney(item.amount)}
-
-                </p>
-
-
-                <span>
-                ${item.status || "-"}
-                |
-                ${date}
-                </span>
-
-
-                `;
-
-
-
-
-
-                box.appendChild(activity);
-
-
-
-            });
-
-
-
-        }
-
-    );
-
-
-
-}
-
-
-
-
-
-
-
-
-
-// ======================================
-// START DASHBOARD
-// ======================================
-
-
-function loadDashboard(){
-
-
-    if(
-    !window.adminState ||
-    !window.adminState.ready
-    ){
-
-        return;
-
-    }
-
-
-
-    loadDashboardUsers();
-
-
-    loadDashboardDeposits();
-
-
-    loadDashboardWithdraws();
-
-
-    loadSystemBalance();
-
-
-    loadRecentActivity();
-
-
-}
-
-
-
-
-
-
-// EXPORT
-window.loadDashboard =
-loadDashboard;
-
-
-
-
-
-console.log(
-"Admin Part 2 Dashboard Ready"
-);
-
-// ======================================
-// ADMIN.JS - PART 3
-// DEPOSIT MANAGEMENT FINAL
-// ======================================
-
-
-// ================================
-// LOAD DEPOSITS
-// ================================
-
-function loadDeposits(){
-
-const depositRef = ref(db,"depositRequests");
-
-
-onValue(depositRef, async(snapshot)=>{
-
-
-const list =
-document.getElementById("depositList");
-
-
-const empty =
-document.getElementById("emptyDeposit");
-
-
-if(!list) return;
-
-
-list.innerHTML="";
-
-
-if(!snapshot.exists()){
-
-
-if(empty)
-empty.style.display="block";
-
-
-return;
-
-}
-
-
-if(empty)
-empty.style.display="none";
-
-
-
-const deposits =
-Object.entries(snapshot.val()).reverse();
-
-
-
-for(const [id,deposit] of deposits){
-
-
-let userData={};
-
-
-
-if(deposit.uid){
-
-const userSnap =
-await get(
-ref(db,"users/"+deposit.uid)
-);
-
-
-if(userSnap.exists()){
-
-userData=userSnap.val();
-
-}
-
-}
-
-
-
-const status =
-deposit.status || "pending";
-
-
-
-const card =
-document.createElement("div");
-
-
-card.className="request-card";
-
-
-
-card.innerHTML=`
-
-<div class="request-top">
-
-<h3>
-Deposit Request
-</h3>
-
-<span class="status ${status}">
-${status}
-</span>
-
-</div>
-
-
-
-<p>
-<strong>Name:</strong>
-${deposit.fullName || userData.name || userData.fullName || "-"}
-</p>
-
-
-<p>
-<strong>Email:</strong>
-${deposit.email || userData.email || "-"}
-</p>
-
-
-<p>
-<strong>Amount:</strong>
-${Number(deposit.amount || 0).toLocaleString()} RWF
-</p>
-
-
-<p>
-<strong>Phone:</strong>
-${deposit.senderPhone || userData.phone || "-"}
-</p>
-
-
-<p>
-<strong>Payment Method:</strong>
-${deposit.paymentMethod || "-"}
-</p>
-
-
-<p>
-<strong>Transaction ID:</strong>
-${deposit.transactionId || "-"}
-</p>
-
-
-<p>
-<strong>Date:</strong>
-${deposit.paymentDate || deposit.createdAt || "-"}
-</p>
-
-
-
-<div class="action-buttons">
-
-
-<button
-class="approveBtn"
-${status!=="pending"?"disabled":""}
-onclick="approveDeposit('${id}')">
-
-<i class="fa-solid fa-circle-check"></i>
-
-Approve
-
-</button>
-
-
-
-<button
-class="rejectBtn"
-${status!=="pending"?"disabled":""}
-onclick="rejectDeposit('${id}')">
-
-<i class="fa-solid fa-circle-xmark"></i>
-
-Reject
-
-</button>
-
-
-</div>
-
-
-`;
-
-
-
-list.appendChild(card);
-
-
-}
-
-
-});
-
-
-}
-
-
-
-
-
-
-
-// ================================
-// APPROVE DEPOSIT ONCE
-// ================================
-
-window.approveDeposit =
-async function(id){
-
-
-const depositRef =
-ref(db,"depositRequests/"+id);
-
-
-const snap =
-await get(depositRef);
-
-
-
-if(!snap.exists()) return;
-
-
-
-const deposit =
-snap.val();
-
-
-
-
-// BLOCK DOUBLE APPROVE
-
-if(deposit.status !== "pending"){
-
-alert("Deposit already processed");
-
-return;
-
-}
-
-
-
-const userRef =
-ref(db,"users/"+deposit.uid);
-
-
-
-const userSnap =
-await get(userRef);
-
-
-
-if(!userSnap.exists()){
-
-alert("User not found");
-
-return;
-
-}
-
-
-
-const user =
-userSnap.val();
-
-
-
-const oldBalance =
-Number(user.balance || 0);
-
-
-
-const amount =
-Number(deposit.amount || 0);
-
-
-
-
-// ADD MONEY ONLY ONCE
-
-await update(userRef,{
-
-balance:
-oldBalance + amount,
-
-
-totalDeposit:
-Number(user.totalDeposit || 0)
-+ amount
-
-});
-
-
-
-
-
-await update(depositRef,{
-
-status:"approved",
-
-approvedAt:Date.now(),
-
-approvedBy:currentAdmin.uid
-
-});
-
-
-
-
-
-await set(
-
-push(ref(db,"transactions")),
-
-{
-
-uid:deposit.uid,
-
-type:"deposit",
-
-amount:amount,
-
-status:"approved",
-
-reference:id,
-
-date:Date.now()
-
-}
-
-);
-
-
-
-alert(
-"Deposit Approved Successfully"
-);
-
-
-
-loadDeposits();
-
-
-if(window.loadDashboard){
-
-window.loadDashboard();
-
-}
-
-
-};
-
-
-
-
-
-
-
-
-// ================================
-// REJECT DEPOSIT ONCE
-// ================================
-
-window.rejectDeposit =
-async function(id){
-
-
-
-const depositRef =
-ref(db,"depositRequests/"+id);
-
-
-
-const snap =
-await get(depositRef);
-
-
-
-if(!snap.exists()) return;
-
-
-
-const deposit =
-snap.val();
-
-
-
-
-
-// BLOCK DOUBLE REJECT
-
-if(deposit.status !== "pending"){
-
-alert("Deposit already processed");
-
-return;
-
-}
-
-
-
-
-await update(depositRef,{
-
-status:"rejected",
-
-rejectedAt:Date.now(),
-
-rejectedBy:currentAdmin.uid
-
-});
-
-
-
-
-
-await set(
-
-push(ref(db,"transactions")),
-
-{
-
-uid:deposit.uid,
-
-type:"deposit",
-
-amount:Number(deposit.amount || 0),
-
-status:"rejected",
-
-reference:id,
-
-date:Date.now()
-
-}
-
-);
-
-
-
-
-
-alert(
-"Deposit Rejected Successfully"
-);
-
-
-
-loadDeposits();
-
-
-if(window.loadDashboard){
-
-window.loadDashboard();
-
-}
-
-
-
-};
-
-
-
-
-
-
-// ================================
-// EXPORT
-// ================================
-
-
-window.loadDeposits =
-loadDeposits;
-
-
-console.log(
-"Deposit System Ready"
-);
-// ======================================
-// ADMIN.JS - PART 4
-// QUICK ACTIONS
-// ======================================
-
-function goToPage(page){
-    openPage(page);
-}
-
-document.getElementById("refreshDashboard")?.addEventListener("click", () => {
-    loadDashboard();
-});
-
-document.getElementById("refreshDashboardQuick")?.addEventListener("click", () => {
-    loadDashboard();
-});
-
-document.getElementById("openDeposits")?.addEventListener("click", () => {
-    goToPage("deposits");
-});
-
-document.getElementById("openWithdraws")?.addEventListener("click", () => {
-    goToPage("withdraws");
-});
-
-document.getElementById("openUsers")?.addEventListener("click", () => {
-    goToPage("users");
-});
-
-document.getElementById("openTransactions")?.addEventListener("click", () => {
-    goToPage("transactions");
-});
-
-document.getElementById("openSettings")?.addEventListener("click", () => {
-    goToPage("settings");
-});
-
-document.getElementById("openVipRequests")?.addEventListener("click", () => {
-    goToPage("vipRequests");
-});
-
-document.getElementById("openUsersBtn")?.addEventListener("click", () => {
-    goToPage("users");
-});
-
-document.getElementById("openTransactionsBtn")?.addEventListener("click", () => {
-    goToPage("transactions");
-});
-
-document.getElementById("openSettingsBtn")?.addEventListener("click", () => {
-    goToPage("settings");
-});
-
-console.log("Quick Actions Ready");
-
-// ======================================
-// ADMIN.JS - PART 5
-// WITHDRAW MANAGEMENT
-// LIST + USER PROFILE + APPROVE + REJECT
-// SEARCH + FILTER
-// ======================================
-
-
-// ======================================
-// HTML ESCAPE
-// ======================================
-
-function escapeHTML(value){
+function escapeHTML(value) {
 
     return String(value ?? "")
         .replace(/&/g, "&amp;")
@@ -1682,24 +412,42 @@ function escapeHTML(value){
 }
 
 
+// ======================================
+// NUMBER
+// ======================================
+
+function numberValue(...values) {
+
+    for (const value of values) {
+
+        const n = Number(value);
+
+        if (
+            Number.isFinite(n) &&
+            n > 0
+        ) {
+
+            return n;
+
+        }
+
+    }
+
+    return 0;
+
+}
+
 
 // ======================================
-// LOAD WITHDRAW LIST
+// DASHBOARD
 // ======================================
 
-function loadWithdraws(){
+function loadDashboard() {
 
-    const list =
-        document.getElementById("withdrawList");
+    if (!window.adminState?.ready) {
 
-    const empty =
-        document.getElementById("emptyWithdraw");
-
-
-    if(!list){
-
-        console.error(
-            "withdrawList element not found"
+        console.log(
+            "Dashboard waiting for Admin Auth..."
         );
 
         return;
@@ -1707,1445 +455,387 @@ function loadWithdraws(){
     }
 
 
-    const withdrawRef =
-        ref(db,"withdrawRequests");
+    // ==================================
+    // USERS
+    // ==================================
+
+    onValue(
+        ref(db, "users"),
+        snapshot => {
+
+            let total = 0;
+            let balance = 0;
+
+            if (snapshot.exists()) {
+
+                const users =
+                    snapshot.val();
+
+                total =
+                    Object.keys(users).length;
+
+                Object.values(users)
+                    .forEach(user => {
+
+                        balance +=
+                            Number(
+                                user?.balance || 0
+                            );
+
+                    });
+
+            }
+
+
+            updateText(
+                "totalUsers",
+                total
+            );
+
+            updateText(
+                "systemBalance",
+                formatMoney(balance)
+            );
+
+        }
+    );
+
+
+    // ==================================
+    // DEPOSITS
+    // ==================================
+
+    onValue(
+        ref(db, "depositRequests"),
+        snapshot => {
+
+            let total = 0;
+            let pending = 0;
+            let approved = 0;
+            let rejected = 0;
+
+
+            if (snapshot.exists()) {
+
+                Object.values(snapshot.val())
+                    .forEach(item => {
+
+                        total++;
+
+                        const status =
+                            String(
+                                item?.status ||
+                                "pending"
+                            ).toLowerCase();
+
+
+                        if (status === "pending") {
+                            pending++;
+                        }
+
+                        else if (status === "approved") {
+                            approved++;
+                        }
+
+                        else if (status === "rejected") {
+                            rejected++;
+                        }
+
+                    });
+
+            }
+
+
+            updateText(
+                "dashboardTotalDeposits",
+                total
+            );
+
+            updateText(
+                "dashboardPendingDeposits",
+                pending
+            );
+
+            updateText(
+                "dashboardApprovedDeposits",
+                approved
+            );
+
+            updateText(
+                "depositTotalCount",
+                total
+            );
+
+            updateText(
+                "depositPendingCount",
+                pending
+            );
+
+            updateText(
+                "depositApprovedCount",
+                approved
+            );
+
+            updateText(
+                "depositRejectedCount",
+                rejected
+            );
+
+        }
+    );
+
+
+    // ==================================
+    // WITHDRAWS
+    // ==================================
+
+    onValue(
+        ref(db, "withdrawRequests"),
+        snapshot => {
+
+            let total = 0;
+            let pending = 0;
+            let approved = 0;
+            let rejected = 0;
+
+
+            if (snapshot.exists()) {
+
+                Object.values(snapshot.val())
+                    .forEach(item => {
+
+                        total++;
+
+                        const status =
+                            String(
+                                item?.status ||
+                                "pending"
+                            ).toLowerCase();
+
+
+                        if (status === "pending") {
+                            pending++;
+                        }
+
+                        else if (status === "approved") {
+                            approved++;
+                        }
+
+                        else if (status === "rejected") {
+                            rejected++;
+                        }
+
+                    });
+
+            }
+
+
+            updateText(
+                "dashboardTotalWithdraws",
+                total
+            );
+
+            updateText(
+                "withdrawTotalCount",
+                total
+            );
+
+            updateText(
+                "withdrawPendingCount",
+                pending
+            );
+
+            updateText(
+                "withdrawApprovedCount",
+                approved
+            );
+
+            updateText(
+                "withdrawRejectedCount",
+                rejected
+            );
+
+        }
+    );
+
+
+    // ==================================
+    // RECENT TRANSACTIONS
+    // ==================================
+
+    const activity =
+        document.getElementById(
+            "recentActivity"
+        );
+
+
+    if (activity) {
+
+        onValue(
+            ref(db, "transactions"),
+            snapshot => {
+
+                activity.innerHTML = "";
+
+
+                if (!snapshot.exists()) {
+
+                    activity.innerHTML = `
+                        <div class="empty-state">
+                            <h3>No Recent Activity</h3>
+                        </div>
+                    `;
+
+                    return;
+                }
+
+
+                Object.entries(snapshot.val())
+                    .reverse()
+                    .slice(0, 10)
+                    .forEach(
+                        ([id, item]) => {
+
+                            const div =
+                                document.createElement(
+                                    "div"
+                                );
+
+                            div.className =
+                                "activity-item";
+
+
+                            div.innerHTML = `
+                                <p>
+                                    <strong>
+                                        ${escapeHTML(
+                                            String(
+                                                item?.type ||
+                                                "transaction"
+                                            ).toUpperCase()
+                                        )}
+                                    </strong>
+                                    -
+                                    ${formatMoney(
+                                        item?.amount || 0
+                                    )}
+                                </p>
+
+                                <span>
+                                    ${escapeHTML(
+                                        item?.status || "-"
+                                    )}
+                                </span>
+                            `;
+
+
+                            activity.appendChild(div);
+
+                        }
+                    );
+
+            }
+        );
+
+    }
+
+}
+
+
+window.loadDashboard =
+    loadDashboard;
+
+
+console.log(
+    "ADMIN PART 2 READY"
+);
+
+// ======================================
+// ADMIN.JS - PART 3
+// DEPOSITS
+// ======================================
+
+
+// ======================================
+// LOAD DEPOSITS
+// ======================================
+
+function loadDeposits() {
+
+    if (!window.adminState?.ready) {
+        return;
+    }
+
+
+    const list =
+        document.getElementById(
+            "depositList"
+        );
+
+    const empty =
+        document.getElementById(
+            "emptyDeposit"
+        );
+
+
+    if (!list) return;
 
 
     onValue(
-        withdrawRef,
-        async(snapshot)=>{
+        ref(db, "depositRequests"),
+        async snapshot => {
 
             list.innerHTML = "";
 
 
-            // ==================================
-            // NO DATA
-            // ==================================
+            if (!snapshot.exists()) {
 
-            if(!snapshot.exists()){
-
-                if(empty){
-                    empty.style.display = "block";
-                }
-
-                list.innerHTML = `
-                    <div class="empty-state">
-
-                        <i class="fa-solid fa-money-bill-transfer"></i>
-
-                        <h3>
-                            No Withdraw Requests
-                        </h3>
-
-                        <p>
-                            Withdraw requests from users
-                            will appear here.
-                        </p>
-
-                    </div>
-                `;
+                empty &&
+                    (empty.style.display = "block");
 
                 return;
+
             }
 
 
-            if(empty){
-                empty.style.display = "none";
-            }
+            empty &&
+                (empty.style.display = "none");
 
 
-            const withdraws =
+            const entries =
                 Object.entries(
                     snapshot.val()
                 ).reverse();
 
 
-            // ==================================
-            // RENDER EACH REQUEST
-            // ==================================
+            for (const [id, deposit] of entries) {
 
-            for(
-                const [id, withdraw]
-                of withdraws
-            ){
-
-                const request =
-                    withdraw || {};
+                let user = {};
 
 
-                // ==================================
-                // USER UID
-                // ==================================
+                if (deposit?.uid) {
 
-                const uid =
-                    request.uid ||
-                    request.userId ||
-                    request.userUID ||
-                    "";
-
-
-                // ==================================
-                // LOAD USER PROFILE
-                // ==================================
-
-                let userData = {};
-
-
-                if(uid){
-
-                    try{
-
-                        const userSnap =
-                            await get(
-                                ref(
-                                    db,
-                                    "users/" + uid
-                                )
-                            );
-
-
-                        if(userSnap.exists()){
-
-                            userData =
-                                userSnap.val() || {};
-
-                        }
-
-                    }
-                    catch(error){
-
-                        console.error(
-                            "User profile error:",
-                            error
+                    const userSnap =
+                        await get(
+                            ref(
+                                db,
+                                "users/" +
+                                deposit.uid
+                            )
                         );
 
+                    if (userSnap.exists()) {
+                        user = userSnap.val();
                     }
 
                 }
 
 
-                // ==================================
-                // USER INFORMATION
-                // ==================================
-
-                const name =
-                    request.fullName ||
-                    request.name ||
-                    userData.fullName ||
-                    userData.name ||
-                    userData.username ||
-                    "Unknown User";
-
-
-                const email =
-                    request.email ||
-                    userData.email ||
-                    "-";
-
-
-                const phone =
-                    request.phone ||
-                    request.phoneNumber ||
-                    request.senderPhone ||
-                    userData.phone ||
-                    userData.phoneNumber ||
-                    "-";
-
-
-                // ==================================
-                // WITHDRAW INFORMATION
-                // ==================================
-
-                const amount =
-                    Number(
-                        request.amount || 0
-                    );
-
-
-                const paymentMethod =
-                    request.paymentMethod ||
-                    request.method ||
-                    "-";
-
-
-                const accountNumber =
-                    request.accountNumber ||
-                    request.account ||
-                    request.destination ||
-                    request.phoneNumber ||
-                    request.phone ||
-                    "-";
-
-
-                const date =
-                    request.createdAt ||
-                    request.requestDate ||
-                    request.date ||
-                    "-";
-
-
                 const status =
                     String(
-                        request.status ||
+                        deposit?.status ||
                         "pending"
                     ).toLowerCase();
-
-
-                // ==================================
-                // CREATE CARD
-                // ==================================
-
-                const card =
-                    document.createElement("div");
-
-
-                card.className =
-                    "request-card";
-
-
-                card.dataset.withdrawId =
-                    id;
-
-
-                card.innerHTML = `
-
-                    <div class="request-top">
-
-                        <h3>
-
-                            <i class="fa-solid fa-money-bill-transfer"></i>
-
-                            Withdraw Request
-
-                        </h3>
-
-                        <span class="status ${escapeHTML(status)}">
-
-                            ${escapeHTML(status)}
-
-                        </span>
-
-                    </div>
-
-
-                    <!-- USER PROFILE -->
-
-                    <div class="user-profile-box">
-
-                        <h4>
-
-                            <i class="fa-solid fa-user"></i>
-
-                            User Information
-
-                        </h4>
-
-
-                        <p>
-
-                            <strong>Name:</strong>
-
-                            ${escapeHTML(name)}
-
-                        </p>
-
-
-                        <p>
-
-                            <strong>Email:</strong>
-
-                            ${escapeHTML(email)}
-
-                        </p>
-
-
-                        <p>
-
-                            <strong>Phone:</strong>
-
-                            ${escapeHTML(phone)}
-
-                        </p>
-
-
-                        <p>
-
-                            <strong>User ID:</strong>
-
-                            ${escapeHTML(uid || "-")}
-
-                        </p>
-
-                    </div>
-
-
-                    <!-- WITHDRAW DETAILS -->
-
-                    <div class="withdraw-info">
-
-                        <p>
-
-                            <strong>Amount:</strong>
-
-                            ${amount.toLocaleString()} RWF
-
-                        </p>
-
-
-                        <p>
-
-                            <strong>Payment Method:</strong>
-
-                            ${escapeHTML(paymentMethod)}
-
-                        </p>
-
-
-                        <p>
-
-                            <strong>Account Number:</strong>
-
-                            ${escapeHTML(accountNumber)}
-
-                        </p>
-
-
-                        <p>
-
-                            <strong>Request Date:</strong>
-
-                            ${escapeHTML(date)}
-
-                        </p>
-
-                    </div>
-
-
-                    <!-- ACTION BUTTONS -->
-
-                    <div class="action-buttons">
-
-                        <button
-
-                            class="approveBtn withdrawApproveBtn"
-
-                            data-id="${escapeHTML(id)}"
-
-                            ${status !== "pending" ? "disabled" : ""}>
-
-                            <i class="fa-solid fa-circle-check"></i>
-
-                            ${status === "approved"
-                                ? "Approved"
-                                : "Approve Withdraw"}
-
-                        </button>
-
-
-                        <button
-
-                            class="rejectBtn withdrawRejectBtn"
-
-                            data-id="${escapeHTML(id)}"
-
-                            ${status !== "pending" ? "disabled" : ""}>
-
-                            <i class="fa-solid fa-circle-xmark"></i>
-
-                            ${status === "rejected"
-                                ? "Rejected"
-                                : "Reject Withdraw"}
-
-                        </button>
-
-                    </div>
-
-                `;
-
-
-                list.appendChild(card);
-
-            }
-
-
-            // ==================================
-            // APPROVE BUTTONS
-            // ==================================
-
-            list
-                .querySelectorAll(
-                    ".withdrawApproveBtn"
-                )
-                .forEach(button=>{
-
-                    button.addEventListener(
-                        "click",
-                        ()=>{
-
-                            approveWithdraw(
-                                button.dataset.id
-                            );
-
-                        }
-                    );
-
-                });
-
-
-            // ==================================
-            // REJECT BUTTONS
-            // ==================================
-
-            list
-                .querySelectorAll(
-                    ".withdrawRejectBtn"
-                )
-                .forEach(button=>{
-
-                    button.addEventListener(
-                        "click",
-                        ()=>{
-
-                            rejectWithdraw(
-                                button.dataset.id
-                            );
-
-                        }
-                    );
-
-                });
-
-
-            console.log(
-                "Withdraw list loaded:",
-                withdraws.length
-            );
-
-        },
-
-        (error)=>{
-
-            console.error(
-                "Withdraw listener error:",
-                error
-            );
-
-        }
-
-    );
-
-}
-
-
-
-// ======================================
-// APPROVE WITHDRAW
-// ======================================
-
-window.approveWithdraw =
-async function(id){
-
-    try{
-
-        if(!id){
-
-            alert(
-                "Withdraw ID is missing."
-            );
-
-            return;
-
-        }
-
-
-        if(
-            !currentAdmin ||
-            !currentAdmin.uid
-        ){
-
-            alert(
-                "Admin session is not ready."
-            );
-
-            return;
-
-        }
-
-
-        const withdrawRef =
-            ref(
-                db,
-                "withdrawRequests/" + id
-            );
-
-
-        const snap =
-            await get(withdrawRef);
-
-
-        if(!snap.exists()){
-
-            alert(
-                "Withdraw request not found."
-            );
-
-            return;
-
-        }
-
-
-        const withdraw =
-            snap.val();
-
-
-        // ==================================
-        // ONLY PENDING
-        // ==================================
-
-        if(
-            String(
-                withdraw.status ||
-                "pending"
-            ).toLowerCase()
-            !== "pending"
-        ){
-
-            alert(
-                "Withdraw already processed."
-            );
-
-            return;
-
-        }
-
-
-        // ==================================
-        // GET UID
-        // ==================================
-
-        const uid =
-            withdraw.uid ||
-            withdraw.userId ||
-            withdraw.userUID ||
-            "";
-
-
-        if(!uid){
-
-            alert(
-                "This withdraw has no user ID."
-            );
-
-            return;
-
-        }
-
-
-        // ==================================
-        // GET USER
-        // ==================================
-
-        const userRef =
-            ref(
-                db,
-                "users/" + uid
-            );
-
-
-        const userSnap =
-            await get(userRef);
-
-
-        if(!userSnap.exists()){
-
-            alert(
-                "User not found."
-            );
-
-            return;
-
-        }
-
-
-        const user =
-            userSnap.val() || {};
-
-
-        const amount =
-            Number(
-                withdraw.amount || 0
-            );
-
-
-        if(
-            !Number.isFinite(amount) ||
-            amount <= 0
-        ){
-
-            alert(
-                "Invalid withdraw amount."
-            );
-
-            return;
-
-        }
-
-
-        const oldBalance =
-            Number(
-                user.balance || 0
-            );
-
-
-        // ==================================
-        // CHECK BALANCE
-        // ==================================
-
-        if(oldBalance < amount){
-
-            alert(
-                "Insufficient user balance."
-            );
-
-            return;
-
-        }
-
-
-        const newBalance =
-            oldBalance - amount;
-
-
-        const oldTotalWithdraw =
-            Number(
-                user.totalWithdraw || 0
-            );
-
-
-        // ==================================
-        // UPDATE EVERYTHING TOGETHER
-        // ==================================
-
-        await update(
-            ref(db),
-            {
-
-                ["users/" + uid + "/balance"]:
-                    newBalance,
-
-                ["users/" + uid + "/totalWithdraw"]:
-                    oldTotalWithdraw + amount,
-
-                ["withdrawRequests/" + id + "/status"]:
-                    "approved",
-
-                ["withdrawRequests/" + id + "/approvedAt"]:
-                    Date.now(),
-
-                ["withdrawRequests/" + id + "/approvedBy"]:
-                    currentAdmin.uid
-
-            }
-        );
-
-
-        // ==================================
-        // TRANSACTION
-        // ==================================
-
-        const transactionRef =
-            push(
-                ref(
-                    db,
-                    "transactions"
-                )
-            );
-
-
-        await set(
-            transactionRef,
-            {
-
-                uid:
-                    uid,
-
-                type:
-                    "withdraw",
-
-                amount:
-                    amount,
-
-                status:
-                    "approved",
-
-                reference:
-                    id,
-
-                approvedBy:
-                    currentAdmin.uid,
-
-                date:
-                    Date.now()
-
-            }
-        );
-
-
-        alert(
-            "Withdraw Approved Successfully"
-        );
-
-
-        // RELOAD LIST
-
-        loadWithdraws();
-
-
-        if(window.loadDashboard){
-
-            window.loadDashboard();
-
-        }
-
-    }
-    catch(error){
-
-        console.error(
-            "Approve withdraw error:",
-            error
-        );
-
-
-        alert(
-            "Approve withdraw failed: " +
-            error.message
-        );
-
-    }
-
-};
-
-
-
-// ======================================
-// REJECT WITHDRAW
-// ======================================
-
-window.rejectWithdraw =
-async function(id){
-
-    try{
-
-        if(!id){
-
-            alert(
-                "Withdraw ID is missing."
-            );
-
-            return;
-
-        }
-
-
-        if(
-            !currentAdmin ||
-            !currentAdmin.uid
-        ){
-
-            alert(
-                "Admin session is not ready."
-            );
-
-            return;
-
-        }
-
-
-        const withdrawRef =
-            ref(
-                db,
-                "withdrawRequests/" + id
-            );
-
-
-        const snap =
-            await get(withdrawRef);
-
-
-        if(!snap.exists()){
-
-            alert(
-                "Withdraw request not found."
-            );
-
-            return;
-
-        }
-
-
-        const withdraw =
-            snap.val();
-
-
-        // ==================================
-        // ONLY PENDING
-        // ==================================
-
-        if(
-            String(
-                withdraw.status ||
-                "pending"
-            ).toLowerCase()
-            !== "pending"
-        ){
-
-            alert(
-                "Withdraw already processed."
-            );
-
-            return;
-
-        }
-
-
-        // ==================================
-        // REJECT REQUEST
-        // ==================================
-
-        await update(
-            withdrawRef,
-            {
-
-                status:
-                    "rejected",
-
-                rejectedAt:
-                    Date.now(),
-
-                rejectedBy:
-                    currentAdmin.uid
-
-            }
-        );
-
-
-        // ==================================
-        // SAVE TRANSACTION
-        // ==================================
-
-        const transactionRef =
-            push(
-                ref(
-                    db,
-                    "transactions"
-                )
-            );
-
-
-        await set(
-            transactionRef,
-            {
-
-                uid:
-                    withdraw.uid ||
-                    withdraw.userId ||
-                    withdraw.userUID ||
-                    "",
-
-                type:
-                    "withdraw",
-
-                amount:
-                    Number(
-                        withdraw.amount || 0
-                    ),
-
-                status:
-                    "rejected",
-
-                reference:
-                    id,
-
-                rejectedBy:
-                    currentAdmin.uid,
-
-                date:
-                    Date.now()
-
-            }
-        );
-
-
-        alert(
-            "Withdraw Rejected Successfully"
-        );
-
-
-        // RELOAD
-
-        loadWithdraws();
-
-
-        if(window.loadDashboard){
-
-            window.loadDashboard();
-
-        }
-
-    }
-    catch(error){
-
-        console.error(
-            "Reject withdraw error:",
-            error
-        );
-
-
-        alert(
-            "Reject withdraw failed: " +
-            error.message
-        );
-
-    }
-
-};
-
-
-
-// ======================================
-// SEARCH + FILTER
-// ======================================
-
-function setupWithdrawSearch(){
-
-    const search =
-        document.getElementById(
-            "withdrawSearch"
-        );
-
-
-    const filter =
-        document.getElementById(
-            "withdrawFilter"
-        );
-
-
-    if(!search && !filter){
-
-        return;
-
-    }
-
-
-    function applyFilter(){
-
-        const cards =
-            document.querySelectorAll(
-                "#withdrawList .request-card"
-            );
-
-
-        const searchText =
-            (
-                search?.value || ""
-            )
-            .toLowerCase()
-            .trim();
-
-
-        const selected =
-            filter?.value ||
-            "all";
-
-
-        cards.forEach(card=>{
-
-            const text =
-                card.textContent
-                .toLowerCase();
-
-
-            const statusElement =
-                card.querySelector(
-                    ".status"
-                );
-
-
-            const status =
-                statusElement
-                ?.textContent
-                .toLowerCase()
-                .trim() || "";
-
-
-            const matchesSearch =
-                !searchText ||
-                text.includes(searchText);
-
-
-            const matchesStatus =
-                selected === "all" ||
-                status === selected;
-
-
-            card.style.display =
-                matchesSearch &&
-                matchesStatus
-                ? ""
-                : "none";
-
-        });
-
-    }
-
-
-    search?.addEventListener(
-        "input",
-        applyFilter
-    );
-
-
-    filter?.addEventListener(
-        "change",
-        applyFilter
-    );
-
-}
-
-
-
-// ======================================
-// EXPORT
-// ======================================
-
-window.loadWithdraws =
-    loadWithdraws;
-
-
-// ======================================
-// PART 5 READY
-// ======================================
-
-console.log(
-    "Admin Part 5 Withdraw System Ready"
-);
-
-
-// ======================================
-// START AFTER ADMIN AUTH
-// ======================================
-
-if(
-    window.adminState &&
-    window.adminState.ready
-){
-
-    loadWithdraws();
-
-}
-
-
-setupWithdrawSearch();
-
-// ======================================
-// ADMIN.JS - PART 6
-// VIP BUYERS
-// LIST + USER PROFILE + VIP DETAILS
-// ======================================
-
-// ======================================
-// LOAD VIP BUYERS
-// ======================================
-
-function loadVipBuyers(){
-
-const list =
-    document.getElementById("vipBuyerList");
-
-const empty =
-    document.getElementById("emptyVipBuyer");
-
-
-if(!list){
-
-    console.error(
-        "vipBuyerList not found"
-    );
-
-    return;
-}
-
-
-const usersRef =
-    ref(db,"users");
-
-
-onValue(
-    usersRef,
-    async(snapshot)=>{
-
-        list.innerHTML = "";
-
-
-        if(!snapshot.exists()){
-
-            if(empty){
-                empty.style.display = "block";
-            }
-
-            updateText(
-                "vipBuyerTotalCount",
-                0
-            );
-
-            updateText(
-                "vipBuyerActiveCount",
-                0
-            );
-
-            updateText(
-                "vipBuyerExpiredCount",
-                0
-            );
-
-            return;
-        }
-
-
-        const users =
-            Object.entries(
-                snapshot.val()
-            );
-
-
-        let buyers = [];
-
-        let active = 0;
-
-        let expired = 0;
-
-
-        // ==================================
-        // FIND USERS WITH VIP
-        // ==================================
-
-        users.forEach(
-            ([uid,user])=>{
-
-                if(!user) return;
-
-
-                /*
-                 * Supported VIP structures:
-                 *
-                 * user.vip
-                 * user.vipPlan
-                 * user.vipData
-                 * user.vipPurchases
-                 * user.vips
-                 */
-
-                let vipData =
-                    user.vip ||
-                    user.vipPlan ||
-                    user.vipData ||
-                    null;
-
-
-                // ==============================
-                // ARRAY / OBJECT VIP PURCHASES
-                // ==============================
-
-                if(
-                    !vipData &&
-                    user.vipPurchases
-                ){
-
-                    const purchases =
-                        user.vipPurchases;
-
-
-                    if(
-                        typeof purchases ===
-                        "object"
-                    ){
-
-                        const entries =
-                            Object.values(
-                                purchases
-                            );
-
-
-                        if(entries.length){
-
-                            vipData =
-                                entries[
-                                    entries.length - 1
-                                ];
-
-                        }
-
-                    }
-
-                }
-
-
-                if(
-                    !vipData &&
-                    user.vips
-                ){
-
-                    const purchases =
-                        user.vips;
-
-
-                    if(
-                        typeof purchases ===
-                        "object"
-                    ){
-
-                        const entries =
-                            Object.values(
-                                purchases
-                            );
-
-
-                        if(entries.length){
-
-                            vipData =
-                                entries[
-                                    entries.length - 1
-                                ];
-
-                        }
-
-                    }
-
-                }
-
-
-                // ==================================
-                // CHECK VIP
-                // ==================================
-
-                if(
-                    !vipData ||
-                    typeof vipData !== "object"
-                ){
-
-                    return;
-
-                }
-
-
-                const status =
-                    String(
-                        vipData.status ||
-                        "active"
-                    ).toLowerCase();
-
-
-                const duration =
-                    Number(
-                        vipData.duration ||
-                        vipData.days ||
-                        0
-                    );
-
-
-                const startDate =
-                    Number(
-                        vipData.startDate ||
-                        vipData.startedAt ||
-                        vipData.approvedAt ||
-                        vipData.createdAt ||
-                        0
-                    );
-
-
-                let isExpired = false;
-
-
-                if(
-                    duration > 0 &&
-                    startDate > 0
-                ){
-
-                    const durationMs =
-                        duration *
-                        24 *
-                        60 *
-                        60 *
-                        1000;
-
-
-                    isExpired =
-                        Date.now() >
-                        startDate +
-                        durationMs;
-
-                }
-
-
-                if(
-                    status === "expired" ||
-                    isExpired
-                ){
-
-                    expired++;
-
-                }
-                else{
-
-                    active++;
-
-                }
-
-
-                buyers.push({
-
-                    uid,
-                    user,
-                    vip: vipData,
-                    expired:
-                        isExpired ||
-                        status === "expired"
-
-                });
-
-            }
-        );
-
-
-        // ==================================
-        // COUNTERS
-        // ==================================
-
-        updateText(
-            "vipBuyerTotalCount",
-            buyers.length
-        );
-
-
-        updateText(
-            "vipBuyerActiveCount",
-            active
-        );
-
-
-        updateText(
-            "vipBuyerExpiredCount",
-            expired
-        );
-
-
-        // ==================================
-        // NO BUYERS
-        // ==================================
-
-        if(!buyers.length){
-
-            if(empty){
-                empty.style.display = "block";
-            }
-
-            return;
-
-        }
-
-
-        if(empty){
-            empty.style.display = "none";
-        }
-
-
-        // ==================================
-        // RENDER BUYERS
-        // ==================================
-
-        buyers
-        .reverse()
-        .forEach(
-            ({uid,user,vip,expired})=>{
-
-                const name =
-                    user.fullName ||
-                    user.name ||
-                    user.username ||
-                    vip.fullName ||
-                    vip.name ||
-                    "Unknown User";
-
-
-                const email =
-                    user.email ||
-                    vip.email ||
-                    "-";
-
-
-                const phone =
-                    user.phone ||
-                    user.phoneNumber ||
-                    vip.phone ||
-                    "-";
-
-
-                const vipName =
-                    vip.vipName ||
-                    vip.planName ||
-                    vip.name ||
-                    vip.plan ||
-                    "VIP Plan";
-
-
-                const price =
-                    Number(
-                        vip.price ||
-                        vip.vipPrice ||
-                        vip.amount ||
-                        0
-                    );
-
-
-                const dailyIncome =
-                    Number(
-                        vip.dailyIncome ||
-                        vip.daily ||
-                        0
-                    );
-
-
-                const duration =
-                    Number(
-                        vip.duration ||
-                        vip.days ||
-                        0
-                    );
-
-
-                const totalProfit =
-                    Number(
-                        vip.totalProfit ||
-                        vip.profit ||
-                        0
-                    );
-
-
-                const startDate =
-                    vip.startDate ||
-                    vip.startedAt ||
-                    vip.approvedAt ||
-                    vip.createdAt ||
-                    "-";
-
-
-                const status =
-                    expired
-                    ? "expired"
-                    : (
-                        vip.status ||
-                        "active"
-                    );
 
 
                 const card =
@@ -3163,293 +853,1338 @@ onValue(
                     <div class="request-top">
 
                         <h3>
-
-                            <i class="fa-solid fa-crown"></i>
-
-                            VIP Buyer
-
+                            Deposit Request
                         </h3>
 
-                        <span
-                            class="status ${escapeHTML(
-                                String(status).toLowerCase()
-                            )}">
-
-                            ${escapeHTML(
-                                String(status)
-                            )}
-
+                        <span class="status ${escapeHTML(status)}">
+                            ${escapeHTML(status)}
                         </span>
 
                     </div>
 
+                    <p>
+                        <strong>Name:</strong>
+                        ${escapeHTML(
+                            deposit?.fullName ||
+                            user?.fullName ||
+                            user?.name ||
+                            "-"
+                        )}
+                    </p>
 
-                    <div class="user-profile-box">
+                    <p>
+                        <strong>Email:</strong>
+                        ${escapeHTML(
+                            deposit?.email ||
+                            user?.email ||
+                            "-"
+                        )}
+                    </p>
 
-                        <h4>
+                    <p>
+                        <strong>Phone:</strong>
+                        ${escapeHTML(
+                            deposit?.senderPhone ||
+                            user?.phone ||
+                            "-"
+                        )}
+                    </p>
 
-                            <i class="fa-solid fa-user"></i>
+                    <p>
+                        <strong>Amount:</strong>
+                        ${Number(
+                            deposit?.amount || 0
+                        ).toLocaleString()} RWF
+                    </p>
 
-                            User Information
+                    <p>
+                        <strong>Payment Method:</strong>
+                        ${escapeHTML(
+                            deposit?.paymentMethod ||
+                            "-"
+                        )}
+                    </p>
 
-                        </h4>
+                    <p>
+                        <strong>Transaction ID:</strong>
+                        ${escapeHTML(
+                            deposit?.transactionId ||
+                            "-"
+                        )}
+                    </p>
 
+                    <div class="action-buttons">
 
-                        <p>
+                        <button
+                            class="approveBtn"
+                            data-action="approveDeposit"
+                            data-id="${escapeHTML(id)}"
+                            ${status !== "pending" ? "disabled" : ""}
+                        >
+                            <i class="fa-solid fa-circle-check"></i>
+                            ${status === "approved"
+                                ? "Approved"
+                                : "Approve"}
+                        </button>
 
-                            <strong>Name:</strong>
-
-                            ${escapeHTML(name)}
-
-                        </p>
-
-
-                        <p>
-
-                            <strong>Email:</strong>
-
-                            ${escapeHTML(email)}
-
-                        </p>
-
-
-                        <p>
-
-                            <strong>Phone:</strong>
-
-                            ${escapeHTML(phone)}
-
-                        </p>
-
-
-                        <p>
-
-                            <strong>User ID:</strong>
-
-                            ${escapeHTML(uid)}
-
-                        </p>
-
-                    </div>
-
-
-                    <div class="withdraw-info">
-
-                        <p>
-
-                            <strong>VIP Plan:</strong>
-
-                            ${escapeHTML(vipName)}
-
-                        </p>
-
-
-                        <p>
-
-                            <strong>Price:</strong>
-
-                            ${price.toLocaleString()} RWF
-
-                        </p>
-
-
-                        <p>
-
-                            <strong>Daily Income:</strong>
-
-                            ${dailyIncome.toLocaleString()} RWF
-
-                        </p>
-
-
-                        <p>
-
-                            <strong>Duration:</strong>
-
-                            ${duration} Days
-
-                        </p>
-
-
-                        <p>
-
-                            <strong>Total Profit:</strong>
-
-                            ${totalProfit.toLocaleString()} RWF
-
-                        </p>
-
-
-                        <p>
-
-                            <strong>Start Date:</strong>
-
-                            ${escapeHTML(
-                                String(startDate)
-                            )}
-
-                        </p>
+                        <button
+                            class="rejectBtn"
+                            data-action="rejectDeposit"
+                            data-id="${escapeHTML(id)}"
+                            ${status !== "pending" ? "disabled" : ""}
+                        >
+                            <i class="fa-solid fa-circle-xmark"></i>
+                            ${status === "rejected"
+                                ? "Rejected"
+                                : "Reject"}
+                        </button>
 
                     </div>
-
                 `;
 
 
                 list.appendChild(card);
 
             }
+
+
+            // ==================================
+            // BUTTONS
+            // ==================================
+
+            list.querySelectorAll(
+                "[data-action]"
+            ).forEach(button => {
+
+                button.addEventListener(
+                    "click",
+                    () => {
+
+                        if (button.disabled) {
+                            return;
+                        }
+
+
+                        const id =
+                            button.dataset.id;
+
+                        button.disabled = true;
+
+
+                        if (
+                            button.dataset.action ===
+                            "approveDeposit"
+                        ) {
+
+                            approveDeposit(id);
+
+                        }
+
+                        else {
+
+                            rejectDeposit(id);
+
+                        }
+
+                    }
+                );
+
+            });
+
+        }
+    );
+
+}
+
+
+// ======================================
+// APPROVE DEPOSIT
+// ======================================
+
+async function approveDeposit(id) {
+
+    if (!currentAdmin) return;
+
+
+    const requestRef =
+        ref(
+            db,
+            "depositRequests/" + id
         );
 
 
-        console.log(
-            "VIP Buyers loaded:",
-            buyers.length
+    const claim =
+        await runTransaction(
+            requestRef,
+            current => {
+
+                if (!current) {
+                    return;
+                }
+
+
+                const status =
+                    String(
+                        current.status ||
+                        "pending"
+                    ).toLowerCase();
+
+
+                if (status !== "pending") {
+                    return;
+                }
+
+
+                return {
+                    ...current,
+                    status: "processing",
+                    processingAt: Date.now(),
+                    processingBy: currentAdmin.uid
+                };
+
+            }
         );
 
-    },
 
-    (error)=>{
+    if (!claim.committed) {
+
+        alert(
+            "Deposit already processed."
+        );
+
+        return;
+
+    }
+
+
+    const deposit =
+        claim.snapshot.val();
+
+
+    try {
+
+        const uid =
+            deposit.uid;
+
+
+        if (!uid) {
+            throw new Error(
+                "Deposit has no user ID."
+            );
+        }
+
+
+        const amount =
+            Number(deposit.amount || 0);
+
+
+        if (
+            !Number.isFinite(amount) ||
+            amount <= 0
+        ) {
+            throw new Error(
+                "Invalid deposit amount."
+            );
+        }
+
+
+        const userRef =
+            ref(
+                db,
+                "users/" + uid
+            );
+
+
+        const userSnap =
+            await get(userRef);
+
+
+        if (!userSnap.exists()) {
+            throw new Error(
+                "User not found."
+            );
+        }
+
+
+        const user =
+            userSnap.val() || {};
+
+
+        await update(
+            userRef,
+            {
+
+                balance:
+                    Number(user.balance || 0) +
+                    amount,
+
+                totalDeposit:
+                    Number(user.totalDeposit || 0) +
+                    amount
+
+            }
+        );
+
+
+        await update(
+            requestRef,
+            {
+
+                status: "approved",
+
+                approvedAt: Date.now(),
+
+                approvedBy:
+                    currentAdmin.uid
+
+            }
+        );
+
+
+        await set(
+            push(
+                ref(db, "transactions")
+            ),
+            {
+
+                uid,
+
+                type: "deposit",
+
+                amount,
+
+                status: "approved",
+
+                reference: id,
+
+                approvedBy:
+                    currentAdmin.uid,
+
+                date: Date.now()
+
+            }
+        );
+
+
+        alert(
+            "Deposit Approved Successfully"
+        );
+
+
+    }
+    catch (error) {
 
         console.error(
-            "VIP Buyers listener error:",
+            "Deposit approval error:",
             error
+        );
+
+
+        await update(
+            requestRef,
+            {
+                status: "pending"
+            }
+        );
+
+
+        alert(
+            "Deposit approval failed: " +
+            error.message
         );
 
     }
 
-);
+}
+
+
+// ======================================
+// REJECT DEPOSIT
+// ======================================
+
+async function rejectDeposit(id) {
+
+    if (!currentAdmin) return;
+
+
+    const requestRef =
+        ref(
+            db,
+            "depositRequests/" + id
+        );
+
+
+    const claim =
+        await runTransaction(
+            requestRef,
+            current => {
+
+                if (!current) {
+                    return;
+                }
+
+
+                const status =
+                    String(
+                        current.status ||
+                        "pending"
+                    ).toLowerCase();
+
+
+                if (status !== "pending") {
+                    return;
+                }
+
+
+                return {
+                    ...current,
+                    status: "processing",
+                    processingAt: Date.now(),
+                    processingBy: currentAdmin.uid
+                };
+
+            }
+        );
+
+
+    if (!claim.committed) {
+
+        alert(
+            "Deposit already processed."
+        );
+
+        return;
+
+    }
+
+
+    try {
+
+        const deposit =
+            claim.snapshot.val();
+
+
+        await update(
+            requestRef,
+            {
+
+                status: "rejected",
+
+                rejectedAt: Date.now(),
+
+                rejectedBy:
+                    currentAdmin.uid
+
+            }
+        );
+
+
+        await set(
+            push(
+                ref(db, "transactions")
+            ),
+            {
+
+                uid:
+                    deposit.uid || "",
+
+                type: "deposit",
+
+                amount:
+                    Number(
+                        deposit.amount || 0
+                    ),
+
+                status: "rejected",
+
+                reference: id,
+
+                rejectedBy:
+                    currentAdmin.uid,
+
+                date: Date.now()
+
+            }
+        );
+
+
+        alert(
+            "Deposit Rejected Successfully"
+        );
+
+    }
+    catch (error) {
+
+        console.error(
+            "Reject deposit error:",
+            error
+        );
+
+
+        await update(
+            requestRef,
+            {
+                status: "pending"
+            }
+        );
+
+
+        alert(
+            "Reject deposit failed: " +
+            error.message
+        );
+
+    }
 
 }
 
-// ======================================
-// EXPORT
-// ======================================
 
-window.loadVipBuyers =
-loadVipBuyers;
+window.loadDeposits =
+    loadDeposits;
 
-// ======================================
-// START VIP BUYERS
-// ======================================
+window.approveDeposit =
+    approveDeposit;
 
-if(
-window.adminState &&
-window.adminState.ready
-){
+window.rejectDeposit =
+    rejectDeposit;
 
-loadVipBuyers();
-
-}
 
 console.log(
-"Admin Part 6 VIP Buyers Ready"
+    "ADMIN
+    
+    PART 3 READY"
 );
-
-       // ======================================
-// ADMIN.JS - PART 7
-// VIP REQUESTS + VIP BUYERS
-// PHOTO + PROFILE + APPROVE + REJECT
+// ======================================
+// ADMIN.JS - PART 4
+// QUICK ACTIONS
 // ======================================
 
+function goToPage(page) {
 
-// ======================================
-// VIP DATA HELPERS
-// ======================================
-
-function vipNumber(...values){
-
-    for(const value of values){
-
-        const number = Number(value);
-
-        if(
-            Number.isFinite(number) &&
-            number > 0
-        ){
-
-            return number;
-
-        }
-
+    if (window.openPage) {
+        window.openPage(page);
     }
-
-    return 0;
 
 }
 
 
+document
+    .getElementById("refreshDashboard")
+    ?.addEventListener(
+        "click",
+        () => {
+
+            window.loadDashboard?.();
+
+        }
+    );
+
+
+document
+    .getElementById("refreshDashboardQuick")
+    ?.addEventListener(
+        "click",
+        () => {
+
+            window.loadDashboard?.();
+
+        }
+    );
+
+
+const pageButtons = {
+
+    openDeposits: "deposits",
+
+    openDepositsBtn: "deposits",
+
+    openWithdraws: "withdraws",
+
+    openWithdrawsBtn: "withdraws",
+
+    openUsers: "users",
+
+    openUsersBtn: "users",
+
+    openTransactions: "transactions",
+
+    openTransactionsBtn: "transactions",
+
+    openSettings: "settings",
+
+    openSettingsBtn: "settings",
+
+    openVipRequests: "vipRequests",
+
+    openVipRequestsBtn: "vipRequests"
+
+};
+
+
+Object.entries(pageButtons)
+    .forEach(([id, page]) => {
+
+        document
+            .getElementById(id)
+            ?.addEventListener(
+                "click",
+                () => goToPage(page)
+            );
+
+    });
+
+
+console.log(
+    "ADMIN PART 4 READY"
+);
 
 // ======================================
-// SAFE DATE
+// ADMIN.JS - PART 5
+// WITHDRAW MANAGEMENT
 // ======================================
 
-function formatVipDate(value){
 
-    if(!value){
+// ======================================
+// LOAD WITHDRAWS
+// ======================================
 
-        return "-";
+function loadWithdraws() {
+
+    if (!window.adminState?.ready) {
+        return;
+    }
+
+
+    const list =
+        document.getElementById(
+            "withdrawList"
+        );
+
+
+    const empty =
+        document.getElementById(
+            "emptyWithdraw"
+        );
+
+
+    if (!list) return;
+
+
+    onValue(
+        ref(db, "withdrawRequests"),
+        async snapshot => {
+
+            list.innerHTML = "";
+
+
+            if (!snapshot.exists()) {
+
+                empty &&
+                    (empty.style.display = "block");
+
+                return;
+
+            }
+
+
+            empty &&
+                (empty.style.display = "none");
+
+
+            const requests =
+                Object.entries(
+                    snapshot.val()
+                ).reverse();
+
+
+            for (
+                const [id, request]
+                of requests
+            ) {
+
+                const item =
+                    request || {};
+
+
+                const uid =
+                    item.uid ||
+                    item.userId ||
+                    item.userUID ||
+                    "";
+
+
+                let user = {};
+
+
+                if (uid) {
+
+                    const userSnap =
+                        await get(
+                            ref(
+                                db,
+                                "users/" + uid
+                            )
+                        );
+
+
+                    if (userSnap.exists()) {
+                        user =
+                            userSnap.val() || {};
+                    }
+
+                }
+
+
+                const status =
+                    String(
+                        item.status ||
+                        "pending"
+                    ).toLowerCase();
+
+
+                const name =
+                    item.fullName ||
+                    item.name ||
+                    user.fullName ||
+                    user.name ||
+                    user.username ||
+                    "Unknown User";
+
+
+                const email =
+                    item.email ||
+                    user.email ||
+                    "-";
+
+
+                const phone =
+                    item.phone ||
+                    item.phoneNumber ||
+                    user.phone ||
+                    "-";
+
+
+                const amount =
+                    Number(
+                        item.amount || 0
+                    );
+
+
+                const method =
+                    item.paymentMethod ||
+                    item.method ||
+                    "-";
+
+
+                const account =
+                    item.accountNumber ||
+                    item.account ||
+                    item.destination ||
+                    item.phoneNumber ||
+                    item.phone ||
+                    "-";
+
+
+                const card =
+                    document.createElement(
+                        "div"
+                    );
+
+
+                card.className =
+                    "request-card";
+
+
+                card.innerHTML = `
+
+                    <div class="request-top">
+
+                        <h3>
+                            <i class="fa-solid fa-money-bill-transfer"></i>
+                            Withdraw Request
+                        </h3>
+
+                        <span class="status ${escapeHTML(status)}">
+                            ${escapeHTML(status)}
+                        </span>
+
+                    </div>
+
+                    <div class="user-profile-box">
+
+                        <h4>
+                            <i class="fa-solid fa-user"></i>
+                            User Information
+                        </h4>
+
+                        <p>
+                            <strong>Name:</strong>
+                            ${escapeHTML(name)}
+                        </p>
+
+                        <p>
+                            <strong>Email:</strong>
+                            ${escapeHTML(email)}
+                        </p>
+
+                        <p>
+                            <strong>Phone:</strong>
+                            ${escapeHTML(phone)}
+                        </p>
+
+                        <p>
+                            <strong>User ID:</strong>
+                            ${escapeHTML(uid || "-")}
+                        </p>
+
+                    </div>
+
+                    <div class="withdraw-info">
+
+                        <p>
+                            <strong>Amount:</strong>
+                            ${amount.toLocaleString()} RWF
+                        </p>
+
+                        <p>
+                            <strong>Payment Method:</strong>
+                            ${escapeHTML(method)}
+                        </p>
+
+                        <p>
+                            <strong>Account:</strong>
+                            ${escapeHTML(account)}
+                        </p>
+
+                        <p>
+                            <strong>Date:</strong>
+                            ${escapeHTML(
+                                item.createdAt ||
+                                item.requestDate ||
+                                item.date ||
+                                "-"
+                            )}
+                        </p>
+
+                    </div>
+
+                    <div class="action-buttons">
+
+                        <button
+                            class="approveBtn"
+                            data-withdraw-action="approve"
+                            data-id="${escapeHTML(id)}"
+                            ${status !== "pending" ? "disabled" : ""}
+                        >
+                            <i class="fa-solid fa-circle-check"></i>
+                            ${status === "approved"
+                                ? "Approved"
+                                : "Approve"}
+                        </button>
+
+                        <button
+                            class="rejectBtn"
+                            data-withdraw-action="reject"
+                            data-id="${escapeHTML(id)}"
+                            ${status !== "pending" ? "disabled" : ""}
+                        >
+                            <i class="fa-solid fa-circle-xmark"></i>
+                            ${status === "rejected"
+                                ? "Rejected"
+                                : "Reject"}
+                        </button>
+
+                    </div>
+                `;
+
+
+                list.appendChild(card);
+
+            }
+
+
+            list.querySelectorAll(
+                "[data-withdraw-action]"
+            ).forEach(button => {
+
+                button.addEventListener(
+                    "click",
+                    () => {
+
+                        if (button.disabled) {
+                            return;
+                        }
+
+
+                        button.disabled = true;
+
+
+                        const id =
+                            button.dataset.id;
+
+
+                        if (
+                            button.dataset.withdrawAction ===
+                            "approve"
+                        ) {
+
+                            approveWithdraw(id);
+
+                        }
+                        else {
+
+                            rejectWithdraw(id);
+
+                        }
+
+                    }
+                );
+
+            });
+
+        }
+    );
+
+}
+
+
+// ======================================
+// APPROVE WITHDRAW
+// ======================================
+
+async function approveWithdraw(id) {
+
+    if (!currentAdmin) return;
+
+
+    const requestRef =
+        ref(
+            db,
+            "withdrawRequests/" + id
+        );
+
+
+    const claim =
+        await runTransaction(
+            requestRef,
+            current => {
+
+                if (!current) return;
+
+                const status =
+                    String(
+                        current.status ||
+                        "pending"
+                    ).toLowerCase();
+
+
+                if (status !== "pending") {
+                    return;
+                }
+
+
+                return {
+                    ...current,
+                    status: "processing",
+                    processingAt: Date.now(),
+                    processingBy: currentAdmin.uid
+                };
+
+            }
+        );
+
+
+    if (!claim.committed) {
+
+        alert(
+            "Withdraw already processed."
+        );
+
+        return;
 
     }
 
-    try{
 
-        const date = new Date(value);
+    const request =
+        claim.snapshot.val();
 
-        if(
-            !Number.isNaN(
-                date.getTime()
-            )
-        ){
 
-            return date.toLocaleString();
+    const uid =
+        request.uid ||
+        request.userId ||
+        request.userUID ||
+        "";
+
+
+    try {
+
+        if (!uid) {
+            throw new Error(
+                "Withdraw has no user ID."
+            );
+        }
+
+
+        const amount =
+            Number(request.amount || 0);
+
+
+        if (
+            !Number.isFinite(amount) ||
+            amount <= 0
+        ) {
+
+            throw new Error(
+                "Invalid withdraw amount."
+            );
 
         }
 
+
+        const userRef =
+            ref(
+                db,
+                "users/" + uid
+            );
+
+
+        const balanceResult =
+            await runTransaction(
+                userRef,
+                user => {
+
+                    if (!user) return;
+
+                    const balance =
+                        Number(
+                            user.balance || 0
+                        );
+
+
+                    if (balance < amount) {
+                        return;
+                    }
+
+
+                    return {
+
+                        ...user,
+
+                        balance:
+                            balance - amount,
+
+                        totalWithdraw:
+                            Number(
+                                user.totalWithdraw || 0
+                            ) + amount
+
+                    };
+
+                }
+            );
+
+
+        if (!balanceResult.committed) {
+
+            throw new Error(
+                "Insufficient user balance."
+            );
+
+        }
+
+
+        await update(
+            requestRef,
+            {
+
+                status: "approved",
+
+                approvedAt: Date.now(),
+
+                approvedBy:
+                    currentAdmin.uid
+
+            }
+        );
+
+
+        await set(
+            push(
+                ref(db, "transactions")
+            ),
+            {
+
+                uid,
+
+                type: "withdraw",
+
+                amount,
+
+                status: "approved",
+
+                reference: id,
+
+                approvedBy:
+                    currentAdmin.uid,
+
+                date: Date.now()
+
+            }
+        );
+
+
+        alert(
+            "Withdraw Approved Successfully"
+        );
+
     }
-    catch(error){
+    catch (error) {
 
         console.error(
-            "VIP date error:",
+            "Withdraw approval error:",
             error
+        );
+
+
+        await update(
+            requestRef,
+            {
+                status: "pending"
+            }
+        );
+
+
+        alert(
+            "Withdraw approval failed: " +
+            error.message
         );
 
     }
 
-    return String(value);
+}
+
+
+// ======================================
+// REJECT WITHDRAW
+// ======================================
+
+async function rejectWithdraw(id) {
+
+    if (!currentAdmin) return;
+
+
+    const requestRef =
+        ref(
+            db,
+            "withdrawRequests/" + id
+        );
+
+
+    const claim =
+        await runTransaction(
+            requestRef,
+            current => {
+
+                if (!current) return;
+
+                const status =
+                    String(
+                        current.status ||
+                        "pending"
+                    ).toLowerCase();
+
+
+                if (status !== "pending") {
+                    return;
+                }
+
+
+                return {
+                    ...current,
+                    status: "processing",
+                    processingAt: Date.now(),
+                    processingBy: currentAdmin.uid
+                };
+
+            }
+        );
+
+
+    if (!claim.committed) {
+
+        alert(
+            "Withdraw already processed."
+        );
+
+        return;
+
+    }
+
+
+    try {
+
+        const request =
+            claim.snapshot.val();
+
+
+        await update(
+            requestRef,
+            {
+
+                status: "rejected",
+
+                rejectedAt: Date.now(),
+
+                rejectedBy:
+                    currentAdmin.uid
+
+            }
+        );
+
+
+        await set(
+            push(
+                ref(db, "transactions")
+            ),
+            {
+
+                uid:
+                    request.uid ||
+                    request.userId ||
+                    request.userUID ||
+                    "",
+
+                type: "withdraw",
+
+                amount:
+                    Number(
+                        request.amount || 0
+                    ),
+
+                status: "rejected",
+
+                reference: id,
+
+                rejectedBy:
+                    currentAdmin.uid,
+
+                date: Date.now()
+
+            }
+        );
+
+
+        alert(
+            "Withdraw Rejected Successfully"
+        );
+
+    }
+    catch (error) {
+
+        console.error(
+            "Reject withdraw error:",
+            error
+        );
+
+
+        await update(
+            requestRef,
+            {
+                status: "pending"
+            }
+        );
+
+
+        alert(
+            "Reject withdraw failed: " +
+            error.message
+        );
+
+    }
 
 }
 
+
+window.loadWithdraws =
+    loadWithdraws;
+
+window.approveWithdraw =
+    approveWithdraw;
+
+window.rejectWithdraw =
+    rejectWithdraw;
+
+
+console.log(
+    "ADMIN PART 5 READY"
+);
+
+// ======================================
+// ADMIN.JS - PART 6
+// VIP REQUESTS
+// ======================================
+
+
+// ======================================
+// VIP DATE
+// ======================================
+
+function formatVipDate(value) {
+
+    if (!value) return "-";
+
+
+    const date =
+        new Date(value);
+
+
+    if (
+        Number.isNaN(
+            date.getTime()
+        )
+    ) {
+
+        return String(value);
+
+    }
+
+
+    return date.toLocaleString();
+
+}
 
 
 // ======================================
 // VIP PHOTO
 // ======================================
 
-function getVipPhoto(vip,userData){
+function getVipPhoto(request, user) {
 
     return (
-        vip.photoURL ||
-        vip.photoUrl ||
-        vip.photo ||
-        vip.profilePhoto ||
-        vip.avatar ||
-        userData.photoURL ||
-        userData.photoUrl ||
-        userData.photo ||
-        userData.profilePhoto ||
-        userData.avatar ||
+        request?.photoURL ||
+        request?.photoUrl ||
+        request?.photo ||
+        request?.profilePhoto ||
+        user?.photoURL ||
+        user?.photoUrl ||
+        user?.photo ||
+        user?.profilePhoto ||
         ""
     );
 
 }
 
 
-
 // ======================================
 // LOAD VIP REQUESTS
 // ======================================
 
-function loadVipRequests(){
+function loadVipRequests() {
+
+    if (!window.adminState?.ready) {
+        return;
+    }
+
 
     const list =
         document.getElementById(
@@ -3463,10 +2198,522 @@ function loadVipRequests(){
         );
 
 
-    if(!list){
+    if (!list) return;
 
-        console.error(
-            "VIP request list not found: #vipRequestList"
+
+    onValue(
+        ref(
+            db,
+            "vipPurchaseRequests"
+        ),
+        async snapshot => {
+
+            list.innerHTML = "";
+
+
+            let total = 0;
+            let pending = 0;
+            let approved = 0;
+            let rejected = 0;
+
+
+            if (!snapshot.exists()) {
+
+                empty &&
+                    (empty.style.display = "block");
+
+                updateText(
+                    "vipTotalCount",
+                    0
+                );
+
+                updateText(
+                    "vipPendingCount",
+                    0
+                );
+
+                updateText(
+                    "vipApprovedCount",
+                    0
+                );
+
+                updateText(
+                    "vipRejectedCount",
+                    0
+                );
+
+                return;
+
+            }
+
+
+            empty &&
+                (empty.style.display = "none");
+
+
+            const requests =
+                Object.entries(
+                    snapshot.val()
+                ).reverse();
+
+
+            for (
+                const [id, request]
+                of requests
+            ) {
+
+                const item =
+                    request || {};
+
+
+                total++;
+
+
+                const status =
+                    String(
+                        item.status ||
+                        "pending"
+                    ).toLowerCase();
+
+
+                if (status === "pending") {
+                    pending++;
+                }
+
+                else if (status === "approved") {
+                    approved++;
+                }
+
+                else if (status === "rejected") {
+                    rejected++;
+                }
+
+
+                const uid =
+                    item.uid ||
+                    item.userId ||
+                    item.userUID ||
+                    "";
+
+
+                let user = {};
+
+
+                if (uid) {
+
+                    const userSnap =
+                        await get(
+                            ref(
+                                db,
+                                "users/" + uid
+                            )
+                        );
+
+
+                    if (userSnap.exists()) {
+                        user =
+                            userSnap.val() || {};
+                    }
+
+                }
+
+
+                const name =
+                    item.fullName ||
+                    item.name ||
+                    item.username ||
+                    user.fullName ||
+                    user.name ||
+                    user.username ||
+                    "Unknown User";
+
+
+                const email =
+                    item.email ||
+                    user.email ||
+                    "-";
+
+
+                const phone =
+                    item.phone ||
+                    item.phoneNumber ||
+                    user.phone ||
+                    user.phoneNumber ||
+                    "-";
+
+
+                const vipName =
+                    item.vipName ||
+                    item.planName ||
+                    item.namePlan ||
+                    item.plan ||
+                    item.vip ||
+                    "VIP Plan";
+
+
+                const price =
+                    numberValue(
+                        item.price,
+                        item.vipPrice,
+                        item.amount
+                    );
+
+
+                const daily =
+                    numberValue(
+                        item.dailyIncome,
+                        item.daily,
+                        item.dailyProfit
+                    );
+
+
+                const duration =
+                    numberValue(
+                        item.duration,
+                        item.days,
+                        item.durationDays
+                    );
+
+
+                const profit =
+                    numberValue(
+                        item.totalProfit,
+                        item.profit,
+                        item.total
+                    );
+
+
+                const photo =
+                    getVipPhoto(
+                        item,
+                        user
+                    );
+
+
+                const photoHTML =
+                    photo
+                    ?
+
+                    `
+                    <img
+                        src="${escapeHTML(photo)}"
+                        class="vip-user-photo"
+                        alt="User"
+                        onerror="
+                            this.style.display='none';
+                            this.nextElementSibling.style.display='flex';
+                        "
+                    >
+
+                    <div
+                        class="vip-user-avatar"
+                        style="display:none;"
+                    >
+                        <i class="fa-solid fa-user"></i>
+                    </div>
+                    `
+
+                    :
+
+                    `
+                    <div class="vip-user-avatar">
+                        <i class="fa-solid fa-user"></i>
+                    </div>
+                    `;
+
+
+                const card =
+                    document.createElement(
+                        "div"
+                    );
+
+
+                card.className =
+                    "request-card vip-request-card";
+
+
+                card.innerHTML = `
+
+                    <div class="request-top">
+
+                        <h3>
+                            <i class="fa-solid fa-crown"></i>
+                            VIP Purchase
+                        </h3>
+
+                        <span class="status ${escapeHTML(status)}">
+                            ${escapeHTML(status)}
+                        </span>
+
+                    </div>
+
+
+                    <div class="user-profile-box">
+
+                        <div class="vip-profile-header">
+
+                            <div class="vip-photo-wrapper">
+                                ${photoHTML}
+                            </div>
+
+                            <div class="vip-profile-name">
+
+                                <h4>
+                                    ${escapeHTML(name)}
+                                </h4>
+
+                                <span>
+                                    VIP Buyer
+                                </span>
+
+                            </div>
+
+                        </div>
+
+
+                        <p>
+                            <strong>Name:</strong>
+                            ${escapeHTML(name)}
+                        </p>
+
+                        <p>
+                            <strong>Email:</strong>
+                            ${escapeHTML(email)}
+                        </p>
+
+                        <p>
+                            <strong>Phone:</strong>
+                            ${escapeHTML(phone)}
+                        </p>
+
+                        <p>
+                            <strong>User ID:</strong>
+                            ${escapeHTML(uid || "-")}
+                        </p>
+
+                    </div>
+
+
+                    <div class="withdraw-info">
+
+                        <p>
+                            <strong>VIP Plan:</strong>
+                            ${escapeHTML(vipName)}
+                        </p>
+
+                        <p>
+                            <strong>Price:</strong>
+                            ${price.toLocaleString()} RWF
+                        </p>
+
+                        <p>
+                            <strong>Daily Income:</strong>
+                            ${daily.toLocaleString()} RWF
+                        </p>
+
+                        <p>
+                            <strong>Duration:</strong>
+                            ${duration} Days
+                        </p>
+
+                        <p>
+                            <strong>Total Profit:</strong>
+                            ${profit.toLocaleString()} RWF
+                        </p>
+
+                        <p>
+                            <strong>Request Date:</strong>
+                            ${escapeHTML(
+                                formatVipDate(
+                                    item.createdAt ||
+                                    item.requestDate ||
+                                    item.date ||
+                                    item.timestamp
+                                )
+                            )}
+                        </p>
+
+                    </div>
+
+
+                    <div class="action-buttons">
+
+                        <button
+                            class="approveBtn"
+                            data-vip-action="approve"
+                            data-id="${escapeHTML(id)}"
+                            ${status !== "pending" ? "disabled" : ""}
+                        >
+                            <i class="fa-solid fa-circle-check"></i>
+                            ${status === "approved"
+                                ? "Approved"
+                                : "Approve VIP"}
+                        </button>
+
+
+                        <button
+                            class="rejectBtn"
+                            data-vip-action="reject"
+                            data-id="${escapeHTML(id)}"
+                            ${status !== "pending" ? "disabled" : ""}
+                        >
+                            <i class="fa-solid fa-circle-xmark"></i>
+                            ${status === "rejected"
+                                ? "Rejected"
+                                : "Reject VIP"}
+                        </button>
+
+                    </div>
+                `;
+
+
+                list.appendChild(card);
+
+            }
+
+
+            updateText(
+                "vipTotalCount",
+                total
+            );
+
+            updateText(
+                "vipPendingCount",
+                pending
+            );
+
+            updateText(
+                "vipApprovedCount",
+                approved
+            );
+
+            updateText(
+                "vipRejectedCount",
+                rejected
+            );
+
+
+            list.querySelectorAll(
+                "[data-vip-action]"
+            ).forEach(button => {
+
+                button.addEventListener(
+                    "click",
+                    () => {
+
+                        if (button.disabled) {
+                            return;
+                        }
+
+
+                        button.disabled = true;
+
+
+                        const id =
+                            button.dataset.id;
+
+
+                        if (
+                            button.dataset.vipAction ===
+                            "approve"
+                        ) {
+
+                            approveVipRequest(id);
+
+                        }
+                        else {
+
+                            rejectVipRequest(id);
+
+                        }
+
+                    }
+                );
+
+            });
+
+        }
+    );
+
+}
+
+
+window.loadVipRequests =
+    loadVipRequests;
+
+
+console.log(
+    "ADMIN PART 6 READY"
+);
+
+// ======================================
+// ADMIN.JS - PART 7
+// VIP APPROVE + REJECT
+// ======================================
+
+
+// ======================================
+// APPROVE VIP
+// ======================================
+
+async function approveVipRequest(id) {
+
+    if (!currentAdmin) return;
+
+
+    const requestRef =
+        ref(
+            db,
+            "vipPurchaseRequests/" + id
+        );
+
+
+    // ==================================
+    // CLAIM REQUEST ONCE
+    // ==================================
+
+    const claim =
+        await runTransaction(
+            requestRef,
+            current => {
+
+                if (!current) return;
+
+
+                const status =
+                    String(
+                        current.status ||
+                        "pending"
+                    ).toLowerCase();
+
+
+                if (status !== "pending") {
+                    return;
+                }
+
+
+                return {
+
+                    ...current,
+
+                    status: "processing",
+
+                    processingAt:
+                        Date.now(),
+
+                    processingBy:
+                        currentAdmin.uid
+
+                };
+
+            }
+        );
+
+
+    if (!claim.committed) {
+
+        alert(
+            "VIP request already processed."
         );
 
         return;
@@ -3474,901 +2721,11 @@ function loadVipRequests(){
     }
 
 
-    const vipRef =
-        ref(
-            db,
-            "vipPurchaseRequests"
-        );
+    const request =
+        claim.snapshot.val();
 
 
-    onValue(
-        vipRef,
-        async(snapshot)=>{
-
-            try{
-
-                list.innerHTML = "";
-
-
-                // ==================================
-                // NO DATA
-                // ==================================
-
-                if(!snapshot.exists()){
-
-                    if(empty){
-
-                        empty.style.display =
-                            "block";
-
-                    }
-
-                    updateText(
-                        "vipTotalCount",
-                        0
-                    );
-
-                    updateText(
-                        "vipPendingCount",
-                        0
-                    );
-
-                    updateText(
-                        "vipApprovedCount",
-                        0
-                    );
-
-                    updateText(
-                        "vipRejectedCount",
-                        0
-                    );
-
-                    return;
-
-                }
-
-
-                if(empty){
-
-                    empty.style.display =
-                        "none";
-
-                }
-
-
-                const requests =
-                    Object.entries(
-                        snapshot.val()
-                    ).reverse();
-
-
-
-                // ==================================
-                // COUNTERS
-                // ==================================
-
-                let total = 0;
-
-                let pending = 0;
-
-                let approved = 0;
-
-                let rejected = 0;
-
-
-
-                requests.forEach(
-                    ([id,request])=>{
-
-                        total++;
-
-
-                        const status =
-                            String(
-                                request?.status ||
-                                "pending"
-                            )
-                            .toLowerCase();
-
-
-                        if(status === "pending"){
-
-                            pending++;
-
-                        }
-
-                        else if(
-                            status === "approved"
-                        ){
-
-                            approved++;
-
-                        }
-
-                        else if(
-                            status === "rejected"
-                        ){
-
-                            rejected++;
-
-                        }
-
-                    }
-                );
-
-
-
-                updateText(
-                    "vipTotalCount",
-                    total
-                );
-
-
-                updateText(
-                    "vipPendingCount",
-                    pending
-                );
-
-
-                updateText(
-                    "vipApprovedCount",
-                    approved
-                );
-
-
-                updateText(
-                    "vipRejectedCount",
-                    rejected
-                );
-
-
-
-                // ==================================
-                // RENDER
-                // ==================================
-
-                for(
-                    const [id,rawRequest]
-                    of requests
-                ){
-
-                    const vip =
-                        rawRequest || {};
-
-
-                    // ==============================
-                    // UID
-                    // ==============================
-
-                    const uid =
-                        vip.uid ||
-                        vip.userId ||
-                        vip.userUID ||
-                        "";
-
-
-
-                    // ==============================
-                    // USER PROFILE
-                    // ==============================
-
-                    let userData = {};
-
-
-                    if(uid){
-
-                        try{
-
-                            const userSnap =
-                                await get(
-                                    ref(
-                                        db,
-                                        "users/" + uid
-                                    )
-                                );
-
-
-                            if(
-                                userSnap.exists()
-                            ){
-
-                                userData =
-                                    userSnap.val() || {};
-
-                            }
-
-                        }
-                        catch(error){
-
-                            console.error(
-                                "VIP user error:",
-                                error
-                            );
-
-                        }
-
-                    }
-
-
-
-                    // ==============================
-                    // USER DETAILS
-                    // ==============================
-
-                    const name =
-                        vip.fullName ||
-                        vip.name ||
-                        vip.username ||
-                        userData.fullName ||
-                        userData.name ||
-                        userData.username ||
-                        "Unknown User";
-
-
-                    const email =
-                        vip.email ||
-                        userData.email ||
-                        "-";
-
-
-                    const phone =
-                        vip.phone ||
-                        vip.phoneNumber ||
-                        userData.phone ||
-                        userData.phoneNumber ||
-                        "-";
-
-
-                    const photo =
-                        getVipPhoto(
-                            vip,
-                            userData
-                        );
-
-
-
-                    // ==============================
-                    // VIP DETAILS
-                    // ==============================
-
-                    const vipName =
-                        vip.vipName ||
-                        vip.planName ||
-                        vip.namePlan ||
-                        vip.plan ||
-                        vip.vip ||
-                        "VIP Plan";
-
-
-                    const price =
-                        vipNumber(
-                            vip.price,
-                            vip.vipPrice,
-                            vip.amount
-                        );
-
-
-                    const dailyIncome =
-                        vipNumber(
-                            vip.dailyIncome,
-                            vip.daily,
-                            vip.dailyProfit
-                        );
-
-
-                    const duration =
-                        vipNumber(
-                            vip.duration,
-                            vip.days,
-                            vip.durationDays
-                        );
-
-
-                    const totalProfit =
-                        vipNumber(
-                            vip.totalProfit,
-                            vip.profit,
-                            vip.total
-                        );
-
-
-                    const date =
-                        vip.createdAt ||
-                        vip.requestDate ||
-                        vip.date ||
-                        vip.timestamp ||
-                        "-";
-
-
-                    const status =
-                        String(
-                            vip.status ||
-                            "pending"
-                        )
-                        .toLowerCase();
-
-
-
-                    // ==============================
-                    // PHOTO HTML
-                    // ==============================
-
-                    let photoHTML;
-
-
-                    if(photo){
-
-                        photoHTML = `
-
-                            <img
-                                src="${escapeHTML(photo)}"
-                                alt="User Photo"
-                                class="vip-user-photo"
-                                onerror="
-                                    this.style.display='none';
-                                    this.nextElementSibling.style.display='flex';
-                                "
-                            >
-
-                            <div
-                                class="vip-user-avatar"
-                                style="display:none;"
-                            >
-
-                                <i class="fa-solid fa-user"></i>
-
-                            </div>
-
-                        `;
-
-                    }
-                    else{
-
-                        photoHTML = `
-
-                            <div class="vip-user-avatar">
-
-                                <i class="fa-solid fa-user"></i>
-
-                            </div>
-
-                        `;
-
-                    }
-
-
-
-                    // ==============================
-                    // CARD
-                    // ==============================
-
-                    const card =
-                        document.createElement(
-                            "div"
-                        );
-
-
-                    card.className =
-                        "request-card vip-request-card";
-
-
-                    card.dataset.vipId =
-                        id;
-
-
-                    card.innerHTML = `
-
-                        <div class="request-top">
-
-                            <h3>
-
-                                <i class="fa-solid fa-crown"></i>
-
-                                VIP Purchase
-
-                            </h3>
-
-
-                            <span
-                                class="status ${escapeHTML(status)}"
-                            >
-
-                                ${escapeHTML(status)}
-
-                            </span>
-
-                        </div>
-
-
-
-                        <!-- =====================
-                             USER PROFILE
-                        ====================== -->
-
-                        <div class="user-profile-box vip-user-profile">
-
-                            <div class="vip-profile-header">
-
-                                <div class="vip-photo-wrapper">
-
-                                    ${photoHTML}
-
-                                </div>
-
-
-                                <div class="vip-profile-name">
-
-                                    <h4>
-
-                                        ${escapeHTML(name)}
-
-                                    </h4>
-
-
-                                    <span>
-
-                                        VIP Buyer
-
-                                    </span>
-
-                                </div>
-
-                            </div>
-
-
-
-                            <p>
-
-                                <strong>
-                                    Name:
-                                </strong>
-
-                                ${escapeHTML(name)}
-
-                            </p>
-
-
-                            <p>
-
-                                <strong>
-                                    Email:
-                                </strong>
-
-                                ${escapeHTML(email)}
-
-                            </p>
-
-
-                            <p>
-
-                                <strong>
-                                    Phone:
-                                </strong>
-
-                                ${escapeHTML(phone)}
-
-                            </p>
-
-
-                            <p>
-
-                                <strong>
-                                    User ID:
-                                </strong>
-
-                                ${escapeHTML(uid || "-")}
-
-                            </p>
-
-                        </div>
-
-
-
-                        <!-- =====================
-                             VIP DETAILS
-                        ====================== -->
-
-                        <div class="withdraw-info">
-
-                            <p>
-
-                                <strong>
-                                    VIP Plan:
-                                </strong>
-
-                                ${escapeHTML(vipName)}
-
-                            </p>
-
-
-                            <p>
-
-                                <strong>
-                                    Price:
-                                </strong>
-
-                                ${price.toLocaleString()} RWF
-
-                            </p>
-
-
-                            <p>
-
-                                <strong>
-                                    Daily Income:
-                                </strong>
-
-                                ${dailyIncome.toLocaleString()} RWF
-
-                            </p>
-
-
-                            <p>
-
-                                <strong>
-                                    Duration:
-                                </strong>
-
-                                ${duration} Days
-
-                            </p>
-
-
-                            <p>
-
-                                <strong>
-                                    Total Profit:
-                                </strong>
-
-                                ${totalProfit.toLocaleString()} RWF
-
-                            </p>
-
-
-                            <p>
-
-                                <strong>
-                                    Request Date:
-                                </strong>
-
-                                ${escapeHTML(
-                                    formatVipDate(date)
-                                )}
-
-                            </p>
-
-
-                            ${
-                                status === "approved"
-                                ?
-                                `
-                                <p>
-
-                                    <strong>
-                                        Buyer Status:
-                                    </strong>
-
-                                    <span
-                                        class="status approved"
-                                    >
-                                        VIP Buyer
-                                    </span>
-
-                                </p>
-                                `
-                                :
-                                ""
-                            }
-
-                        </div>
-
-
-
-                        <!-- =====================
-                             ACTION BUTTONS
-                        ====================== -->
-
-                        <div class="action-buttons">
-
-                            <button
-
-                                type="button"
-
-                                class="approveBtn vipApproveBtn"
-
-                                data-id="${escapeHTML(id)}"
-
-                                ${
-                                    status !== "pending"
-                                    ? "disabled"
-                                    : ""
-                                }
-
-                            >
-
-                                <i class="fa-solid fa-circle-check"></i>
-
-                                ${
-                                    status === "approved"
-                                    ? "Approved"
-                                    : "Approve VIP"
-                                }
-
-                            </button>
-
-
-
-                            <button
-
-                                type="button"
-
-                                class="rejectBtn vipRejectBtn"
-
-                                data-id="${escapeHTML(id)}"
-
-                                ${
-                                    status !== "pending"
-                                    ? "disabled"
-                                    : ""
-                                }
-
-                            >
-
-                                <i class="fa-solid fa-circle-xmark"></i>
-
-                                ${
-                                    status === "rejected"
-                                    ? "Rejected"
-                                    : "Reject VIP"
-                                }
-
-                            </button>
-
-                        </div>
-
-                    `;
-
-
-                    list.appendChild(card);
-
-                }
-
-
-
-                // ==================================
-                // APPROVE BUTTONS
-                // ==================================
-
-                list
-                    .querySelectorAll(
-                        ".vipApproveBtn"
-                    )
-                    .forEach(button=>{
-
-                        button.addEventListener(
-                            "click",
-                            async()=>{
-
-                                const id =
-                                    button.dataset.id;
-
-
-                                if(!id){
-
-                                    return;
-
-                                }
-
-
-                                // Prevent double click
-
-                                if(
-                                    button.disabled
-                                ){
-
-                                    return;
-
-                                }
-
-
-                                button.disabled =
-                                    true;
-
-
-                                button.innerHTML = `
-
-                                    <i class="fa-solid fa-spinner fa-spin"></i>
-
-                                    Processing...
-
-                                `;
-
-
-                                await approveVipRequest(
-                                    id
-                                );
-
-                            }
-                        );
-
-                    });
-
-
-
-                // ==================================
-                // REJECT BUTTONS
-                // ==================================
-
-                list
-                    .querySelectorAll(
-                        ".vipRejectBtn"
-                    )
-                    .forEach(button=>{
-
-                        button.addEventListener(
-                            "click",
-                            async()=>{
-
-                                const id =
-                                    button.dataset.id;
-
-
-                                if(!id){
-
-                                    return;
-
-                                }
-
-
-                                if(
-                                    button.disabled
-                                ){
-
-                                    return;
-
-                                }
-
-
-                                button.disabled =
-                                    true;
-
-
-                                button.innerHTML = `
-
-                                    <i class="fa-solid fa-spinner fa-spin"></i>
-
-                                    Processing...
-
-                                `;
-
-
-                                await rejectVipRequest(
-                                    id
-                                );
-
-                            }
-                        );
-
-                    });
-
-
-            }
-            catch(error){
-
-                console.error(
-                    "VIP render error:",
-                    error
-                );
-
-            }
-
-        },
-
-        (error)=>{
-
-            console.error(
-                "VIP request listener error:",
-                error
-            );
-
-        }
-
-    );
-
-}
-
-
-
-// ======================================
-// APPROVE VIP REQUEST
-// ======================================
-
-window.approveVipRequest =
-async function(id){
-
-    try{
-
-        if(!id){
-
-            alert(
-                "VIP request ID is missing."
-            );
-
-            return;
-
-        }
-
-
-        if(
-            !currentAdmin ||
-            !currentAdmin.uid
-        ){
-
-            alert(
-                "Admin session is not ready."
-            );
-
-            return;
-
-        }
-
-
-
-        const requestRef =
-            ref(
-                db,
-                "vipPurchaseRequests/" + id
-            );
-
-
-        const snap =
-            await get(requestRef);
-
-
-        if(!snap.exists()){
-
-            alert(
-                "VIP request not found."
-            );
-
-            return;
-
-        }
-
-
-        const request =
-            snap.val() || {};
-
-
-
-        // ==================================
-        // ONLY PENDING
-        // ==================================
-
-        const status =
-            String(
-                request.status ||
-                "pending"
-            ).toLowerCase();
-
-
-        if(status !== "pending"){
-
-            alert(
-                "VIP request already processed."
-            );
-
-            loadVipRequests();
-
-            return;
-
-        }
-
-
-
-        // ==================================
-        // UID
-        // ==================================
+    try {
 
         const uid =
             request.uid ||
@@ -4377,82 +2734,80 @@ async function(id){
             "";
 
 
-        if(!uid){
+        if (!uid) {
 
-            alert(
+            throw new Error(
                 "VIP request has no user ID."
             );
 
-            return;
-
         }
 
 
-
-        // ==================================
-        // USER CHECK
-        // ==================================
-
-        const userRef =
-            ref(
-                db,
-                "users/" + uid
-            );
+        const vipName =
+            request.vipName ||
+            request.planName ||
+            request.namePlan ||
+            request.plan ||
+            request.vip ||
+            "VIP Plan";
 
 
-        const userSnap =
-            await get(userRef);
-
-
-        if(!userSnap.exists()){
-
-            alert(
-                "User not found."
-            );
-
-            return;
-
-        }
-
-
-
-        // ==================================
-        // VIP AMOUNT
-        // ==================================
-
-        const amount =
-            vipNumber(
+        const price =
+            numberValue(
                 request.price,
                 request.vipPrice,
                 request.amount
             );
 
 
+        const dailyIncome =
+            numberValue(
+                request.dailyIncome,
+                request.daily,
+                request.dailyProfit
+            );
+
+
+        const duration =
+            numberValue(
+                request.duration,
+                request.days,
+                request.durationDays
+            );
+
+
+        const totalProfit =
+            numberValue(
+                request.totalProfit,
+                request.profit,
+                request.total
+            );
+
+
+        const userSnap =
+            await get(
+                ref(
+                    db,
+                    "users/" + uid
+                )
+            );
+
+
+        if (!userSnap.exists()) {
+
+            throw new Error(
+                "User not found."
+            );
+
+        }
+
+
+        const user =
+            userSnap.val() || {};
+
 
         // ==================================
-        // APPROVE REQUEST
-        // ==================================
-
-        await update(
-            requestRef,
-            {
-
-                status:
-                    "approved",
-
-                approvedAt:
-                    Date.now(),
-
-                approvedBy:
-                    currentAdmin.uid
-
-            }
-        );
-
-
-
-        // ==================================
-        // SAVE VIP BUYER INFORMATION
+        // CREATE VIP BUYER
         // ==================================
 
         const buyerRef =
@@ -4468,63 +2823,48 @@ async function(id){
             buyerRef,
             {
 
-                uid:
-                    uid,
+                uid,
 
                 name:
                     request.fullName ||
                     request.name ||
+                    user.fullName ||
+                    user.name ||
                     "",
 
                 email:
                     request.email ||
+                    user.email ||
                     "",
 
                 phone:
                     request.phone ||
                     request.phoneNumber ||
+                    user.phone ||
+                    user.phoneNumber ||
                     "",
 
                 photoURL:
                     request.photoURL ||
                     request.photoUrl ||
                     request.photo ||
+                    user.photoURL ||
+                    user.photo ||
                     "",
 
-                vipName:
-                    request.vipName ||
-                    request.planName ||
-                    request.namePlan ||
-                    request.plan ||
-                    request.vip ||
-                    "VIP Plan",
+                vipName,
 
-                price:
-                    amount,
+                price,
 
-                dailyIncome:
-                    vipNumber(
-                        request.dailyIncome,
-                        request.daily
-                    ),
+                dailyIncome,
 
-                duration:
-                    vipNumber(
-                        request.duration,
-                        request.days
-                    ),
+                duration,
 
-                totalProfit:
-                    vipNumber(
-                        request.totalProfit,
-                        request.profit
-                    ),
+                totalProfit,
 
-                requestId:
-                    id,
+                requestId: id,
 
-                status:
-                    "active",
+                status: "active",
 
                 approvedAt:
                     Date.now(),
@@ -4536,32 +2876,43 @@ async function(id){
         );
 
 
+        // ==================================
+        // REQUEST APPROVED
+        // ==================================
+
+        await update(
+            requestRef,
+            {
+
+                status: "approved",
+
+                approvedAt:
+                    Date.now(),
+
+                approvedBy:
+                    currentAdmin.uid
+
+            }
+        );
+
 
         // ==================================
         // TRANSACTION
         // ==================================
 
-        const transactionRef =
-            push(
-                ref(
-                    db,
-                    "transactions"
-                )
-            );
-
-
         await set(
-            transactionRef,
+            push(
+                ref(db, "transactions")
+            ),
             {
 
-                uid:
-                    uid,
+                uid,
 
                 type:
                     "vip_purchase",
 
                 amount:
-                    amount,
+                    price,
 
                 status:
                     "approved",
@@ -4579,141 +2930,114 @@ async function(id){
         );
 
 
-
         alert(
             "VIP Approved Successfully"
         );
 
 
-        loadVipRequests();
-
-
-        if(window.loadDashboard){
-
-            window.loadDashboard();
-
-        }
-
     }
-    catch(error){
+    catch (error) {
 
         console.error(
-            "Approve VIP error:",
+            "VIP approval error:",
             error
         );
 
 
-        alert(
-            "Approve VIP failed: " +
-            error.message
+        await update(
+            requestRef,
+            {
+                status: "pending"
+            }
         );
 
 
-        loadVipRequests();
+        alert(
+            "VIP approval failed: " +
+            error.message
+        );
 
     }
 
-};
-
+}
 
 
 // ======================================
-// REJECT VIP REQUEST
+// REJECT VIP
 // ======================================
 
-window.rejectVipRequest =
-async function(id){
+async function rejectVipRequest(id) {
 
-    try{
-
-        if(!id){
-
-            alert(
-                "VIP request ID is missing."
-            );
-
-            return;
-
-        }
+    if (!currentAdmin) return;
 
 
-        if(
-            !currentAdmin ||
-            !currentAdmin.uid
-        ){
-
-            alert(
-                "Admin session is not ready."
-            );
-
-            return;
-
-        }
+    const requestRef =
+        ref(
+            db,
+            "vipPurchaseRequests/" + id
+        );
 
 
+    const claim =
+        await runTransaction(
+            requestRef,
+            current => {
 
-        const requestRef =
-            ref(
-                db,
-                "vipPurchaseRequests/" + id
-            );
-
-
-        const snap =
-            await get(requestRef);
+                if (!current) return;
 
 
-        if(!snap.exists()){
+                const status =
+                    String(
+                        current.status ||
+                        "pending"
+                    ).toLowerCase();
 
-            alert(
-                "VIP request not found."
-            );
 
-            return;
+                if (status !== "pending") {
+                    return;
+                }
 
-        }
 
+                return {
+
+                    ...current,
+
+                    status: "processing",
+
+                    processingAt:
+                        Date.now(),
+
+                    processingBy:
+                        currentAdmin.uid
+
+                };
+
+            }
+        );
+
+
+    if (!claim.committed) {
+
+        alert(
+            "VIP request already processed."
+        );
+
+        return;
+
+    }
+
+
+    try {
 
         const request =
-            snap.val() || {};
+            claim.snapshot.val();
 
-
-
-        // ==================================
-        // ONLY PENDING
-        // ==================================
-
-        const status =
-            String(
-                request.status ||
-                "pending"
-            ).toLowerCase();
-
-
-        if(status !== "pending"){
-
-            alert(
-                "VIP request already processed."
-            );
-
-            loadVipRequests();
-
-            return;
-
-        }
-
-
-
-        // ==================================
-        // REJECT
-        // ==================================
 
         await update(
             requestRef,
             {
 
-                status:
-                    "rejected",
+                status: "rejected",
 
                 rejectedAt:
                     Date.now(),
@@ -4725,22 +3049,10 @@ async function(id){
         );
 
 
-
-        // ==================================
-        // TRANSACTION
-        // ==================================
-
-        const transactionRef =
-            push(
-                ref(
-                    db,
-                    "transactions"
-                )
-            );
-
-
         await set(
-            transactionRef,
+            push(
+                ref(db, "transactions")
+            ),
             {
 
                 uid:
@@ -4753,7 +3065,7 @@ async function(id){
                     "vip_purchase",
 
                 amount:
-                    vipNumber(
+                    numberValue(
                         request.price,
                         request.vipPrice,
                         request.amount
@@ -4775,50 +3087,60 @@ async function(id){
         );
 
 
-
         alert(
-            "VIP Request Rejected Successfully"
+            "VIP Rejected Successfully"
         );
 
-
-        loadVipRequests();
-
-
-        if(window.loadDashboard){
-
-            window.loadDashboard();
-
-        }
-
     }
-    catch(error){
+    catch (error) {
 
         console.error(
-            "Reject VIP error:",
+            "VIP rejection error:",
             error
         );
 
 
-        alert(
-            "Reject VIP failed: " +
-            error.message
+        await update(
+            requestRef,
+            {
+                status: "pending"
+            }
         );
 
 
-        loadVipRequests();
+        alert(
+            "VIP rejection failed: " +
+            error.message
+        );
 
     }
 
-};
+}
 
 
+window.approveVipRequest =
+    approveVipRequest;
 
+window.rejectVipRequest =
+    rejectVipRequest;
+
+
+console.log(
+    "ADMIN PART 7 READY"
+);
 // ======================================
-// VIP BUYERS LIST
-// APPROVED VIP USERS
+// ADMIN.JS - PART 8
+// VIP BUYERS
+// APPROVED VIP USERS ONLY
 // ======================================
 
-function loadVipBuyers(){
+
+function loadVipBuyers() {
+
+    if (!window.adminState?.ready) {
+        return;
+    }
+
 
     const list =
         document.getElementById(
@@ -4826,47 +3148,67 @@ function loadVipBuyers(){
         );
 
 
-    if(!list){
-
-        console.log(
-            "vipBuyerList not found - using VIP requests list."
+    const empty =
+        document.getElementById(
+            "emptyVipBuyer"
         );
 
-        return;
 
-    }
+    if (!list) return;
 
 
     onValue(
-        ref(db,"vipBuyers"),
-        (snapshot)=>{
+        ref(db, "vipBuyers"),
+        snapshot => {
 
             list.innerHTML = "";
 
 
-            if(!snapshot.exists()){
+            if (!snapshot.exists()) {
 
-                list.innerHTML = `
+                empty &&
+                    (empty.style.display = "block");
 
-                    <div class="empty-state">
 
-                        <i class="fa-solid fa-crown"></i>
+                updateText(
+                    "vipBuyerTotalCount",
+                    0
+                );
 
-                        <h3>
-                            No VIP Buyers
-                        </h3>
+                updateText(
+                    "vipBuyerActiveCount",
+                    0
+                );
 
-                        <p>
-                            Approved VIP buyers will appear here.
-                        </p>
+                updateText(
+                    "vipBuyerExpiredCount",
+                    0
+                );
 
-                    </div>
 
-                `;
+                if (!empty) {
+
+                    list.innerHTML = `
+                        <div class="empty-state">
+                            <i class="fa-solid fa-crown"></i>
+                            <h3>No VIP Buyers</h3>
+                            <p>
+                                Approved VIP buyers
+                                will appear here.
+                            </p>
+                        </div>
+                    `;
+
+                }
+
 
                 return;
 
             }
+
+
+            empty &&
+                (empty.style.display = "none");
 
 
             const buyers =
@@ -4875,17 +3217,66 @@ function loadVipBuyers(){
                 ).reverse();
 
 
+            let active = 0;
+            let expired = 0;
+
+
             buyers.forEach(
-                ([id,buyer])=>{
+                ([id, buyer]) => {
 
                     const item =
                         buyer || {};
 
 
-                    const card =
-                        document.createElement(
-                            "div"
+                    const duration =
+                        Number(
+                            item.duration || 0
                         );
+
+
+                    const start =
+                        Number(
+                            item.approvedAt ||
+                            item.startDate ||
+                            item.createdAt ||
+                            0
+                        );
+
+
+                    let isExpired =
+                        String(
+                            item.status ||
+                            "active"
+                        ).toLowerCase()
+                        === "expired";
+
+
+                    if (
+                        !isExpired &&
+                        duration > 0 &&
+                        start > 0
+                    ) {
+
+                        isExpired =
+                            Date.now() >
+                            start +
+                            (
+                                duration *
+                                24 *
+                                60 *
+                                60 *
+                                1000
+                            );
+
+                    }
+
+
+                    if (isExpired) {
+                        expired++;
+                    }
+                    else {
+                        active++;
+                    }
 
 
                     const photo =
@@ -4900,11 +3291,10 @@ function loadVipBuyers(){
                         ?
 
                         `
-
                         <img
                             src="${escapeHTML(photo)}"
-                            alt="VIP Buyer"
                             class="vip-user-photo"
+                            alt="VIP Buyer"
                             onerror="
                                 this.style.display='none';
                                 this.nextElementSibling.style.display='flex';
@@ -4915,24 +3305,23 @@ function loadVipBuyers(){
                             class="vip-user-avatar"
                             style="display:none;"
                         >
-
                             <i class="fa-solid fa-user"></i>
-
                         </div>
-
                         `
 
                         :
 
                         `
-
                         <div class="vip-user-avatar">
-
                             <i class="fa-solid fa-user"></i>
-
                         </div>
-
                         `;
+
+
+                    const card =
+                        document.createElement(
+                            "div"
+                        );
 
 
                     card.className =
@@ -4944,18 +3333,22 @@ function loadVipBuyers(){
                         <div class="request-top">
 
                             <h3>
-
                                 <i class="fa-solid fa-crown"></i>
-
                                 VIP Buyer
-
                             </h3>
 
-
-                            <span class="status approved">
-
-                                Active
-
+                            <span
+                                class="status ${
+                                    isExpired
+                                    ? "expired"
+                                    : "approved"
+                                }"
+                            >
+                                ${
+                                    isExpired
+                                    ? "Expired"
+                                    : "Active"
+                                }
                             </span>
 
                         </div>
@@ -4973,12 +3366,10 @@ function loadVipBuyers(){
                             <div class="vip-profile-name">
 
                                 <h4>
-
                                     ${escapeHTML(
                                         item.name ||
                                         "Unknown User"
                                     )}
-
                                 </h4>
 
                                 <span>
@@ -4990,83 +3381,85 @@ function loadVipBuyers(){
                         </div>
 
 
-                        <p>
+                        <div class="user-profile-box">
 
-                            <strong>
-                                Email:
-                            </strong>
+                            <p>
+                                <strong>Name:</strong>
+                                ${escapeHTML(
+                                    item.name || "-"
+                                )}
+                            </p>
 
-                            ${escapeHTML(
-                                item.email || "-"
-                            )}
+                            <p>
+                                <strong>Email:</strong>
+                                ${escapeHTML(
+                                    item.email || "-"
+                                )}
+                            </p>
 
-                        </p>
+                            <p>
+                                <strong>Phone:</strong>
+                                ${escapeHTML(
+                                    item.phone || "-"
+                                )}
+                            </p>
 
+                            <p>
+                                <strong>User ID:</strong>
+                                ${escapeHTML(
+                                    item.uid || "-"
+                                )}
+                            </p>
 
-                        <p>
-
-                            <strong>
-                                Phone:
-                            </strong>
-
-                            ${escapeHTML(
-                                item.phone || "-"
-                            )}
-
-                        </p>
-
-
-                        <p>
-
-                            <strong>
-                                VIP Plan:
-                            </strong>
-
-                            ${escapeHTML(
-                                item.vipName ||
-                                "VIP Plan"
-                            )}
-
-                        </p>
+                        </div>
 
 
-                        <p>
+                        <div class="withdraw-info">
 
-                            <strong>
-                                Price:
-                            </strong>
+                            <p>
+                                <strong>VIP Plan:</strong>
+                                ${escapeHTML(
+                                    item.vipName ||
+                                    "VIP Plan"
+                                )}
+                            </p>
 
-                            ${Number(
-                                item.price || 0
-                            ).toLocaleString()} RWF
+                            <p>
+                                <strong>Price:</strong>
+                                ${Number(
+                                    item.price || 0
+                                ).toLocaleString()} RWF
+                            </p>
 
-                        </p>
+                            <p>
+                                <strong>Daily Income:</strong>
+                                ${Number(
+                                    item.dailyIncome || 0
+                                ).toLocaleString()} RWF
+                            </p>
 
+                            <p>
+                                <strong>Duration:</strong>
+                                ${duration} Days
+                            </p>
 
-                        <p>
+                            <p>
+                                <strong>Total Profit:</strong>
+                                ${Number(
+                                    item.totalProfit || 0
+                                ).toLocaleString()} RWF
+                            </p>
 
-                            <strong>
-                                Daily Income:
-                            </strong>
+                            <p>
+                                <strong>Approved Date:</strong>
+                                ${escapeHTML(
+                                    formatVipDate(
+                                        item.approvedAt
+                                    )
+                                )}
+                            </p>
 
-                            ${Number(
-                                item.dailyIncome || 0
-                            ).toLocaleString()} RWF
-
-                        </p>
-
-
-                        <p>
-
-                            <strong>
-                                Duration:
-                            </strong>
-
-                            ${Number(
-                                item.duration || 0
-                            )} Days
-
-                        </p>
+                        </div>
 
                     `;
 
@@ -5076,64 +3469,43 @@ function loadVipBuyers(){
                 }
             );
 
-        },
 
-        (error)=>{
+            updateText(
+                "vipBuyerTotalCount",
+                buyers.length
+            );
 
-            console.error(
-                "VIP buyers error:",
-                error
+
+            updateText(
+                "vipBuyerActiveCount",
+                active
+            );
+
+
+            updateText(
+                "vipBuyerExpiredCount",
+                expired
+            );
+
+
+            console.log(
+                "VIP Buyers loaded:",
+                buyers.length
             );
 
         }
-
     );
 
 }
-
-
-
-// ======================================
-// EXPORTS
-// ======================================
-
-window.loadVipRequests =
-    loadVipRequests;
 
 
 window.loadVipBuyers =
     loadVipBuyers;
 
 
-
-// ======================================
-// START
-// ======================================
-
 console.log(
-    "Admin Part 7 VIP Requests + VIP Buyers Ready"
+    "ADMIN PART 8 READY"
 );
 
-
-
-// ======================================
-// START AFTER ADMIN AUTH
-// ======================================
-
-if(
-    window.adminState &&
-    window.adminState.ready
-){
-
-    loadVipRequests();
-
-    loadVipBuyers();
-
-}             
-
-
-console.log(
-    "VIP Request List Started"
-);
 
 
