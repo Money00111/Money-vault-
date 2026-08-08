@@ -1,134 +1,59 @@
+
+
 // ======================================
 // ADMIN.JS - PART 4
-// QUICK ACTIONS SYSTEM
+// QUICK ACTIONS
 // ======================================
 
-
-// ================================
-// GO TO PAGE
-// ================================
-
 function goToPage(page){
-
-    if(typeof openPage === "function"){
-
-        openPage(page);
-
-    }
-
+    openPage(page);
 }
 
-
-
-// ================================
-// REFRESH DASHBOARD
-// ================================
-
-document
-.getElementById("refreshDashboard")
-?.addEventListener("click",()=>{
-
-    if(window.loadDashboard){
-
-        window.loadDashboard();
-
-    }
-
+document.getElementById("refreshDashboard")?.addEventListener("click", () => {
+    loadDashboard();
 });
 
-
-
-document
-.getElementById("refreshDashboardQuick")
-?.addEventListener("click",()=>{
-
-    if(window.loadDashboard){
-
-        window.loadDashboard();
-
-    }
-
+document.getElementById("refreshDashboardQuick")?.addEventListener("click", () => {
+    loadDashboard();
 });
 
-
-
-
-// ================================
-// QUICK ACTION BUTTONS
-// ================================
-
-
-document
-.getElementById("openDeposits")
-?.addEventListener("click",()=>{
-
+document.getElementById("openDeposits")?.addEventListener("click", () => {
     goToPage("deposits");
-
 });
 
-
-
-document
-.getElementById("openWithdraws")
-?.addEventListener("click",()=>{
-
+document.getElementById("openWithdraws")?.addEventListener("click", () => {
     goToPage("withdraws");
-
 });
 
-
-
-document
-.getElementById("openUsers")
-?.addEventListener("click",()=>{
-
+document.getElementById("openUsers")?.addEventListener("click", () => {
     goToPage("users");
-
 });
 
-
-
-document
-.getElementById("openTransactions")
-?.addEventListener("click",()=>{
-
+document.getElementById("openTransactions")?.addEventListener("click", () => {
     goToPage("transactions");
-
 });
 
-
-
-document
-.getElementById("openVipRequests")
-?.addEventListener("click",()=>{
-
-    goToPage("vipRequests");
-
-});
-
-
-
-document
-.getElementById("openSettings")
-?.addEventListener("click",()=>{
-
+document.getElementById("openSettings")?.addEventListener("click", () => {
     goToPage("settings");
-
 });
 
+document.getElementById("openVipRequests")?.addEventListener("click", () => {
+    goToPage("vipRequests");
+});
 
+document.getElementById("openUsersBtn")?.addEventListener("click", () => {
+    goToPage("users");
+});
 
+document.getElementById("openTransactionsBtn")?.addEventListener("click", () => {
+    goToPage("transactions");
+});
 
-// ================================
-// EXPORT
-// ================================
+document.getElementById("openSettingsBtn")?.addEventListener("click", () => {
+    goToPage("settings");
+});
 
-window.goToPage = goToPage;
-
-
-console.log(
-"Admin Part 4 Quick Actions Ready"
-);
+console.log("Quick Actions Ready");
 
 // ======================================
 // ADMIN.JS - PART 5
