@@ -3084,224 +3084,107 @@ console.log(
 );
 
 
-
 // ======================================
 // ADMIN.JS - PART 7
 // VIP APPROVE + REJECT
-// SAFE / ONCE ONLY / ROBUST DURATION
+// FIXED DURATION + SAFE ONCE ONLY
 // ======================================
 
 
 // ======================================
-// VIP NUMBER PARSER
-// Handles:
-// 2500
-// "2500"
-// "2,500"
-// "2500 RWF"
+// GET VIP DURATION
 // ======================================
 
-function parseVipNumber(...values) {
+function getVipDuration(request) {
 
-    for (const value of values) {
+    const item = request || {};
+
+
+    // ----------------------------------
+    // 1. TRY ALL COMMON DURATION FIELDS
+    // ----------------------------------
+
+    const directDuration = numberValue(
+        item.duration,
+        item.days,
+        item.durationDays,
+        item.vipDuration,
+        item.planDuration
+    );
+
+
+    if (directDuration > 0) {
+
+        return directDuration;
+
+    }
+
+
+    // ----------------------------------
+    // 2. CALCULATE FROM TOTAL PROFIT
+    // ----------------------------------
+
+    const dailyIncome = numberValue(
+        item.dailyIncome,
+        item.daily,
+        item.dailyProfit
+    );
+
+
+    const totalProfit = numberValue(
+        item.totalProfit,
+        item.profit,
+        item.total
+    );
+
+
+    if (
+        dailyIncome > 0 &&
+        totalProfit > 0
+    ) {
+
+        const calculated =
+            totalProfit / dailyIncome;
+
 
         if (
-            value === null ||
-            value === undefined ||
-            value === ""
-        ) {
-            continue;
-        }
-
-
-        const cleaned =
-            String(value)
-                .replace(/,/g, "")
-                .replace(/RWF/gi, "")
-                .trim();
-
-
-        const number =
-            Number(cleaned);
-
-
-        if (
-            Number.isFinite(number) &&
-            number > 0
+            Number.isFinite(calculated) &&
+            calculated > 0
         ) {
 
-            return number;
+            return Math.round(calculated);
 
         }
 
     }
 
 
-    return 0;
-
-}
-
-
-// ======================================
-// VIP DURATION PARSER
-//
-// Handles:
-// 3
-// "3"
-// "3 Days"
-// "3 days"
-// "3 DAY"
-// "3days"
-// "Duration: 3 Days"
-// ======================================
-
-function parseVipDuration(...values) {
-
-    for (const value of values) {
-
-        if (
-            value === null ||
-            value === undefined ||
-            value === ""
-        ) {
-            continue;
-        }
-
-
-        // ------------------------------
-        // Already a number
-        // ------------------------------
-
-        if (
-            typeof value === "number" &&
-            Number.isFinite(value) &&
-            value > 0
-        ) {
-
-            return Math.floor(value);
-
-        }
-
-
-        // ------------------------------
-        // String
-        // ------------------------------
-
-        const text =
-            String(value)
-                .trim()
-                .toLowerCase();
-
-
-        if (!text) {
-            continue;
-        }
-
-
-        // Find first number inside text
-        //
-        // Examples:
-        // "3 days" -> 3
-        // "7 day"  -> 7
-        // "duration: 14 days" -> 14
-        // "30" -> 30
-        //
-
-        const match =
-            text.match(/(\d+(?:\.\d+)?)/);
-
-
-        if (match) {
-
-            const number =
-                Number(match[1]);
-
-
-            if (
-                Number.isFinite(number) &&
-                number > 0
-            ) {
-
-                return Math.floor(number);
-
-            }
-
-        }
-
-    }
-
+    // ----------------------------------
+    // 3. NOTHING FOUND
+    // ----------------------------------
 
     return 0;
-
-}
-
-
-// ======================================
-// GET VIP USER ID
-// ======================================
-
-function getVipUid(request) {
-
-    return (
-        request?.uid ||
-        request?.userId ||
-        request?.userUID ||
-        request?.userUid ||
-        ""
-    );
-
-}
-
-
-// ======================================
-// GET VIP NAME
-// ======================================
-
-function getVipName(request) {
-
-    return (
-        request?.vipName ||
-        request?.planName ||
-        request?.namePlan ||
-        request?.vipPlan ||
-        request?.plan ||
-        request?.vip ||
-        "VIP Plan"
-    );
 
 }
 
 
 // ======================================
 // APPROVE VIP REQUEST
-// SAFE - ONCE ONLY
 // ======================================
 
 async function approveVipRequest(id) {
 
-    // ==================================
-    // ADMIN CHECK
-    // ==================================
-
     if (!currentAdmin) {
 
-        alert(
-            "Admin session not ready."
-        );
+        alert("Admin session not ready.");
 
         return;
     }
 
 
-    // ==================================
-    // REQUEST ID CHECK
-    // ==================================
-
     if (!id) {
 
-        alert(
-            "Invalid VIP request."
-        );
+        alert("Invalid VIP request.");
 
         return;
     }
@@ -3315,18 +3198,10 @@ async function approveVipRequest(id) {
 
 
     // ==================================
-    // STEP 1
     // CLAIM REQUEST
-    //
-    // pending -> processing
-    //
-    // This prevents:
-    // - double click
-    // - two admins approving together
     // ==================================
 
     let claim;
-
 
     try {
 
@@ -3344,13 +3219,10 @@ async function approveVipRequest(id) {
                         String(
                             current.status ||
                             "pending"
-                        )
-                        .trim()
-                        .toLowerCase();
+                        ).toLowerCase();
 
 
                     // ONLY PENDING
-                    // CAN BE APPROVED
 
                     if (status !== "pending") {
                         return;
@@ -3390,6 +3262,7 @@ async function approveVipRequest(id) {
         );
 
         return;
+
     }
 
 
@@ -3404,6 +3277,7 @@ async function approveVipRequest(id) {
         );
 
         return;
+
     }
 
 
@@ -3418,7 +3292,10 @@ async function approveVipRequest(id) {
         // ==================================
 
         const uid =
-            getVipUid(request);
+            request.uid ||
+            request.userId ||
+            request.userUID ||
+            "";
 
 
         if (!uid) {
@@ -3435,7 +3312,12 @@ async function approveVipRequest(id) {
         // ==================================
 
         const vipName =
-            getVipName(request);
+            request.vipName ||
+            request.planName ||
+            request.namePlan ||
+            request.plan ||
+            request.vip ||
+            "VIP Plan";
 
 
         // ==================================
@@ -3443,11 +3325,10 @@ async function approveVipRequest(id) {
         // ==================================
 
         const price =
-            parseVipNumber(
+            numberValue(
                 request.price,
                 request.vipPrice,
-                request.amount,
-                request.vipAmount
+                request.amount
             );
 
 
@@ -3456,65 +3337,50 @@ async function approveVipRequest(id) {
         // ==================================
 
         const dailyIncome =
-            parseVipNumber(
+            numberValue(
                 request.dailyIncome,
                 request.daily,
-                request.dailyProfit,
-                request.dailyAmount
+                request.dailyProfit
             );
 
 
         // ==================================
         // DURATION
-        //
-        // IMPORTANT:
-        // Supports "3 Days"
+        // FIXED
         // ==================================
 
         const duration =
-            parseVipDuration(
-                request.duration,
-                request.days,
-                request.durationDays,
-                request.vipDuration
-            );
+            getVipDuration(request);
 
 
         // ==================================
         // TOTAL PROFIT
         // ==================================
 
-        const totalProfit =
-            parseVipNumber(
+        let totalProfit =
+            numberValue(
                 request.totalProfit,
                 request.profit,
-                request.total,
-                request.profitAmount
+                request.total
             );
 
 
         // ==================================
-        // DEBUG
+        // IF TOTAL PROFIT MISSING
+        // CALCULATE IT
         // ==================================
 
-        console.log(
-            "VIP APPROVAL DATA:",
-            {
-                requestId: id,
-                uid,
-                vipName,
-                price,
-                dailyIncome,
-                duration,
-                totalProfit,
-                originalDuration:
-                    request.duration,
-                originalDays:
-                    request.days,
-                originalDurationDays:
-                    request.durationDays
-            }
-        );
+        if (
+            totalProfit <= 0 &&
+            dailyIncome > 0 &&
+            duration > 0
+        ) {
+
+            totalProfit =
+                dailyIncome *
+                duration;
+
+        }
 
 
         // ==================================
@@ -3542,7 +3408,7 @@ async function approveVipRequest(id) {
         if (duration <= 0) {
 
             throw new Error(
-                "Invalid VIP duration."
+                "Invalid VIP duration. Please check the VIP plan duration."
             );
 
         }
@@ -3552,15 +3418,13 @@ async function approveVipRequest(id) {
         // GET USER
         // ==================================
 
-        const userRef =
-            ref(
-                db,
-                "users/" + uid
-            );
-
-
         const userSnap =
-            await get(userRef);
+            await get(
+                ref(
+                    db,
+                    "users/" + uid
+                )
+            );
 
 
         if (!userSnap.exists()) {
@@ -3587,7 +3451,7 @@ async function approveVipRequest(id) {
             user.fullName ||
             user.name ||
             user.username ||
-            "Unknown User";
+            "";
 
 
         const buyerEmail =
@@ -3617,7 +3481,7 @@ async function approveVipRequest(id) {
 
 
         // ==================================
-        // CREATE VIP BUYER KEY
+        // CREATE VIP BUYER ID
         // ==================================
 
         const buyerKey =
@@ -3639,7 +3503,7 @@ async function approveVipRequest(id) {
 
 
         // ==================================
-        // CREATE TRANSACTION KEY
+        // CREATE TRANSACTION ID
         // ==================================
 
         const transactionKey =
@@ -3660,24 +3524,20 @@ async function approveVipRequest(id) {
         }
 
 
-        // ==================================
-        // TIME
-        // ==================================
-
         const now =
             Date.now();
 
 
         // ==================================
-        // BUILD ATOMIC UPDATE
+        // ATOMIC UPDATE
         // ==================================
 
         const updates = {};
 
 
-        // ==================================
+        // ----------------------------------
         // VIP BUYER
-        // ==================================
+        // ----------------------------------
 
         updates[
             "vipBuyers/" + buyerKey
@@ -3716,18 +3576,15 @@ async function approveVipRequest(id) {
             approvedAt:
                 now,
 
-            startDate:
-                now,
-
             approvedBy:
                 currentAdmin.uid
 
         };
 
 
-        // ==================================
-        // UPDATE REQUEST
-        // ==================================
+        // ----------------------------------
+        // REQUEST
+        // ----------------------------------
 
         updates[
             "vipPurchaseRequests/" + id
@@ -3737,6 +3594,18 @@ async function approveVipRequest(id) {
 
             status:
                 "approved",
+
+            // SAVE THE CORRECT DURATION
+            duration,
+
+            // ALSO SAVE THESE FOR COMPATIBILITY
+            days:
+                duration,
+
+            durationDays:
+                duration,
+
+            totalProfit,
 
             approvedAt:
                 now,
@@ -3750,9 +3619,9 @@ async function approveVipRequest(id) {
         };
 
 
-        // ==================================
+        // ----------------------------------
         // TRANSACTION
-        // ==================================
+        // ----------------------------------
 
         updates[
             "transactions/" + transactionKey
@@ -3778,16 +3647,6 @@ async function approveVipRequest(id) {
             vipBuyerId:
                 buyerKey,
 
-            vipName,
-
-            price,
-
-            dailyIncome,
-
-            duration,
-
-            totalProfit,
-
             approvedBy:
                 currentAdmin.uid,
 
@@ -3798,7 +3657,7 @@ async function approveVipRequest(id) {
 
 
         // ==================================
-        // ONE ATOMIC FIREBASE WRITE
+        // WRITE EVERYTHING AT ONCE
         // ==================================
 
         await update(
@@ -3812,18 +3671,21 @@ async function approveVipRequest(id) {
         // ==================================
 
         alert(
-            "VIP Approved Successfully"
+            "VIP Approved Successfully\n\n" +
+            "VIP: " + vipName +
+            "\nDuration: " + duration + " Days"
         );
 
 
         console.log(
-            "VIP APPROVED SUCCESS:",
+            "VIP APPROVED:",
             {
                 requestId: id,
                 uid,
                 vipBuyerId: buyerKey,
-                transactionId: transactionKey,
-                duration
+                duration,
+                totalProfit,
+                transactionId: transactionKey
             }
         );
 
@@ -3836,9 +3698,9 @@ async function approveVipRequest(id) {
         );
 
 
-        // ==================================
+        // ----------------------------------
         // RETURN REQUEST TO PENDING
-        // ==================================
+        // ----------------------------------
 
         try {
 
@@ -3881,14 +3743,10 @@ async function approveVipRequest(id) {
 
 // ======================================
 // REJECT VIP REQUEST
-// SAFE - ONCE ONLY
+// SAFE / ONCE ONLY
 // ======================================
 
 async function rejectVipRequest(id) {
-
-    // ==================================
-    // ADMIN CHECK
-    // ==================================
 
     if (!currentAdmin) {
 
@@ -3899,10 +3757,6 @@ async function rejectVipRequest(id) {
         return;
     }
 
-
-    // ==================================
-    // ID CHECK
-    // ==================================
 
     if (!id) {
 
@@ -3923,11 +3777,9 @@ async function rejectVipRequest(id) {
 
     // ==================================
     // CLAIM
-    // pending -> processing
     // ==================================
 
     let claim;
-
 
     try {
 
@@ -3945,9 +3797,7 @@ async function rejectVipRequest(id) {
                         String(
                             current.status ||
                             "pending"
-                        )
-                        .trim()
-                        .toLowerCase();
+                        ).toLowerCase();
 
 
                     if (status !== "pending") {
@@ -3988,12 +3838,9 @@ async function rejectVipRequest(id) {
         );
 
         return;
+
     }
 
-
-    // ==================================
-    // CLAIM FAILED
-    // ==================================
 
     if (!claim.committed) {
 
@@ -4002,6 +3849,7 @@ async function rejectVipRequest(id) {
         );
 
         return;
+
     }
 
 
@@ -4011,30 +3859,24 @@ async function rejectVipRequest(id) {
 
     try {
 
-        // ==================================
-        // UID
-        // ==================================
-
         const uid =
-            getVipUid(request);
+            request.uid ||
+            request.userId ||
+            request.userUID ||
+            "";
 
-
-        // ==================================
-        // AMOUNT
-        // ==================================
 
         const amount =
-            parseVipNumber(
+            numberValue(
                 request.price,
                 request.vipPrice,
-                request.amount,
-                request.vipAmount
+                request.amount
             );
 
 
-        // ==================================
-        // TRANSACTION KEY
-        // ==================================
+        const now =
+            Date.now();
+
 
         const transactionKey =
             push(
@@ -4054,23 +3896,11 @@ async function rejectVipRequest(id) {
         }
 
 
-        // ==================================
-        // TIME
-        // ==================================
-
-        const now =
-            Date.now();
-
-
-        // ==================================
-        // ATOMIC UPDATE
-        // ==================================
-
         const updates = {};
 
 
         // ----------------------------------
-        // REQUEST
+        // REJECT REQUEST
         // ----------------------------------
 
         updates[
@@ -4125,7 +3955,7 @@ async function rejectVipRequest(id) {
 
 
         // ==================================
-        // WRITE
+        // ATOMIC WRITE
         // ==================================
 
         await update(
@@ -4134,10 +3964,6 @@ async function rejectVipRequest(id) {
         );
 
 
-        // ==================================
-        // SUCCESS
-        // ==================================
-
         alert(
             "VIP Rejected Successfully"
         );
@@ -4145,7 +3971,11 @@ async function rejectVipRequest(id) {
 
         console.log(
             "VIP REJECTED:",
-            id
+            {
+                requestId: id,
+                uid,
+                transactionId: transactionKey
+            }
         );
 
     }
@@ -4156,10 +3986,6 @@ async function rejectVipRequest(id) {
             error
         );
 
-
-        // ==================================
-        // ROLLBACK
-        // ==================================
 
         try {
 
@@ -4212,12 +4038,16 @@ window.rejectVipRequest =
     rejectVipRequest;
 
 
+window.getVipDuration =
+    getVipDuration;
+
+
 // ======================================
 // PART 7 READY
 // ======================================
 
 console.log(
-    "ADMIN PART 7 READY - VIP APPROVE/REJECT"
+    "ADMIN PART 7 READY - DURATION FIXED"
 );
 
 
