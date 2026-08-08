@@ -444,6 +444,17 @@ window.adminState = {
 
 };
 
+loadDashboard();
+loadDeposits();
+loadWithdraws();
+
+if(window.loadVipRequests){
+window.loadVipRequests();
+}
+
+if(window.loadVipBuyers){
+window.loadVipBuyers();
+    }
 
 
 // ======================================
@@ -453,6 +464,8 @@ window.adminState = {
 console.log(
 "Admin Part 1 Ready"
 );
+
+    
 
 // ======================================
 // ADMIN.JS - PART 2
