@@ -3446,15 +3446,1340 @@ console.log(
 
 
 
-
 // ======================================
 // ADMIN.JS - PART 7
 // VIP APPROVE + REJECT
+// USER VIP PLAN SYNC FIX
 // SAFE ONCE ONLY
-// DURATION FROM REQUEST OR vipPlans
 // ======================================
 
 
+// ======================================
+// GET VIP DURATION
+// ======================================
+
+async function getVipDuration(request) {
+
+    const item = request || {};
+
+    // ----------------------------------
+    // 1. REQUEST DIRECT DURATION
+    // ----------------------------------
+
+    let duration =
+        numberValue(
+            item.duration,
+            item.days,
+            item.durationDays,
+            item.vipDuration,
+            item.planDuration,
+            item.totalDays
+        );
+
+    if (duration > 0) {
+        return duration;
+    }
+
+
+    // ----------------------------------
+    // 2. FIND PLAN
+    // ----------------------------------
+
+    const plan =
+        await findVipPlan(item);
+
+
+    duration =
+        numberValue(
+            plan.duration,
+            plan.days,
+            plan.durationDays,
+            plan.vipDuration,
+            plan.planDuration,
+            plan.totalDays
+        );
+
+
+    if (duration > 0) {
+        return duration;
+    }
+
+
+    // ----------------------------------
+    // 3. CALCULATE FROM PROFIT
+    // ----------------------------------
+
+    const dailyIncome =
+        numberValue(
+            item.dailyIncome,
+            item.daily,
+            item.dailyProfit,
+            plan.dailyIncome,
+            plan.daily,
+            plan.dailyProfit
+        );
+
+
+    const totalProfit =
+        numberValue(
+            item.totalProfit,
+            item.profit,
+            item.total,
+            plan.totalProfit,
+            plan.profit,
+            plan.total
+        );
+
+
+    if (
+        dailyIncome > 0 &&
+        totalProfit > 0
+    ) {
+
+        const calculated =
+            totalProfit / dailyIncome;
+
+
+        if (
+            Number.isFinite(calculated) &&
+            calculated > 0
+        ) {
+
+            return Math.round(calculated);
+
+        }
+
+    }
+
+
+    return 0;
+
+}
+
+
+// ======================================
+// APPROVE VIP REQUEST
+// ======================================
+
+async function approveVipRequest(id) {
+
+    if (!currentAdmin) {
+
+        alert(
+            "Admin session not ready."
+        );
+
+        return;
+
+    }
+
+
+    if (!id) {
+
+        alert(
+            "Invalid VIP request."
+        );
+
+        return;
+
+    }
+
+
+    const requestRef =
+        ref(
+            db,
+            "vipPurchaseRequests/" + id
+        );
+
+
+    // ==================================
+    // STEP 1
+    // CLAIM REQUEST
+    // ==================================
+
+    let claim;
+
+    try {
+
+        claim =
+            await runTransaction(
+                requestRef,
+                current => {
+
+                    if (!current) {
+                        return;
+                    }
+
+
+                    const status =
+                        String(
+                            current.status ||
+                            "pending"
+                        ).toLowerCase();
+
+
+                    // ONLY PENDING
+                    if (
+                        status !== "pending"
+                    ) {
+
+                        return;
+
+                    }
+
+
+                    return {
+
+                        ...current,
+
+                        status:
+                            "processing",
+
+                        processingAt:
+                            Date.now(),
+
+                        processingBy:
+                            currentAdmin.uid
+
+                    };
+
+                }
+            );
+
+    }
+    catch (error) {
+
+        console.error(
+            "VIP claim error:",
+            error
+        );
+
+
+        alert(
+            "VIP approval failed: " +
+            error.message
+        );
+
+        return;
+
+    }
+
+
+    // ==================================
+    // ALREADY PROCESSED
+    // ==================================
+
+    if (!claim.committed) {
+
+        alert(
+            "This VIP request has already been processed."
+        );
+
+        return;
+
+    }
+
+
+    const request =
+        claim.snapshot.val() || {};
+
+
+    try {
+
+        // ==================================
+        // USER ID
+        // ==================================
+
+        const uid =
+            request.uid ||
+            request.userId ||
+            request.userUID ||
+            "";
+
+
+        if (!uid) {
+
+            throw new Error(
+                "VIP request has no user ID."
+            );
+
+        }
+
+
+        // ==================================
+        // GET VIP PLAN
+        // ==================================
+
+        const plan =
+            await findVipPlan(
+                request
+            );
+
+
+        // ==================================
+        // VIP NAME
+        // ==================================
+
+        const vipName =
+            request.vipName ||
+            request.planName ||
+            request.namePlan ||
+            request.plan ||
+            request.vip ||
+            plan.name ||
+            plan.vipName ||
+            plan.planName ||
+            "VIP Plan";
+
+
+        // ==================================
+        // PRICE
+        // ==================================
+
+        const price =
+            numberValue(
+                request.price,
+                request.vipPrice,
+                request.amount,
+                plan.price,
+                plan.vipPrice
+            );
+
+
+        // ==================================
+        // DAILY INCOME
+        // ==================================
+
+        const dailyIncome =
+            numberValue(
+                request.dailyIncome,
+                request.daily,
+                request.dailyProfit,
+                plan.dailyIncome,
+                plan.daily,
+                plan.dailyProfit
+            );
+
+
+        // ==================================
+        // DURATION
+        // ==================================
+
+        const duration =
+            await getVipDuration(
+                request
+            );
+
+
+        // ==================================
+        // TOTAL PROFIT
+        // ==================================
+
+        let totalProfit =
+            numberValue(
+                request.totalProfit,
+                request.profit,
+                request.total,
+                plan.totalProfit,
+                plan.profit,
+                plan.total
+            );
+
+
+        // ==================================
+        // CALCULATE TOTAL PROFIT
+        // ==================================
+
+        if (
+            totalProfit <= 0 &&
+            dailyIncome > 0 &&
+            duration > 0
+        ) {
+
+            totalProfit =
+                dailyIncome *
+                duration;
+
+        }
+
+
+        // ==================================
+        // VALIDATION
+        // ==================================
+
+        if (
+            !Number.isFinite(price) ||
+            price <= 0
+        ) {
+
+            throw new Error(
+                "Invalid VIP price."
+            );
+
+        }
+
+
+        if (
+            !Number.isFinite(dailyIncome) ||
+            dailyIncome < 0
+        ) {
+
+            throw new Error(
+                "Invalid VIP daily income."
+            );
+
+        }
+
+
+        if (
+            !Number.isFinite(duration) ||
+            duration <= 0
+        ) {
+
+            throw new Error(
+                "VIP duration could not be found. Check vipPlans."
+            );
+
+        }
+
+
+        // ==================================
+        // GET USER
+        // ==================================
+
+        const userRef =
+            ref(
+                db,
+                "users/" + uid
+            );
+
+
+        const userSnap =
+            await get(
+                userRef
+            );
+
+
+        if (!userSnap.exists()) {
+
+            throw new Error(
+                "User not found."
+            );
+
+        }
+
+
+        const user =
+            userSnap.val() || {};
+
+
+        // ==================================
+        // USER INFORMATION
+        // ==================================
+
+        const buyerName =
+            request.fullName ||
+            request.name ||
+            request.username ||
+            user.fullName ||
+            user.name ||
+            user.username ||
+            "";
+
+
+        const buyerEmail =
+            request.email ||
+            user.email ||
+            "";
+
+
+        const buyerPhone =
+            request.phone ||
+            request.phoneNumber ||
+            user.phone ||
+            user.phoneNumber ||
+            "";
+
+
+        const buyerPhoto =
+            request.photoURL ||
+            request.photoUrl ||
+            request.photo ||
+            request.profilePhoto ||
+            user.photoURL ||
+            user.photoUrl ||
+            user.photo ||
+            user.profilePhoto ||
+            "";
+
+
+        // ==================================
+        // CREATE IDs
+        // ==================================
+
+        const buyerKey =
+            push(
+                ref(
+                    db,
+                    "vipBuyers"
+                )
+            ).key;
+
+
+        if (!buyerKey) {
+
+            throw new Error(
+                "Could not create VIP buyer ID."
+            );
+
+        }
+
+
+        // ==================================
+        // USER VIP PURCHASE ID
+        // ==================================
+
+        const userVipKey =
+            push(
+                ref(
+                    db,
+                    "users/" +
+                    uid +
+                    "/vipPlans"
+                )
+            ).key;
+
+
+        if (!userVipKey) {
+
+            throw new Error(
+                "Could not create user VIP plan ID."
+            );
+
+        }
+
+
+        // ==================================
+        // TRANSACTION ID
+        // ==================================
+
+        const transactionKey =
+            push(
+                ref(
+                    db,
+                    "transactions"
+                )
+            ).key;
+
+
+        if (!transactionKey) {
+
+            throw new Error(
+                "Could not create transaction ID."
+            );
+
+        }
+
+
+        const now =
+            Date.now();
+
+
+        // ==================================
+        // START / END DATE
+        // ==================================
+
+        const startDate =
+            now;
+
+
+        const endDate =
+            now +
+            (
+                duration *
+                24 *
+                60 *
+                60 *
+                1000
+            );
+
+
+        // ==================================
+        // USER VIP PLAN
+        // ==================================
+        // THIS IS THE IMPORTANT FIX
+        // USER WILL NOW SEE VIP PLAN
+        // ==================================
+
+        const userVipPlan = {
+
+            id:
+                userVipKey,
+
+            vipId:
+                request.vipPlanId ||
+                request.planId ||
+                request.vipId ||
+                request.packageId ||
+                "",
+
+            vipPlanId:
+                request.vipPlanId ||
+                request.planId ||
+                request.vipId ||
+                request.packageId ||
+                "",
+
+            name:
+                vipName,
+
+            vipName:
+                vipName,
+
+            planName:
+                vipName,
+
+            price:
+                price,
+
+            dailyIncome:
+                dailyIncome,
+
+            totalProfit:
+                totalProfit,
+
+            duration:
+                duration,
+
+            days:
+                duration,
+
+            durationDays:
+                duration,
+
+            totalDays:
+                duration,
+
+            status:
+                "active",
+
+            purchasedAt:
+                now,
+
+            approvedAt:
+                now,
+
+            startDate:
+                startDate,
+
+            endDate:
+                endDate,
+
+            lastClaim:
+                0,
+
+            lastClaimTime:
+                0,
+
+            lastProfitTime:
+                0,
+
+            totalEarned:
+                0,
+
+            earned:
+                0,
+
+            requestId:
+                id,
+
+            vipBuyerId:
+                buyerKey,
+
+            approvedBy:
+                currentAdmin.uid
+
+        };
+
+
+        // ==================================
+        // VIP BUYER FOR ADMIN
+        // ==================================
+
+        const vipBuyer = {
+
+            uid,
+
+            name:
+                buyerName,
+
+            email:
+                buyerEmail,
+
+            phone:
+                buyerPhone,
+
+            photoURL:
+                buyerPhoto,
+
+            vipName,
+
+            price,
+
+            dailyIncome,
+
+            duration,
+
+            days:
+                duration,
+
+            durationDays:
+                duration,
+
+            totalDays:
+                duration,
+
+            totalProfit,
+
+            requestId:
+                id,
+
+            userVipPlanId:
+                userVipKey,
+
+            status:
+                "active",
+
+            purchasedAt:
+                now,
+
+            startDate:
+                startDate,
+
+            endDate:
+                endDate,
+
+            approvedAt:
+                now,
+
+            approvedBy:
+                currentAdmin.uid
+
+        };
+
+
+        // ==================================
+        // UPDATED REQUEST
+        // ==================================
+
+        const approvedRequest = {
+
+            ...request,
+
+            status:
+                "approved",
+
+            vipName,
+
+            price,
+
+            dailyIncome,
+
+            duration,
+
+            days:
+                duration,
+
+            durationDays:
+                duration,
+
+            totalDays:
+                duration,
+
+            totalProfit,
+
+            approvedAt:
+                now,
+
+            approvedBy:
+                currentAdmin.uid,
+
+            vipBuyerId:
+                buyerKey,
+
+            userVipPlanId:
+                userVipKey
+
+        };
+
+
+        // ==================================
+        // TRANSACTION
+        // ==================================
+
+        const transaction = {
+
+            uid,
+
+            type:
+                "vip_purchase",
+
+            amount:
+                price,
+
+            status:
+                "approved",
+
+            reference:
+                id,
+
+            requestId:
+                id,
+
+            vipBuyerId:
+                buyerKey,
+
+            userVipPlanId:
+                userVipKey,
+
+            vipName,
+
+            duration,
+
+            approvedBy:
+                currentAdmin.uid,
+
+            date:
+                now
+
+        };
+
+
+        // ==================================
+        // ATOMIC UPDATES
+        // ==================================
+
+        const updates = {};
+
+
+        // ----------------------------------
+        // ADMIN VIP BUYERS
+        // ----------------------------------
+
+        updates[
+            "vipBuyers/" +
+            buyerKey
+        ] =
+            vipBuyer;
+
+
+        // ----------------------------------
+        // USER VIP PLAN
+        // ----------------------------------
+
+        updates[
+            "users/" +
+            uid +
+            "/vipPlans/" +
+            userVipKey
+        ] =
+            userVipPlan;
+
+
+        // ----------------------------------
+        // REQUEST
+        // ----------------------------------
+
+        updates[
+            "vipPurchaseRequests/" +
+            id
+        ] =
+            approvedRequest;
+
+
+        // ----------------------------------
+        // TRANSACTION
+        // ----------------------------------
+
+        updates[
+            "transactions/" +
+            transactionKey
+        ] =
+            transaction;
+
+
+        // ==================================
+        // ONE ATOMIC WRITE
+        // ==================================
+
+        await update(
+            ref(db),
+            updates
+        );
+
+
+        // ==================================
+        // SUCCESS
+        // ==================================
+
+        alert(
+            "VIP Approved Successfully\n\n" +
+            "VIP: " +
+            vipName +
+            "\nDuration: " +
+            duration +
+            " Days"
+        );
+
+
+        console.log(
+            "VIP APPROVED + USER PLAN CREATED:",
+            {
+
+                requestId:
+                    id,
+
+                uid,
+
+                vipBuyerId:
+                    buyerKey,
+
+                userVipPlanId:
+                    userVipKey,
+
+                duration,
+
+                totalProfit,
+
+                transactionId:
+                    transactionKey
+
+            }
+        );
+
+
+        // ==================================
+        // REFRESH VIP LISTS
+        // ==================================
+
+        if (
+            window.loadVipRequests
+        ) {
+
+            window.loadVipRequests();
+
+        }
+
+
+        if (
+            window.loadVipBuyers
+        ) {
+
+            window.loadVipBuyers();
+
+        }
+
+    }
+    catch (error) {
+
+        console.error(
+            "VIP approval error:",
+            error
+        );
+
+
+        // ==================================
+        // RETURN REQUEST TO PENDING
+        // ==================================
+
+        try {
+
+            await update(
+                requestRef,
+                {
+
+                    status:
+                        "pending",
+
+                    processingAt:
+                        null,
+
+                    processingBy:
+                        null
+
+                }
+            );
+
+        }
+        catch (rollbackError) {
+
+            console.error(
+                "VIP rollback error:",
+                rollbackError
+            );
+
+        }
+
+
+        alert(
+            "VIP approval failed: " +
+            error.message
+        );
+
+    }
+
+}
+
+
+// ======================================
+// REJECT VIP REQUEST
+// SAFE ONCE ONLY
+// ======================================
+
+async function rejectVipRequest(id) {
+
+    if (!currentAdmin) {
+
+        alert(
+            "Admin session not ready."
+        );
+
+        return;
+
+    }
+
+
+    if (!id) {
+
+        alert(
+            "Invalid VIP request."
+        );
+
+        return;
+
+    }
+
+
+    const requestRef =
+        ref(
+            db,
+            "vipPurchaseRequests/" + id
+        );
+
+
+    // ==================================
+    // CLAIM REQUEST
+    // ==================================
+
+    let claim;
+
+    try {
+
+        claim =
+            await runTransaction(
+                requestRef,
+                current => {
+
+                    if (!current) {
+                        return;
+                    }
+
+
+                    const status =
+                        String(
+                            current.status ||
+                            "pending"
+                        ).toLowerCase();
+
+
+                    if (
+                        status !== "pending"
+                    ) {
+
+                        return;
+
+                    }
+
+
+                    return {
+
+                        ...current,
+
+                        status:
+                            "processing",
+
+                        processingAt:
+                            Date.now(),
+
+                        processingBy:
+                            currentAdmin.uid
+
+                    };
+
+                }
+            );
+
+    }
+    catch (error) {
+
+        console.error(
+            "VIP reject claim error:",
+            error
+        );
+
+
+        alert(
+            "VIP rejection failed: " +
+            error.message
+        );
+
+        return;
+
+    }
+
+
+    // ==================================
+    // ALREADY PROCESSED
+    // ==================================
+
+    if (!claim.committed) {
+
+        alert(
+            "This VIP request has already been processed."
+        );
+
+        return;
+
+    }
+
+
+    const request =
+        claim.snapshot.val() || {};
+
+
+    try {
+
+        const uid =
+            request.uid ||
+            request.userId ||
+            request.userUID ||
+            "";
+
+
+        const amount =
+            numberValue(
+                request.price,
+                request.vipPrice,
+                request.amount
+            );
+
+
+        const now =
+            Date.now();
+
+
+        // ==================================
+        // TRANSACTION ID
+        // ==================================
+
+        const transactionKey =
+            push(
+                ref(
+                    db,
+                    "transactions"
+                )
+            ).key;
+
+
+        if (!transactionKey) {
+
+            throw new Error(
+                "Could not create transaction ID."
+            );
+
+        }
+
+
+        // ==================================
+        // UPDATED REQUEST
+        // ==================================
+
+        const rejectedRequest = {
+
+            ...request,
+
+            status:
+                "rejected",
+
+            rejectedAt:
+                now,
+
+            rejectedBy:
+                currentAdmin.uid
+
+        };
+
+
+        // ==================================
+        // TRANSACTION
+        // ==================================
+
+        const transaction = {
+
+            uid,
+
+            type:
+                "vip_purchase",
+
+            amount,
+
+            status:
+                "rejected",
+
+            reference:
+                id,
+
+            requestId:
+                id,
+
+            rejectedBy:
+                currentAdmin.uid,
+
+            date:
+                now
+
+        };
+
+
+        // ==================================
+        // ATOMIC UPDATE
+        // ==================================
+
+        const updates = {};
+
+
+        updates[
+            "vipPurchaseRequests/" +
+            id
+        ] =
+            rejectedRequest;
+
+
+        updates[
+            "transactions/" +
+            transactionKey
+        ] =
+            transaction;
+
+
+        await update(
+            ref(db),
+            updates
+        );
+
+
+        alert(
+            "VIP Rejected Successfully"
+        );
+
+
+        console.log(
+            "VIP REJECTED:",
+            {
+
+                requestId:
+                    id,
+
+                uid,
+
+                transactionId:
+                    transactionKey
+
+            }
+        );
+
+
+        if (
+            window.loadVipRequests
+        ) {
+
+            window.loadVipRequests();
+
+        }
+
+    }
+    catch (error) {
+
+        console.error(
+            "VIP rejection error:",
+            error
+        );
+
+
+        // ==================================
+        // RETURN TO PENDING
+        // ==================================
+
+        try {
+
+            await update(
+                requestRef,
+                {
+
+                    status:
+                        "pending",
+
+                    processingAt:
+                        null,
+
+                    processingBy:
+                        null
+
+                }
+            );
+
+        }
+        catch (rollbackError) {
+
+            console.error(
+                "VIP rejection rollback error:",
+                rollbackError
+            );
+
+        }
+
+
+        alert(
+            "VIP rejection failed: " +
+            error.message
+        );
+
+    }
+
+}
+
+
+// ======================================
+// GLOBAL EXPORTS
+// ======================================
+
+window.approveVipRequest =
+    approveVipRequest;
+
+window.rejectVipRequest =
+    rejectVipRequest;
+
+window.getVipDuration =
+    getVipDuration;
+
+
+// ======================================
+// PART 7 READY
+// ======================================
+
+console.log(
+    "ADMIN PART 7 READY - VIP USER PLAN SYNC FIXED"
+);
     
 
                 
