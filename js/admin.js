@@ -2556,9 +2556,11 @@ console.log(
     "ADMIN PART 5 READY"
 );
 
+
 // ======================================
 // ADMIN.JS - PART 6
 // VIP REQUESTS
+// DURATION FIXED FROM vipPlans
 // ======================================
 
 
@@ -2570,24 +2572,13 @@ function formatVipDate(value) {
 
     if (!value) return "-";
 
+    const date = new Date(value);
 
-    const date =
-        new Date(value);
-
-
-    if (
-        Number.isNaN(
-            date.getTime()
-        )
-    ) {
-
+    if (Number.isNaN(date.getTime())) {
         return String(value);
-
     }
 
-
     return date.toLocaleString();
-
 }
 
 
@@ -2608,6 +2599,172 @@ function getVipPhoto(request, user) {
         user?.profilePhoto ||
         ""
     );
+
+}
+
+
+// ======================================
+// GET VALUE SAFELY
+// ======================================
+
+function getVipNumber(...values) {
+
+    for (const value of values) {
+
+        if (
+            value !== undefined &&
+            value !== null &&
+            value !== ""
+        ) {
+
+            const number = Number(value);
+
+            if (
+                Number.isFinite(number) &&
+                number > 0
+            ) {
+
+                return number;
+
+            }
+
+        }
+
+    }
+
+    return 0;
+}
+
+
+// ======================================
+// FIND VIP PLAN
+// ======================================
+
+async function findVipPlan(request) {
+
+    const item = request || {};
+
+    // ----------------------------------
+    // Possible VIP PLAN ID fields
+    // ----------------------------------
+
+    const planId =
+        item.vipPlanId ||
+        item.planId ||
+        item.vipId ||
+        item.packageId ||
+        item.planKey ||
+        item.vipKey ||
+        item.packageKey ||
+        item.vipPlanKey ||
+        "";
+
+
+    // ----------------------------------
+    // If request itself contains data
+    // ----------------------------------
+
+    if (
+        getVipNumber(
+            item.duration,
+            item.days,
+            item.durationDays
+        ) > 0
+    ) {
+
+        return item;
+
+    }
+
+
+    // ----------------------------------
+    // No plan ID
+    // ----------------------------------
+
+    if (!planId) {
+
+        return {};
+
+    }
+
+
+    // ----------------------------------
+    // GET vipPlans
+    // ----------------------------------
+
+    try {
+
+        const plansSnap =
+            await get(
+                ref(
+                    db,
+                    "vipPlans"
+                )
+            );
+
+
+        if (!plansSnap.exists()) {
+
+            return {};
+
+        }
+
+
+        const plans =
+            plansSnap.val() || {};
+
+
+        // ----------------------------------
+        // DIRECT KEY MATCH
+        // ----------------------------------
+
+        if (plans[planId]) {
+
+            return plans[planId] || {};
+
+        }
+
+
+        // ----------------------------------
+        // SEARCH INSIDE PLAN
+        // ----------------------------------
+
+        for (
+            const [key, plan]
+            of Object.entries(plans)
+        ) {
+
+            const p = plan || {};
+
+
+            if (
+                String(
+                    p.id ||
+                    p.planId ||
+                    p.vipPlanId ||
+                    p.key ||
+                    key
+                ) === String(planId)
+            ) {
+
+                return p;
+
+            }
+
+        }
+
+    }
+    catch (error) {
+
+        console.error(
+            "Error finding VIP plan:",
+            error
+        );
+
+    }
+
+
+    return {};
 
 }
 
@@ -2658,6 +2815,7 @@ function loadVipRequests() {
 
                 empty &&
                     (empty.style.display = "block");
+
 
                 updateText(
                     "vipTotalCount",
@@ -2726,6 +2884,10 @@ function loadVipRequests() {
                 }
 
 
+                // ==================================
+                // USER
+                // ==================================
+
                 const uid =
                     item.uid ||
                     item.userId ||
@@ -2738,22 +2900,48 @@ function loadVipRequests() {
 
                 if (uid) {
 
-                    const userSnap =
-                        await get(
-                            ref(
-                                db,
-                                "users/" + uid
-                            )
+                    try {
+
+                        const userSnap =
+                            await get(
+                                ref(
+                                    db,
+                                    "users/" + uid
+                                )
+                            );
+
+
+                        if (userSnap.exists()) {
+
+                            user =
+                                userSnap.val() || {};
+
+                        }
+
+                    }
+                    catch (error) {
+
+                        console.error(
+                            "VIP user loading error:",
+                            error
                         );
 
-
-                    if (userSnap.exists()) {
-                        user =
-                            userSnap.val() || {};
                     }
 
                 }
 
+
+                // ==================================
+                // VIP PLAN
+                // ==================================
+
+                const plan =
+                    await findVipPlan(item);
+
+
+                // ==================================
+                // USER INFO
+                // ==================================
 
                 const name =
                     item.fullName ||
@@ -2779,46 +2967,147 @@ function loadVipRequests() {
                     "-";
 
 
+                // ==================================
+                // VIP NAME
+                // ==================================
+
                 const vipName =
                     item.vipName ||
                     item.planName ||
                     item.namePlan ||
                     item.plan ||
                     item.vip ||
+                    plan.name ||
+                    plan.vipName ||
+                    plan.planName ||
                     "VIP Plan";
 
 
+                // ==================================
+                // PRICE
+                // ==================================
+
                 const price =
-                    numberValue(
+                    getVipNumber(
                         item.price,
                         item.vipPrice,
-                        item.amount
+                        item.amount,
+                        plan.price,
+                        plan.vipPrice
                     );
 
+
+                // ==================================
+                // DAILY INCOME
+                // ==================================
 
                 const daily =
-                    numberValue(
+                    getVipNumber(
                         item.dailyIncome,
                         item.daily,
-                        item.dailyProfit
+                        item.dailyProfit,
+                        plan.dailyIncome,
+                        plan.daily,
+                        plan.dailyProfit
                     );
 
 
-                const duration =
-                    numberValue(
+                // ==================================
+                // DURATION
+                // ==================================
+
+                let duration =
+                    getVipNumber(
                         item.duration,
                         item.days,
-                        item.durationDays
+                        item.durationDays,
+                        item.vipDuration,
+                        item.planDuration,
+                        plan.duration,
+                        plan.days,
+                        plan.durationDays,
+                        plan.vipDuration,
+                        plan.planDuration
                     );
 
 
-                const profit =
-                    numberValue(
+                // ==================================
+                // CALCULATE DURATION
+                // ==================================
+
+                if (
+                    duration <= 0 &&
+                    daily > 0
+                ) {
+
+                    const totalProfitForCalc =
+                        getVipNumber(
+                            item.totalProfit,
+                            item.profit,
+                            item.total,
+                            plan.totalProfit,
+                            plan.profit,
+                            plan.total
+                        );
+
+
+                    if (
+                        totalProfitForCalc > 0
+                    ) {
+
+                        const calculated =
+                            totalProfitForCalc /
+                            daily;
+
+
+                        if (
+                            Number.isFinite(calculated) &&
+                            calculated > 0
+                        ) {
+
+                            duration =
+                                Math.round(
+                                    calculated
+                                );
+
+                        }
+
+                    }
+
+                }
+
+
+                // ==================================
+                // TOTAL PROFIT
+                // ==================================
+
+                let profit =
+                    getVipNumber(
                         item.totalProfit,
                         item.profit,
-                        item.total
+                        item.total,
+                        plan.totalProfit,
+                        plan.profit,
+                        plan.total
                     );
 
+
+                if (
+                    profit <= 0 &&
+                    daily > 0 &&
+                    duration > 0
+                ) {
+
+                    profit =
+                        daily *
+                        duration;
+
+                }
+
+
+                // ==================================
+                // PHOTO
+                // ==================================
 
                 const photo =
                     getVipPhoto(
@@ -2829,6 +3118,7 @@ function loadVipRequests() {
 
                 const photoHTML =
                     photo
+
                     ?
 
                     `
@@ -2858,6 +3148,10 @@ function loadVipRequests() {
                     </div>
                     `;
 
+
+                // ==================================
+                // CARD
+                // ==================================
 
                 const card =
                     document.createElement(
@@ -2890,7 +3184,9 @@ function loadVipRequests() {
                         <div class="vip-profile-header">
 
                             <div class="vip-photo-wrapper">
+
                                 ${photoHTML}
+
                             </div>
 
                             <div class="vip-profile-name">
@@ -2981,10 +3277,17 @@ function loadVipRequests() {
                             data-id="${escapeHTML(id)}"
                             ${status !== "pending" ? "disabled" : ""}
                         >
+
                             <i class="fa-solid fa-circle-check"></i>
-                            ${status === "approved"
+
+                            ${
+                                status === "approved"
                                 ? "Approved"
-                                : "Approve VIP"}
+                                : status === "processing"
+                                ? "Processing..."
+                                : "Approve VIP"
+                            }
+
                         </button>
 
 
@@ -2994,20 +3297,49 @@ function loadVipRequests() {
                             data-id="${escapeHTML(id)}"
                             ${status !== "pending" ? "disabled" : ""}
                         >
+
                             <i class="fa-solid fa-circle-xmark"></i>
-                            ${status === "rejected"
+
+                            ${
+                                status === "rejected"
                                 ? "Rejected"
-                                : "Reject VIP"}
+                                : status === "processing"
+                                ? "Processing..."
+                                : "Reject VIP"
+                            }
+
                         </button>
 
                     </div>
+
                 `;
 
 
                 list.appendChild(card);
 
+
+                // ==================================
+                // SAVE RESOLVED VALUES ON CARD
+                // ==================================
+
+                card.dataset.duration =
+                    String(duration);
+
+                card.dataset.price =
+                    String(price);
+
+                card.dataset.dailyIncome =
+                    String(daily);
+
+                card.dataset.totalProfit =
+                    String(profit);
+
             }
 
+
+            // ==================================
+            // COUNTERS
+            // ==================================
 
             updateText(
                 "vipTotalCount",
@@ -3030,37 +3362,66 @@ function loadVipRequests() {
             );
 
 
+            // ==================================
+            // BUTTON EVENTS
+            // ==================================
+
             list.querySelectorAll(
                 "[data-vip-action]"
             ).forEach(button => {
 
                 button.addEventListener(
                     "click",
-                    () => {
+                    async () => {
 
-                        if (button.disabled) {
+                        if (
+                            button.disabled ||
+                            button.dataset.busy === "true"
+                        ) {
+
                             return;
+
                         }
 
 
-                        button.disabled = true;
+                        button.dataset.busy =
+                            "true";
+
+                        button.disabled =
+                            true;
 
 
                         const id =
                             button.dataset.id;
 
 
-                        if (
-                            button.dataset.vipAction ===
-                            "approve"
-                        ) {
+                        try {
 
-                            approveVipRequest(id);
+                            if (
+                                button.dataset.vipAction ===
+                                "approve"
+                            ) {
+
+                                await approveVipRequest(
+                                    id
+                                );
+
+                            }
+                            else {
+
+                                await rejectVipRequest(
+                                    id
+                                );
+
+                            }
 
                         }
-                        else {
+                        catch (error) {
 
-                            rejectVipRequest(id);
+                            console.error(
+                                "VIP button error:",
+                                error
+                            );
 
                         }
 
@@ -3080,9 +3441,8 @@ window.loadVipRequests =
 
 
 console.log(
-    "ADMIN PART 6 READY"
+    "ADMIN PART 6 READY - VIP DURATION CONNECTED TO vipPlans"
 );
-
 
 // ======================================
 // ADMIN.JS - PART 7
