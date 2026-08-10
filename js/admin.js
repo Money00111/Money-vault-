@@ -3446,10 +3446,11 @@ console.log(
 
 
 
+
 // ======================================
 // ADMIN.JS - PART 7
 // VIP APPROVE + REJECT
-// USER VIP PLAN SYNC FIX
+// BALANCE DEDUCTION FIX
 // SAFE ONCE ONLY
 // ======================================
 
@@ -3482,7 +3483,7 @@ async function getVipDuration(request) {
 
 
     // ----------------------------------
-    // 2. FIND PLAN
+    // 2. FIND VIP PLAN
     // ----------------------------------
 
     const plan =
@@ -3618,7 +3619,8 @@ async function approveVipRequest(id) {
                         ).toLowerCase();
 
 
-                    // ONLY PENDING
+                    // ONLY PENDING CAN BE APPROVED
+
                     if (
                         status !== "pending"
                     ) {
@@ -3666,7 +3668,7 @@ async function approveVipRequest(id) {
 
 
     // ==================================
-    // ALREADY PROCESSED
+    // CLAIM FAILED
     // ==================================
 
     if (!claim.committed) {
@@ -3707,7 +3709,7 @@ async function approveVipRequest(id) {
 
 
         // ==================================
-        // GET VIP PLAN
+        // FIND VIP PLAN
         // ==================================
 
         const plan =
@@ -3733,7 +3735,7 @@ async function approveVipRequest(id) {
 
 
         // ==================================
-        // PRICE
+        // VIP PRICE
         // ==================================
 
         const price =
@@ -3787,7 +3789,7 @@ async function approveVipRequest(id) {
 
 
         // ==================================
-        // CALCULATE TOTAL PROFIT
+        // CALCULATE PROFIT
         // ==================================
 
         if (
@@ -3804,7 +3806,7 @@ async function approveVipRequest(id) {
 
 
         // ==================================
-        // VALIDATION
+        // VALIDATE PRICE
         // ==================================
 
         if (
@@ -3819,6 +3821,10 @@ async function approveVipRequest(id) {
         }
 
 
+        // ==================================
+        // VALIDATE DAILY INCOME
+        // ==================================
+
         if (
             !Number.isFinite(dailyIncome) ||
             dailyIncome < 0
@@ -3830,6 +3836,10 @@ async function approveVipRequest(id) {
 
         }
 
+
+        // ==================================
+        // VALIDATE DURATION
+        // ==================================
 
         if (
             !Number.isFinite(duration) ||
@@ -3844,7 +3854,7 @@ async function approveVipRequest(id) {
 
 
         // ==================================
-        // GET USER
+        // USER REF
         // ==================================
 
         const userRef =
@@ -3853,6 +3863,10 @@ async function approveVipRequest(id) {
                 "users/" + uid
             );
 
+
+        // ==================================
+        // GET USER
+        // ==================================
 
         const userSnap =
             await get(
@@ -3871,6 +3885,47 @@ async function approveVipRequest(id) {
 
         const user =
             userSnap.val() || {};
+
+
+        // ==================================
+        // CHECK CURRENT BALANCE
+        // ==================================
+
+        const currentBalance =
+            Number(
+                user.balance || 0
+            );
+
+
+        if (
+            !Number.isFinite(currentBalance)
+        ) {
+
+            throw new Error(
+                "User balance is invalid."
+            );
+
+        }
+
+
+        // ==================================
+        // IMPORTANT
+        // VIP PRICE MUST BE AVAILABLE
+        // ==================================
+
+        if (
+            currentBalance < price
+        ) {
+
+            throw new Error(
+                "Insufficient balance. User has " +
+                currentBalance.toLocaleString() +
+                " RWF but VIP requires " +
+                price.toLocaleString() +
+                " RWF."
+            );
+
+        }
 
 
         // ==================================
@@ -3914,7 +3969,7 @@ async function approveVipRequest(id) {
 
 
         // ==================================
-        // CREATE IDs
+        // CREATE VIP BUYER ID
         // ==================================
 
         const buyerKey =
@@ -3936,7 +3991,7 @@ async function approveVipRequest(id) {
 
 
         // ==================================
-        // USER VIP PURCHASE ID
+        // CREATE USER VIP ID
         // ==================================
 
         const userVipKey =
@@ -3960,7 +4015,7 @@ async function approveVipRequest(id) {
 
 
         // ==================================
-        // TRANSACTION ID
+        // CREATE TRANSACTION ID
         // ==================================
 
         const transactionKey =
@@ -3981,13 +4036,13 @@ async function approveVipRequest(id) {
         }
 
 
+        // ==================================
+        // TIME
+        // ==================================
+
         const now =
             Date.now();
 
-
-        // ==================================
-        // START / END DATE
-        // ==================================
 
         const startDate =
             now;
@@ -4005,10 +4060,27 @@ async function approveVipRequest(id) {
 
 
         // ==================================
-        // USER VIP PLAN
+        // NEW BALANCE
         // ==================================
-        // THIS IS THE IMPORTANT FIX
-        // USER WILL NOW SEE VIP PLAN
+
+        const newBalance =
+            currentBalance -
+            price;
+
+
+        if (
+            newBalance < 0
+        ) {
+
+            throw new Error(
+                "Balance cannot become negative."
+            );
+
+        }
+
+
+        // ==================================
+        // USER VIP PLAN
         // ==================================
 
         const userVipPlan = {
@@ -4103,7 +4175,7 @@ async function approveVipRequest(id) {
 
 
         // ==================================
-        // VIP BUYER FOR ADMIN
+        // VIP BUYER
         // ==================================
 
         const vipBuyer = {
@@ -4169,7 +4241,7 @@ async function approveVipRequest(id) {
 
 
         // ==================================
-        // UPDATED REQUEST
+        // APPROVED REQUEST
         // ==================================
 
         const approvedRequest = {
@@ -4208,13 +4280,22 @@ async function approveVipRequest(id) {
                 buyerKey,
 
             userVipPlanId:
-                userVipKey
+                userVipKey,
+
+            amountPaid:
+                price,
+
+            balanceBefore:
+                currentBalance,
+
+            balanceAfter:
+                newBalance
 
         };
 
 
         // ==================================
-        // TRANSACTION
+        // TRANSACTION RECORD
         // ==================================
 
         const transaction = {
@@ -4256,14 +4337,32 @@ async function approveVipRequest(id) {
 
 
         // ==================================
-        // ATOMIC UPDATES
+        // ATOMIC UPDATE
+        // ==================================
+        //
+        // IMPORTANT:
+        // Balance is updated together with
+        // VIP data and request status.
+        //
         // ==================================
 
         const updates = {};
 
 
         // ----------------------------------
-        // ADMIN VIP BUYERS
+        // USER BALANCE
+        // ----------------------------------
+
+        updates[
+            "users/" +
+            uid +
+            "/balance"
+        ] =
+            newBalance;
+
+
+        // ----------------------------------
+        // VIP BUYER
         // ----------------------------------
 
         updates[
@@ -4309,7 +4408,7 @@ async function approveVipRequest(id) {
 
 
         // ==================================
-        // ONE ATOMIC WRITE
+        // ONE ATOMIC DATABASE WRITE
         // ==================================
 
         await update(
@@ -4326,14 +4425,20 @@ async function approveVipRequest(id) {
             "VIP Approved Successfully\n\n" +
             "VIP: " +
             vipName +
-            "\nDuration: " +
+            "\nPrice: " +
+            price.toLocaleString() +
+            " RWF\n" +
+            "Duration: " +
             duration +
-            " Days"
+            " Days\n\n" +
+            "Balance remaining: " +
+            newBalance.toLocaleString() +
+            " RWF"
         );
 
 
         console.log(
-            "VIP APPROVED + USER PLAN CREATED:",
+            "VIP APPROVED + BALANCE DEDUCTED:",
             {
 
                 requestId:
@@ -4347,6 +4452,13 @@ async function approveVipRequest(id) {
                 userVipPlanId:
                     userVipKey,
 
+                price,
+
+                oldBalance:
+                    currentBalance,
+
+                newBalance,
+
                 duration,
 
                 totalProfit,
@@ -4359,7 +4471,7 @@ async function approveVipRequest(id) {
 
 
         // ==================================
-        // REFRESH VIP LISTS
+        // REFRESH VIP REQUESTS
         // ==================================
 
         if (
@@ -4371,11 +4483,28 @@ async function approveVipRequest(id) {
         }
 
 
+        // ==================================
+        // REFRESH VIP BUYERS
+        // ==================================
+
         if (
             window.loadVipBuyers
         ) {
 
             window.loadVipBuyers();
+
+        }
+
+
+        // ==================================
+        // REFRESH DASHBOARD
+        // ==================================
+
+        if (
+            window.loadDashboard
+        ) {
+
+            window.loadDashboard();
 
         }
 
@@ -4433,7 +4562,6 @@ async function approveVipRequest(id) {
 
 // ======================================
 // REJECT VIP REQUEST
-// SAFE ONCE ONLY
 // ======================================
 
 async function rejectVipRequest(id) {
@@ -4601,7 +4729,7 @@ async function rejectVipRequest(id) {
 
 
         // ==================================
-        // UPDATED REQUEST
+        // REJECTED REQUEST
         // ==================================
 
         const rejectedRequest = {
@@ -4678,6 +4806,10 @@ async function rejectVipRequest(id) {
         );
 
 
+        // ==================================
+        // SUCCESS
+        // ==================================
+
         alert(
             "VIP Rejected Successfully"
         );
@@ -4698,6 +4830,10 @@ async function rejectVipRequest(id) {
             }
         );
 
+
+        // ==================================
+        // REFRESH REQUESTS
+        // ==================================
 
         if (
             window.loadVipRequests
@@ -4778,10 +4914,8 @@ window.getVipDuration =
 // ======================================
 
 console.log(
-    "ADMIN PART 7 READY - VIP USER PLAN SYNC FIXED"
+    "ADMIN PART 7 READY - VIP BALANCE DEDUCTION FIXED"
 );
-    
-
                 
 // ======================================
 // ADMIN.JS - PART 8
