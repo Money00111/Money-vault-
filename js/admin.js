@@ -2555,12 +2555,10 @@ window.rejectWithdraw =
 console.log(
     "ADMIN PART 5 READY"
 );
-
-
 // ======================================
 // ADMIN.JS - PART 6
 // VIP REQUESTS
-// DURATION FIXED FROM vipPlans
+// FIXED BUTTON PROCESSING UI
 // ======================================
 
 
@@ -2579,6 +2577,7 @@ function formatVipDate(value) {
     }
 
     return date.toLocaleString();
+
 }
 
 
@@ -2604,7 +2603,7 @@ function getVipPhoto(request, user) {
 
 
 // ======================================
-// GET VALUE SAFELY
+// GET VIP NUMBER SAFELY
 // ======================================
 
 function getVipNumber(...values) {
@@ -2633,6 +2632,7 @@ function getVipNumber(...values) {
     }
 
     return 0;
+
 }
 
 
@@ -2644,8 +2644,9 @@ async function findVipPlan(request) {
 
     const item = request || {};
 
+
     // ----------------------------------
-    // Possible VIP PLAN ID fields
+    // POSSIBLE PLAN ID FIELDS
     // ----------------------------------
 
     const planId =
@@ -2661,14 +2662,17 @@ async function findVipPlan(request) {
 
 
     // ----------------------------------
-    // If request itself contains data
+    // REQUEST ALREADY HAS DURATION
     // ----------------------------------
 
     if (
         getVipNumber(
             item.duration,
             item.days,
-            item.durationDays
+            item.durationDays,
+            item.vipDuration,
+            item.planDuration,
+            item.totalDays
         ) > 0
     ) {
 
@@ -2678,7 +2682,7 @@ async function findVipPlan(request) {
 
 
     // ----------------------------------
-    // No plan ID
+    // NO PLAN ID
     // ----------------------------------
 
     if (!planId) {
@@ -2689,7 +2693,7 @@ async function findVipPlan(request) {
 
 
     // ----------------------------------
-    // GET vipPlans
+    // GET VIP PLANS
     // ----------------------------------
 
     try {
@@ -2726,7 +2730,7 @@ async function findVipPlan(request) {
 
 
         // ----------------------------------
-        // SEARCH INSIDE PLAN
+        // SEARCH INSIDE PLANS
         // ----------------------------------
 
         for (
@@ -2737,14 +2741,17 @@ async function findVipPlan(request) {
             const p = plan || {};
 
 
+            const possibleId =
+                p.id ||
+                p.planId ||
+                p.vipPlanId ||
+                p.key ||
+                key;
+
+
             if (
-                String(
-                    p.id ||
-                    p.planId ||
-                    p.vipPlanId ||
-                    p.key ||
-                    key
-                ) === String(planId)
+                String(possibleId) ===
+                String(planId)
             ) {
 
                 return p;
@@ -2776,7 +2783,9 @@ async function findVipPlan(request) {
 function loadVipRequests() {
 
     if (!window.adminState?.ready) {
+
         return;
+
     }
 
 
@@ -2792,7 +2801,15 @@ function loadVipRequests() {
         );
 
 
-    if (!list) return;
+    if (!list) {
+
+        console.warn(
+            "vipRequestList not found."
+        );
+
+        return;
+
+    }
 
 
     onValue(
@@ -2811,10 +2828,18 @@ function loadVipRequests() {
             let rejected = 0;
 
 
+            // ==================================
+            // NO REQUESTS
+            // ==================================
+
             if (!snapshot.exists()) {
 
-                empty &&
-                    (empty.style.display = "block");
+                if (empty) {
+
+                    empty.style.display =
+                        "block";
+
+                }
 
 
                 updateText(
@@ -2837,13 +2862,18 @@ function loadVipRequests() {
                     0
                 );
 
+
                 return;
 
             }
 
 
-            empty &&
-                (empty.style.display = "none");
+            if (empty) {
+
+                empty.style.display =
+                    "none";
+
+            }
 
 
             const requests =
@@ -2851,6 +2881,10 @@ function loadVipRequests() {
                     snapshot.val()
                 ).reverse();
 
+
+            // ==================================
+            // RENDER REQUESTS
+            // ==================================
 
             for (
                 const [id, request]
@@ -2871,21 +2905,33 @@ function loadVipRequests() {
                     ).toLowerCase();
 
 
-                if (status === "pending") {
+                if (
+                    status === "pending"
+                ) {
+
                     pending++;
+
                 }
 
-                else if (status === "approved") {
+                else if (
+                    status === "approved"
+                ) {
+
                     approved++;
+
                 }
 
-                else if (status === "rejected") {
+                else if (
+                    status === "rejected"
+                ) {
+
                     rejected++;
+
                 }
 
 
                 // ==================================
-                // USER
+                // USER ID
                 // ==================================
 
                 const uid =
@@ -2897,6 +2943,10 @@ function loadVipRequests() {
 
                 let user = {};
 
+
+                // ==================================
+                // LOAD USER
+                // ==================================
 
                 if (uid) {
 
@@ -2911,10 +2961,13 @@ function loadVipRequests() {
                             );
 
 
-                        if (userSnap.exists()) {
+                        if (
+                            userSnap.exists()
+                        ) {
 
                             user =
-                                userSnap.val() || {};
+                                userSnap.val() ||
+                                {};
 
                         }
 
@@ -2932,11 +2985,13 @@ function loadVipRequests() {
 
 
                 // ==================================
-                // VIP PLAN
+                // FIND PLAN
                 // ==================================
 
                 const plan =
-                    await findVipPlan(item);
+                    await findVipPlan(
+                        item
+                    );
 
 
                 // ==================================
@@ -3023,11 +3078,14 @@ function loadVipRequests() {
                         item.durationDays,
                         item.vipDuration,
                         item.planDuration,
+                        item.totalDays,
+
                         plan.duration,
                         plan.days,
                         plan.durationDays,
                         plan.vipDuration,
-                        plan.planDuration
+                        plan.planDuration,
+                        plan.totalDays
                     );
 
 
@@ -3045,6 +3103,7 @@ function loadVipRequests() {
                             item.totalProfit,
                             item.profit,
                             item.total,
+
                             plan.totalProfit,
                             plan.profit,
                             plan.total
@@ -3061,7 +3120,9 @@ function loadVipRequests() {
 
 
                         if (
-                            Number.isFinite(calculated) &&
+                            Number.isFinite(
+                                calculated
+                            ) &&
                             calculated > 0
                         ) {
 
@@ -3086,6 +3147,7 @@ function loadVipRequests() {
                         item.totalProfit,
                         item.profit,
                         item.total,
+
                         plan.totalProfit,
                         plan.profit,
                         plan.total
@@ -3128,7 +3190,9 @@ function loadVipRequests() {
                         alt="User"
                         onerror="
                             this.style.display='none';
-                            this.nextElementSibling.style.display='flex';
+                            if(this.nextElementSibling){
+                                this.nextElementSibling.style.display='flex';
+                            }
                         "
                     >
 
@@ -3163,6 +3227,10 @@ function loadVipRequests() {
                     "request-card vip-request-card";
 
 
+                card.dataset.requestId =
+                    id;
+
+
                 card.innerHTML = `
 
                     <div class="request-top">
@@ -3172,7 +3240,9 @@ function loadVipRequests() {
                             VIP Purchase
                         </h3>
 
-                        <span class="status ${escapeHTML(status)}">
+                        <span
+                            class="status ${escapeHTML(status)}"
+                        >
                             ${escapeHTML(status)}
                         </span>
 
@@ -3188,6 +3258,7 @@ function loadVipRequests() {
                                 ${photoHTML}
 
                             </div>
+
 
                             <div class="vip-profile-name">
 
@@ -3282,10 +3353,12 @@ function loadVipRequests() {
 
                             ${
                                 status === "approved"
-                                ? "Approved"
-                                : status === "processing"
-                                ? "Processing..."
-                                : "Approve VIP"
+                                    ? "Approved"
+                                    : status === "pending"
+                                        ? "Approve VIP"
+                                        : status === "processing"
+                                            ? "Approve Processing..."
+                                            : "Approve VIP"
                             }
 
                         </button>
@@ -3302,10 +3375,12 @@ function loadVipRequests() {
 
                             ${
                                 status === "rejected"
-                                ? "Rejected"
-                                : status === "processing"
-                                ? "Processing..."
-                                : "Reject VIP"
+                                    ? "Rejected"
+                                    : status === "pending"
+                                        ? "Reject VIP"
+                                        : status === "processing"
+                                            ? "Reject VIP"
+                                            : "Reject VIP"
                             }
 
                         </button>
@@ -3319,17 +3394,20 @@ function loadVipRequests() {
 
 
                 // ==================================
-                // SAVE RESOLVED VALUES ON CARD
+                // SAVE RESOLVED VALUES
                 // ==================================
 
                 card.dataset.duration =
                     String(duration);
 
+
                 card.dataset.price =
                     String(price);
 
+
                 card.dataset.dailyIncome =
                     String(daily);
+
 
                 card.dataset.totalProfit =
                     String(profit);
@@ -3374,6 +3452,10 @@ function loadVipRequests() {
                     "click",
                     async () => {
 
+                        // --------------------------------
+                        // PREVENT DOUBLE CLICK
+                        // --------------------------------
+
                         if (
                             button.disabled ||
                             button.dataset.busy === "true"
@@ -3384,6 +3466,42 @@ function loadVipRequests() {
                         }
 
 
+                        const id =
+                            button.dataset.id;
+
+
+                        const action =
+                            button.dataset.vipAction;
+
+
+                        // --------------------------------
+                        // FIND BOTH BUTTONS
+                        // --------------------------------
+
+                        const card =
+                            button.closest(
+                                ".vip-request-card"
+                            );
+
+
+                        const approveButton =
+                            card?.querySelector(
+                                '[data-vip-action="approve"]'
+                            );
+
+
+                        const rejectButton =
+                            card?.querySelector(
+                                '[data-vip-action="reject"]'
+                            );
+
+
+                        // --------------------------------
+                        // LOCK BOTH BUTTONS
+                        // BUT ONLY SHOW PROCESSING
+                        // ON THE CLICKED BUTTON
+                        // --------------------------------
+
                         button.dataset.busy =
                             "true";
 
@@ -3391,15 +3509,60 @@ function loadVipRequests() {
                             true;
 
 
-                        const id =
-                            button.dataset.id;
+                        if (
+                            approveButton &&
+                            approveButton !== button
+                        ) {
+
+                            approveButton.disabled =
+                                true;
+
+                        }
+
+
+                        if (
+                            rejectButton &&
+                            rejectButton !== button
+                        ) {
+
+                            rejectButton.disabled =
+                                true;
+
+                        }
+
+
+                        // --------------------------------
+                        // CHANGE ONLY CLICKED BUTTON
+                        // --------------------------------
+
+                        if (
+                            action === "approve"
+                        ) {
+
+                            button.innerHTML = `
+                                <i class="fa-solid fa-spinner fa-spin"></i>
+                                Approve Processing...
+                            `;
+
+                        }
+                        else {
+
+                            button.innerHTML = `
+                                <i class="fa-solid fa-spinner fa-spin"></i>
+                                Reject Processing...
+                            `;
+
+                        }
 
 
                         try {
 
+                            // --------------------------------
+                            // APPROVE
+                            // --------------------------------
+
                             if (
-                                button.dataset.vipAction ===
-                                "approve"
+                                action === "approve"
                             ) {
 
                                 await approveVipRequest(
@@ -3407,7 +3570,14 @@ function loadVipRequests() {
                                 );
 
                             }
-                            else {
+
+                            // --------------------------------
+                            // REJECT
+                            // --------------------------------
+
+                            else if (
+                                action === "reject"
+                            ) {
 
                                 await rejectVipRequest(
                                     id
@@ -3436,14 +3606,21 @@ function loadVipRequests() {
 }
 
 
+// ======================================
+// GLOBAL EXPORT
+// ======================================
+
 window.loadVipRequests =
     loadVipRequests;
 
 
-console.log(
-    "ADMIN PART 6 READY - VIP DURATION CONNECTED TO vipPlans"
-);
+// ======================================
+// PART 6 READY
+// ======================================
 
+console.log(
+    "ADMIN PART 6 READY - VIP BUTTON PROCESSING FIXED"
+);
 
 
 
