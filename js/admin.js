@@ -3622,14 +3622,32 @@ console.log(
     "ADMIN PART 6 READY - VIP BUTTON PROCESSING FIXED"
 );
 
-
-
 // ======================================
 // ADMIN.JS - PART 7
 // VIP APPROVE + REJECT
-// BALANCE DEDUCTION FIX
-// SAFE ONCE ONLY
+// SAFE ONE-TIME PROCESSING
+// ATOMIC BALANCE + VIP + TRANSACTION
 // ======================================
+
+
+// ======================================
+// NUMBER HELPER
+// ======================================
+
+function vipNumber(...values) {
+
+    for (const value of values) {
+
+        const n = Number(value);
+
+        if (Number.isFinite(n)) {
+            return n;
+        }
+
+    }
+
+    return 0;
+}
 
 
 // ======================================
@@ -3641,11 +3659,11 @@ async function getVipDuration(request) {
     const item = request || {};
 
     // ----------------------------------
-    // 1. REQUEST DIRECT DURATION
+    // 1. REQUEST DURATION
     // ----------------------------------
 
     let duration =
-        numberValue(
+        vipNumber(
             item.duration,
             item.days,
             item.durationDays,
@@ -3654,8 +3672,13 @@ async function getVipDuration(request) {
             item.totalDays
         );
 
-    if (duration > 0) {
-        return duration;
+    if (
+        Number.isFinite(duration) &&
+        duration > 0
+    ) {
+
+        return Math.round(duration);
+
     }
 
 
@@ -3668,7 +3691,7 @@ async function getVipDuration(request) {
 
 
     duration =
-        numberValue(
+        vipNumber(
             plan.duration,
             plan.days,
             plan.durationDays,
@@ -3678,8 +3701,13 @@ async function getVipDuration(request) {
         );
 
 
-    if (duration > 0) {
-        return duration;
+    if (
+        Number.isFinite(duration) &&
+        duration > 0
+    ) {
+
+        return Math.round(duration);
+
     }
 
 
@@ -3688,7 +3716,7 @@ async function getVipDuration(request) {
     // ----------------------------------
 
     const dailyIncome =
-        numberValue(
+        vipNumber(
             item.dailyIncome,
             item.daily,
             item.dailyProfit,
@@ -3699,7 +3727,7 @@ async function getVipDuration(request) {
 
 
     const totalProfit =
-        numberValue(
+        vipNumber(
             item.totalProfit,
             item.profit,
             item.total,
@@ -3741,6 +3769,10 @@ async function getVipDuration(request) {
 
 async function approveVipRequest(id) {
 
+    // ==================================
+    // ADMIN CHECK
+    // ==================================
+
     if (!currentAdmin) {
 
         alert(
@@ -3773,6 +3805,7 @@ async function approveVipRequest(id) {
     // ==================================
     // STEP 1
     // CLAIM REQUEST
+    // ONLY PENDING -> PROCESSING
     // ==================================
 
     let claim;
@@ -3796,7 +3829,10 @@ async function approveVipRequest(id) {
                         ).toLowerCase();
 
 
-                    // ONLY PENDING CAN BE APPROVED
+                    // ----------------------------------
+                    // IMPORTANT
+                    // ONLY PENDING CAN BE CLAIMED
+                    // ----------------------------------
 
                     if (
                         status !== "pending"
@@ -3848,7 +3884,10 @@ async function approveVipRequest(id) {
     // CLAIM FAILED
     // ==================================
 
-    if (!claim.committed) {
+    if (
+        !claim ||
+        !claim.committed
+    ) {
 
         alert(
             "This VIP request has already been processed."
@@ -3863,6 +3902,10 @@ async function approveVipRequest(id) {
         claim.snapshot.val() || {};
 
 
+    // ==================================
+    // APPROVAL PROCESS
+    // ==================================
+
     try {
 
         // ==================================
@@ -3870,10 +3913,12 @@ async function approveVipRequest(id) {
         // ==================================
 
         const uid =
-            request.uid ||
-            request.userId ||
-            request.userUID ||
-            "";
+            String(
+                request.uid ||
+                request.userId ||
+                request.userUID ||
+                ""
+            );
 
 
         if (!uid) {
@@ -3900,15 +3945,17 @@ async function approveVipRequest(id) {
         // ==================================
 
         const vipName =
-            request.vipName ||
-            request.planName ||
-            request.namePlan ||
-            request.plan ||
-            request.vip ||
-            plan.name ||
-            plan.vipName ||
-            plan.planName ||
-            "VIP Plan";
+            String(
+                request.vipName ||
+                request.planName ||
+                request.namePlan ||
+                request.plan ||
+                request.vip ||
+                plan.name ||
+                plan.vipName ||
+                plan.planName ||
+                "VIP Plan"
+            );
 
 
         // ==================================
@@ -3916,7 +3963,7 @@ async function approveVipRequest(id) {
         // ==================================
 
         const price =
-            numberValue(
+            vipNumber(
                 request.price,
                 request.vipPrice,
                 request.amount,
@@ -3930,7 +3977,7 @@ async function approveVipRequest(id) {
         // ==================================
 
         const dailyIncome =
-            numberValue(
+            vipNumber(
                 request.dailyIncome,
                 request.daily,
                 request.dailyProfit,
@@ -3955,7 +4002,7 @@ async function approveVipRequest(id) {
         // ==================================
 
         let totalProfit =
-            numberValue(
+            vipNumber(
                 request.totalProfit,
                 request.profit,
                 request.total,
@@ -3966,7 +4013,7 @@ async function approveVipRequest(id) {
 
 
         // ==================================
-        // CALCULATE PROFIT
+        // CALCULATE TOTAL PROFIT
         // ==================================
 
         if (
@@ -3983,12 +4030,31 @@ async function approveVipRequest(id) {
 
 
         // ==================================
+        // FORCE NUMBERS
+        // ==================================
+
+        const safePrice =
+            Number(price);
+
+        const safeDailyIncome =
+            Number(dailyIncome);
+
+        const safeDuration =
+            Math.round(
+                Number(duration)
+            );
+
+        const safeTotalProfit =
+            Number(totalProfit);
+
+
+        // ==================================
         // VALIDATE PRICE
         // ==================================
 
         if (
-            !Number.isFinite(price) ||
-            price <= 0
+            !Number.isFinite(safePrice) ||
+            safePrice <= 0
         ) {
 
             throw new Error(
@@ -4003,8 +4069,8 @@ async function approveVipRequest(id) {
         // ==================================
 
         if (
-            !Number.isFinite(dailyIncome) ||
-            dailyIncome < 0
+            !Number.isFinite(safeDailyIncome) ||
+            safeDailyIncome < 0
         ) {
 
             throw new Error(
@@ -4019,12 +4085,28 @@ async function approveVipRequest(id) {
         // ==================================
 
         if (
-            !Number.isFinite(duration) ||
-            duration <= 0
+            !Number.isFinite(safeDuration) ||
+            safeDuration <= 0
         ) {
 
             throw new Error(
                 "VIP duration could not be found. Check vipPlans."
+            );
+
+        }
+
+
+        // ==================================
+        // VALIDATE TOTAL PROFIT
+        // ==================================
+
+        if (
+            !Number.isFinite(safeTotalProfit) ||
+            safeTotalProfit < 0
+        ) {
+
+            throw new Error(
+                "Invalid VIP total profit."
             );
 
         }
@@ -4065,17 +4147,18 @@ async function approveVipRequest(id) {
 
 
         // ==================================
-        // CHECK CURRENT BALANCE
+        // CURRENT BALANCE
         // ==================================
 
         const currentBalance =
-            Number(
-                user.balance || 0
+            vipNumber(
+                user.balance
             );
 
 
         if (
-            !Number.isFinite(currentBalance)
+            !Number.isFinite(currentBalance) ||
+            currentBalance < 0
         ) {
 
             throw new Error(
@@ -4086,19 +4169,18 @@ async function approveVipRequest(id) {
 
 
         // ==================================
-        // IMPORTANT
-        // VIP PRICE MUST BE AVAILABLE
+        // CHECK BALANCE
         // ==================================
 
         if (
-            currentBalance < price
+            currentBalance < safePrice
         ) {
 
             throw new Error(
                 "Insufficient balance. User has " +
                 currentBalance.toLocaleString() +
                 " RWF but VIP requires " +
-                price.toLocaleString() +
+                safePrice.toLocaleString() +
                 " RWF."
             );
 
@@ -4146,7 +4228,7 @@ async function approveVipRequest(id) {
 
 
         // ==================================
-        // CREATE VIP BUYER ID
+        // CREATE KEYS
         // ==================================
 
         const buyerKey =
@@ -4167,10 +4249,6 @@ async function approveVipRequest(id) {
         }
 
 
-        // ==================================
-        // CREATE USER VIP ID
-        // ==================================
-
         const userVipKey =
             push(
                 ref(
@@ -4190,10 +4268,6 @@ async function approveVipRequest(id) {
 
         }
 
-
-        // ==================================
-        // CREATE TRANSACTION ID
-        // ==================================
 
         const transactionKey =
             push(
@@ -4228,7 +4302,7 @@ async function approveVipRequest(id) {
         const endDate =
             now +
             (
-                duration *
+                safeDuration *
                 24 *
                 60 *
                 60 *
@@ -4241,8 +4315,12 @@ async function approveVipRequest(id) {
         // ==================================
 
         const newBalance =
-            currentBalance -
-            price;
+            Number(
+                (
+                    currentBalance -
+                    safePrice
+                ).toFixed(2)
+            );
 
 
         if (
@@ -4266,18 +4344,22 @@ async function approveVipRequest(id) {
                 userVipKey,
 
             vipId:
-                request.vipPlanId ||
-                request.planId ||
-                request.vipId ||
-                request.packageId ||
-                "",
+                String(
+                    request.vipPlanId ||
+                    request.planId ||
+                    request.vipId ||
+                    request.packageId ||
+                    ""
+                ),
 
             vipPlanId:
-                request.vipPlanId ||
-                request.planId ||
-                request.vipId ||
-                request.packageId ||
-                "",
+                String(
+                    request.vipPlanId ||
+                    request.planId ||
+                    request.vipId ||
+                    request.packageId ||
+                    ""
+                ),
 
             name:
                 vipName,
@@ -4289,55 +4371,57 @@ async function approveVipRequest(id) {
                 vipName,
 
             price:
-                price,
+                Number(safePrice),
 
             dailyIncome:
-                dailyIncome,
+                Number(safeDailyIncome),
 
             totalProfit:
-                totalProfit,
+                Number(safeTotalProfit),
 
             duration:
-                duration,
+                Number(safeDuration),
 
             days:
-                duration,
+                Number(safeDuration),
 
             durationDays:
-                duration,
+                Number(safeDuration),
 
             totalDays:
-                duration,
+                Number(safeDuration),
 
             status:
                 "active",
 
             purchasedAt:
-                now,
+                Number(now),
 
             approvedAt:
-                now,
+                Number(now),
 
             startDate:
-                startDate,
+                Number(startDate),
 
             endDate:
-                endDate,
+                Number(endDate),
 
+            // IMPORTANT:
+            // Rules require this to be a NUMBER
             lastClaim:
-                0,
+                Number(0),
 
             lastClaimTime:
-                0,
+                Number(0),
 
             lastProfitTime:
-                0,
+                Number(0),
 
             totalEarned:
-                0,
+                Number(0),
 
             earned:
-                0,
+                Number(0),
 
             requestId:
                 id,
@@ -4354,10 +4438,18 @@ async function approveVipRequest(id) {
         // ==================================
         // VIP BUYER
         // ==================================
+        //
+        // IMPORTANT:
+        // lastClaim was missing before.
+        // Firebase Rules require:
+        // lastClaim = number
+        //
+        // ==================================
 
         const vipBuyer = {
 
-            uid,
+            uid:
+                uid,
 
             name:
                 buyerName,
@@ -4371,24 +4463,48 @@ async function approveVipRequest(id) {
             photoURL:
                 buyerPhoto,
 
-            vipName,
+            vipName:
+                vipName,
 
-            price,
+            price:
+                Number(safePrice),
 
-            dailyIncome,
+            dailyIncome:
+                Number(safeDailyIncome),
 
-            duration,
+            duration:
+                Number(safeDuration),
 
             days:
-                duration,
+                Number(safeDuration),
 
             durationDays:
-                duration,
+                Number(safeDuration),
 
             totalDays:
-                duration,
+                Number(safeDuration),
 
-            totalProfit,
+            totalProfit:
+                Number(safeTotalProfit),
+
+            // ==================================
+            // REQUIRED BY FIREBASE RULES
+            // ==================================
+
+            lastClaim:
+                Number(0),
+
+            lastClaimTime:
+                Number(0),
+
+            lastProfitTime:
+                Number(0),
+
+            totalEarned:
+                Number(0),
+
+            earned:
+                Number(0),
 
             requestId:
                 id,
@@ -4400,16 +4516,16 @@ async function approveVipRequest(id) {
                 "active",
 
             purchasedAt:
-                now,
+                Number(now),
 
             startDate:
-                startDate,
+                Number(startDate),
 
             endDate:
-                endDate,
+                Number(endDate),
 
             approvedAt:
-                now,
+                Number(now),
 
             approvedBy:
                 currentAdmin.uid
@@ -4428,27 +4544,32 @@ async function approveVipRequest(id) {
             status:
                 "approved",
 
-            vipName,
+            vipName:
+                vipName,
 
-            price,
+            price:
+                Number(safePrice),
 
-            dailyIncome,
+            dailyIncome:
+                Number(safeDailyIncome),
 
-            duration,
+            duration:
+                Number(safeDuration),
 
             days:
-                duration,
+                Number(safeDuration),
 
             durationDays:
-                duration,
+                Number(safeDuration),
 
             totalDays:
-                duration,
+                Number(safeDuration),
 
-            totalProfit,
+            totalProfit:
+                Number(safeTotalProfit),
 
             approvedAt:
-                now,
+                Number(now),
 
             approvedBy:
                 currentAdmin.uid,
@@ -4460,30 +4581,31 @@ async function approveVipRequest(id) {
                 userVipKey,
 
             amountPaid:
-                price,
+                Number(safePrice),
 
             balanceBefore:
-                currentBalance,
+                Number(currentBalance),
 
             balanceAfter:
-                newBalance
+                Number(newBalance)
 
         };
 
 
         // ==================================
-        // TRANSACTION RECORD
+        // TRANSACTION
         // ==================================
 
         const transaction = {
 
-            uid,
+            uid:
+                uid,
 
             type:
                 "vip_purchase",
 
             amount:
-                price,
+                Number(safePrice),
 
             status:
                 "approved",
@@ -4500,15 +4622,17 @@ async function approveVipRequest(id) {
             userVipPlanId:
                 userVipKey,
 
-            vipName,
+            vipName:
+                vipName,
 
-            duration,
+            duration:
+                Number(safeDuration),
 
             approvedBy:
                 currentAdmin.uid,
 
             date:
-                now
+                Number(now)
 
         };
 
@@ -4517,9 +4641,22 @@ async function approveVipRequest(id) {
         // ATOMIC UPDATE
         // ==================================
         //
-        // IMPORTANT:
-        // Balance is updated together with
-        // VIP data and request status.
+        // EVERYTHING IS WRITTEN TOGETHER.
+        //
+        // Balance:
+        // currentBalance - price
+        //
+        // VIP Buyer:
+        // created once
+        //
+        // User VIP:
+        // created once
+        //
+        // Transaction:
+        // created once
+        //
+        // Request:
+        // approved
         //
         // ==================================
 
@@ -4527,7 +4664,7 @@ async function approveVipRequest(id) {
 
 
         // ----------------------------------
-        // USER BALANCE
+        // BALANCE
         // ----------------------------------
 
         updates[
@@ -4535,7 +4672,7 @@ async function approveVipRequest(id) {
             uid +
             "/balance"
         ] =
-            newBalance;
+            Number(newBalance);
 
 
         // ----------------------------------
@@ -4585,7 +4722,7 @@ async function approveVipRequest(id) {
 
 
         // ==================================
-        // ONE ATOMIC DATABASE WRITE
+        // ONE ATOMIC WRITE
         // ==================================
 
         await update(
@@ -4603,10 +4740,10 @@ async function approveVipRequest(id) {
             "VIP: " +
             vipName +
             "\nPrice: " +
-            price.toLocaleString() +
+            safePrice.toLocaleString() +
             " RWF\n" +
             "Duration: " +
-            duration +
+            safeDuration +
             " Days\n\n" +
             "Balance remaining: " +
             newBalance.toLocaleString() +
@@ -4615,13 +4752,14 @@ async function approveVipRequest(id) {
 
 
         console.log(
-            "VIP APPROVED + BALANCE DEDUCTED:",
+            "VIP APPROVED:",
             {
 
                 requestId:
                     id,
 
-                uid,
+                uid:
+                    uid,
 
                 vipBuyerId:
                     buyerKey,
@@ -4629,26 +4767,36 @@ async function approveVipRequest(id) {
                 userVipPlanId:
                     userVipKey,
 
-                price,
+                transactionId:
+                    transactionKey,
 
-                oldBalance:
+                price:
+                    safePrice,
+
+                balanceBefore:
                     currentBalance,
 
-                newBalance,
+                balanceAfter:
+                    newBalance,
 
-                duration,
+                dailyIncome:
+                    safeDailyIncome,
 
-                totalProfit,
+                duration:
+                    safeDuration,
 
-                transactionId:
-                    transactionKey
+                totalProfit:
+                    safeTotalProfit,
+
+                lastClaim:
+                    0
 
             }
         );
 
 
         // ==================================
-        // REFRESH VIP REQUESTS
+        // REFRESH REQUESTS
         // ==================================
 
         if (
@@ -4661,7 +4809,7 @@ async function approveVipRequest(id) {
 
 
         // ==================================
-        // REFRESH VIP BUYERS
+        // REFRESH BUYERS
         // ==================================
 
         if (
@@ -4695,7 +4843,7 @@ async function approveVipRequest(id) {
 
 
         // ==================================
-        // RETURN REQUEST TO PENDING
+        // ROLLBACK PROCESSING -> PENDING
         // ==================================
 
         try {
@@ -4714,6 +4862,11 @@ async function approveVipRequest(id) {
                         null
 
                 }
+            );
+
+            console.log(
+                "VIP request returned to pending:",
+                id
             );
 
         }
@@ -4742,6 +4895,10 @@ async function approveVipRequest(id) {
 // ======================================
 
 async function rejectVipRequest(id) {
+
+    // ==================================
+    // ADMIN CHECK
+    // ==================================
 
     if (!currentAdmin) {
 
@@ -4773,7 +4930,8 @@ async function rejectVipRequest(id) {
 
 
     // ==================================
-    // CLAIM REQUEST
+    // CLAIM
+    // ONLY PENDING -> PROCESSING
     // ==================================
 
     let claim;
@@ -4796,6 +4954,10 @@ async function rejectVipRequest(id) {
                             "pending"
                         ).toLowerCase();
 
+
+                    // ----------------------------------
+                    // ONE-TIME REJECT
+                    // ----------------------------------
 
                     if (
                         status !== "pending"
@@ -4844,10 +5006,13 @@ async function rejectVipRequest(id) {
 
 
     // ==================================
-    // ALREADY PROCESSED
+    // CLAIM FAILED
     // ==================================
 
-    if (!claim.committed) {
+    if (
+        !claim ||
+        !claim.committed
+    ) {
 
         alert(
             "This VIP request has already been processed."
@@ -4864,27 +5029,41 @@ async function rejectVipRequest(id) {
 
     try {
 
-        const uid =
-            request.uid ||
-            request.userId ||
-            request.userUID ||
-            "";
+        // ==================================
+        // USER ID
+        // ==================================
 
+        const uid =
+            String(
+                request.uid ||
+                request.userId ||
+                request.userUID ||
+                ""
+            );
+
+
+        // ==================================
+        // AMOUNT
+        // ==================================
 
         const amount =
-            numberValue(
+            vipNumber(
                 request.price,
                 request.vipPrice,
                 request.amount
             );
 
 
+        // ==================================
+        // TIME
+        // ==================================
+
         const now =
             Date.now();
 
 
         // ==================================
-        // TRANSACTION ID
+        // TRANSACTION KEY
         // ==================================
 
         const transactionKey =
@@ -4917,7 +5096,7 @@ async function rejectVipRequest(id) {
                 "rejected",
 
             rejectedAt:
-                now,
+                Number(now),
 
             rejectedBy:
                 currentAdmin.uid
@@ -4926,17 +5105,19 @@ async function rejectVipRequest(id) {
 
 
         // ==================================
-        // TRANSACTION
+        // REJECT TRANSACTION
         // ==================================
 
         const transaction = {
 
-            uid,
+            uid:
+                uid,
 
             type:
                 "vip_purchase",
 
-            amount,
+            amount:
+                Number(amount),
 
             status:
                 "rejected",
@@ -4951,7 +5132,7 @@ async function rejectVipRequest(id) {
                 currentAdmin.uid,
 
             date:
-                now
+                Number(now)
 
         };
 
@@ -4977,6 +5158,10 @@ async function rejectVipRequest(id) {
             transaction;
 
 
+        // ==================================
+        // ONE WRITE
+        // ==================================
+
         await update(
             ref(db),
             updates
@@ -4999,7 +5184,8 @@ async function rejectVipRequest(id) {
                 requestId:
                     id,
 
-                uid,
+                uid:
+                    uid,
 
                 transactionId:
                     transactionKey
@@ -5009,7 +5195,7 @@ async function rejectVipRequest(id) {
 
 
         // ==================================
-        // REFRESH REQUESTS
+        // REFRESH
         // ==================================
 
         if (
@@ -5030,7 +5216,7 @@ async function rejectVipRequest(id) {
 
 
         // ==================================
-        // RETURN TO PENDING
+        // ROLLBACK
         // ==================================
 
         try {
@@ -5049,6 +5235,11 @@ async function rejectVipRequest(id) {
                         null
 
                 }
+            );
+
+            console.log(
+                "VIP rejection returned to pending:",
+                id
             );
 
         }
@@ -5091,8 +5282,10 @@ window.getVipDuration =
 // ======================================
 
 console.log(
-    "ADMIN PART 7 READY - VIP BALANCE DEDUCTION FIXED"
+    "ADMIN PART 7 READY - VIP APPROVE/REJECT SAFE"
 );
+
+
                 
 // ======================================
 // ADMIN.JS - PART 8
