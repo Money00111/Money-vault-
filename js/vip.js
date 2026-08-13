@@ -580,17 +580,27 @@ console.log("VIP PART 9 READY");
 
 // ======================================
 // VIP.JS - PART 7
-// CLAIM DAILY INCOME
+// SAFE DAILY VIP CLAIM
 // ======================================
 
 const claimIncomeBtn =
-document.getElementById("claimIncomeBtn");
+    document.getElementById("claimIncomeBtn");
 
 const claimTimer =
-document.getElementById("claimTimer");
+    document.getElementById("claimTimer");
 
 
-// BUTTON EVENT
+// ======================================
+// CONSTANT
+// ======================================
+
+const ONE_DAY =
+    24 * 60 * 60 * 1000;
+
+
+// ======================================
+// BUTTON
+// ======================================
 
 claimIncomeBtn?.addEventListener(
     "click",
@@ -598,17 +608,18 @@ claimIncomeBtn?.addEventListener(
 );
 
 
+// ======================================
+// CLAIM DAILY INCOME
+// ======================================
 
 async function claimDailyIncome() {
 
-    console.log("Claim button clicked");
-
-    alert("Button is working");
+    console.log("VIP claim started");
 
 
     if (!currentUser) {
 
-        alert("User not logged in");
+        alert("User not logged in.");
 
         return;
 
@@ -617,140 +628,300 @@ async function claimDailyIncome() {
 
     try {
 
-
         const userRef =
-        ref(
-            db,
-            "users/" + currentUser.uid
-        );
-
-
-        const userSnap =
-        await get(userRef);
-
-
-
-        if (!userSnap.exists()) {
-
-
-            alert("User not found");
-
-            return;
-
-
-        }
-
-
-
-        const user =
-        userSnap.val();
-
-
-
-        const vipPlans =
-        user.vipPlans || {};
-
-
-
-        let totalIncome = 0;
-
-        let updated = false;
+            ref(
+                db,
+                "users/" +
+                currentUser.uid
+            );
 
 
         const now =
-        Date.now();
+            Date.now();
 
 
+        // ==================================
+        // ATOMIC USER TRANSACTION
+        // ==================================
+        // This prevents double-click /
+        // simultaneous claim requests.
+        // ==================================
 
-        for (const key in vipPlans) {
+        let totalIncome = 0;
 
-
-            const vip =
-            vipPlans[key];
-
-
-
-            if (vip.status !== "active") {
-
-                continue;
-
-            }
+        let claimedPlans = 0;
 
 
+        const result =
+            await runTransaction(
+                userRef,
+                current => {
 
-            const lastClaim =
-            Number(vip.lastClaim || 0);
+                    if (!current) {
 
+                        return;
 
-
-            if (
-                now - lastClaim < 86400000
-            ) {
-
-                continue;
-
-            }
+                    }
 
 
+                    const user =
+                        current;
 
-            totalIncome +=
-            Number(
-                vip.dailyIncome || 0
+
+                    const plans =
+                        user.vipPlans || {};
+
+
+                    let changed =
+                        false;
+
+
+                    let income =
+                        0;
+
+
+                    let planCount =
+                        0;
+
+
+                    for (
+                        const key in plans
+                    ) {
+
+                        const vip =
+                            plans[key];
+
+
+                        // ==========================
+                        // ONLY ACTIVE VIP
+                        // ==========================
+
+                        if (
+                            String(
+                                vip.status || ""
+                            ).toLowerCase()
+                            !== "active"
+                        ) {
+
+                            continue;
+
+                        }
+
+
+                        // ==========================
+                        // CHECK EXPIRATION
+                        // ==========================
+
+                        const endDate =
+                            Number(
+                                vip.endDate || 0
+                            );
+
+
+                        if (
+                            endDate > 0 &&
+                            now >= endDate
+                        ) {
+
+                            continue;
+
+                        }
+
+
+                        // ==========================
+                        // DAILY INCOME
+                        // ==========================
+
+                        const daily =
+                            Number(
+                                vip.dailyIncome || 0
+                            );
+
+
+                        if (
+                            !Number.isFinite(daily) ||
+                            daily <= 0
+                        ) {
+
+                            continue;
+
+                        }
+
+
+                        // ==========================
+                        // LAST CLAIM
+                        // ==========================
+
+                        const lastClaim =
+                            Number(
+                                vip.lastClaim ||
+                                vip.lastClaimTime ||
+                                vip.lastProfitTime ||
+                                0
+                            );
+
+
+                        // ==========================
+                        // IMPORTANT
+                        //
+                        // Approval sets:
+                        //
+                        // lastClaim = approval time
+                        //
+                        // Therefore the first claim
+                        // cannot happen immediately.
+                        // ==========================
+
+                        if (
+                            lastClaim > 0 &&
+                            now - lastClaim < ONE_DAY
+                        ) {
+
+                            continue;
+
+                        }
+
+
+                        // ==========================
+                        // CLAIM
+                        // ==========================
+
+                        income +=
+                            daily;
+
+
+                        planCount++;
+
+
+                        plans[key] = {
+
+                            ...vip,
+
+                            lastClaim:
+                                now,
+
+                            lastClaimTime:
+                                now,
+
+                            lastProfitTime:
+                                now,
+
+                            totalEarned:
+                                Number(
+                                    vip.totalEarned || 0
+                                ) + daily,
+
+                            earned:
+                                Number(
+                                    vip.earned || 0
+                                ) + daily
+
+                        };
+
+
+                        changed =
+                            true;
+
+                    }
+
+
+                    // ==================================
+                    // NOTHING AVAILABLE
+                    // ==================================
+
+                    if (!changed) {
+
+                        return;
+
+                    }
+
+
+                    const oldBalance =
+                        Number(
+                            user.balance || 0
+                        );
+
+
+                    if (
+                        !Number.isFinite(
+                            oldBalance
+                        )
+                    ) {
+
+                        return;
+
+                    }
+
+
+                    const newBalance =
+                        oldBalance +
+                        income;
+
+
+                    if (
+                        !Number.isFinite(
+                            newBalance
+                        )
+                    ) {
+
+                        return;
+
+                    }
+
+
+                    totalIncome =
+                        income;
+
+
+                    claimedPlans =
+                        planCount;
+
+
+                    return {
+
+                        ...user,
+
+                        balance:
+                            newBalance,
+
+                        vipPlans:
+                            plans
+
+                    };
+
+                }
             );
 
 
+        // ==================================
+        // TRANSACTION NOT COMMITTED
+        // ==================================
 
-            vipPlans[key].lastClaim =
-            now;
-
-
-
-            updated = true;
-
-
-        }
-
-
-
-        if (!updated) {
-
+        if (
+            !result.committed ||
+            totalIncome <= 0
+        ) {
 
             alert(
-                "Daily income is not available yet."
+                "Daily income is not available yet. Please wait 24 hours."
             );
-
 
             return;
 
-
         }
 
 
-
-        await update(
-            userRef,
-            {
-
-                balance:
-                Number(user.balance || 0)
-                +
-                totalIncome,
-
-
-                vipPlans:
-                vipPlans
-
-            }
-        );
-
-
-
+        // ==================================
+        // SAVE TRANSACTION HISTORY
+        // ==================================
 
         const txRef =
-        push(
-            ref(db, "transactions")
-        );
-
+            push(
+                ref(
+                    db,
+                    "transactions"
+                )
+            );
 
 
         await set(
@@ -758,46 +929,42 @@ async function claimDailyIncome() {
             {
 
                 uid:
-                currentUser.uid,
-
+                    currentUser.uid,
 
                 email:
-                currentUser.email,
-
+                    currentUser.email || "",
 
                 type:
-                "dailyIncome",
-
+                    "dailyIncome",
 
                 amount:
-                totalIncome,
-
+                    totalIncome,
 
                 status:
-                "completed",
+                    "completed",
 
+                vipPlansClaimed:
+                    claimedPlans,
 
                 createdAt:
-                now
+                    now
 
             }
         );
 
 
+        // ==================================
+        // SUCCESS
+        // ==================================
 
         alert(
-            totalIncome.toLocaleString()
-            +
+            totalIncome.toLocaleString() +
             " RWF claimed successfully."
         );
 
 
-
     }
-
-
-    catch(error) {
-
+    catch (error) {
 
         console.error(
             "Claim Error:",
@@ -805,17 +972,22 @@ async function claimDailyIncome() {
         );
 
 
-        alert(error.message);
-
+        alert(
+            "Claim failed: " +
+            (
+                error?.message ||
+                "Unknown error"
+            )
+        );
 
     }
-
 
 }
 
 
-console.log("VIP PART 7 READY");
-
+console.log(
+    "VIP PART 7 READY"
+);
 // ======================================
 // VIP.JS - PART 8
 // VIP EXPIRATION SYSTEM
