@@ -4409,13 +4409,13 @@ async function approveVipRequest(id) {
             // IMPORTANT:
             // Rules require this to be a NUMBER
             lastClaim:
-                Number(0),
+    now,
 
-            lastClaimTime:
-                Number(0),
+lastClaimTime:
+    now,
 
-            lastProfitTime:
-                Number(0),
+lastProfitTime:
+    now,
 
             totalEarned:
                 Number(0),
