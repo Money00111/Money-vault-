@@ -1310,13 +1310,14 @@ async function startClaimTimer() {
 
 
 
-        // BUTTON IGUMEHO IKORA
+        // BUTTON IGUMEHO IFUNZE
+// kugeza amasaha 24 yuzuye
 
-        if (claimIncomeBtn) {
+if (claimIncomeBtn) {
 
-            claimIncomeBtn.disabled = false;
+    claimIncomeBtn.disabled = true;
 
-        }
+}
 
 
 
