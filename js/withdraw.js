@@ -289,13 +289,10 @@ function updateWithdrawCalculator() {
 
     }
 
-    if (amount < 2000) {
-
-        submitBtn.disabled = true;
-
-        return;
-
-    }
+    if (amount < 4000) {
+    submitBtn.disabled = true;
+    return;
+}
 
     if (amount > 500000) {
 
@@ -387,11 +384,11 @@ withdrawForm?.addEventListener("submit", async (e) => {
 
     const balance = Number(window.userBalance || 0);
 
-    if (amount < 2000) {
+    if (amount < 4000) {
 
-        alert("Minimum withdraw is 2,000 RWF.");
+    alert("Minimum withdraw is 4,000 RWF.");
 
-        return;
+    return;
 
     }
 
