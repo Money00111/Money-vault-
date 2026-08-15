@@ -5667,4 +5667,1002 @@ console.log(
 );
 
 
+// ======================================
+// ADMIN.JS - PART 9
+// TRANSACTIONS
+// DEPOSITS + WITHDRAWS + VIP PURCHASES
+// ======================================
 
+
+// ======================================
+// TRANSACTION DATE
+// ======================================
+
+function formatTransactionDate(value) {
+
+    if (!value) {
+        return "-";
+    }
+
+
+    const date =
+        new Date(
+            Number(value)
+        );
+
+
+    if (
+        Number.isNaN(
+            date.getTime()
+        )
+    ) {
+
+        return String(value);
+
+    }
+
+
+    return date.toLocaleString();
+
+}
+
+
+// ======================================
+// TRANSACTION TYPE
+// ======================================
+
+function getTransactionType(transaction) {
+
+    const type =
+        String(
+            transaction?.type ||
+            ""
+        ).toLowerCase()
+        .trim();
+
+
+    if (
+        type === "deposit"
+    ) {
+
+        return "deposit";
+
+    }
+
+
+    if (
+        type === "withdraw" ||
+        type === "withdrawal"
+    ) {
+
+        return "withdraw";
+
+    }
+
+
+    if (
+        type === "vip_purchase" ||
+        type === "vippurchase" ||
+        type === "vip"
+    ) {
+
+        return "vip_purchase";
+
+    }
+
+
+    return type || "unknown";
+
+}
+
+
+// ======================================
+// TRANSACTION TYPE LABEL
+// ======================================
+
+function getTransactionTypeLabel(type) {
+
+    switch (type) {
+
+        case "deposit":
+            return "Deposit";
+
+
+        case "withdraw":
+            return "Withdraw";
+
+
+        case "vip_purchase":
+            return "VIP Purchase";
+
+
+        default:
+            return "Transaction";
+
+    }
+
+}
+
+
+// ======================================
+// TRANSACTION STATUS LABEL
+// ======================================
+
+function getTransactionStatusLabel(status) {
+
+    const value =
+        String(
+            status ||
+            "unknown"
+        ).toLowerCase();
+
+
+    switch (value) {
+
+        case "approved":
+            return "Approved";
+
+
+        case "rejected":
+            return "Rejected";
+
+
+        case "pending":
+            return "Pending";
+
+
+        case "processing":
+            return "Processing";
+
+
+        default:
+            return (
+                value.charAt(0).toUpperCase() +
+                value.slice(1)
+            );
+
+    }
+
+}
+
+
+// ======================================
+// TRANSACTION SEARCH TEXT
+// ======================================
+
+function getTransactionSearchText(
+    id,
+    transaction
+) {
+
+    const item =
+        transaction || {};
+
+
+    return [
+
+        id,
+
+        item.uid,
+        item.userId,
+        item.userUID,
+
+        item.reference,
+        item.requestId,
+
+        item.type,
+        item.status,
+
+        item.vipName,
+        item.planName,
+
+        item.approvedBy,
+        item.rejectedBy
+
+    ]
+    .filter(
+        value =>
+            value !== undefined &&
+            value !== null
+    )
+    .join(" ")
+    .toLowerCase();
+
+}
+
+
+// ======================================
+// LOAD TRANSACTIONS
+// ======================================
+
+function loadTransactions() {
+
+    if (
+        !window.adminState?.ready
+    ) {
+
+        console.log(
+            "Transactions waiting for Admin Auth..."
+        );
+
+        return;
+
+    }
+
+
+    const list =
+        document.getElementById(
+            "transactionList"
+        );
+
+
+    const empty =
+        document.getElementById(
+            "emptyTransaction"
+        );
+
+
+    const searchInput =
+        document.getElementById(
+            "transactionSearch"
+        );
+
+
+    const filterSelect =
+        document.getElementById(
+            "transactionFilter"
+        );
+
+
+    if (!list) {
+
+        console.warn(
+            "transactionList not found."
+        );
+
+        return;
+
+    }
+
+
+    // ==================================
+    // ADD VIP FILTER OPTION
+    // ==================================
+
+    if (filterSelect) {
+
+        const vipOption =
+            filterSelect.querySelector(
+                'option[value="vip_purchase"]'
+            );
+
+
+        if (!vipOption) {
+
+            const option =
+                document.createElement(
+                    "option"
+                );
+
+
+            option.value =
+                "vip_purchase";
+
+
+            option.textContent =
+                "VIP Purchases";
+
+
+            filterSelect.appendChild(
+                option
+            );
+
+        }
+
+    }
+
+
+    // ==================================
+    // FIREBASE TRANSACTIONS
+    // ==================================
+
+    onValue(
+        ref(
+            db,
+            "transactions"
+        ),
+
+        snapshot => {
+
+            list.innerHTML = "";
+
+
+            // ==================================
+            // NO TRANSACTIONS
+            // ==================================
+
+            if (
+                !snapshot.exists()
+            ) {
+
+                if (empty) {
+
+                    empty.style.display =
+                        "block";
+
+                }
+
+
+                console.log(
+                    "No transactions found."
+                );
+
+
+                return;
+
+            }
+
+
+            if (empty) {
+
+                empty.style.display =
+                    "none";
+
+            }
+
+
+            // ==================================
+            // CONVERT TO ARRAY
+            // ==================================
+
+            const transactions =
+                Object.entries(
+                    snapshot.val() || {}
+                )
+                .map(
+                    ([id, transaction]) => ({
+
+                        id,
+
+                        data:
+                            transaction || {}
+
+                    })
+                )
+                .sort(
+                    (a, b) => {
+
+                        const dateA =
+                            Number(
+                                a.data.date ||
+                                a.data.createdAt ||
+                                a.data.timestamp ||
+                                a.data.approvedAt ||
+                                a.data.rejectedAt ||
+                                0
+                            );
+
+
+                        const dateB =
+                            Number(
+                                b.data.date ||
+                                b.data.createdAt ||
+                                b.data.timestamp ||
+                                b.data.approvedAt ||
+                                b.data.rejectedAt ||
+                                0
+                            );
+
+
+                        return dateB - dateA;
+
+                    }
+                );
+
+
+            // ==================================
+            // FILTER VALUES
+            // ==================================
+
+            const search =
+                String(
+                    searchInput?.value ||
+                    ""
+                )
+                .toLowerCase()
+                .trim();
+
+
+            const selectedType =
+                String(
+                    filterSelect?.value ||
+                    "all"
+                )
+                .toLowerCase();
+
+
+            // ==================================
+            // APPLY FILTER
+            // ==================================
+
+            const filtered =
+                transactions.filter(
+                    item => {
+
+                        const transaction =
+                            item.data || {};
+
+
+                        const type =
+                            getTransactionType(
+                                transaction
+                            );
+
+
+                        const searchText =
+                            getTransactionSearchText(
+                                item.id,
+                                transaction
+                            );
+
+
+                        // --------------------------
+                        // TYPE FILTER
+                        // --------------------------
+
+                        if (
+                            selectedType !== "all" &&
+                            type !== selectedType
+                        ) {
+
+                            return false;
+
+                        }
+
+
+                        // --------------------------
+                        // SEARCH FILTER
+                        // --------------------------
+
+                        if (
+                            search &&
+                            !searchText.includes(
+                                search
+                            )
+                        ) {
+
+                            return false;
+
+                        }
+
+
+                        return true;
+
+                    }
+                );
+
+
+            // ==================================
+            // NOTHING AFTER FILTER
+            // ==================================
+
+            if (
+                filtered.length === 0
+            ) {
+
+                if (empty) {
+
+                    empty.style.display =
+                        "block";
+
+
+                    empty.innerHTML = `
+
+                        <i class="fa-solid fa-clock-rotate-left"></i>
+
+                        <h3>
+                            No Transactions Found
+                        </h3>
+
+                        <p>
+                            No transaction matches your search or filter.
+                        </p>
+
+                    `;
+
+                }
+
+
+                return;
+
+            }
+
+
+            if (empty) {
+
+                empty.style.display =
+                    "none";
+
+            }
+
+
+            // ==================================
+            // RENDER TRANSACTIONS
+            // ==================================
+
+            filtered.forEach(
+                item => {
+
+                    const id =
+                        item.id;
+
+
+                    const transaction =
+                        item.data || {};
+
+
+                    const type =
+                        getTransactionType(
+                            transaction
+                        );
+
+
+                    const typeLabel =
+                        getTransactionTypeLabel(
+                            type
+                        );
+
+
+                    const status =
+                        String(
+                            transaction.status ||
+                            "unknown"
+                        ).toLowerCase();
+
+
+                    const statusLabel =
+                        getTransactionStatusLabel(
+                            status
+                        );
+
+
+                    const uid =
+                        transaction.uid ||
+                        transaction.userId ||
+                        transaction.userUID ||
+                        "-";
+
+
+                    const amount =
+                        Number(
+                            transaction.amount ||
+                            transaction.price ||
+                            0
+                        );
+
+
+                    const reference =
+                        transaction.reference ||
+                        transaction.requestId ||
+                        "-";
+
+
+                    const date =
+                        transaction.date ||
+                        transaction.createdAt ||
+                        transaction.timestamp ||
+                        transaction.approvedAt ||
+                        transaction.rejectedAt ||
+                        0;
+
+
+                    const vipName =
+                        transaction.vipName ||
+                        transaction.planName ||
+                        "";
+
+
+                    const card =
+                        document.createElement(
+                            "div"
+                        );
+
+
+                    card.className =
+                        "transaction-card";
+
+
+                    // ==================================
+                    // STATUS CLASS
+                    // ==================================
+
+                    let statusClass =
+                        "pending";
+
+
+                    if (
+                        status === "approved"
+                    ) {
+
+                        statusClass =
+                            "approved";
+
+                    }
+                    else if (
+                        status === "rejected"
+                    ) {
+
+                        statusClass =
+                            "rejected";
+
+                    }
+                    else if (
+                        status === "processing"
+                    ) {
+
+                        statusClass =
+                            "processing";
+
+                    }
+
+
+                    // ==================================
+                    // TYPE ICON
+                    // ==================================
+
+                    let typeIcon =
+                        "fa-clock-rotate-left";
+
+
+                    if (
+                        type === "deposit"
+                    ) {
+
+                        typeIcon =
+                            "fa-money-bill-trend-up";
+
+                    }
+                    else if (
+                        type === "withdraw"
+                    ) {
+
+                        typeIcon =
+                            "fa-money-bill-transfer";
+
+                    }
+                    else if (
+                        type === "vip_purchase"
+                    ) {
+
+                        typeIcon =
+                            "fa-crown";
+
+                    }
+
+
+                    // ==================================
+                    // VIP INFORMATION
+                    // ==================================
+
+                    const vipHTML =
+                        type === "vip_purchase"
+
+                        ?
+
+                        `
+
+                        <p>
+                            <strong>
+                                VIP Plan:
+                            </strong>
+
+                            ${escapeHTML(
+                                vipName ||
+                                "VIP Plan"
+                            )}
+                        </p>
+
+                        ${
+                            transaction.duration
+                            ?
+
+                            `
+                            <p>
+                                <strong>
+                                    Duration:
+                                </strong>
+
+                                ${Number(
+                                    transaction.duration
+                                )} Days
+                            </p>
+                            `
+
+                            :
+
+                            ""
+                        }
+
+                        `
+
+                        :
+
+                        "";
+
+
+                    // ==================================
+                    // ADMIN INFORMATION
+                    // ==================================
+
+                    let adminHTML =
+                        "";
+
+
+                    if (
+                        transaction.approvedBy
+                    ) {
+
+                        adminHTML += `
+
+                            <p>
+                                <strong>
+                                    Approved By:
+                                </strong>
+
+                                ${escapeHTML(
+                                    transaction.approvedBy
+                                )}
+                            </p>
+
+                        `;
+
+                    }
+
+
+                    if (
+                        transaction.rejectedBy
+                    ) {
+
+                        adminHTML += `
+
+                            <p>
+                                <strong>
+                                    Rejected By:
+                                </strong>
+
+                                ${escapeHTML(
+                                    transaction.rejectedBy
+                                )}
+                            </p>
+
+                        `;
+
+                    }
+
+
+                    // ==================================
+                    // CARD
+                    // ==================================
+
+                    card.innerHTML = `
+
+                        <div class="request-top">
+
+                            <h3>
+
+                                <i class="fa-solid ${typeIcon}"></i>
+
+                                ${escapeHTML(
+                                    typeLabel
+                                )}
+
+                            </h3>
+
+
+                            <span
+                                class="status ${statusClass}"
+                            >
+                                ${escapeHTML(
+                                    statusLabel
+                                )}
+                            </span>
+
+                        </div>
+
+
+                        <div class="withdraw-details">
+
+                            <p>
+
+                                <strong>
+                                    Amount:
+                                </strong>
+
+                                ${amount.toLocaleString()}
+                                RWF
+
+                            </p>
+
+
+                            <p>
+
+                                <strong>
+                                    User ID:
+                                </strong>
+
+                                ${escapeHTML(
+                                    uid
+                                )}
+
+                            </p>
+
+
+                            <p>
+
+                                <strong>
+                                    Reference:
+                                </strong>
+
+                                ${escapeHTML(
+                                    reference
+                                )}
+
+                            </p>
+
+
+                            <p>
+
+                                <strong>
+                                    Transaction ID:
+                                </strong>
+
+                                ${escapeHTML(
+                                    id
+                                )}
+
+                            </p>
+
+
+                            ${vipHTML}
+
+
+                            <p>
+
+                                <strong>
+                                    Date:
+                                </strong>
+
+                                ${escapeHTML(
+                                    formatTransactionDate(
+                                        date
+                                    )
+                                )}
+
+                            </p>
+
+
+                            ${adminHTML}
+
+                        </div>
+
+                    `;
+
+
+                    list.appendChild(
+                        card
+                    );
+
+                }
+            );
+
+
+            console.log(
+                "Transactions loaded:",
+                filtered.length,
+                "/",
+                transactions.length
+            );
+
+        },
+
+        error => {
+
+            console.error(
+                "Transaction loading error:",
+                error
+            );
+
+
+            list.innerHTML = `
+
+                <div class="empty-state">
+
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+
+                    <h3>
+                        Failed to Load Transactions
+                    </h3>
+
+                    <p>
+                        ${escapeHTML(
+                            error.message ||
+                            "Unknown Firebase error."
+                        )}
+                    </p>
+
+                </div>
+
+            `;
+
+        }
+
+    );
+
+
+    // ==================================
+    // SEARCH
+    // ==================================
+
+    if (
+        searchInput &&
+        !searchInput.dataset.bound
+    ) {
+
+        searchInput.dataset.bound =
+            "true";
+
+
+        searchInput.addEventListener(
+            "input",
+            () => {
+
+                loadTransactions();
+
+            }
+        );
+
+    }
+
+
+    // ==================================
+    // FILTER
+    // ==================================
+
+    if (
+        filterSelect &&
+        !filterSelect.dataset.bound
+    ) {
+
+        filterSelect.dataset.bound =
+            "true";
+
+
+        filterSelect.addEventListener(
+            "change",
+            () => {
+
+                loadTransactions();
+
+            }
+        );
+
+    }
+
+}
+
+
+// ======================================
+// GLOBAL EXPORT
+// ======================================
+
+window.loadTransactions =
+    loadTransactions;
+
+
+// ======================================
+// PART 9 READY
+// ======================================
+
+console.log(
+    "ADMIN PART 9 READY - TRANSACTIONS"
+);
