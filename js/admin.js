@@ -7082,12 +7082,28 @@ console.log(
 
 // ======================================
 // ADMIN.JS - PART 11
-// USERS MANAGEMENT
+// USERS - FULL INFORMATION
+// CALCULATED FROM REAL DATABASE DATA
 // ======================================
 
 
 // ======================================
-// USERS ELEMENTS
+// USERS VARIABLES
+// ======================================
+
+let usersData = {};
+
+let allTransactionsData = {};
+
+let allVipBuyersData = {};
+
+let allDepositRequestsData = {};
+
+let allWithdrawRequestsData = {};
+
+
+// ======================================
+// DOM
 // ======================================
 
 const usersList =
@@ -7104,27 +7120,17 @@ const userFilter =
 
 
 // ======================================
-// USERS DATA
-// ======================================
-
-if (typeof usersData === "undefined") {
-    var usersData = {};
-}
-
-
-// ======================================
 // SAFE NUMBER
 // ======================================
 
-function userNumber(...values) {
+function usersNumber(...values) {
 
     for (const value of values) {
 
-        const number =
-            Number(value);
+        const n = Number(value);
 
-        if (Number.isFinite(number)) {
-            return number;
+        if (Number.isFinite(n)) {
+            return n;
         }
 
     }
@@ -7137,7 +7143,7 @@ function userNumber(...values) {
 // SAFE TEXT
 // ======================================
 
-function userText(...values) {
+function usersText(...values) {
 
     for (const value of values) {
 
@@ -7162,12 +7168,10 @@ function userText(...values) {
 // FORMAT MONEY
 // ======================================
 
-function formatUserMoney(value) {
+function usersMoney(value) {
 
-    const amount =
-        userNumber(value);
-
-    return amount.toLocaleString() + " RWF";
+    return usersNumber(value)
+        .toLocaleString() + " RWF";
 
 }
 
@@ -7176,16 +7180,17 @@ function formatUserMoney(value) {
 // FORMAT DATE
 // ======================================
 
-function formatUserDate(value) {
+function usersDate(value) {
 
-    if (!value) {
+    const n =
+        Number(value || 0);
+
+    if (!n) {
         return "N/A";
     }
 
     const date =
-        new Date(
-            Number(value)
-        );
+        new Date(n);
 
     if (
         !Number.isFinite(
@@ -7203,25 +7208,33 @@ function formatUserDate(value) {
 
 
 // ======================================
-// GET USER NAME
+// USER NAME
 // ======================================
 
-function getUserName(user) {
+function usersName(user) {
 
-    return userText(
+    return usersText(
 
         user.fullName,
+
         user.name,
+
         user.displayName,
+
         user.username,
+
         user.userName,
 
-        user.firstName &&
+        (
+            user.firstName &&
+            user.lastName
+        )
+        ?
+        user.firstName +
+        " " +
         user.lastName
-            ? user.firstName +
-              " " +
-              user.lastName
-            : "",
+        :
+        "",
 
         user.firstName,
 
@@ -7233,14 +7246,15 @@ function getUserName(user) {
 
 
 // ======================================
-// GET USER EMAIL
+// EMAIL
 // ======================================
 
-function getUserEmail(user) {
+function usersEmail(user) {
 
-    return userText(
+    return usersText(
 
         user.email,
+
         user.userEmail,
 
         "No email"
@@ -7251,16 +7265,19 @@ function getUserEmail(user) {
 
 
 // ======================================
-// GET USER PHONE
+// PHONE
 // ======================================
 
-function getUserPhone(user) {
+function usersPhone(user) {
 
-    return userText(
+    return usersText(
 
         user.phone,
+
         user.phoneNumber,
+
         user.mobile,
+
         user.mobileNumber,
 
         "No phone"
@@ -7271,14 +7288,15 @@ function getUserPhone(user) {
 
 
 // ======================================
-// GET COUNTRY
+// COUNTRY
 // ======================================
 
-function getUserCountry(user) {
+function usersCountry(user) {
 
-    return userText(
+    return usersText(
 
         user.country,
+
         user.countryName,
 
         "Rwanda"
@@ -7289,14 +7307,15 @@ function getUserCountry(user) {
 
 
 // ======================================
-// GET BALANCE
+// BALANCE
 // ======================================
 
-function getUserBalance(user) {
+function usersBalance(user) {
 
-    return userNumber(
+    return usersNumber(
 
         user.balance,
+
         user.Balance,
 
         user.walletBalance,
@@ -7309,19 +7328,18 @@ function getUserBalance(user) {
 
 
 // ======================================
-// TOTAL DEPOSITS
+// TRANSACTION USER ID
 // ======================================
 
-function getUserDeposits(user) {
+function transactionUid(tx) {
 
-    return userNumber(
+    return usersText(
 
-        user.totalDeposits,
-        user.totalDeposit,
+        tx.uid,
 
-        user.deposits,
+        tx.userId,
 
-        user.depositTotal
+        tx.userUID
 
     );
 
@@ -7329,19 +7347,52 @@ function getUserDeposits(user) {
 
 
 // ======================================
-// TOTAL WITHDRAWALS
+// TRANSACTION TYPE
 // ======================================
 
-function getUserWithdrawals(user) {
+function transactionType(tx) {
 
-    return userNumber(
+    return usersText(
 
-        user.totalWithdrawals,
-        user.totalWithdrawal,
+        tx.type,
 
-        user.withdrawals,
+        tx.transactionType,
 
-        user.withdrawTotal
+        tx.category
+
+    ).toLowerCase();
+
+}
+
+
+// ======================================
+// TRANSACTION STATUS
+// ======================================
+
+function transactionStatus(tx) {
+
+    return usersText(
+
+        tx.status
+
+    ).toLowerCase();
+
+}
+
+
+// ======================================
+// TRANSACTION AMOUNT
+// ======================================
+
+function transactionAmount(tx) {
+
+    return usersNumber(
+
+        tx.amount,
+
+        tx.price,
+
+        tx.value
 
     );
 
@@ -7349,19 +7400,22 @@ function getUserWithdrawals(user) {
 
 
 // ======================================
-// REFERRAL EARNINGS
+// TRANSACTION DATE
 // ======================================
 
-function getReferralEarnings(user) {
+function transactionDate(tx) {
 
-    return userNumber(
+    return usersNumber(
 
-        user.referralEarnings,
-        user.referralIncome,
+        tx.createdAt,
 
-        user.referralProfit,
+        tx.date,
 
-        user.totalReferralEarnings
+        tx.timestamp,
+
+        tx.approvedAt,
+
+        tx.completedAt
 
     );
 
@@ -7369,21 +7423,528 @@ function getReferralEarnings(user) {
 
 
 // ======================================
-// TOTAL PROFITS
+// CHECK SUCCESSFUL TRANSACTION
 // ======================================
 
-function getUserProfits(user) {
+function transactionApproved(tx) {
 
-    return userNumber(
+    const status =
+        transactionStatus(tx);
 
-        user.totalProfits,
-        user.totalProfit,
+    return (
 
-        user.profits,
+        status === "approved" ||
 
-        user.profit
+        status === "completed" ||
+
+        status === "success" ||
+
+        status === "successful"
 
     );
+
+}
+
+
+// ======================================
+// CALCULATE USER DEPOSITS
+// ======================================
+
+function calculateUserDeposits(uid) {
+
+    let total = 0;
+
+
+    Object.values(
+        allTransactionsData || {}
+    )
+    .forEach(tx => {
+
+        if (
+            transactionUid(tx) !== uid
+        ) {
+            return;
+        }
+
+
+        const type =
+            transactionType(tx);
+
+
+        if (
+            (
+                type === "deposit" ||
+                type === "deposit_request"
+            ) &&
+            transactionApproved(tx)
+        ) {
+
+            total +=
+                transactionAmount(tx);
+
+        }
+
+    });
+
+
+    // ----------------------------------
+    // FALLBACK TO USER DATA
+    // ----------------------------------
+
+    if (total <= 0) {
+
+        const user =
+            usersData[uid] || {};
+
+        total =
+            usersNumber(
+                user.totalDeposits,
+                user.totalDeposit
+            );
+
+    }
+
+
+    return total;
+
+}
+
+
+// ======================================
+// CALCULATE USER WITHDRAWALS
+// ======================================
+
+function calculateUserWithdrawals(uid) {
+
+    let total = 0;
+
+
+    Object.values(
+        allTransactionsData || {}
+    )
+    .forEach(tx => {
+
+        if (
+            transactionUid(tx) !== uid
+        ) {
+            return;
+        }
+
+
+        const type =
+            transactionType(tx);
+
+
+        if (
+            (
+                type === "withdrawal" ||
+                type === "withdraw" ||
+                type === "withdraw_request"
+            ) &&
+            transactionApproved(tx)
+        ) {
+
+            total +=
+                transactionAmount(tx);
+
+        }
+
+    });
+
+
+    // ----------------------------------
+    // FALLBACK
+    // ----------------------------------
+
+    if (total <= 0) {
+
+        const user =
+            usersData[uid] || {};
+
+        total =
+            usersNumber(
+                user.totalWithdrawals,
+                user.totalWithdrawal
+            );
+
+    }
+
+
+    return total;
+
+}
+
+
+// ======================================
+// CALCULATE DAILY INCOME
+// ======================================
+
+function calculateUserDailyIncome(uid) {
+
+    let total = 0;
+
+
+    Object.values(
+        allTransactionsData || {}
+    )
+    .forEach(tx => {
+
+        if (
+            transactionUid(tx) !== uid
+        ) {
+            return;
+        }
+
+
+        const type =
+            transactionType(tx);
+
+
+        if (
+            type === "dailyincome" ||
+            type === "daily_income" ||
+            type === "vip_profit" ||
+            type === "profit"
+        ) {
+
+            if (
+                transactionApproved(tx)
+            ) {
+
+                total +=
+                    transactionAmount(tx);
+
+            }
+
+        }
+
+    });
+
+
+    return total;
+
+}
+
+
+// ======================================
+// CALCULATE REFERRAL EARNINGS
+// ======================================
+
+function calculateReferralEarnings(uid) {
+
+    const user =
+        usersData[uid] || {};
+
+
+    let total =
+        usersNumber(
+
+            user.referralEarnings,
+
+            user.referralIncome,
+
+            user.referralProfit,
+
+            user.totalReferralEarnings
+
+        );
+
+
+    Object.values(
+        allTransactionsData || {}
+    )
+    .forEach(tx => {
+
+        if (
+            transactionUid(tx) !== uid
+        ) {
+            return;
+        }
+
+
+        const type =
+            transactionType(tx);
+
+
+        if (
+            type === "referral" ||
+            type === "referralearning" ||
+            type === "referral_income"
+        ) {
+
+            if (
+                transactionApproved(tx)
+            ) {
+
+                total +=
+                    transactionAmount(tx);
+
+            }
+
+        }
+
+    });
+
+
+    return total;
+
+}
+
+
+// ======================================
+// CALCULATE TOTAL PROFITS
+// ======================================
+
+function calculateUserProfits(uid) {
+
+    let total = 0;
+
+
+    Object.values(
+        allTransactionsData || {}
+    )
+    .forEach(tx => {
+
+        if (
+            transactionUid(tx) !== uid
+        ) {
+            return;
+        }
+
+
+        const type =
+            transactionType(tx);
+
+
+        if (
+            type === "dailyincome" ||
+            type === "daily_income" ||
+            type === "vip_profit" ||
+            type === "profit" ||
+            type === "referral" ||
+            type === "referralearning" ||
+            type === "referral_income"
+        ) {
+
+            if (
+                transactionApproved(tx)
+            ) {
+
+                total +=
+                    transactionAmount(tx);
+
+            }
+
+        }
+
+    });
+
+
+    // ----------------------------------
+    // FALLBACK
+    // ----------------------------------
+
+    if (total <= 0) {
+
+        const user =
+            usersData[uid] || {};
+
+        total =
+            usersNumber(
+
+                user.totalProfits,
+
+                user.totalProfit,
+
+                user.profits,
+
+                user.profit
+
+            );
+
+    }
+
+
+    return total;
+
+}
+
+
+// ======================================
+// GET VIP BUYERS
+// ======================================
+
+function getUserVipBuyers(uid) {
+
+    return Object.entries(
+        allVipBuyersData || {}
+    )
+    .filter(
+        ([id, vip]) => {
+
+            return (
+                usersText(
+                    vip.uid,
+                    vip.userId,
+                    vip.userUID
+                )
+                === uid
+            );
+
+        }
+    );
+
+}
+
+
+// ======================================
+// VIP COUNT
+// ======================================
+
+function getUserVipCount(uid) {
+
+    return getUserVipBuyers(uid).length;
+
+}
+
+
+// ======================================
+// ACTIVE VIP COUNT
+// ======================================
+
+function getUserActiveVipCount(uid) {
+
+    return getUserVipBuyers(uid)
+        .filter(
+            ([id, vip]) => {
+
+                return (
+                    String(
+                        vip.status || ""
+                    ).toLowerCase()
+                    === "active"
+                );
+
+            }
+        )
+        .length;
+
+}
+
+
+// ======================================
+// VIP DAILY INCOME
+// ======================================
+
+function getUserVipDailyIncome(uid) {
+
+    let total = 0;
+
+
+    getUserVipBuyers(uid)
+        .forEach(
+            ([id, vip]) => {
+
+                if (
+                    String(
+                        vip.status || ""
+                    ).toLowerCase()
+                    !== "active"
+                ) {
+
+                    return;
+
+                }
+
+
+                total +=
+                    usersNumber(
+                        vip.dailyIncome
+                    );
+
+            }
+        );
+
+
+    return total;
+
+}
+
+
+// ======================================
+// VIP TOTAL PROFIT
+// ======================================
+
+function getUserVipTotalProfit(uid) {
+
+    let total = 0;
+
+
+    getUserVipBuyers(uid)
+        .forEach(
+            ([id, vip]) => {
+
+                total +=
+                    usersNumber(
+                        vip.totalProfit
+                    );
+
+            }
+        );
+
+
+    return total;
+
+}
+
+
+// ======================================
+// VIP EARNED
+// ======================================
+
+function getUserVipEarned(uid) {
+
+    let total = 0;
+
+
+    // ----------------------------------
+    // FROM USER VIP PLANS
+    // ----------------------------------
+
+    const user =
+        usersData[uid] || {};
+
+
+    const plans =
+        user.vipPlans || {};
+
+
+    Object.values(plans)
+        .forEach(
+            vip => {
+
+                total +=
+                    usersNumber(
+
+                        vip.totalEarned,
+
+                        vip.earned
+
+                    );
+
+            }
+        );
+
+
+    // ----------------------------------
+    // FROM TRANSACTIONS
+    // ----------------------------------
+
+    total +=
+        calculateUserDailyIncome(uid);
+
+
+    return total;
 
 }
 
@@ -7392,11 +7953,12 @@ function getUserProfits(user) {
 // REFERRAL CODE
 // ======================================
 
-function getReferralCode(user) {
+function getUserReferralCode(user) {
 
-    return userText(
+    return usersText(
 
         user.referralCode,
+
         user.refCode,
 
         user.referral,
@@ -7412,25 +7974,26 @@ function getReferralCode(user) {
 // ACCOUNT STATUS
 // ======================================
 
-function getAccountStatus(user) {
+function getUserAccountStatus(user) {
 
     const status =
-        userText(
+        usersText(
 
             user.status,
-            user.accountStatus,
 
-            user.isActive === false
-                ? "inactive"
-                : ""
+            user.accountStatus
 
         ).toLowerCase();
 
 
     if (
+
         status === "blocked" ||
+
         status === "disabled" ||
+
         status === "inactive"
+
     ) {
 
         return "Inactive";
@@ -7444,64 +8007,21 @@ function getAccountStatus(user) {
 
 
 // ======================================
-// VIP STATUS
-// ======================================
-
-function getUserVipStatus(user) {
-
-    const vip =
-        user.vip ||
-        user.isVip ||
-        user.vipStatus ||
-        user.activeVip;
-
-
-    if (
-        vip === true ||
-        String(vip).toLowerCase() === "true" ||
-        String(vip).toLowerCase() === "active" ||
-        String(vip).toLowerCase() === "vip"
-    ) {
-
-        return "VIP";
-
-    }
-
-
-    return "Normal";
-
-}
-
-
-// ======================================
-// VIP COUNT
-// ======================================
-
-function getUserVipCount(user) {
-
-    return userNumber(
-
-        user.vipCount,
-        user.totalVip,
-        user.activeVipCount
-
-    );
-
-}
-
-
-// ======================================
 // CREATED DATE
 // ======================================
 
 function getUserCreatedAt(user) {
 
-    return userNumber(
+    return usersNumber(
 
         user.createdAt,
+
         user.createdDate,
+
         user.registeredAt,
+
         user.timestamp,
+
         user.dateCreated
 
     );
@@ -7515,14 +8035,39 @@ function getUserCreatedAt(user) {
 
 function getUserLastLogin(user) {
 
-    return userNumber(
+    return usersNumber(
 
         user.lastLogin,
+
         user.lastLoginAt,
+
         user.lastActive,
+
         user.lastActivity
 
     );
+
+}
+
+
+// ======================================
+// VIP STATUS
+// ======================================
+
+function getUserVipStatus(uid) {
+
+    const active =
+        getUserActiveVipCount(uid);
+
+
+    if (active > 0) {
+
+        return "VIP";
+
+    }
+
+
+    return "Normal";
 
 }
 
@@ -7539,13 +8084,13 @@ function renderUsers() {
 
 
     const search =
-        userText(
+        usersText(
             userSearch?.value
         ).toLowerCase();
 
 
     const filter =
-        userText(
+        usersText(
             userFilter?.value
         ).toLowerCase();
 
@@ -7567,23 +8112,22 @@ function renderUsers() {
                 ([uid, user]) => {
 
                     const name =
-                        getUserName(user)
+                        usersName(user)
                             .toLowerCase();
 
                     const email =
-                        getUserEmail(user)
+                        usersEmail(user)
                             .toLowerCase();
 
                     const phone =
-                        getUserPhone(user)
+                        usersPhone(user)
                             .toLowerCase();
+
+                    const uidText =
+                        uid.toLowerCase();
 
                     const referral =
-                        getReferralCode(user)
-                            .toLowerCase();
-
-                    const userId =
-                        String(uid)
+                        getUserReferralCode(user)
                             .toLowerCase();
 
 
@@ -7595,9 +8139,9 @@ function renderUsers() {
 
                         phone.includes(search) ||
 
-                        referral.includes(search) ||
+                        uidText.includes(search) ||
 
-                        userId.includes(search)
+                        referral.includes(search)
 
                     );
 
@@ -7621,7 +8165,7 @@ function renderUsers() {
                 ([uid, user]) => {
 
                     const vipStatus =
-                        getUserVipStatus(user)
+                        getUserVipStatus(uid)
                             .toLowerCase();
 
 
@@ -7661,11 +8205,14 @@ function renderUsers() {
 
     if (!users.length) {
 
-        usersList.innerHTML = "";
+        usersList.innerHTML =
+            "";
 
         if (emptyUsers) {
+
             emptyUsers.style.display =
                 "block";
+
         }
 
         return;
@@ -7674,21 +8221,26 @@ function renderUsers() {
 
 
     if (emptyUsers) {
+
         emptyUsers.style.display =
             "none";
+
     }
 
 
     // ==================================
-    // SORT NEWEST FIRST
+    // SORT NEWEST
     // ==================================
 
     users.sort(
         ([uidA, userA], [uidB, userB]) => {
 
             return (
+
                 getUserCreatedAt(userB) -
+
                 getUserCreatedAt(userA)
+
             );
 
         }
@@ -7704,43 +8256,58 @@ function renderUsers() {
             ([uid, user]) => {
 
                 const name =
-                    getUserName(user);
+                    usersName(user);
 
                 const email =
-                    getUserEmail(user);
+                    usersEmail(user);
 
                 const phone =
-                    getUserPhone(user);
+                    usersPhone(user);
 
                 const country =
-                    getUserCountry(user);
+                    usersCountry(user);
 
                 const balance =
-                    getUserBalance(user);
+                    usersBalance(user);
 
                 const deposits =
-                    getUserDeposits(user);
+                    calculateUserDeposits(uid);
 
                 const withdrawals =
-                    getUserWithdrawals(user);
+                    calculateUserWithdrawals(uid);
 
                 const referralEarnings =
-                    getReferralEarnings(user);
+                    calculateReferralEarnings(uid);
 
                 const profits =
-                    getUserProfits(user);
+                    calculateUserProfits(uid);
+
+                const dailyIncomeEarned =
+                    calculateUserDailyIncome(uid);
 
                 const referralCode =
-                    getReferralCode(user);
-
-                const accountStatus =
-                    getAccountStatus(user);
-
-                const vipStatus =
-                    getUserVipStatus(user);
+                    getUserReferralCode(user);
 
                 const vipCount =
-                    getUserVipCount(user);
+                    getUserVipCount(uid);
+
+                const activeVipCount =
+                    getUserActiveVipCount(uid);
+
+                const vipDaily =
+                    getUserVipDailyIncome(uid);
+
+                const vipTotalProfit =
+                    getUserVipTotalProfit(uid);
+
+                const vipEarned =
+                    getUserVipEarned(uid);
+
+                const status =
+                    getUserAccountStatus(user);
+
+                const vipStatus =
+                    getUserVipStatus(uid);
 
                 const createdAt =
                     getUserCreatedAt(user);
@@ -7752,6 +8319,7 @@ function renderUsers() {
                 return `
 
                     <div class="user-card">
+
 
                         <div class="user-card-header">
 
@@ -7772,7 +8340,7 @@ function renderUsers() {
                             <div>
 
                                 <span class="user-status">
-                                    ${accountStatus}
+                                    ${status}
                                 </span>
 
                                 <span class="user-vip">
@@ -7785,6 +8353,19 @@ function renderUsers() {
 
 
                         <div class="user-info-grid">
+
+
+                            <div class="user-info-item">
+
+                                <strong>
+                                    Full Name
+                                </strong>
+
+                                <span>
+                                    ${name}
+                                </span>
+
+                            </div>
 
 
                             <div class="user-info-item">
@@ -7829,6 +8410,19 @@ function renderUsers() {
                             <div class="user-info-item">
 
                                 <strong>
+                                    User ID
+                                </strong>
+
+                                <span>
+                                    ${uid}
+                                </span>
+
+                            </div>
+
+
+                            <div class="user-info-item">
+
+                                <strong>
                                     Referral Code
                                 </strong>
 
@@ -7846,7 +8440,7 @@ function renderUsers() {
                                 </strong>
 
                                 <span>
-                                    ${formatUserMoney(balance)}
+                                    ${usersMoney(balance)}
                                 </span>
 
                             </div>
@@ -7859,7 +8453,7 @@ function renderUsers() {
                                 </strong>
 
                                 <span>
-                                    ${formatUserMoney(deposits)}
+                                    ${usersMoney(deposits)}
                                 </span>
 
                             </div>
@@ -7872,7 +8466,7 @@ function renderUsers() {
                                 </strong>
 
                                 <span>
-                                    ${formatUserMoney(withdrawals)}
+                                    ${usersMoney(withdrawals)}
                                 </span>
 
                             </div>
@@ -7885,9 +8479,7 @@ function renderUsers() {
                                 </strong>
 
                                 <span>
-                                    ${formatUserMoney(
-                                        referralEarnings
-                                    )}
+                                    ${usersMoney(referralEarnings)}
                                 </span>
 
                             </div>
@@ -7900,8 +8492,21 @@ function renderUsers() {
                                 </strong>
 
                                 <span>
-                                    ${formatUserMoney(
-                                        profits
+                                    ${usersMoney(profits)}
+                                </span>
+
+                            </div>
+
+
+                            <div class="user-info-item">
+
+                                <strong>
+                                    Daily Income Claimed
+                                </strong>
+
+                                <span>
+                                    ${usersMoney(
+                                        dailyIncomeEarned
                                     )}
                                 </span>
 
@@ -7924,13 +8529,76 @@ function renderUsers() {
                             <div class="user-info-item">
 
                                 <strong>
+                                    Active VIP
+                                </strong>
+
+                                <span>
+                                    ${activeVipCount}
+                                </span>
+
+                            </div>
+
+
+                            <div class="user-info-item">
+
+                                <strong>
+                                    VIP Daily Income
+                                </strong>
+
+                                <span>
+                                    ${usersMoney(vipDaily)}
+                                </span>
+
+                            </div>
+
+
+                            <div class="user-info-item">
+
+                                <strong>
+                                    VIP Total Profit
+                                </strong>
+
+                                <span>
+                                    ${usersMoney(vipTotalProfit)}
+                                </span>
+
+                            </div>
+
+
+                            <div class="user-info-item">
+
+                                <strong>
+                                    VIP Earned
+                                </strong>
+
+                                <span>
+                                    ${usersMoney(vipEarned)}
+                                </span>
+
+                            </div>
+
+
+                            <div class="user-info-item">
+
+                                <strong>
+                                    Account Status
+                                </strong>
+
+                                <span>
+                                    ${status}
+                                </span>
+
+                            </div>
+
+
+                            <div class="user-info-item">
+
+                                <strong>
                                     Created
                                 </strong>
 
                                 <span>
-                                    ${formatUserDate(
-                                        createdAt
-                                    )}
+                                    ${usersDate(createdAt)}
                                 </span>
 
                             </div>
@@ -7943,16 +8611,13 @@ function renderUsers() {
                                 </strong>
 
                                 <span>
-                                    ${formatUserDate(
-                                        lastLogin
-                                    )}
+                                    ${usersDate(lastLogin)}
                                 </span>
 
                             </div>
 
 
                         </div>
-
 
                     </div>
 
@@ -7966,60 +8631,107 @@ function renderUsers() {
 
 
 // ======================================
-// LOAD USERS
+// LOAD ALL USER DATA
 // ======================================
 
 function loadUsers() {
 
-    const usersRef =
-        ref(
-            db,
-            "users"
-        );
-
+    // ==================================
+    // USERS
+    // ==================================
 
     onValue(
-        usersRef,
+        ref(db, "users"),
         snapshot => {
 
-            usersData = {};
-
-
-            if (
+            usersData =
                 snapshot.exists()
-            ) {
-
-                usersData =
-                    snapshot.val() || {};
-
-            }
-
+                ? snapshot.val() || {}
+                : {};
 
             renderUsers();
 
             updateUserSummary();
 
-        },
-
-        error => {
-
-            console.error(
-                "Users loading error:",
-                error
-            );
+        }
+    );
 
 
-            if (usersList) {
+    // ==================================
+    // TRANSACTIONS
+    // ==================================
 
-                usersList.innerHTML =
-                    `
-                    <div class="error-message">
-                        Failed to load users:
-                        ${error.message}
-                    </div>
-                    `;
+    onValue(
+        ref(db, "transactions"),
+        snapshot => {
 
-            }
+            allTransactionsData =
+                snapshot.exists()
+                ? snapshot.val() || {}
+                : {};
+
+            renderUsers();
+
+            updateUserSummary();
+
+        }
+    );
+
+
+    // ==================================
+    // VIP BUYERS
+    // ==================================
+
+    onValue(
+        ref(db, "vipBuyers"),
+        snapshot => {
+
+            allVipBuyersData =
+                snapshot.exists()
+                ? snapshot.val() || {}
+                : {};
+
+            renderUsers();
+
+            updateUserSummary();
+
+        }
+    );
+
+
+    // ==================================
+    // DEPOSIT REQUESTS
+    // ==================================
+
+    onValue(
+        ref(db, "depositRequests"),
+        snapshot => {
+
+            allDepositRequestsData =
+                snapshot.exists()
+                ? snapshot.val() || {}
+                : {};
+
+            renderUsers();
+
+        }
+    );
+
+
+    // ==================================
+    // WITHDRAW REQUESTS
+    // ==================================
+
+    onValue(
+        ref(db, "withdrawRequests"),
+        snapshot => {
+
+            allWithdrawRequestsData =
+                snapshot.exists()
+                ? snapshot.val() || {}
+                : {};
+
+            renderUsers();
 
         }
     );
@@ -8034,7 +8746,7 @@ function loadUsers() {
 function updateUserSummary() {
 
     const users =
-        Object.values(
+        Object.keys(
             usersData || {}
         );
 
@@ -8045,8 +8757,8 @@ function updateUserSummary() {
 
     const vipUsers =
         users.filter(
-            user =>
-                getUserVipStatus(user) === "VIP"
+            uid =>
+                getUserActiveVipCount(uid) > 0
         ).length;
 
 
@@ -8057,11 +8769,13 @@ function updateUserSummary() {
 
     const totalBalance =
         users.reduce(
-            (sum, user) => {
+            (sum, uid) => {
 
                 return (
                     sum +
-                    getUserBalance(user)
+                    usersBalance(
+                        usersData[uid] || {}
+                    )
                 );
 
             },
@@ -8069,9 +8783,47 @@ function updateUserSummary() {
         );
 
 
-    // ==================================
-    // POSSIBLE SUMMARY ELEMENTS
-    // ==================================
+    const totalDeposits =
+        users.reduce(
+            (sum, uid) => {
+
+                return (
+                    sum +
+                    calculateUserDeposits(uid)
+                );
+
+            },
+            0
+        );
+
+
+    const totalWithdrawals =
+        users.reduce(
+            (sum, uid) => {
+
+                return (
+                    sum +
+                    calculateUserWithdrawals(uid)
+                );
+
+            },
+            0
+        );
+
+
+    const totalProfits =
+        users.reduce(
+            (sum, uid) => {
+
+                return (
+                    sum +
+                    calculateUserProfits(uid)
+                );
+
+            },
+            0
+        );
+
 
     const totalUsersEl =
         document.getElementById(
@@ -8124,8 +8876,60 @@ function updateUserSummary() {
     if (totalBalanceEl) {
 
         totalBalanceEl.textContent =
-            formatUserMoney(
+            usersMoney(
                 totalBalance
+            );
+
+    }
+
+
+    // ==================================
+    // OPTIONAL SUMMARY ELEMENTS
+    // ==================================
+
+    const totalDepositsEl =
+        document.getElementById(
+            "usersTotalDeposits"
+        );
+
+
+    const totalWithdrawalsEl =
+        document.getElementById(
+            "usersTotalWithdrawals"
+        );
+
+
+    const totalProfitsEl =
+        document.getElementById(
+            "usersTotalProfits"
+        );
+
+
+    if (totalDepositsEl) {
+
+        totalDepositsEl.textContent =
+            usersMoney(
+                totalDeposits
+            );
+
+    }
+
+
+    if (totalWithdrawalsEl) {
+
+        totalWithdrawalsEl.textContent =
+            usersMoney(
+                totalWithdrawals
+            );
+
+    }
+
+
+    if (totalProfitsEl) {
+
+        totalProfitsEl.textContent =
+            usersMoney(
+                totalProfits
             );
 
     }
@@ -8162,14 +8966,14 @@ if (userFilter) {
 
 
 // ======================================
-// START USERS
+// START
 // ======================================
 
 loadUsers();
 
 
 // ======================================
-// GLOBAL EXPORT
+// GLOBAL
 // ======================================
 
 window.loadUsers =
@@ -8183,9 +8987,9 @@ window.updateUserSummary =
 
 
 // ======================================
-// PART 11 READY
+// READY
 // ======================================
 
 console.log(
-    "ADMIN PART 11 READY - USERS"
+    "ADMIN PART 11 READY - FULL USERS DATA"
 );
