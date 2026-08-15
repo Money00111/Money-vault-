@@ -7080,4 +7080,1112 @@ console.log(
     "ADMIN PART 10 READY - SETTINGS"
 );
 
+// ======================================
+// ADMIN.JS - PART 11
+// USERS MANAGEMENT
+// ======================================
 
+
+// ======================================
+// USERS ELEMENTS
+// ======================================
+
+const usersList =
+    document.getElementById("usersList");
+
+const emptyUsers =
+    document.getElementById("emptyUsers");
+
+const userSearch =
+    document.getElementById("userSearch");
+
+const userFilter =
+    document.getElementById("userFilter");
+
+
+// ======================================
+// USERS DATA
+// ======================================
+
+if (typeof usersData === "undefined") {
+    var usersData = {};
+}
+
+
+// ======================================
+// SAFE NUMBER
+// ======================================
+
+function userNumber(...values) {
+
+    for (const value of values) {
+
+        const number =
+            Number(value);
+
+        if (Number.isFinite(number)) {
+            return number;
+        }
+
+    }
+
+    return 0;
+}
+
+
+// ======================================
+// SAFE TEXT
+// ======================================
+
+function userText(...values) {
+
+    for (const value of values) {
+
+        if (
+            value !== undefined &&
+            value !== null &&
+            String(value).trim() !== ""
+        ) {
+
+            return String(value);
+
+        }
+
+    }
+
+    return "";
+
+}
+
+
+// ======================================
+// FORMAT MONEY
+// ======================================
+
+function formatUserMoney(value) {
+
+    const amount =
+        userNumber(value);
+
+    return amount.toLocaleString() + " RWF";
+
+}
+
+
+// ======================================
+// FORMAT DATE
+// ======================================
+
+function formatUserDate(value) {
+
+    if (!value) {
+        return "N/A";
+    }
+
+    const date =
+        new Date(
+            Number(value)
+        );
+
+    if (
+        !Number.isFinite(
+            date.getTime()
+        )
+    ) {
+
+        return "N/A";
+
+    }
+
+    return date.toLocaleString();
+
+}
+
+
+// ======================================
+// GET USER NAME
+// ======================================
+
+function getUserName(user) {
+
+    return userText(
+
+        user.fullName,
+        user.name,
+        user.displayName,
+        user.username,
+        user.userName,
+
+        user.firstName &&
+        user.lastName
+            ? user.firstName +
+              " " +
+              user.lastName
+            : "",
+
+        user.firstName,
+
+        "Unknown User"
+
+    );
+
+}
+
+
+// ======================================
+// GET USER EMAIL
+// ======================================
+
+function getUserEmail(user) {
+
+    return userText(
+
+        user.email,
+        user.userEmail,
+
+        "No email"
+
+    );
+
+}
+
+
+// ======================================
+// GET USER PHONE
+// ======================================
+
+function getUserPhone(user) {
+
+    return userText(
+
+        user.phone,
+        user.phoneNumber,
+        user.mobile,
+        user.mobileNumber,
+
+        "No phone"
+
+    );
+
+}
+
+
+// ======================================
+// GET COUNTRY
+// ======================================
+
+function getUserCountry(user) {
+
+    return userText(
+
+        user.country,
+        user.countryName,
+
+        "Rwanda"
+
+    );
+
+}
+
+
+// ======================================
+// GET BALANCE
+// ======================================
+
+function getUserBalance(user) {
+
+    return userNumber(
+
+        user.balance,
+        user.Balance,
+
+        user.walletBalance,
+
+        user.availableBalance
+
+    );
+
+}
+
+
+// ======================================
+// TOTAL DEPOSITS
+// ======================================
+
+function getUserDeposits(user) {
+
+    return userNumber(
+
+        user.totalDeposits,
+        user.totalDeposit,
+
+        user.deposits,
+
+        user.depositTotal
+
+    );
+
+}
+
+
+// ======================================
+// TOTAL WITHDRAWALS
+// ======================================
+
+function getUserWithdrawals(user) {
+
+    return userNumber(
+
+        user.totalWithdrawals,
+        user.totalWithdrawal,
+
+        user.withdrawals,
+
+        user.withdrawTotal
+
+    );
+
+}
+
+
+// ======================================
+// REFERRAL EARNINGS
+// ======================================
+
+function getReferralEarnings(user) {
+
+    return userNumber(
+
+        user.referralEarnings,
+        user.referralIncome,
+
+        user.referralProfit,
+
+        user.totalReferralEarnings
+
+    );
+
+}
+
+
+// ======================================
+// TOTAL PROFITS
+// ======================================
+
+function getUserProfits(user) {
+
+    return userNumber(
+
+        user.totalProfits,
+        user.totalProfit,
+
+        user.profits,
+
+        user.profit
+
+    );
+
+}
+
+
+// ======================================
+// REFERRAL CODE
+// ======================================
+
+function getReferralCode(user) {
+
+    return userText(
+
+        user.referralCode,
+        user.refCode,
+
+        user.referral,
+
+        "N/A"
+
+    );
+
+}
+
+
+// ======================================
+// ACCOUNT STATUS
+// ======================================
+
+function getAccountStatus(user) {
+
+    const status =
+        userText(
+
+            user.status,
+            user.accountStatus,
+
+            user.isActive === false
+                ? "inactive"
+                : ""
+
+        ).toLowerCase();
+
+
+    if (
+        status === "blocked" ||
+        status === "disabled" ||
+        status === "inactive"
+    ) {
+
+        return "Inactive";
+
+    }
+
+
+    return "Active";
+
+}
+
+
+// ======================================
+// VIP STATUS
+// ======================================
+
+function getUserVipStatus(user) {
+
+    const vip =
+        user.vip ||
+        user.isVip ||
+        user.vipStatus ||
+        user.activeVip;
+
+
+    if (
+        vip === true ||
+        String(vip).toLowerCase() === "true" ||
+        String(vip).toLowerCase() === "active" ||
+        String(vip).toLowerCase() === "vip"
+    ) {
+
+        return "VIP";
+
+    }
+
+
+    return "Normal";
+
+}
+
+
+// ======================================
+// VIP COUNT
+// ======================================
+
+function getUserVipCount(user) {
+
+    return userNumber(
+
+        user.vipCount,
+        user.totalVip,
+        user.activeVipCount
+
+    );
+
+}
+
+
+// ======================================
+// CREATED DATE
+// ======================================
+
+function getUserCreatedAt(user) {
+
+    return userNumber(
+
+        user.createdAt,
+        user.createdDate,
+        user.registeredAt,
+        user.timestamp,
+        user.dateCreated
+
+    );
+
+}
+
+
+// ======================================
+// LAST LOGIN
+// ======================================
+
+function getUserLastLogin(user) {
+
+    return userNumber(
+
+        user.lastLogin,
+        user.lastLoginAt,
+        user.lastActive,
+        user.lastActivity
+
+    );
+
+}
+
+
+// ======================================
+// RENDER USERS
+// ======================================
+
+function renderUsers() {
+
+    if (!usersList) {
+        return;
+    }
+
+
+    const search =
+        userText(
+            userSearch?.value
+        ).toLowerCase();
+
+
+    const filter =
+        userText(
+            userFilter?.value
+        ).toLowerCase();
+
+
+    let users =
+        Object.entries(
+            usersData || {}
+        );
+
+
+    // ==================================
+    // SEARCH
+    // ==================================
+
+    if (search) {
+
+        users =
+            users.filter(
+                ([uid, user]) => {
+
+                    const name =
+                        getUserName(user)
+                            .toLowerCase();
+
+                    const email =
+                        getUserEmail(user)
+                            .toLowerCase();
+
+                    const phone =
+                        getUserPhone(user)
+                            .toLowerCase();
+
+                    const referral =
+                        getReferralCode(user)
+                            .toLowerCase();
+
+                    const userId =
+                        String(uid)
+                            .toLowerCase();
+
+
+                    return (
+
+                        name.includes(search) ||
+
+                        email.includes(search) ||
+
+                        phone.includes(search) ||
+
+                        referral.includes(search) ||
+
+                        userId.includes(search)
+
+                    );
+
+                }
+            );
+
+    }
+
+
+    // ==================================
+    // FILTER
+    // ==================================
+
+    if (
+        filter &&
+        filter !== "all"
+    ) {
+
+        users =
+            users.filter(
+                ([uid, user]) => {
+
+                    const vipStatus =
+                        getUserVipStatus(user)
+                            .toLowerCase();
+
+
+                    if (
+                        filter === "vip"
+                    ) {
+
+                        return (
+                            vipStatus === "vip"
+                        );
+
+                    }
+
+
+                    if (
+                        filter === "normal"
+                    ) {
+
+                        return (
+                            vipStatus === "normal"
+                        );
+
+                    }
+
+
+                    return true;
+
+                }
+            );
+
+    }
+
+
+    // ==================================
+    // EMPTY
+    // ==================================
+
+    if (!users.length) {
+
+        usersList.innerHTML = "";
+
+        if (emptyUsers) {
+            emptyUsers.style.display =
+                "block";
+        }
+
+        return;
+
+    }
+
+
+    if (emptyUsers) {
+        emptyUsers.style.display =
+            "none";
+    }
+
+
+    // ==================================
+    // SORT NEWEST FIRST
+    // ==================================
+
+    users.sort(
+        ([uidA, userA], [uidB, userB]) => {
+
+            return (
+                getUserCreatedAt(userB) -
+                getUserCreatedAt(userA)
+            );
+
+        }
+    );
+
+
+    // ==================================
+    // RENDER
+    // ==================================
+
+    usersList.innerHTML =
+        users.map(
+            ([uid, user]) => {
+
+                const name =
+                    getUserName(user);
+
+                const email =
+                    getUserEmail(user);
+
+                const phone =
+                    getUserPhone(user);
+
+                const country =
+                    getUserCountry(user);
+
+                const balance =
+                    getUserBalance(user);
+
+                const deposits =
+                    getUserDeposits(user);
+
+                const withdrawals =
+                    getUserWithdrawals(user);
+
+                const referralEarnings =
+                    getReferralEarnings(user);
+
+                const profits =
+                    getUserProfits(user);
+
+                const referralCode =
+                    getReferralCode(user);
+
+                const accountStatus =
+                    getAccountStatus(user);
+
+                const vipStatus =
+                    getUserVipStatus(user);
+
+                const vipCount =
+                    getUserVipCount(user);
+
+                const createdAt =
+                    getUserCreatedAt(user);
+
+                const lastLogin =
+                    getUserLastLogin(user);
+
+
+                return `
+
+                    <div class="user-card">
+
+                        <div class="user-card-header">
+
+                            <div>
+
+                                <h3>
+                                    ${name}
+                                </h3>
+
+                                <small>
+                                    UID:
+                                    ${uid}
+                                </small>
+
+                            </div>
+
+
+                            <div>
+
+                                <span class="user-status">
+                                    ${accountStatus}
+                                </span>
+
+                                <span class="user-vip">
+                                    ${vipStatus}
+                                </span>
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="user-info-grid">
+
+
+                            <div class="user-info-item">
+
+                                <strong>
+                                    Email
+                                </strong>
+
+                                <span>
+                                    ${email}
+                                </span>
+
+                            </div>
+
+
+                            <div class="user-info-item">
+
+                                <strong>
+                                    Phone
+                                </strong>
+
+                                <span>
+                                    ${phone}
+                                </span>
+
+                            </div>
+
+
+                            <div class="user-info-item">
+
+                                <strong>
+                                    Country
+                                </strong>
+
+                                <span>
+                                    ${country}
+                                </span>
+
+                            </div>
+
+
+                            <div class="user-info-item">
+
+                                <strong>
+                                    Referral Code
+                                </strong>
+
+                                <span>
+                                    ${referralCode}
+                                </span>
+
+                            </div>
+
+
+                            <div class="user-info-item">
+
+                                <strong>
+                                    Balance
+                                </strong>
+
+                                <span>
+                                    ${formatUserMoney(balance)}
+                                </span>
+
+                            </div>
+
+
+                            <div class="user-info-item">
+
+                                <strong>
+                                    Total Deposits
+                                </strong>
+
+                                <span>
+                                    ${formatUserMoney(deposits)}
+                                </span>
+
+                            </div>
+
+
+                            <div class="user-info-item">
+
+                                <strong>
+                                    Total Withdrawals
+                                </strong>
+
+                                <span>
+                                    ${formatUserMoney(withdrawals)}
+                                </span>
+
+                            </div>
+
+
+                            <div class="user-info-item">
+
+                                <strong>
+                                    Referral Earnings
+                                </strong>
+
+                                <span>
+                                    ${formatUserMoney(
+                                        referralEarnings
+                                    )}
+                                </span>
+
+                            </div>
+
+
+                            <div class="user-info-item">
+
+                                <strong>
+                                    Total Profits
+                                </strong>
+
+                                <span>
+                                    ${formatUserMoney(
+                                        profits
+                                    )}
+                                </span>
+
+                            </div>
+
+
+                            <div class="user-info-item">
+
+                                <strong>
+                                    VIP Count
+                                </strong>
+
+                                <span>
+                                    ${vipCount}
+                                </span>
+
+                            </div>
+
+
+                            <div class="user-info-item">
+
+                                <strong>
+                                    Created
+                                </strong>
+
+                                <span>
+                                    ${formatUserDate(
+                                        createdAt
+                                    )}
+                                </span>
+
+                            </div>
+
+
+                            <div class="user-info-item">
+
+                                <strong>
+                                    Last Login
+                                </strong>
+
+                                <span>
+                                    ${formatUserDate(
+                                        lastLogin
+                                    )}
+                                </span>
+
+                            </div>
+
+
+                        </div>
+
+
+                    </div>
+
+                `;
+
+            }
+        )
+        .join("");
+
+}
+
+
+// ======================================
+// LOAD USERS
+// ======================================
+
+function loadUsers() {
+
+    const usersRef =
+        ref(
+            db,
+            "users"
+        );
+
+
+    onValue(
+        usersRef,
+        snapshot => {
+
+            usersData = {};
+
+
+            if (
+                snapshot.exists()
+            ) {
+
+                usersData =
+                    snapshot.val() || {};
+
+            }
+
+
+            renderUsers();
+
+            updateUserSummary();
+
+        },
+
+        error => {
+
+            console.error(
+                "Users loading error:",
+                error
+            );
+
+
+            if (usersList) {
+
+                usersList.innerHTML =
+                    `
+                    <div class="error-message">
+                        Failed to load users:
+                        ${error.message}
+                    </div>
+                    `;
+
+            }
+
+        }
+    );
+
+}
+
+
+// ======================================
+// USER SUMMARY
+// ======================================
+
+function updateUserSummary() {
+
+    const users =
+        Object.values(
+            usersData || {}
+        );
+
+
+    const totalUsers =
+        users.length;
+
+
+    const vipUsers =
+        users.filter(
+            user =>
+                getUserVipStatus(user) === "VIP"
+        ).length;
+
+
+    const normalUsers =
+        totalUsers -
+        vipUsers;
+
+
+    const totalBalance =
+        users.reduce(
+            (sum, user) => {
+
+                return (
+                    sum +
+                    getUserBalance(user)
+                );
+
+            },
+            0
+        );
+
+
+    // ==================================
+    // POSSIBLE SUMMARY ELEMENTS
+    // ==================================
+
+    const totalUsersEl =
+        document.getElementById(
+            "totalUsers"
+        );
+
+
+    const vipUsersEl =
+        document.getElementById(
+            "vipUsers"
+        );
+
+
+    const normalUsersEl =
+        document.getElementById(
+            "normalUsers"
+        );
+
+
+    const totalBalanceEl =
+        document.getElementById(
+            "usersTotalBalance"
+        );
+
+
+    if (totalUsersEl) {
+
+        totalUsersEl.textContent =
+            totalUsers;
+
+    }
+
+
+    if (vipUsersEl) {
+
+        vipUsersEl.textContent =
+            vipUsers;
+
+    }
+
+
+    if (normalUsersEl) {
+
+        normalUsersEl.textContent =
+            normalUsers;
+
+    }
+
+
+    if (totalBalanceEl) {
+
+        totalBalanceEl.textContent =
+            formatUserMoney(
+                totalBalance
+            );
+
+    }
+
+}
+
+
+// ======================================
+// SEARCH
+// ======================================
+
+if (userSearch) {
+
+    userSearch.addEventListener(
+        "input",
+        renderUsers
+    );
+
+}
+
+
+// ======================================
+// FILTER
+// ======================================
+
+if (userFilter) {
+
+    userFilter.addEventListener(
+        "change",
+        renderUsers
+    );
+
+}
+
+
+// ======================================
+// START USERS
+// ======================================
+
+loadUsers();
+
+
+// ======================================
+// GLOBAL EXPORT
+// ======================================
+
+window.loadUsers =
+    loadUsers;
+
+window.renderUsers =
+    renderUsers;
+
+window.updateUserSummary =
+    updateUserSummary;
+
+
+// ======================================
+// PART 11 READY
+// ======================================
+
+console.log(
+    "ADMIN PART 11 READY - USERS"
+);
