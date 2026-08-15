@@ -43,164 +43,159 @@ onAuthStateChanged(auth, (user) => {
 });
 
 // ======================================
-// LOAD TRANSACTIONS - UPDATED
+// LOAD TRANSACTIONS
 // ======================================
 
 function loadTransactions(uid) {
 
-
     const txRef = query(
-
         ref(db, "transactions"),
-
         orderByChild("createdAt")
-
     );
 
+    onValue(
+        txRef,
+        (snapshot) => {
 
-    onValue(txRef, (snapshot) => {
+            // Remove loading immediately when Firebase responds
+            loadingScreen.style.display = "none";
 
+            transactionList.innerHTML = "";
 
-        loadingScreen.style.display = "none";
+            if (!snapshot.exists()) {
 
-        transactionList.innerHTML = "";
+                transactionList.innerHTML = `
+                    <div class="empty">
+                        <h3>No Transactions Found</h3>
+                    </div>
+                `;
 
+                totalTransactions.textContent = "0";
 
-        if (!snapshot.exists()) {
+                return;
+            }
 
+            const transactions = [];
 
-            transactionList.innerHTML = `
+            snapshot.forEach((item) => {
 
-            <div class="empty">
+                const tx = item.val();
 
-                <h3>No Transactions Found</h3>
+                // Show only current user's transactions
+                if (tx.uid === uid) {
 
-            </div>
+                    transactions.push(tx);
 
-            `;
+                }
 
+            });
 
-            totalTransactions.textContent = "0";
+            // Newest first
+            transactions.sort((a, b) => {
 
-            return;
+                return (b.createdAt || 0) - (a.createdAt || 0);
 
-        }
+            });
 
+            totalTransactions.textContent =
+                transactions.length;
 
+            if (transactions.length === 0) {
 
-        let count = 0;
+                transactionList.innerHTML = `
+                    <div class="empty">
+                        <h3>No Transactions Found</h3>
+                        <p>You don't have any transactions yet.</p>
+                    </div>
+                `;
 
-        const transactions = [];
-
-
-
-        snapshot.forEach((item) => {
-
-
-            const tx = item.val();
-
-
-            // FATA IZ'UMUKORESHA WENYINE
-
-            if(tx.uid === uid){
-
-                transactions.unshift(tx);
-
-                count++;
+                return;
 
             }
 
+            transactions.forEach((tx) => {
 
-        });
+                const status =
+                    String(tx.status || "pending").toLowerCase();
 
+                const type =
+                    tx.type || "Transaction";
 
+                const method =
+                    tx.paymentMethod ||
+                    tx.method ||
+                    "-";
 
-        totalTransactions.textContent = count;
+                const amount =
+                    Number(tx.amount || 0);
 
+                const date =
+                    tx.createdAt
+                        ? new Date(tx.createdAt).toLocaleString()
+                        : "-";
 
+                transactionList.innerHTML += `
 
-        if(count === 0){
+                    <div class="transaction-card">
+
+                        <div class="left">
+
+                            <h3>${type}</h3>
+
+                            <p>${method}</p>
+
+                            <small>${date}</small>
+
+                        </div>
+
+                        <div class="right">
+
+                            <h2>
+                                ${amount.toLocaleString()} RWF
+                            </h2>
+
+                            <span class="${status}">
+                                ${status}
+                            </span>
+
+                        </div>
+
+                    </div>
+
+                `;
+
+            });
+
+        },
+
+        (error) => {
+
+            // IMPORTANT:
+            // Stop loading even when Firebase returns an error
+
+            loadingScreen.style.display = "none";
+
+            console.error(
+                "TRANSACTIONS ERROR:",
+                error
+            );
 
             transactionList.innerHTML = `
+                <div class="empty">
 
-            <div class="empty">
+                    <h3>Failed to Load Transactions</h3>
 
-                <h3>No Transactions Found</h3>
+                    <p>
+                        ${error.message || "Database error"}
+                    </p>
 
-            </div>
-
+                </div>
             `;
 
-            return;
+            totalTransactions.textContent = "0";
 
         }
 
-
-
-        transactions.forEach((tx)=>{
-
-
-            transactionList.innerHTML += `
-
-
-            <div class="transaction-card">
-
-
-                <div class="left">
-
-
-                    <h3>${tx.type}</h3>
-
-
-                    <p>
-                    ${tx.paymentMethod || tx.method || ""}
-                    </p>
-
-
-                    <small>
-
-                    ${new Date(
-                    tx.createdAt
-                    ).toLocaleString()}
-
-                    </small>
-
-
-                </div>
-
-
-
-                <div class="right">
-
-
-                    <h2>
-
-                    ${Number(tx.amount || 0)
-                    .toLocaleString()} RWF
-
-                    </h2>
-
-
-                    <span class="${tx.status}">
-
-                    ${tx.status}
-
-                    </span>
-
-
-                </div>
-
-
-            </div>
-
-
-            `;
-
-
-        });
-
-
-    });
-
+    );
 
 }
