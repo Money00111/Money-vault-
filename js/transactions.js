@@ -14,7 +14,8 @@ import {
     ref,
     onValue,
     query,
-    orderByChild
+    orderByChild,
+    equalTo
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
 
 // ======================================
@@ -49,9 +50,10 @@ onAuthStateChanged(auth, (user) => {
 function loadTransactions(uid) {
 
     const txRef = query(
-        ref(db, "transactions"),
-        orderByChild("createdAt")
-    );
+    ref(db, "transactions"),
+    orderByChild("uid"),
+    equalTo(uid)
+);
 
     onValue(
         txRef,
