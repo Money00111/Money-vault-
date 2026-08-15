@@ -6666,3 +6666,418 @@ window.loadTransactions =
 console.log(
     "ADMIN PART 9 READY - TRANSACTIONS"
 );
+
+// ======================================
+// ADMIN.JS - PART 10
+// ADMIN SETTINGS
+// ======================================
+
+
+// ======================================
+// SETTINGS DOM
+// ======================================
+
+const adminNameInput =
+    document.getElementById(
+        "adminNameInput"
+    );
+
+
+const adminEmailInput =
+    document.getElementById(
+        "adminEmailInput"
+    );
+
+
+const saveSettingsBtn =
+    document.getElementById(
+        "saveSettings"
+    );
+
+
+// ======================================
+// LOAD ADMIN SETTINGS
+// ======================================
+
+async function loadAdminSettings() {
+
+    try {
+
+        // ==================================
+        // WAIT FOR ADMIN AUTH
+        // ==================================
+
+        if (
+            !window.adminState?.ready
+        ) {
+
+            await window.adminState
+                ?.readyPromise;
+
+        }
+
+
+        if (!currentAdmin) {
+
+            console.warn(
+                "No current admin found."
+            );
+
+            return;
+
+        }
+
+
+        const uid =
+            currentAdmin.uid;
+
+
+        // ==================================
+        // GET ADMIN DATA
+        // ==================================
+
+        const snapshot =
+            await get(
+                ref(
+                    db,
+                    "admins/" + uid
+                )
+            );
+
+
+        const adminData =
+            snapshot.exists()
+                ? snapshot.val() || {}
+                : {};
+
+
+        // ==================================
+        // ADMIN NAME
+        // ==================================
+
+        const name =
+            adminData.name ||
+            currentAdmin.displayName ||
+            "Administrator";
+
+
+        if (adminNameInput) {
+
+            adminNameInput.value =
+                name;
+
+        }
+
+
+        // ==================================
+        // ADMIN EMAIL
+        // ==================================
+
+        if (adminEmailInput) {
+
+            adminEmailInput.value =
+                currentAdmin.email ||
+                adminData.email ||
+                "";
+
+        }
+
+
+        console.log(
+            "Admin settings loaded."
+        );
+
+    }
+    catch (error) {
+
+        console.error(
+            "Load admin settings error:",
+            error
+        );
+
+    }
+
+}
+
+
+// ======================================
+// SAVE ADMIN SETTINGS
+// ======================================
+
+async function saveAdminSettings() {
+
+    try {
+
+        // ==================================
+        // AUTH CHECK
+        // ==================================
+
+        if (
+            !currentAdmin
+        ) {
+
+            alert(
+                "Admin authentication is not ready."
+            );
+
+            return;
+
+        }
+
+
+        const uid =
+            currentAdmin.uid;
+
+
+        // ==================================
+        // GET NAME
+        // ==================================
+
+        const name =
+            String(
+                adminNameInput?.value ||
+                ""
+            )
+            .trim();
+
+
+        // ==================================
+        // VALIDATION
+        // ==================================
+
+        if (!name) {
+
+            alert(
+                "Please enter admin name."
+            );
+
+            adminNameInput?.focus();
+
+            return;
+
+        }
+
+
+        if (
+            name.length < 2
+        ) {
+
+            alert(
+                "Admin name must contain at least 2 characters."
+            );
+
+            adminNameInput?.focus();
+
+            return;
+
+        }
+
+
+        // ==================================
+        // DISABLE BUTTON
+        // ==================================
+
+        if (saveSettingsBtn) {
+
+            saveSettingsBtn.disabled =
+                true;
+
+            saveSettingsBtn.textContent =
+                "Saving...";
+
+        }
+
+
+        // ==================================
+        // SAVE ONLY ALLOWED SETTINGS
+        // ==================================
+
+        await update(
+            ref(
+                db,
+                "admins/" + uid
+            ),
+            {
+
+                name: name,
+
+                updatedAt:
+                    Date.now()
+
+            }
+        );
+
+
+        // ==================================
+        // UPDATE ADMIN HEADER
+        // ==================================
+
+        if (adminName) {
+
+            adminName.textContent =
+                name;
+
+        }
+
+
+        // ==================================
+        // SUCCESS
+        // ==================================
+
+        alert(
+            "Admin settings saved successfully."
+        );
+
+
+        console.log(
+            "Admin settings updated:",
+            uid
+        );
+
+    }
+    catch (error) {
+
+        console.error(
+            "Save admin settings error:",
+            error
+        );
+
+
+        alert(
+            "Failed to save settings: " +
+            (
+                error.message ||
+                "Unknown error."
+            )
+        );
+
+    }
+    finally {
+
+        if (saveSettingsBtn) {
+
+            saveSettingsBtn.disabled =
+                false;
+
+            saveSettingsBtn.textContent =
+                "Save Settings";
+
+        }
+
+    }
+
+}
+
+
+// ======================================
+// SAVE BUTTON
+// ======================================
+
+saveSettingsBtn?.addEventListener(
+    "click",
+    saveAdminSettings
+);
+
+
+// ======================================
+// LOAD WHEN SETTINGS PAGE OPENS
+// ======================================
+
+document
+    .querySelectorAll(
+        '[data-page="settings"]'
+    )
+    .forEach(
+        element => {
+
+            element.addEventListener(
+                "click",
+                () => {
+
+                    setTimeout(
+                        () => {
+
+                            loadAdminSettings();
+
+                        },
+                        50
+                    );
+
+                }
+            );
+
+        }
+    );
+
+
+// ======================================
+// QUICK ACTION SETTINGS
+// ======================================
+
+document
+    .getElementById(
+        "openSettingsBtn"
+    )
+    ?.addEventListener(
+        "click",
+        () => {
+
+            setTimeout(
+                () => {
+
+                    loadAdminSettings();
+
+                },
+                50
+            );
+
+        }
+    );
+
+
+// ======================================
+// SIDEBAR SETTINGS
+// ======================================
+
+document
+    .getElementById(
+        "openSettings"
+    )
+    ?.addEventListener(
+        "click",
+        () => {
+
+            setTimeout(
+                () => {
+
+                    loadAdminSettings();
+
+                },
+                50
+            );
+
+        }
+    );
+
+
+// ======================================
+// GLOBAL EXPORT
+// ======================================
+
+window.loadAdminSettings =
+    loadAdminSettings;
+
+
+window.saveAdminSettings =
+    saveAdminSettings;
+
+
+// ======================================
+// PART 10 READY
+// ======================================
+
+console.log(
+    "ADMIN PART 10 READY - SETTINGS"
+);
+
+
