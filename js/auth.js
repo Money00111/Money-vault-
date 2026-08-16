@@ -4,7 +4,11 @@
 // AUTH STATE
 // ======================================
 
-import { auth, db } from "./firebase.js";
+import {
+    auth,
+    db,
+    authReady
+} from "./firebase.js";
 
 import {
     createUserWithEmailAndPassword,
