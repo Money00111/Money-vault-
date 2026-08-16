@@ -92,9 +92,9 @@ export async function registerUser(
 
         });
 
-// ======================================
+        // ======================================
 // REFERRAL SAVE
-// Money Vault
+// AUTOMATIC REFERRAL SYSTEM
 // ======================================
 
 if (
@@ -102,7 +102,7 @@ if (
     referralCode.trim() !== ""
 ) {
 
-    const enteredCode =
+    const cleanReferralCode =
         referralCode.trim().toUpperCase();
 
     const usersRef =
@@ -111,34 +111,105 @@ if (
     const snapshot =
         await get(usersRef);
 
-    let referrerUid = "";
 
     if (snapshot.exists()) {
 
+        let referrerUid = null;
+
+
         snapshot.forEach((child) => {
 
-            const data =
-                child.val();
+            const data = child.val();
+
 
             const savedCode =
                 String(
                     data.referralCode || ""
                 ).trim().toUpperCase();
 
+
             if (
-                savedCode === enteredCode &&
-                child.key !== user.uid
+                savedCode ===
+                cleanReferralCode
             ) {
 
-                referrerUid =
-                    child.key;
+                // Prevent self-referral
+                if (
+                    child.key !== user.uid
+                ) {
+
+                    referrerUid =
+                        child.key;
+
+                }
 
             }
 
         });
 
+
+        // ==================================
+        // REFERRER FOUND
+        // ==================================
+
+        if (referrerUid) {
+
+            // Save referrer on new user
+            await update(
+                ref(
+                    db,
+                    "users/" +
+                    user.uid
+                ),
+                {
+
+                    referredBy:
+                        referrerUid,
+
+                    referralBonusGiven:
+                        false
+
+                }
+            );
+
+
+            // Increase referrer's count
+            await runTransaction(
+                ref(
+                    db,
+                    "users/" +
+                    referrerUid +
+                    "/referralCount"
+                ),
+                current => {
+
+                    return (
+                        Number(current || 0) +
+                        1
+                    );
+
+                }
+            );
+
+
+            console.log(
+                "Referral connected:",
+                referrerUid
+            );
+
+        }
+        else {
+
+            console.log(
+                "Referral code not found:",
+                cleanReferralCode
+            );
+
+        }
+
     }
 
+}
 
     // ==================================
     // IF VALID REFERRAL CODE FOUND
