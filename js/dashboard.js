@@ -194,7 +194,7 @@ const referralLink =
 document.getElementById("referralLink");
 
 const copyReferral =
-document.getElementById("copyReferral");
+document.getElementById("copyReferralBtn");
 
 const notificationList =
 document.getElementById("notificationList");
