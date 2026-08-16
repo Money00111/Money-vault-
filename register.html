@@ -63,40 +63,135 @@
 
 </div>
 
+
 <script type="module">
 import { registerUser } from "./js/auth.js";
 
-document.getElementById("registerForm").addEventListener("submit", async (e) => {
 
-e.preventDefault();
+// ======================================
+// GET REFERRAL CODE FROM URL
+// ======================================
 
-const fullName = document.getElementById("fullName").value.trim();
-const phone = document.getElementById("phone").value.trim();
-const email = document.getElementById("email").value.trim();
-const password = document.getElementById("password").value;
-const confirmPassword = document.getElementById("confirmPassword").value;
-const referralCode = document.getElementById("referralCode").value.trim();
+const urlParams =
+    new URLSearchParams(window.location.search);
 
-if (password !== confirmPassword) {
-    alert("Passwords do not match.");
-    return;
+const urlReferralCode =
+    urlParams.get("ref") || "";
+
+
+// ======================================
+// PUT REFERRAL CODE INTO INPUT
+// ======================================
+
+const referralInput =
+    document.getElementById("referralCode");
+
+if (urlReferralCode && referralInput) {
+
+    referralInput.value =
+        urlReferralCode;
+
 }
 
-const success = await registerUser(
-    fullName,
-    phone,
-    email,
-    password,
-    referralCode
-);
 
-if (success) {
-    alert("Registration Successful! You received 500 RWF bonus.");
-    window.location.href = "login.html";
-}
+// ======================================
+// REGISTER
+// ======================================
+
+document
+.getElementById("registerForm")
+.addEventListener("submit", async (e) => {
+
+    e.preventDefault();
+
+
+    const fullName =
+        document
+        .getElementById("fullName")
+        .value
+        .trim();
+
+
+    const phone =
+        document
+        .getElementById("phone")
+        .value
+        .trim();
+
+
+    const email =
+        document
+        .getElementById("email")
+        .value
+        .trim();
+
+
+    const password =
+        document
+        .getElementById("password")
+        .value;
+
+
+    const confirmPassword =
+        document
+        .getElementById("confirmPassword")
+        .value;
+
+
+    // ==================================
+    // GET REFERRAL CODE
+    // ==================================
+
+    const referralCode =
+        document
+        .getElementById("referralCode")
+        .value
+        .trim();
+
+
+    // ==================================
+    // PASSWORD CHECK
+    // ==================================
+
+    if (password !== confirmPassword) {
+
+        alert("Passwords do not match.");
+
+        return;
+
+    }
+
+
+    // ==================================
+    // REGISTER USER
+    // ==================================
+
+    const success =
+        await registerUser(
+            fullName,
+            phone,
+            email,
+            password,
+            referralCode
+        );
+
+
+    // ==================================
+    // SUCCESS
+    // ==================================
+
+    if (success) {
+
+        alert(
+            "Registration Successful! You received 500 RWF bonus."
+        );
+
+        window.location.href =
+            "login.html";
+
+    }
 
 });
 </script>
-
 </body>
 </html>
