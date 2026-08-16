@@ -335,16 +335,18 @@ export async function registerUser(
 
 
 
+
 // ======================================
 // LOGIN USER
 // ======================================
 
-export async function loginUser(
-    email,
-    password
-) {
+export async function loginUser(email, password) {
 
     try {
+
+        // ==================================
+        // FIREBASE LOGIN
+        // ==================================
 
         const credential =
             await signInWithEmailAndPassword(
@@ -353,58 +355,126 @@ export async function loginUser(
                 password
             );
 
-
         const user =
             credential.user;
 
 
-        const snapshot =
-            await get(
-                ref(
-                    db,
-                    "users/" +
-                    user.uid
-                )
+        console.log(
+            "LOGIN SUCCESS:",
+            user.uid
+        );
+
+
+        // ==================================
+        // CHECK USER DATABASE
+        // ==================================
+
+        const userRef =
+            ref(
+                db,
+                "users/" + user.uid
             );
 
+
+        const snapshot =
+            await get(userRef);
+
+
+        // ==================================
+        // USER DATABASE NOT FOUND
+        // ==================================
 
         if (!snapshot.exists()) {
 
-            alert(
-                "User account not found."
+            console.error(
+                "Firebase Auth exists but users/" +
+                user.uid +
+                " does not exist."
             );
 
 
-            await signOut(auth);
+            alert(
+                "Your account data was not found. Please contact admin."
+            );
 
 
+            // Do NOT immediately redirect
             return false;
 
         }
 
 
         // ==================================
+        // SAVE USER DATA FOR DEBUG
+        // ==================================
+
+        console.log(
+            "USER DATABASE FOUND:",
+            snapshot.val()
+        );
+
+
+        // ==================================
         // GO TO DASHBOARD
         // ==================================
 
-        window.location.href =
-            "dashboard.html";
+        window.location.replace(
+            "dashboard.html"
+        );
 
 
         return true;
 
 
-    } catch (error) {
+    }
+    catch (error) {
 
         console.error(
-            "Login error:",
+            "LOGIN ERROR:",
             error
         );
 
 
-        alert(
-            error.message
-        );
+        if (
+            error.code ===
+            "auth/invalid-credential"
+        ) {
+
+            alert(
+                "Incorrect email or password."
+            );
+
+        }
+
+        else if (
+            error.code ===
+            "auth/user-not-found"
+        ) {
+
+            alert(
+                "Account not found."
+            );
+
+        }
+
+        else if (
+            error.code ===
+            "auth/wrong-password"
+        ) {
+
+            alert(
+                "Incorrect password."
+            );
+
+        }
+
+        else {
+
+            alert(
+                error.message
+            );
+
+        }
 
 
         return false;
@@ -412,6 +482,7 @@ export async function loginUser(
     }
 
 }
+        
 
 
 
