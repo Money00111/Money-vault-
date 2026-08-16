@@ -1,10 +1,13 @@
-// ======================================
+ // ======================================
 // FIREBASE CONFIG
 // Money Vault
 // Realtime Database Version
 // ======================================
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
+import {
+    initializeApp
+} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
+
 
 import {
     getAuth,
@@ -12,77 +15,110 @@ import {
     browserLocalPersistence
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 
-import { getDatabase } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
 
-import { getStorage } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-storage.js";
+import {
+    getDatabase
+} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
+
+
+import {
+    getStorage
+} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-storage.js";
+
+
 
 // ======================================
-// CONFIG
+// FIREBASE CONFIG
 // ======================================
 
 const firebaseConfig = {
 
-    apiKey: "AIzaSyC0ugw0iH2h00bJxxHq7qMRBvYYmFjPqCU",
+    apiKey:
+        "AIzaSyC0ugw0iH2h00bJxxHq7qMRBvYYmFjPqCU",
 
-    authDomain: "money-vault-c48d3.firebaseapp.com",
+    authDomain:
+        "money-vault-c48d3.firebaseapp.com",
 
-    databaseURL: "https://money-vault-c48d3-default-rtdb.firebaseio.com",
+    databaseURL:
+        "https://money-vault-c48d3-default-rtdb.firebaseio.com",
 
-    projectId: "money-vault-c48d3",
+    projectId:
+        "money-vault-c48d3",
 
-    storageBucket: "money-vault-c48d3.appspot.com",
+    storageBucket:
+        "money-vault-c48d3.appspot.com",
 
-    messagingSenderId: "1068478656241",
+    messagingSenderId:
+        "1068478656241",
 
-    appId: "1:1068478656241:web:aacbcf12922a21fe784350"
+    appId:
+        "1:1068478656241:web:aacbcf12922a21fe784350"
 
 };
 
+
+
 // ======================================
-// INITIALIZE
+// INITIALIZE FIREBASE
 // ======================================
 
-const app = initializeApp(firebaseConfig);
+const app =
+    initializeApp(firebaseConfig);
+
+
 
 // ======================================
 // SERVICES
 // ======================================
 
-const auth = getAuth(app);
+const auth =
+    getAuth(app);
+
+const db =
+    getDatabase(app);
+
+const storage =
+    getStorage(app);
+
+
 
 // ======================================
 // AUTH PERSISTENCE
-// KEEP USER LOGIN
+// KEEP USER LOGGED IN
 // ======================================
 
-setPersistence(
-    auth,
-    browserLocalPersistence
-)
-.then(() => {
+const authReady =
+    setPersistence(
+        auth,
+        browserLocalPersistence
+    )
+    .then(() => {
 
-    console.log(
-        "Auth persistence enabled"
-    );
+        console.log(
+            "Firebase Auth persistence enabled"
+        );
 
-})
-.catch((error)=>{
+        return true;
 
-    console.error(
-        "Auth persistence error:",
-        error
-    );
+    })
+    .catch((error) => {
 
-});
+        console.error(
+            "Firebase Auth persistence error:",
+            error
+        );
 
-const db = getDatabase(app);
+        return false;
 
-const storage = getStorage(app);
+    });
+
+
 
 // ======================================
 // EXPORTS
 // ======================================
- export {
+
+export {
 
     app,
 
@@ -90,6 +126,8 @@ const storage = getStorage(app);
 
     db,
 
-    storage
+    storage,
+
+    authReady
 
 };
