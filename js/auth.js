@@ -349,6 +349,8 @@ export async function loginUser(email, password) {
 
     try {
 
+        await authReady;
+
         const credential =
             await signInWithEmailAndPassword(
                 auth,
