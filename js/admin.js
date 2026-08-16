@@ -3631,7 +3631,13 @@ console.log(
 // Money Vault Pro
 // ======================================
 
+
+// ======================================
+// REFERRAL BONUS AMOUNT
+// ======================================
+
 const REFERRAL_BONUS_AMOUNT = 1000;
+
 
 
 // ======================================
@@ -3650,11 +3656,18 @@ function getVipDuration(request) {
         0
     );
 
+
+    // ==================================
+    // DIRECT DURATION FOUND
+    // ==================================
+
     if (
         Number.isFinite(duration) &&
         duration > 0
     ) {
+
         return Math.round(duration);
+
     }
 
 
@@ -3668,6 +3681,7 @@ function getVipDuration(request) {
         request.dailyProfit ??
         0
     );
+
 
     const totalProfit = Number(
         request.totalProfit ??
@@ -3685,12 +3699,15 @@ function getVipDuration(request) {
         const calculated =
             totalProfit / dailyIncome;
 
+
         if (
             Number.isFinite(calculated) &&
             calculated > 0
         ) {
 
-            return Math.round(calculated);
+            return Math.round(
+                calculated
+            );
 
         }
 
@@ -3714,11 +3731,16 @@ async function giveReferralBonus(
 
     try {
 
+        // ==================================
+        // GET BUYER
+        // ==================================
+
         const userRef =
             ref(
                 db,
                 "users/" + uid
             );
+
 
         const userSnap =
             await get(userRef);
@@ -3727,10 +3749,11 @@ async function giveReferralBonus(
         if (!userSnap.exists()) {
 
             console.log(
-                "Referral: user not found"
+                "Referral: user not found:",
+                uid
             );
 
-            return;
+            return false;
 
         }
 
@@ -3739,12 +3762,18 @@ async function giveReferralBonus(
             userSnap.val();
 
 
+        // ==================================
+        // GET REFERRER
+        // ==================================
+
         const referrerUid =
-            user.referredBy || "";
+            String(
+                user.referredBy || ""
+            ).trim();
 
 
         // ==================================
-        // USER WAS NOT REFERRED
+        // NO REFERRER
         // ==================================
 
         if (!referrerUid) {
@@ -3754,7 +3783,7 @@ async function giveReferralBonus(
                 uid
             );
 
-            return;
+            return false;
 
         }
 
@@ -3768,18 +3797,24 @@ async function giveReferralBonus(
         ) {
 
             console.log(
-                "Self referral blocked"
+                "Self referral blocked:",
+                uid
             );
 
-            return;
+            return false;
 
         }
 
 
+        // ==================================
+        // REFERRER REF
+        // ==================================
+
         const referrerRef =
             ref(
                 db,
-                "users/" + referrerUid
+                "users/" +
+                referrerUid
             );
 
 
@@ -3795,6 +3830,10 @@ async function giveReferralBonus(
                 referrerRef,
                 current => {
 
+                    // ==================================
+                    // REFERRER DOES NOT EXIST
+                    // ==================================
+
                     if (!current) {
 
                         return;
@@ -3802,13 +3841,17 @@ async function giveReferralBonus(
                     }
 
 
-                    const bonusRecords =
-                        current.referralBonusGivenByUser ||
-                        {};
+                    // ==================================
+                    // EXISTING BONUS RECORDS
+                    // ==================================
+
+                    const bonusRecords = {
+                        ...(current.referralBonusGivenByUser || {})
+                    };
 
 
                     // ==================================
-                    // BONUS ALREADY GIVEN
+                    // CHECK DUPLICATE
                     // ==================================
 
                     if (
@@ -3819,6 +3862,10 @@ async function giveReferralBonus(
 
                     }
 
+
+                    // ==================================
+                    // CURRENT VALUES
+                    // ==================================
 
                     const oldBalance =
                         Number(
@@ -3831,6 +3878,22 @@ async function giveReferralBonus(
                             current.referralBonus || 0
                         );
 
+
+                    const oldReferralEarnings =
+                        Number(
+                            current.referralEarnings || 0
+                        );
+
+
+                    const oldTotalEarnings =
+                        Number(
+                            current.totalEarnings || 0
+                        );
+
+
+                    // ==================================
+                    // SAVE BONUS RECORD
+                    // ==================================
 
                     bonusRecords[uid] = {
 
@@ -3846,20 +3909,61 @@ async function giveReferralBonus(
                     };
 
 
+                    // ==================================
+                    // MARK BONUS GIVEN
+                    // ==================================
+
                     bonusGiven = true;
 
+
+                    // ==================================
+                    // UPDATE REFERRER
+                    // ==================================
 
                     return {
 
                         ...current,
 
+
+                        // ------------------------------
+                        // BALANCE
+                        // ------------------------------
+
                         balance:
                             oldBalance +
                             REFERRAL_BONUS_AMOUNT,
 
+
+                        // ------------------------------
+                        // REFERRAL BONUS
+                        // ------------------------------
+
                         referralBonus:
                             oldReferralBonus +
                             REFERRAL_BONUS_AMOUNT,
+
+
+                        // ------------------------------
+                        // REFERRAL EARNINGS
+                        // ------------------------------
+
+                        referralEarnings:
+                            oldReferralEarnings +
+                            REFERRAL_BONUS_AMOUNT,
+
+
+                        // ------------------------------
+                        // TOTAL EARNINGS
+                        // ------------------------------
+
+                        totalEarnings:
+                            oldTotalEarnings +
+                            REFERRAL_BONUS_AMOUNT,
+
+
+                        // ------------------------------
+                        // BONUS RECORD
+                        // ------------------------------
 
                         referralBonusGivenByUser:
                             bonusRecords
@@ -3870,27 +3974,35 @@ async function giveReferralBonus(
             );
 
 
+        // ==================================
+        // TRANSACTION DID NOT COMMIT
+        // ==================================
+
         if (
             !result.committed ||
             !bonusGiven
         ) {
 
             console.log(
-                "Referral bonus was already given."
+                "Referral bonus already given or update failed:",
+                uid
             );
 
-            return;
+            return false;
 
         }
 
 
         // ==================================
-        // REFERRAL TRANSACTION
+        // CREATE REFERRAL TRANSACTION
         // ==================================
 
         const transactionRef =
             push(
-                ref(db, "transactions")
+                ref(
+                    db,
+                    "transactions"
+                )
             );
 
 
@@ -3924,10 +4036,16 @@ async function giveReferralBonus(
 
 
         console.log(
-            "Referral bonus given:",
+            "Referral bonus given successfully:",
             REFERRAL_BONUS_AMOUNT,
-            "RWF"
+            "RWF",
+            "to:",
+            referrerUid
         );
+
+
+        return true;
+
 
     }
     catch (error) {
@@ -3936,6 +4054,9 @@ async function giveReferralBonus(
             "Referral bonus error:",
             error
         );
+
+
+        return false;
 
     }
 
@@ -3948,6 +4069,10 @@ async function giveReferralBonus(
 // ======================================
 
 async function approveVipRequest(id) {
+
+    // ==================================
+    // ADMIN CHECK
+    // ==================================
 
     if (!currentAdmin) {
 
@@ -3969,7 +4094,8 @@ async function approveVipRequest(id) {
         const requestRef =
             ref(
                 db,
-                "vipPurchaseRequests/" + id
+                "vipPurchaseRequests/" +
+                id
             );
 
 
@@ -3990,6 +4116,7 @@ async function approveVipRequest(id) {
                     }
 
 
+                    // Only pending request
                     if (
                         String(
                             current.status || ""
@@ -4014,6 +4141,10 @@ async function approveVipRequest(id) {
                 }
             );
 
+
+        // ==================================
+        // CLAIM FAILED
+        // ==================================
 
         if (
             !claimResult.committed
@@ -4065,7 +4196,9 @@ async function approveVipRequest(id) {
 
 
         const duration =
-            getVipDuration(request);
+            getVipDuration(
+                request
+            );
 
 
         // ==================================
@@ -4112,7 +4245,8 @@ async function approveVipRequest(id) {
         const userRef =
             ref(
                 db,
-                "users/" + uid
+                "users/" +
+                uid
             );
 
 
@@ -4152,18 +4286,27 @@ async function approveVipRequest(id) {
                     }
 
 
+                    // ==================================
+                    // DEDUCT PRICE ONLY
+                    // ==================================
+
                     return {
 
                         ...current,
 
                         balance:
-                            currentBalance - price
+                            currentBalance -
+                            price
 
                     };
 
                 }
             );
 
+
+        // ==================================
+        // BALANCE UPDATE FAILED
+        // ==================================
 
         if (
             !balanceResult.committed
@@ -4264,8 +4407,8 @@ async function approveVipRequest(id) {
                 approvedBy:
                     currentAdmin.uid,
 
+
                 // ==================================
-                // IMPORTANT
                 // FIRST CLAIM AFTER 24 HOURS
                 // ==================================
 
@@ -4277,6 +4420,11 @@ async function approveVipRequest(id) {
 
                 lastProfitTime:
                     approvalTime,
+
+
+                // ==================================
+                // NO PROFIT GIVEN ON APPROVAL
+                // ==================================
 
                 totalEarned:
                     0,
@@ -4295,7 +4443,10 @@ async function approveVipRequest(id) {
 
         const vipTransactionRef =
             push(
-                ref(db, "transactions")
+                ref(
+                    db,
+                    "transactions"
+                )
             );
 
 
@@ -4397,19 +4548,32 @@ async function approveVipRequest(id) {
         // REFERRAL BONUS
         // ==================================
 
-        await giveReferralBonus(
-            uid,
-            id
-        );
+        const referralPaid =
+            await giveReferralBonus(
+                uid,
+                id
+            );
 
 
         // ==================================
-        // SUCCESS
+        // SUCCESS MESSAGE
         // ==================================
 
-        alert(
-            "VIP approved successfully."
-        );
+        if (referralPaid) {
+
+            alert(
+                "VIP approved successfully.\n\n" +
+                "Referral bonus of 1,000 RWF has been given."
+            );
+
+        }
+        else {
+
+            alert(
+                "VIP approved successfully."
+            );
+
+        }
 
 
         console.log(
@@ -4439,10 +4603,11 @@ async function approveVipRequest(id) {
 }
 
 
+
 console.log(
     "ADMIN.JS PART 7 READY"
 );
-
+        
                 
 // ======================================
 // ADMIN.JS - PART 8
