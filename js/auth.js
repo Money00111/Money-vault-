@@ -335,18 +335,15 @@ export async function registerUser(
 
 
 
+ 
 
-// ======================================
+        // ======================================
 // LOGIN USER
 // ======================================
 
 export async function loginUser(email, password) {
 
     try {
-
-        // ==================================
-        // FIREBASE LOGIN
-        // ==================================
 
         const credential =
             await signInWithEmailAndPassword(
@@ -358,9 +355,8 @@ export async function loginUser(email, password) {
         const user =
             credential.user;
 
-
         console.log(
-            "LOGIN SUCCESS:",
+            "Firebase Auth Login:",
             user.uid
         );
 
@@ -369,53 +365,72 @@ export async function loginUser(email, password) {
         // CHECK USER DATABASE
         // ==================================
 
-        const userRef =
-            ref(
-                db,
-                "users/" + user.uid
+        const userSnapshot =
+            await get(
+                ref(
+                    db,
+                    "users/" +
+                    user.uid
+                )
             );
 
 
-        const snapshot =
-            await get(userRef);
-
-
-        // ==================================
-        // USER DATABASE NOT FOUND
-        // ==================================
-
-        if (!snapshot.exists()) {
+        if (!userSnapshot.exists()) {
 
             console.error(
-                "Firebase Auth exists but users/" +
-                user.uid +
-                " does not exist."
+                "User data missing:",
+                user.uid
             );
-
 
             alert(
-                "Your account data was not found. Please contact admin."
+                "Account found, but user data is missing."
             );
 
-
-            // Do NOT immediately redirect
             return false;
 
         }
 
 
-        // ==================================
-        // SAVE USER DATA FOR DEBUG
-        // ==================================
-
         console.log(
-            "USER DATABASE FOUND:",
-            snapshot.val()
+            "User database found."
         );
 
 
         // ==================================
-        // GO TO DASHBOARD
+        // WAIT FOR AUTH STATE
+        // ==================================
+
+        await new Promise((resolve) => {
+
+            const unsubscribe =
+                onAuthStateChanged(
+                    auth,
+                    (loggedUser) => {
+
+                        if (
+                            loggedUser &&
+                            loggedUser.uid === user.uid
+                        ) {
+
+                            unsubscribe();
+
+                            resolve();
+
+                        }
+
+                    }
+                );
+
+        });
+
+
+        console.log(
+            "Auth state confirmed."
+        );
+
+
+        // ==================================
+        // DASHBOARD
         // ==================================
 
         window.location.replace(
@@ -426,8 +441,7 @@ export async function loginUser(email, password) {
         return true;
 
 
-    }
-    catch (error) {
+    } catch (error) {
 
         console.error(
             "LOGIN ERROR:",
@@ -435,46 +449,9 @@ export async function loginUser(email, password) {
         );
 
 
-        if (
-            error.code ===
-            "auth/invalid-credential"
-        ) {
-
-            alert(
-                "Incorrect email or password."
-            );
-
-        }
-
-        else if (
-            error.code ===
-            "auth/user-not-found"
-        ) {
-
-            alert(
-                "Account not found."
-            );
-
-        }
-
-        else if (
-            error.code ===
-            "auth/wrong-password"
-        ) {
-
-            alert(
-                "Incorrect password."
-            );
-
-        }
-
-        else {
-
-            alert(
-                error.message
-            );
-
-        }
+        alert(
+            error.message
+        );
 
 
         return false;
@@ -482,7 +459,6 @@ export async function loginUser(email, password) {
     }
 
 }
-        
 
 
 
