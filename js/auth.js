@@ -92,65 +92,118 @@ export async function registerUser(
 
         });
 
-       // ======================================
-// REFERRAL SAVE ONLY
-// BONUS GIVEN AFTER VIP APPROVAL
+// ======================================
+// REFERRAL SAVE
+// Money Vault
 // ======================================
 
-if (referralCode && referralCode.trim() !== "") {
+if (
+    referralCode &&
+    referralCode.trim() !== ""
+) {
 
-    const usersRef = ref(db, "users");
+    const enteredCode =
+        referralCode.trim().toUpperCase();
 
-    const snapshot = await get(usersRef);
+    const usersRef =
+        ref(db, "users");
 
+    const snapshot =
+        await get(usersRef);
+
+    let referrerUid = "";
 
     if (snapshot.exists()) {
 
+        snapshot.forEach((child) => {
 
-        snapshot.forEach(async (child) => {
+            const data =
+                child.val();
 
+            const savedCode =
+                String(
+                    data.referralCode || ""
+                ).trim().toUpperCase();
 
-            const data = child.val();
+            if (
+                savedCode === enteredCode &&
+                child.key !== user.uid
+            ) {
 
-
-            if (data.referralCode === referralCode) {
-
-
-                await update(
-                    ref(db, "users/" + user.uid),
-                    {
-
-                        referredBy:
-                        child.key,
-
-                        referralBonusGiven:
-                        false
-
-                    }
-                );
-
-
-                await update(
-                    ref(db, "users/" + child.key),
-                    {
-
-                        referralCount:
-                        Number(data.referralCount || 0) + 1
-
-                    }
-                );
-
+                referrerUid =
+                    child.key;
 
             }
 
-
         });
 
+    }
+
+
+    // ==================================
+    // IF VALID REFERRAL CODE FOUND
+    // ==================================
+
+    if (referrerUid) {
+
+        await update(
+            ref(db, "users/" + user.uid),
+            {
+
+                referredBy:
+                    referrerUid,
+
+                referralCodeUsed:
+                    enteredCode,
+
+                referralBonusGiven:
+                    false
+
+            }
+        );
+
+
+        // ==================================
+        // INCREASE REFERRAL COUNT
+        // ==================================
+
+        const referrerSnap =
+            await get(
+                ref(
+                    db,
+                    "users/" +
+                    referrerUid
+                )
+            );
+
+
+        if (referrerSnap.exists()) {
+
+            const referrer =
+                referrerSnap.val();
+
+            await update(
+                ref(
+                    db,
+                    "users/" +
+                    referrerUid
+                ),
+                {
+
+                    referralCount:
+                        Number(
+                            referrer.referralCount ||
+                            0
+                        ) + 1
+
+                }
+            );
+
+        }
 
     }
 
 }
-
 
 // ======================================
 // REGISTER SUCCESS
