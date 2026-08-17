@@ -24,8 +24,7 @@ import {
     get,
     update,
     runTransaction
-} from "https://www.gstatic.com/firebasejs/10.13.2/firebasejs/10.13.2/firebase-database.js";
-
+} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
 
 // ======================================
 // REGISTER USER
