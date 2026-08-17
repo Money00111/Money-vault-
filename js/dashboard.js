@@ -74,17 +74,19 @@ logoutBtn?.addEventListener("click", async (e) => {
 
 });
 
-
 // ======================================
-// AUTH CHECK FIX
+// AUTH CHECK
 // ======================================
 
-onAuthStateChanged(auth, async (user) => {
+onAuthStateChanged(auth, (user) => {
 
     if (!user) {
 
-        console.log("No logged user");
+        console.log(
+            "Dashboard: NO USER"
+        );
 
+        // Do not redirect immediately
         return;
 
     }
@@ -102,8 +104,8 @@ onAuthStateChanged(auth, async (user) => {
 
     loadNotifications();
 
-
 });
+
 
 // ======================================
 // LOAD USER
