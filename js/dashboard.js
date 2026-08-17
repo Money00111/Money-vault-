@@ -78,24 +78,37 @@ logoutBtn?.addEventListener("click", async (e) => {
 // AUTH CHECK
 // ======================================
 
+// ======================================
+// AUTH CHECK
+// ======================================
+
 onAuthStateChanged(auth, (user) => {
 
-    alert(
-        user
-        ? "DASHBOARD USER: " + user.uid
-        : "DASHBOARD: USER IS NULL"
-    );
-
     if (!user) {
+
+        console.log(
+            "Dashboard: NO USER"
+        );
+
+        // Do not redirect immediately
         return;
+
     }
 
+
+    console.log(
+        "Dashboard User:",
+        user.uid
+    );
+
+
     loadUser(user);
+
     loadTransactions(user);
+
     loadNotifications();
 
 });
-
 
 // ======================================
 // LOAD USER
