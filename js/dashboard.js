@@ -80,28 +80,18 @@ logoutBtn?.addEventListener("click", async (e) => {
 
 onAuthStateChanged(auth, (user) => {
 
-    if (!user) {
-
-        console.log(
-            "Dashboard: NO USER"
-        );
-
-        // Do not redirect immediately
-        return;
-
-    }
-
-
-    console.log(
-        "Dashboard User:",
-        user.uid
+    alert(
+        user
+        ? "DASHBOARD USER: " + user.uid
+        : "DASHBOARD: USER IS NULL"
     );
 
+    if (!user) {
+        return;
+    }
 
     loadUser(user);
-
     loadTransactions(user);
-
     loadNotifications();
 
 });
