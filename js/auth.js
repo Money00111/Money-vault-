@@ -341,7 +341,7 @@ export async function registerUser(
 
  
 
-        // ======================================
+// ======================================
 // LOGIN USER
 // ======================================
 
@@ -349,8 +349,11 @@ export async function loginUser(email, password) {
 
     try {
 
+        // Wait for Firebase persistence
         await authReady;
 
+
+        // LOGIN
         const credential =
             await signInWithEmailAndPassword(
                 auth,
@@ -358,38 +361,31 @@ export async function loginUser(email, password) {
                 password
             );
 
+
         const user =
             credential.user;
 
+
         console.log(
-            "Firebase Auth Login:",
+            "LOGIN SUCCESS:",
             user.uid
         );
 
 
-        // ==================================
-        // CHECK USER DATABASE
-        // ==================================
-
-        const userSnapshot =
+        // CHECK USER DATA
+        const snapshot =
             await get(
                 ref(
                     db,
-                    "users/" +
-                    user.uid
+                    "users/" + user.uid
                 )
             );
 
 
-        if (!userSnapshot.exists()) {
-
-            console.error(
-                "User data missing:",
-                user.uid
-            );
+        if (!snapshot.exists()) {
 
             alert(
-                "Account found, but user data is missing."
+                "User account data not found."
             );
 
             return false;
@@ -398,50 +394,13 @@ export async function loginUser(email, password) {
 
 
         console.log(
-            "User database found."
+            "USER DATA FOUND"
         );
 
 
-        // ==================================
-        // WAIT FOR AUTH STATE
-        // ==================================
-
-        await new Promise((resolve) => {
-
-            const unsubscribe =
-                onAuthStateChanged(
-                    auth,
-                    (loggedUser) => {
-
-                        if (
-                            loggedUser &&
-                            loggedUser.uid === user.uid
-                        ) {
-
-                            unsubscribe();
-
-                            resolve();
-
-                        }
-
-                    }
-                );
-
-        });
-
-
-        console.log(
-            "Auth state confirmed."
-        );
-
-
-        // ==================================
-        // DASHBOARD
-        // ==================================
-
-        window.location.replace(
-            "dashboard.html"
-        );
+        // GO DIRECTLY TO DASHBOARD
+        window.location.href =
+            "dashboard.html";
 
 
         return true;
@@ -454,11 +413,9 @@ export async function loginUser(email, password) {
             error
         );
 
-
         alert(
             error.message
         );
-
 
         return false;
 
