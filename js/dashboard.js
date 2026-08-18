@@ -74,9 +74,6 @@ logoutBtn?.addEventListener("click", async (e) => {
 
 });
 
-// ======================================
-// AUTH CHECK
-// ======================================
 
 // ======================================
 // AUTH CHECK
@@ -195,13 +192,20 @@ console.log("Dashboard Part 1 Ready");
 const recentTransactions =
 document.getElementById("recentTransactions");
 
+const referralCodeElement =
+document.getElementById("referralCode");
+
 const referralLink =
 document.getElementById("referralLink");
 
+const referralCountElement =
+document.getElementById("referralCount");
+
+const referralEarningsElement =
+document.getElementById("referralEarnings");
+
 const copyReferral =
-document.getElementById(
-    "copyReferralBtn"
-);
+document.getElementById("copyReferralBtn");
 
 const notificationList =
 document.getElementById("notificationList");
@@ -352,67 +356,84 @@ function loadTransactions(user){
 }
 
 
-
 // ======================================
-// REFERRAL LINK (FIXED)
+// REFERRAL SYSTEM
 // ======================================
 
-function createReferral(data){
+function createReferral(data) {
 
-
-    if(!referralLink) return;
-
+    // ==============================
+    // REFERRAL CODE
+    // ==============================
 
     const code =
-    data.referralCode || "NONE";
+        String(data.referralCode || "").trim();
+
+    if (referralCodeElement) {
+
+        referralCodeElement.textContent =
+            code || "No Referral Code";
+
+    }
 
 
-    referralLink.value =
+    // ==============================
+    // REFERRAL LINK
+    // ==============================
 
-    window.location.origin +
+    if (referralLink) {
 
-    "/register.html?ref=" +
+        if (code) {
 
-    code;
+            referralLink.value =
+                window.location.origin +
+                "/register.html?ref=" +
+                encodeURIComponent(code);
 
+        } else {
+
+            referralLink.value = "";
+
+        }
+
+    }
+
+
+    // ==============================
+    // INVITED USERS
+    // ==============================
+
+    const count =
+        Number(data.referralCount || 0);
+
+    if (referralCountElement) {
+
+        referralCountElement.textContent =
+            count.toLocaleString();
+
+    }
+
+
+    // ==============================
+    // REFERRAL EARNINGS
+    // ==============================
+
+    const earnings =
+        Number(
+            data.referralEarnings ??
+            data.referralBonus ??
+            0
+        );
+
+    if (referralEarningsElement) {
+
+        referralEarningsElement.textContent =
+            earnings.toLocaleString() +
+            " RWF";
+
+    }
 
 }
-
-
-
-// ======================================
-// COPY REFERRAL
-// ======================================
-
-copyReferral?.addEventListener("click",async()=>{
-
-
-    try{
-
-
-        await navigator.clipboard.writeText(
-
-            referralLink.value
-
-        );
-
-
-        alert(
-        "Referral link copied successfully."
-        );
-
-
-    }
-
-    catch(error){
-
-        alert(error.message);
-
-    }
-
-
-});
-
 
 
 // ======================================
