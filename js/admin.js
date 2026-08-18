@@ -3628,16 +3628,6 @@ console.log(
 // VIP APPROVE + REFERRAL BONUS
 // ======================================
 
-import {
-    ref,
-    get,
-    set,
-    update,
-    push,
-    runTransaction
-} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
-
-
 // ======================================
 // GET VIP DURATION
 // ======================================
