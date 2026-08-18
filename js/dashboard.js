@@ -150,8 +150,12 @@ function loadUser(user) {
             Number(data.bonus || 0).toLocaleString() + " RWF";
 
         referralBonus.textContent =
-            Number(data.referralBonus || 0).toLocaleString() + " RWF";
-
+    Number(
+        data.referralEarnings ??
+        data.referralBonus ??
+        0
+    ).toLocaleString() + " RWF";
+        
         currentVip.textContent =
             data.vip || "VIP 0";
 
