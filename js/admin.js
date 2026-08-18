@@ -4096,59 +4096,64 @@ async function approveVipRequest(id) {
 
         let referralData = null;
 
+// ==================================
+// FIND REFERRER
+// ==================================
 
-        // ==================================
-        // FIND REFERRER
-        // ==================================
+const referredBy =
+    String(
+        user.referredBy || ""
+    ).trim();
 
-        if (referredBy) {
+let referralData = null;
 
-            const referrerRef =
-                ref(
-                    db,
-                    "users/" +
-                    referredBy
-                );
+if (referredBy) {
 
+    const referrerRef =
+        ref(
+            db,
+            "users/" + referredBy
+        );
 
-            const referrerSnapshot =
-                await get(referrerRef);
+    const referrerSnapshot =
+        await get(referrerRef);
 
+    if (referrerSnapshot.exists()) {
 
-            if (
-                referrerSnapshot.exists()
-            ) {
+        const referrer =
+            referrerSnapshot.val() || {};
 
-                const referrer =
-                    referrerSnapshot.val();
+        referralData = {
 
+            uid:
+                referredBy,
 
-                referralData = {
+            balance:
+                Number(
+                    referrer.balance || 0
+                ),
 
-                    uid:
-                        referredBy,
+            referralBonus:
+                Number(
+                    referrer.referralBonus || 0
+                ),
 
-                    balance:
-                        Number(
-                            referrer.balance || 0
-                        ),
+            referralEarnings:
+                Number(
+                    referrer.referralEarnings || 0
+                ),
 
-                    referralBonus:
-                        Number(
-                            referrer.referralBonus || 0
-                        ),
+            referralCount:
+                Number(
+                    referrer.referralCount || 0
+                )
 
-                    referralEarnings:
-                        Number(
-                            referrer.referralEarnings || 0
-                        )
+        };
 
-                };
+    }
 
-            }
-
-        }
-
+}
+                
 
         // ==================================
         // MULTI-LOCATION UPDATE
@@ -4246,125 +4251,138 @@ async function approveVipRequest(id) {
 
 
         // ==================================
-        // REFERRAL BONUS
-        // ==================================
+// REFERRAL BONUS
+// ==================================
 
-        if (referralData) {
+if (referralData) {
 
-            const bonus =
-                1000;
+    const bonus = 1000;
 
+    // ----------------------------------
+    // ADD REFERRER BALANCE
+    // ----------------------------------
 
-            // ------------------------------
-            // ADD TO REFERRER BALANCE
-            // ------------------------------
-
-            updates[
-                "users/" +
-                referralData.uid +
-                "/balance"
-            ] =
-                referralData.balance +
-                bonus;
+    updates[
+        "users/" +
+        referralData.uid +
+        "/balance"
+    ] =
+        referralData.balance +
+        bonus;
 
 
-            // ------------------------------
-            // ADD REFERRAL BONUS
-            // ------------------------------
+    // ----------------------------------
+    // ADD REFERRAL EARNINGS
+    // ----------------------------------
 
-            updates[
-                "users/" +
-                referralData.uid +
-                "/referralBonus"
-            ] =
-                referralData.referralBonus +
-                bonus;
-
-
-            // ------------------------------
-            // ADD REFERRAL EARNINGS
-            // ------------------------------
-
-            updates[
-                "users/" +
-                referralData.uid +
-                "/referralEarnings"
-            ] =
-                referralData.referralEarnings +
-                bonus;
+    updates[
+        "users/" +
+        referralData.uid +
+        "/referralEarnings"
+    ] =
+        referralData.referralEarnings +
+        bonus;
 
 
-            // ------------------------------
-            // REFERRAL TRANSACTION
-            // ------------------------------
+    // ----------------------------------
+    // ADD REFERRAL BONUS
+    // ----------------------------------
 
-            const referralTxRef =
-                push(
-                    ref(
-                        db,
-                        "transactions"
-                    )
-                );
-
-
-            updates[
-                "transactions/" +
-                referralTxRef.key
-            ] = {
-
-                uid:
-                    referralData.uid,
-
-                type:
-                    "referralBonus",
-
-                amount:
-                    bonus,
-
-                sourceUid:
-                    uid,
-
-                sourceRequestId:
-                    id,
-
-                vipName:
-                    vipName,
-
-                status:
-                    "completed",
-
-                createdAt:
-                    approvedAt
-
-            };
+    updates[
+        "users/" +
+        referralData.uid +
+        "/referralBonus"
+    ] =
+        referralData.referralBonus +
+        bonus;
 
 
-            // ------------------------------
-            // MARK BONUS GIVEN
-            // ------------------------------
+    // ----------------------------------
+    // ADD REFERRAL COUNT
+    // ----------------------------------
 
-            updates[
-                "vipPurchaseRequests/" +
-                id +
-                "/referralBonus"
-            ] = bonus;
-
-
-            updates[
-                "vipPurchaseRequests/" +
-                id +
-                "/referralBonusUid"
-            ] =
-                referralData.uid;
+    updates[
+        "users/" +
+        referralData.uid +
+        "/referralCount"
+    ] =
+        referralData.referralCount +
+        1;
 
 
-            updates[
-                "vipPurchaseRequests/" +
-                id +
-                "/referralBonusGiven"
-            ] = true;
+    // ----------------------------------
+    // REFERRAL TRANSACTION
+    // ----------------------------------
 
-        }
+    const referralTxRef =
+        push(
+            ref(db, "transactions")
+        );
+
+
+    updates[
+        "transactions/" +
+        referralTxRef.key
+    ] = {
+
+        uid:
+            referralData.uid,
+
+        type:
+            "referralBonus",
+
+        amount:
+            bonus,
+
+        sourceUid:
+            uid,
+
+        sourceRequestId:
+            id,
+
+        vipName:
+            vipName,
+
+        status:
+            "completed",
+
+        createdAt:
+            approvedAt
+
+    };
+
+
+    // ----------------------------------
+    // MARK BONUS AS GIVEN
+    // ----------------------------------
+
+    updates[
+        "vipPurchaseRequests/" +
+        id +
+        "/referralBonus"
+    ] =
+        bonus;
+
+
+    updates[
+        "vipPurchaseRequests/" +
+        id +
+        "/referralBonusUid"
+    ] =
+        referralData.uid;
+
+
+    updates[
+        "vipPurchaseRequests/" +
+        id +
+        "/referralBonusGiven"
+    ] =
+        true;
+
+}
+        
+         
+                
 
 
         // ==================================
