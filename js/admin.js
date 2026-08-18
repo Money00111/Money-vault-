@@ -3878,6 +3878,11 @@ async function giveReferralBonus(
                             current.referralBonus || 0
                         );
 
+                    const oldReferralEarnings =
+    Number(
+        current.referralEarnings || 0
+    );
+
 
                     const oldReferralEarnings =
                         Number(
