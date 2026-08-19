@@ -4248,14 +4248,165 @@ async function approveVipRequest(id) {
         const newUserBalance =
             userBalance - price;
 
+// ======================================
+// FIND REFERRER
+// ======================================
 
-        // ==================================
-        // FIND REFERRER
-        // ==================================
+async function findReferrer(user) {
 
-        const referrer =
-            await findReferrer(user);
+    // ==================================
+    // 1. TRY referredBy FIRST
+    // ==================================
 
+    const referredBy =
+        String(
+            user.referredBy ?? ""
+        )
+        .trim();
+
+
+    if (
+        referredBy !== "" &&
+        referredBy !== "0" &&
+        referredBy !== "null" &&
+        referredBy !== "undefined"
+    ) {
+
+        const snapshot =
+            await get(
+                ref(
+                    db,
+                    "users/" + referredBy
+                )
+            );
+
+
+        if (snapshot.exists()) {
+
+            return {
+
+                uid:
+                    referredBy,
+
+                data:
+                    snapshot.val() || {}
+
+            };
+
+        }
+
+    }
+
+
+    // ==================================
+    // 2. FALLBACK TO referralCodeUsed
+    // ==================================
+
+    const usedCode =
+        String(
+            user.referralCodeUsed ?? ""
+        )
+        .trim()
+        .toUpperCase();
+
+
+    if (!usedCode) {
+
+        console.log(
+            "NO referralCodeUsed"
+        );
+
+        return null;
+
+    }
+
+
+    console.log(
+        "SEARCHING REFERRER BY CODE:",
+        usedCode
+    );
+
+
+    // ==================================
+    // 3. GET ALL USERS
+    // ==================================
+
+    const usersSnapshot =
+        await get(
+            ref(db, "users")
+        );
+
+
+    if (!usersSnapshot.exists()) {
+
+        console.log(
+            "USERS NODE EMPTY"
+        );
+
+        return null;
+
+    }
+
+
+    let foundReferrer = null;
+
+
+    usersSnapshot.forEach(
+        (child) => {
+
+            const data =
+                child.val() || {};
+
+
+            const savedCode =
+                String(
+                    data.referralCode ?? ""
+                )
+                .trim()
+                .toUpperCase();
+
+
+            if (
+                savedCode === usedCode &&
+                child.key !== user.uid
+            ) {
+
+                foundReferrer = {
+
+                    uid:
+                        child.key,
+
+                    data
+
+                };
+
+            }
+
+        }
+    );
+
+
+    if (foundReferrer) {
+
+        console.log(
+            "REFERRER FOUND BY CODE:",
+            foundReferrer.uid
+        );
+
+    }
+    else {
+
+        console.log(
+            "REFERRER NOT FOUND FOR CODE:",
+            usedCode
+        );
+
+    }
+
+
+    return foundReferrer;
+
+}
 
         // ==================================
         // PREPARE UPDATES
