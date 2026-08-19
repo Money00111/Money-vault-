@@ -129,7 +129,7 @@ export async function registerUser(
             }
         );
 
-                            
+
 // ======================================
 // REFERRAL SYSTEM
 // ======================================
@@ -140,6 +140,16 @@ const cleanReferralCode =
     String(referralCode || "")
         .trim()
         .toUpperCase();
+
+
+// ======================================
+// DEBUG
+// ======================================
+
+console.log(
+    "REFERRAL CODE RECEIVED:",
+    cleanReferralCode
+);
 
 
 // ======================================
@@ -161,7 +171,6 @@ if (cleanReferralCode !== "") {
             const data =
                 child.val() || {};
 
-
             const savedCode =
                 String(
                     data.referralCode || ""
@@ -169,6 +178,18 @@ if (cleanReferralCode !== "") {
                     .trim()
                     .toUpperCase();
 
+
+            console.log(
+                "CHECK REFERRAL:",
+                savedCode,
+                "vs",
+                cleanReferralCode
+            );
+
+
+            // ==================================
+            // MATCH REFERRAL CODE
+            // ==================================
 
             if (
                 savedCode === cleanReferralCode &&
@@ -198,7 +219,7 @@ if (cleanReferralCode !== "") {
 
 
         // ==================================
-        // SAVE REFERRAL TO NEW USER
+        // SAVE REFERRAL INFORMATION
         // ==================================
 
         await update(
@@ -222,8 +243,7 @@ if (cleanReferralCode !== "") {
 
 
         // ==================================
-        // INCREASE REFERRER COUNT
-        // ONLY HERE
+        // INCREASE REFERRAL COUNT
         // ==================================
 
         await runTransaction(
@@ -235,31 +255,46 @@ if (cleanReferralCode !== "") {
             ),
             current => {
 
-                return Number(current || 0) + 1;
+                return (
+                    Number(current || 0) + 1
+                );
 
             }
         );
 
 
         console.log(
+            "================================"
+        );
+
+        console.log(
             "REFERRAL CONNECTED SUCCESSFULLY"
         );
 
         console.log(
-            "New user:",
+            "New User UID:",
             user.uid
         );
 
         console.log(
-            "Referred by:",
+            "Referral Code:",
+            cleanReferralCode
+        );
+
+        console.log(
+            "Referred By UID:",
             referrerUid
+        );
+
+        console.log(
+            "================================"
         );
 
     }
 
     else {
 
-        console.log(
+        console.warn(
             "REFERRAL CODE NOT FOUND:",
             cleanReferralCode
         );
@@ -268,6 +303,13 @@ if (cleanReferralCode !== "") {
 
 }
 
+else {
+
+    console.log(
+        "NO REFERRAL CODE USED"
+    );
+
+}
         // ==================================
         // REGISTRATION COMPLETE
         // ==================================
