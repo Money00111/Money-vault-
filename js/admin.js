@@ -3623,10 +3623,12 @@ console.log(
 );
 
 
-      // ======================================
+
+         // ======================================
 // ADMIN.JS - PART 7
 // VIP APPROVE + REFERRAL BONUS
 // ======================================
+
 
 // ======================================
 // GET VIP DURATION
@@ -3635,13 +3637,16 @@ console.log(
 function getVipDuration(request) {
 
     const possibleDuration = [
+
         request.duration,
         request.days,
         request.durationDays,
         request.vipDuration,
         request.planDuration,
         request.totalDays
+
     ];
+
 
     for (const value of possibleDuration) {
 
@@ -3690,7 +3695,10 @@ function getVipDuration(request) {
             totalProfit / dailyIncome;
 
 
-        if (Number.isFinite(calculated)) {
+        if (
+            Number.isFinite(calculated) &&
+            calculated > 0
+        ) {
 
             return Math.round(calculated);
 
@@ -3733,7 +3741,7 @@ async function approveVipRequest(id) {
 
 
         // ==================================
-        // CLAIM REQUEST ATOMICALLY
+        // CLAIM REQUEST
         // ==================================
 
         const claimResult =
@@ -3742,31 +3750,19 @@ async function approveVipRequest(id) {
                 current => {
 
                     if (!current) {
-
                         return;
-
                     }
 
 
-                    // Already approved
-                    if (
-                        current.status ===
-                        "approved"
-                    ) {
+                    const status =
+                        String(
+                            current.status ||
+                            "pending"
+                        ).toLowerCase();
 
+
+                    if (status !== "pending") {
                         return;
-
-                    }
-
-
-                    // Already processing
-                    if (
-                        current.status ===
-                        "processing"
-                    ) {
-
-                        return;
-
                     }
 
 
@@ -3792,7 +3788,7 @@ async function approveVipRequest(id) {
         if (!claimResult.committed) {
 
             alert(
-                "This VIP request is already being processed or approved."
+                "This VIP request has already been processed."
             );
 
             return;
@@ -3805,27 +3801,21 @@ async function approveVipRequest(id) {
         // ==================================
 
         const request =
-            claimResult.snapshot.val();
-
-
-        if (!request) {
-
-            alert("VIP request not found.");
-
-            return;
-
-        }
+            claimResult.snapshot.val() || {};
 
 
         const uid =
-            request.uid;
+            request.uid ||
+            request.userId ||
+            request.userUID ||
+            "";
 
 
         if (!uid) {
 
-            alert("Invalid user ID.");
-
-            return;
+            throw new Error(
+                "Invalid user ID."
+            );
 
         }
 
@@ -3836,13 +3826,17 @@ async function approveVipRequest(id) {
 
         const vipName =
             request.vipName ||
+            request.planName ||
             request.name ||
             "VIP Plan";
 
 
         const price =
             Number(
-                request.price || 0
+                request.price ??
+                request.vipPrice ??
+                request.amount ??
+                0
             );
 
 
@@ -3855,21 +3849,35 @@ async function approveVipRequest(id) {
             );
 
 
-        const totalProfit =
+        const duration =
+            getVipDuration(request);
+
+
+        let totalProfit =
             Number(
                 request.totalProfit ??
                 request.profit ??
                 request.total ??
-                (
-                    dailyIncome *
-                    getVipDuration(request)
-                )
+                0
             );
 
 
-        const duration =
-            getVipDuration(request);
+        if (
+            totalProfit <= 0 &&
+            dailyIncome > 0 &&
+            duration > 0
+        ) {
 
+            totalProfit =
+                dailyIncome *
+                duration;
+
+        }
+
+
+        // ==================================
+        // VALIDATION
+        // ==================================
 
         if (
             !Number.isFinite(price) ||
@@ -3908,7 +3916,7 @@ async function approveVipRequest(id) {
 
 
         // ==================================
-        // USER REFERENCE
+        // USER
         // ==================================
 
         const userRef =
@@ -3932,11 +3940,11 @@ async function approveVipRequest(id) {
 
 
         const user =
-            userSnapshot.val();
+            userSnapshot.val() || {};
 
 
         // ==================================
-        // CHECK USER BALANCE
+        // USER BALANCE
         // ==================================
 
         const userBalance =
@@ -3958,7 +3966,7 @@ async function approveVipRequest(id) {
 
 
         // ==================================
-        // VIP TIMES
+        // VIP TIME
         // ==================================
 
         const approvedAt =
@@ -3991,7 +3999,7 @@ async function approveVipRequest(id) {
 
 
         // ==================================
-        // USER VIP PLAN
+        // USER VIP PLAN ID
         // ==================================
 
         const userVipRef =
@@ -4015,40 +4023,46 @@ async function approveVipRequest(id) {
 
         const vipData = {
 
-            uid: uid,
+            uid,
 
-            requestId: id,
+            requestId:
+                id,
 
-            vipBuyerId: vipBuyerId,
+            vipBuyerId,
 
-            vipName: vipName,
+            vipName,
 
-            price: price,
+            price,
 
-            dailyIncome: dailyIncome,
+            dailyIncome,
 
-            totalProfit: totalProfit,
+            totalProfit,
 
-            totalDays: duration,
+            duration,
 
-            duration: duration,
+            totalDays:
+                duration,
 
-            remainingDays: duration,
+            remainingDays:
+                duration,
 
-            status: "active",
+            status:
+                "active",
 
-            purchasedAt: approvedAt,
+            purchasedAt:
+                approvedAt,
 
-            approvedAt: approvedAt,
+            approvedAt,
 
             approvedBy:
                 currentAdmin.uid,
 
-            endDate: endDate,
+            endDate,
 
             // IMPORTANT:
-            // First claim after 24 hours
-            lastClaim: approvedAt,
+            // FIRST CLAIM AFTER 24 HOURS
+            lastClaim:
+                approvedAt,
 
             lastClaimTime:
                 approvedAt,
@@ -4056,9 +4070,11 @@ async function approveVipRequest(id) {
             lastProfitTime:
                 approvedAt,
 
-            totalEarned: 0,
+            totalEarned:
+                0,
 
-            earned: 0
+            earned:
+                0
 
         };
 
@@ -4071,13 +4087,14 @@ async function approveVipRequest(id) {
 
             ...vipData,
 
-            id: vipBuyerId
+            id:
+                vipBuyerId
 
         };
 
 
         // ==================================
-        // NEW BALANCE
+        // BUYER NEW BALANCE
         // ==================================
 
         const newUserBalance =
@@ -4085,7 +4102,7 @@ async function approveVipRequest(id) {
 
 
         // ==================================
-        // REFERRER
+        // REFERRAL
         // ==================================
 
         const referredBy =
@@ -4094,76 +4111,79 @@ async function approveVipRequest(id) {
             ).trim();
 
 
-        let referralData = null;
+        let referralData =
+            null;
 
-// ==================================
-// FIND REFERRER
-// ==================================
-
-const referredBy =
-    String(
-        user.referredBy || ""
-    ).trim();
-
-let referralData = null;
-
-if (referredBy) {
-
-    const referrerRef =
-        ref(
-            db,
-            "users/" + referredBy
-        );
-
-    const referrerSnapshot =
-        await get(referrerRef);
-
-    if (referrerSnapshot.exists()) {
-
-        const referrer =
-            referrerSnapshot.val() || {};
-
-        referralData = {
-
-            uid:
-                referredBy,
-
-            balance:
-                Number(
-                    referrer.balance || 0
-                ),
-
-            referralBonus:
-                Number(
-                    referrer.referralBonus || 0
-                ),
-
-            referralEarnings:
-                Number(
-                    referrer.referralEarnings || 0
-                ),
-
-            referralCount:
-                Number(
-                    referrer.referralCount || 0
-                )
-
-        };
-
-    }
-
-}
-                
 
         // ==================================
-        // MULTI-LOCATION UPDATE
+        // FIND REFERRER
+        // ==================================
+
+        if (referredBy) {
+
+            const referrerRef =
+                ref(
+                    db,
+                    "users/" +
+                    referredBy
+                );
+
+
+            const referrerSnapshot =
+                await get(
+                    referrerRef
+                );
+
+
+            if (
+                referrerSnapshot.exists()
+            ) {
+
+                const referrer =
+                    referrerSnapshot.val() || {};
+
+
+                referralData = {
+
+                    uid:
+                        referredBy,
+
+                    balance:
+                        Number(
+                            referrer.balance || 0
+                        ),
+
+                    referralBonus:
+                        Number(
+                            referrer.referralBonus || 0
+                        ),
+
+                    referralEarnings:
+                        Number(
+                            referrer.referralEarnings || 0
+                        ),
+
+                    referralCount:
+                        Number(
+                            referrer.referralCount || 0
+                        )
+
+                };
+
+            }
+
+        }
+
+
+        // ==================================
+        // MULTI LOCATION UPDATE
         // ==================================
 
         const updates = {};
 
 
         // ==================================
-        // UPDATE BUYER BALANCE
+        // BUYER BALANCE
         // ==================================
 
         updates[
@@ -4175,7 +4195,7 @@ if (referredBy) {
 
 
         // ==================================
-        // UPDATE USER VIP
+        // USER VIP
         // ==================================
 
         updates[
@@ -4216,7 +4236,7 @@ if (referredBy) {
             purchaseTxRef.key
         ] = {
 
-            uid: uid,
+            uid,
 
             email:
                 user.email ||
@@ -4229,8 +4249,7 @@ if (referredBy) {
             amount:
                 price,
 
-            vipName:
-                vipName,
+            vipName,
 
             status:
                 "approved",
@@ -4238,8 +4257,7 @@ if (referredBy) {
             requestId:
                 id,
 
-            vipBuyerId:
-                vipBuyerId,
+            vipBuyerId,
 
             approvedBy:
                 currentAdmin.uid,
@@ -4251,138 +4269,139 @@ if (referredBy) {
 
 
         // ==================================
-// REFERRAL BONUS
-// ==================================
+        // REFERRAL BONUS
+        // ==================================
 
-if (referralData) {
+        if (referralData) {
 
-    const bonus = 1000;
-
-    // ----------------------------------
-    // ADD REFERRER BALANCE
-    // ----------------------------------
-
-    updates[
-        "users/" +
-        referralData.uid +
-        "/balance"
-    ] =
-        referralData.balance +
-        bonus;
+            const bonus =
+                1000;
 
 
-    // ----------------------------------
-    // ADD REFERRAL EARNINGS
-    // ----------------------------------
+            // --------------------------------
+            // REFERRER BALANCE
+            // --------------------------------
 
-    updates[
-        "users/" +
-        referralData.uid +
-        "/referralEarnings"
-    ] =
-        referralData.referralEarnings +
-        bonus;
-
-
-    // ----------------------------------
-    // ADD REFERRAL BONUS
-    // ----------------------------------
-
-    updates[
-        "users/" +
-        referralData.uid +
-        "/referralBonus"
-    ] =
-        referralData.referralBonus +
-        bonus;
+            updates[
+                "users/" +
+                referralData.uid +
+                "/balance"
+            ] =
+                referralData.balance +
+                bonus;
 
 
-    // ----------------------------------
-    // ADD REFERRAL COUNT
-    // ----------------------------------
+            // --------------------------------
+            // REFERRAL EARNINGS
+            // --------------------------------
 
-    updates[
-        "users/" +
-        referralData.uid +
-        "/referralCount"
-    ] =
-        referralData.referralCount +
-        1;
-
-
-    // ----------------------------------
-    // REFERRAL TRANSACTION
-    // ----------------------------------
-
-    const referralTxRef =
-        push(
-            ref(db, "transactions")
-        );
+            updates[
+                "users/" +
+                referralData.uid +
+                "/referralEarnings"
+            ] =
+                referralData.referralEarnings +
+                bonus;
 
 
-    updates[
-        "transactions/" +
-        referralTxRef.key
-    ] = {
+            // --------------------------------
+            // REFERRAL BONUS
+            // --------------------------------
 
-        uid:
-            referralData.uid,
-
-        type:
-            "referralBonus",
-
-        amount:
-            bonus,
-
-        sourceUid:
-            uid,
-
-        sourceRequestId:
-            id,
-
-        vipName:
-            vipName,
-
-        status:
-            "completed",
-
-        createdAt:
-            approvedAt
-
-    };
+            updates[
+                "users/" +
+                referralData.uid +
+                "/referralBonus"
+            ] =
+                referralData.referralBonus +
+                bonus;
 
 
-    // ----------------------------------
-    // MARK BONUS AS GIVEN
-    // ----------------------------------
+            // --------------------------------
+            // REFERRAL COUNT
+            // --------------------------------
 
-    updates[
-        "vipPurchaseRequests/" +
-        id +
-        "/referralBonus"
-    ] =
-        bonus;
-
-
-    updates[
-        "vipPurchaseRequests/" +
-        id +
-        "/referralBonusUid"
-    ] =
-        referralData.uid;
+            updates[
+                "users/" +
+                referralData.uid +
+                "/referralCount"
+            ] =
+                referralData.referralCount +
+                1;
 
 
-    updates[
-        "vipPurchaseRequests/" +
-        id +
-        "/referralBonusGiven"
-    ] =
-        true;
+            // --------------------------------
+            // REFERRAL TRANSACTION
+            // --------------------------------
 
-}
-        
-         
-                
+            const referralTxRef =
+                push(
+                    ref(
+                        db,
+                        "transactions"
+                    )
+                );
+
+
+            updates[
+                "transactions/" +
+                referralTxRef.key
+            ] = {
+
+                uid:
+                    referralData.uid,
+
+                type:
+                    "referralBonus",
+
+                amount:
+                    bonus,
+
+                sourceUid:
+                    uid,
+
+                sourceRequestId:
+                    id,
+
+                vipName,
+
+                status:
+                    "completed",
+
+                createdAt:
+                    approvedAt
+
+            };
+
+
+            // --------------------------------
+            // MARK BONUS GIVEN
+            // --------------------------------
+
+            updates[
+                "vipPurchaseRequests/" +
+                id +
+                "/referralBonus"
+            ] =
+                bonus;
+
+
+            updates[
+                "vipPurchaseRequests/" +
+                id +
+                "/referralBonusUid"
+            ] =
+                referralData.uid;
+
+
+            updates[
+                "vipPurchaseRequests/" +
+                id +
+                "/referralBonusGiven"
+            ] =
+                true;
+
+        }
 
 
         // ==================================
@@ -4481,7 +4500,6 @@ if (referralData) {
 
         alert(message);
 
-
     }
 
     catch (error) {
@@ -4493,7 +4511,7 @@ if (referralData) {
 
 
         // ==================================
-        // TRY TO RESTORE REQUEST
+        // RESTORE REQUEST
         // ==================================
 
         try {
@@ -4519,7 +4537,6 @@ if (referralData) {
             );
 
         }
-
         catch (restoreError) {
 
             console.error(
@@ -4543,9 +4560,19 @@ if (referralData) {
 }
 
 
+// ======================================
+// GLOBAL
+// ======================================
+
+window.approveVipRequest =
+    approveVipRequest;
+
+
 console.log(
-    "ADMIN PART 7 - VIP APPROVE + REFERRAL BONUS READY"
-);          
+    "ADMIN PART 7 READY"
+);           
+
+        
 // ======================================
 // ADMIN.JS - PART 8
 // VIP BUYERS
