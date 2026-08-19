@@ -129,139 +129,144 @@ export async function registerUser(
             }
         );
 
+                            
+// ======================================
+// REFERRAL SYSTEM
+// ======================================
+
+let referrerUid = null;
+
+const cleanReferralCode =
+    String(referralCode || "")
+        .trim()
+        .toUpperCase();
+
+
+// ======================================
+// FIND REFERRER BY REFERRAL CODE
+// ======================================
+
+if (cleanReferralCode !== "") {
+
+    const usersSnapshot =
+        await get(
+            ref(db, "users")
+        );
+
+
+    if (usersSnapshot.exists()) {
+
+        usersSnapshot.forEach((child) => {
+
+            const data =
+                child.val() || {};
+
+
+            const savedCode =
+                String(
+                    data.referralCode || ""
+                )
+                    .trim()
+                    .toUpperCase();
+
+
+            if (
+                savedCode === cleanReferralCode &&
+                child.key !== user.uid
+            ) {
+
+                referrerUid =
+                    child.key;
+
+            }
+
+        });
+
+    }
+
+
+    // ==================================
+    // VALID REFERRER FOUND
+    // ==================================
+
+    if (referrerUid) {
+
+        console.log(
+            "REFERRER FOUND:",
+            referrerUid
+        );
+
 
         // ==================================
-        // REFERRAL SYSTEM
+        // SAVE REFERRAL TO NEW USER
         // ==================================
 
-        let referrerUid = null;
+        await update(
+            ref(
+                db,
+                "users/" + user.uid
+            ),
+            {
 
-        const cleanReferralCode =
-            String(referralCode || "")
-                .trim()
-                .toUpperCase();
+                referredBy:
+                    referrerUid,
 
+                referralCodeUsed:
+                    cleanReferralCode,
 
-        // Only search if referral code was entered
-        if (cleanReferralCode !== "") {
-
-            const usersSnapshot =
-                await get(
-                    ref(db, "users")
-                );
-
-
-            if (usersSnapshot.exists()) {
-
-                usersSnapshot.forEach((child) => {
-
-                    const data =
-                        child.val();
-
-
-                    const savedCode =
-                        String(
-                            data.referralCode || ""
-                        )
-                            .trim()
-                            .toUpperCase();
-
-
-                    // ==================================
-                    // FIND REFERRER
-                    // ==================================
-
-                    if (
-                        savedCode ===
-                        cleanReferralCode
-                    ) {
-
-                        // Prevent self referral
-                        if (
-                            child.key !==
-                            user.uid
-                        ) {
-
-                            referrerUid =
-                                child.key;
-
-                        }
-
-                    }
-
-                });
+                referralBonusGiven:
+                    false
 
             }
+        );
 
 
-            // ==================================
-            // VALID REFERRER FOUND
-            // ==================================
+        // ==================================
+        // INCREASE REFERRER COUNT
+        // ONLY HERE
+        // ==================================
 
-            if (referrerUid) {
+        await runTransaction(
+            ref(
+                db,
+                "users/" +
+                referrerUid +
+                "/referralCount"
+            ),
+            current => {
 
-                // Save referral information
-                await update(
-                    ref(
-                        db,
-                        "users/" +
-                        user.uid
-                    ),
-                    {
-
-                        referredBy:
-                            referrerUid,
-
-                        referralCodeUsed:
-                            cleanReferralCode,
-
-                        referralBonusGiven:
-                            false
-
-                    }
-                );
-
-
-                // ==================================
-                // INCREASE REFERRER COUNT
-                // ==================================
-
-                await runTransaction(
-                    ref(
-                        db,
-                        "users/" +
-                        referrerUid +
-                        "/referralCount"
-                    ),
-                    current => {
-
-                        return (
-                            Number(current || 0) +
-                            1
-                        );
-
-                    }
-                );
-
-
-                console.log(
-                    "Referral connected:",
-                    referrerUid
-                );
+                return Number(current || 0) + 1;
 
             }
+        );
 
-            else {
 
-                console.log(
-                    "Referral code not found:",
-                    cleanReferralCode
-                );
+        console.log(
+            "REFERRAL CONNECTED SUCCESSFULLY"
+        );
 
-            }
+        console.log(
+            "New user:",
+            user.uid
+        );
 
-        }
+        console.log(
+            "Referred by:",
+            referrerUid
+        );
 
+    }
+
+    else {
+
+        console.log(
+            "REFERRAL CODE NOT FOUND:",
+            cleanReferralCode
+        );
+
+    }
+
+}
 
         // ==================================
         // REGISTRATION COMPLETE
