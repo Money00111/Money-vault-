@@ -4060,7 +4060,20 @@ async function approveVipRequest(id) {
         const request =
             claimResult.snapshot.val() || {};
 
+const userSnap = await get(
+    ref(db, `users/${request.userId}`)
+);
 
+if (!userSnap.exists()) {
+    throw new Error("User not found");
+}
+
+const user = userSnap.val();
+
+const referrer =
+    await findReferrer(user, request);
+
+console.log("FINAL REFERRER:", referrer);
         // ==================================
         // USER UID
         // ==================================
