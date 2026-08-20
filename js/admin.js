@@ -3629,7 +3629,7 @@ console.log(
 
 
 // ======================================
-// REFERRAL BONUS AMOUNT
+// REFERRAL BONUS
 // ======================================
 
 const REFERRAL_BONUS_AMOUNT = 1000;
@@ -3655,8 +3655,7 @@ function getVipDuration(request) {
 
     for (const value of possibleDuration) {
 
-        const number =
-            Number(value);
+        const number = Number(value);
 
         if (
             Number.isFinite(number) &&
@@ -3718,25 +3717,23 @@ function getVipDuration(request) {
 }
 
 
+
 // ======================================
 // FIND REFERRER
 // ======================================
-// First try referredBy.
-// If referredBy is empty or "0",
-// use referralCodeUsed.
-// ======================================
 
-async function findReferrer(user) {
+async function findReferralUser(user) {
+
+    // ==================================
+    // 1. TRY referredBy
+    // ==================================
 
     const referredBy =
         String(
             user.referredBy ?? ""
-        ).trim();
+        )
+        .trim();
 
-
-    // ==================================
-    // VALID referredBy
-    // ==================================
 
     if (
         referredBy !== "" &&
@@ -3745,7 +3742,7 @@ async function findReferrer(user) {
         referredBy !== "undefined"
     ) {
 
-        const directReferrerSnapshot =
+        const directRef =
             await get(
                 ref(
                     db,
@@ -3754,17 +3751,14 @@ async function findReferrer(user) {
             );
 
 
-        if (
-            directReferrerSnapshot.exists()
-        ) {
+        if (directRef.exists()) {
 
             return {
 
-                uid:
-                    referredBy,
+                uid: referredBy,
 
                 data:
-                    directReferrerSnapshot.val() || {}
+                    directRef.val() || {}
 
             };
 
@@ -3774,27 +3768,29 @@ async function findReferrer(user) {
 
 
     // ==================================
-    // FALLBACK TO referralCodeUsed
+    // 2. TRY referralCodeUsed
     // ==================================
 
-    const usedCode =
+    const usedReferralCode =
         String(
             user.referralCodeUsed ?? ""
         )
-            .trim()
-            .toUpperCase();
+        .trim()
+        .toUpperCase();
 
 
-    if (!usedCode) {
+    if (!usedReferralCode) {
 
         return null;
 
     }
 
 
-    // ==================================
-    // SEARCH USERS
-    // ==================================
+    console.log(
+        "SEARCHING REFERRAL CODE:",
+        usedReferralCode
+    );
+
 
     const usersSnapshot =
         await get(
@@ -3809,7 +3805,7 @@ async function findReferrer(user) {
     }
 
 
-    let foundReferrer = null;
+    let foundReferralUser = null;
 
 
     usersSnapshot.forEach((child) => {
@@ -3822,15 +3818,16 @@ async function findReferrer(user) {
             String(
                 data.referralCode ?? ""
             )
-                .trim()
-                .toUpperCase();
+            .trim()
+            .toUpperCase();
 
 
         if (
-            savedReferralCode === usedCode
+            savedReferralCode ===
+            usedReferralCode
         ) {
 
-            foundReferrer = {
+            foundReferralUser = {
 
                 uid:
                     child.key,
@@ -3844,9 +3841,28 @@ async function findReferrer(user) {
     });
 
 
-    return foundReferrer;
+    if (foundReferralUser) {
+
+        console.log(
+            "REFERRER FOUND BY CODE:",
+            foundReferralUser.uid
+        );
+
+    }
+    else {
+
+        console.log(
+            "NO REFERRER FOUND FOR CODE:",
+            usedReferralCode
+        );
+
+    }
+
+
+    return foundReferralUser;
 
 }
+
 
 
 // ======================================
@@ -3869,7 +3885,7 @@ async function approveVipRequest(id) {
     try {
 
         // ==================================
-        // REQUEST REF
+        // REQUEST REFERENCE
         // ==================================
 
         const requestRef =
@@ -3899,7 +3915,8 @@ async function approveVipRequest(id) {
                         String(
                             current.status ||
                             "pending"
-                        ).toLowerCase();
+                        )
+                        .toLowerCase();
 
 
                     if (
@@ -3950,6 +3967,10 @@ async function approveVipRequest(id) {
         const request =
             claimResult.snapshot.val() || {};
 
+
+        // ==================================
+        // USER UID
+        // ==================================
 
         const uid =
             request.uid ||
@@ -4062,7 +4083,7 @@ async function approveVipRequest(id) {
 
 
         // ==================================
-        // USER
+        // GET USER
         // ==================================
 
         const userRef =
@@ -4076,7 +4097,9 @@ async function approveVipRequest(id) {
             await get(userRef);
 
 
-        if (!userSnapshot.exists()) {
+        if (
+            !userSnapshot.exists()
+        ) {
 
             throw new Error(
                 "User account not found."
@@ -4131,7 +4154,7 @@ async function approveVipRequest(id) {
 
 
         // ==================================
-        // VIP BUYER
+        // CREATE VIP BUYER
         // ==================================
 
         const vipBuyerRef =
@@ -4148,7 +4171,7 @@ async function approveVipRequest(id) {
 
 
         // ==================================
-        // USER VIP PLAN
+        // CREATE USER VIP PLAN
         // ==================================
 
         const userVipRef =
@@ -4242,174 +4265,23 @@ async function approveVipRequest(id) {
 
 
         // ==================================
-        // BUYER NEW BALANCE
+        // BUYER BALANCE
         // ==================================
 
         const newUserBalance =
             userBalance - price;
 
-// ======================================
-// FIND REFERRER
-// ======================================
-
-async function findReferrer(user) {
-
-    // ==================================
-    // 1. TRY referredBy FIRST
-    // ==================================
-
-    const referredBy =
-        String(
-            user.referredBy ?? ""
-        )
-        .trim();
-
-
-    if (
-        referredBy !== "" &&
-        referredBy !== "0" &&
-        referredBy !== "null" &&
-        referredBy !== "undefined"
-    ) {
-
-        const snapshot =
-            await get(
-                ref(
-                    db,
-                    "users/" + referredBy
-                )
-            );
-
-
-        if (snapshot.exists()) {
-
-            return {
-
-                uid:
-                    referredBy,
-
-                data:
-                    snapshot.val() || {}
-
-            };
-
-        }
-
-    }
-
-
-    // ==================================
-    // 2. FALLBACK TO referralCodeUsed
-    // ==================================
-
-    const usedCode =
-        String(
-            user.referralCodeUsed ?? ""
-        )
-        .trim()
-        .toUpperCase();
-
-
-    if (!usedCode) {
-
-        console.log(
-            "NO referralCodeUsed"
-        );
-
-        return null;
-
-    }
-
-
-    console.log(
-        "SEARCHING REFERRER BY CODE:",
-        usedCode
-    );
-
-
-    // ==================================
-    // 3. GET ALL USERS
-    // ==================================
-
-    const usersSnapshot =
-        await get(
-            ref(db, "users")
-        );
-
-
-    if (!usersSnapshot.exists()) {
-
-        console.log(
-            "USERS NODE EMPTY"
-        );
-
-        return null;
-
-    }
-
-
-    let foundReferrer = null;
-
-
-    usersSnapshot.forEach(
-        (child) => {
-
-            const data =
-                child.val() || {};
-
-
-            const savedCode =
-                String(
-                    data.referralCode ?? ""
-                )
-                .trim()
-                .toUpperCase();
-
-
-            if (
-                savedCode === usedCode &&
-                child.key !== user.uid
-            ) {
-
-                foundReferrer = {
-
-                    uid:
-                        child.key,
-
-                    data
-
-                };
-
-            }
-
-        }
-    );
-
-
-    if (foundReferrer) {
-
-        console.log(
-            "REFERRER FOUND BY CODE:",
-            foundReferrer.uid
-        );
-
-    }
-    else {
-
-        console.log(
-            "REFERRER NOT FOUND FOR CODE:",
-            usedCode
-        );
-
-    }
-
-
-    return foundReferrer;
-
-}
 
         // ==================================
-        // PREPARE UPDATES
+        // FIND REFERRAL USER
+        // ==================================
+
+        const foundReferralUser =
+            await findReferralUser(user);
+
+
+        // ==================================
+        // PREPARE MULTI LOCATION UPDATE
         // ==================================
 
         const updates = {};
@@ -4428,7 +4300,7 @@ async function findReferrer(user) {
 
 
         // ==================================
-        // USER VIP
+        // SAVE USER VIP
         // ==================================
 
         updates[
@@ -4441,7 +4313,7 @@ async function findReferrer(user) {
 
 
         // ==================================
-        // VIP BUYER
+        // SAVE VIP BUYER
         // ==================================
 
         updates[
@@ -4505,152 +4377,212 @@ async function findReferrer(user) {
         // REFERRAL BONUS
         // ==================================
 
-        if (referrer) {
+        if (
+            foundReferralUser
+        ) {
 
             const referrerUid =
-                referrer.uid;
+                foundReferralUser.uid;
 
 
             const referrerData =
-                referrer.data || {};
+                foundReferralUser.data || {};
 
 
-            const currentBonus =
-                Number(
-                    referrerData.referralBonus || 0
+            // ==================================
+            // CHECK IF BONUS WAS ALREADY GIVEN
+            // ==================================
+
+            const alreadyGiven =
+                request.referralBonusGiven === true;
+
+
+            if (!alreadyGiven) {
+
+                const currentBalance =
+                    Number(
+                        referrerData.balance || 0
+                    );
+
+
+                const currentReferralBonus =
+                    Number(
+                        referrerData.referralBonus || 0
+                    );
+
+
+                const currentReferralEarnings =
+                    Number(
+                        referrerData.referralEarnings || 0
+                    );
+
+
+                // ==================================
+                // ADD 1,000 TO REFERRER BALANCE
+                // ==================================
+
+                updates[
+                    "users/" +
+                    referrerUid +
+                    "/balance"
+                ] =
+                    currentBalance +
+                    REFERRAL_BONUS_AMOUNT;
+
+
+                // ==================================
+                // referralBonus
+                // ==================================
+
+                updates[
+                    "users/" +
+                    referrerUid +
+                    "/referralBonus"
+                ] =
+                    currentReferralBonus +
+                    REFERRAL_BONUS_AMOUNT;
+
+
+                // ==================================
+                // referralEarnings
+                // ==================================
+
+                updates[
+                    "users/" +
+                    referrerUid +
+                    "/referralEarnings"
+                ] =
+                    currentReferralEarnings +
+                    REFERRAL_BONUS_AMOUNT;
+
+
+                // ==================================
+                // SAVE referredBy
+                // ==================================
+
+                updates[
+                    "users/" +
+                    uid +
+                    "/referredBy"
+                ] =
+                    referrerUid;
+
+
+                // ==================================
+                // REFERRAL TRANSACTION
+                // ==================================
+
+                const referralTxRef =
+                    push(
+                        ref(
+                            db,
+                            "transactions"
+                        )
+                    );
+
+
+                updates[
+                    "transactions/" +
+                    referralTxRef.key
+                ] = {
+
+                    uid:
+                        referrerUid,
+
+                    type:
+                        "referralBonus",
+
+                    amount:
+                        REFERRAL_BONUS_AMOUNT,
+
+                    sourceUid:
+                        uid,
+
+                    sourceRequestId:
+                        id,
+
+                    vipName,
+
+                    status:
+                        "completed",
+
+                    createdAt:
+                        approvedAt
+
+                };
+
+
+                // ==================================
+                // MARK BONUS AS GIVEN
+                // ==================================
+
+                updates[
+                    "vipPurchaseRequests/" +
+                    id +
+                    "/referralBonus"
+                ] =
+                    REFERRAL_BONUS_AMOUNT;
+
+
+                updates[
+                    "vipPurchaseRequests/" +
+                    id +
+                    "/referralBonusUid"
+                ] =
+                    referrerUid;
+
+
+                updates[
+                    "vipPurchaseRequests/" +
+                    id +
+                    "/referralBonusGiven"
+                ] =
+                    true;
+
+
+                console.log(
+                    "================================"
                 );
 
-
-            const currentEarnings =
-                Number(
-                    referrerData.referralEarnings || 0
+                console.log(
+                    "REFERRAL BONUS SUCCESS"
                 );
 
-
-            const currentBalance =
-                Number(
-                    referrerData.balance || 0
+                console.log(
+                    "Buyer:",
+                    uid
                 );
 
-
-            // ==================================
-            // GIVE 1,000 RWF
-            // ==================================
-
-            updates[
-                "users/" +
-                referrerUid +
-                "/balance"
-            ] =
-                currentBalance +
-                REFERRAL_BONUS_AMOUNT;
-
-
-            updates[
-                "users/" +
-                referrerUid +
-                "/referralEarnings"
-            ] =
-                currentEarnings +
-                REFERRAL_BONUS_AMOUNT;
-
-
-            updates[
-                "users/" +
-                referrerUid +
-                "/referralBonus"
-            ] =
-                currentBonus +
-                REFERRAL_BONUS_AMOUNT;
-
-
-            // ==================================
-            // REFERRAL TRANSACTION
-            // ==================================
-
-            const referralTxRef =
-                push(
-                    ref(
-                        db,
-                        "transactions"
-                    )
+                console.log(
+                    "Referrer:",
+                    referrerUid
                 );
 
+                console.log(
+                    "Bonus:",
+                    REFERRAL_BONUS_AMOUNT
+                );
 
-            updates[
-                "transactions/" +
-                referralTxRef.key
-            ] = {
+                console.log(
+                    "================================"
+                );
 
-                uid:
-                    referrerUid,
+            }
 
-                type:
-                    "referralBonus",
+            else {
 
-                amount:
-                    REFERRAL_BONUS_AMOUNT,
+                console.log(
+                    "Referral bonus already given."
+                );
 
-                sourceUid:
-                    uid,
+            }
 
-                sourceRequestId:
-                    id,
+        }
 
-                vipName,
-
-                status:
-                    "completed",
-
-                createdAt:
-                    approvedAt
-
-            };
-
-
-            // ==================================
-            // SAVE REFERRAL INFORMATION
-            // ==================================
-
-            updates[
-                "vipPurchaseRequests/" +
-                id +
-                "/referralBonus"
-            ] =
-                REFERRAL_BONUS_AMOUNT;
-
-
-            updates[
-                "vipPurchaseRequests/" +
-                id +
-                "/referralBonusUid"
-            ] =
-                referrerUid;
-
-
-            updates[
-                "vipPurchaseRequests/" +
-                id +
-                "/referralBonusGiven"
-            ] =
-                true;
-
-
-            // ==================================
-            // FIX referredBy IF IT WAS 0/EMPTY
-            // ==================================
-
-            updates[
-                "users/" +
-                uid +
-                "/referredBy"
-            ] =
-                referrerUid;
-
+        else {
 
             console.log(
-                "REFERRAL BONUS GIVEN TO:",
-                referrerUid
+                "NO VALID REFERRER FOUND"
             );
 
         }
@@ -4725,7 +4657,7 @@ async function findReferrer(user) {
 
 
         // ==================================
-        // SAVE EVERYTHING AT ONCE
+        // SAVE EVERYTHING
         // ==================================
 
         await update(
@@ -4738,33 +4670,53 @@ async function findReferrer(user) {
         // SUCCESS MESSAGE
         // ==================================
 
-        let message =
-            "VIP approved successfully.";
+        if (
+            foundReferralUser &&
+            request.referralBonusGiven !== true
+        ) {
 
-
-        if (referrer) {
-
-            message +=
-                "\n\nReferral bonus: 1,000 RWF";
+            alert(
+                "VIP approved successfully.\n\n" +
+                "Referral bonus: 1,000 RWF"
+            );
 
         }
+
+        else if (
+            foundReferralUser
+        ) {
+
+            alert(
+                "VIP approved successfully.\n\n" +
+                "Referral bonus was already given."
+            );
+
+        }
+
         else {
 
-            message +=
-                "\n\nNo referral bonus: this user has no valid referral.";
+            alert(
+                "VIP approved successfully.\n\n" +
+                "No referral bonus: this user has no valid referral."
+            );
 
         }
-
-
-        alert(message);
 
     }
 
     catch (error) {
 
         console.error(
+            "================================"
+        );
+
+        console.error(
             "APPROVE VIP ERROR:",
             error
+        );
+
+        console.error(
+            "================================"
         );
 
 
@@ -4795,6 +4747,7 @@ async function findReferrer(user) {
             );
 
         }
+
         catch (restoreError) {
 
             console.error(
@@ -4818,6 +4771,7 @@ async function findReferrer(user) {
 }
 
 
+
 // ======================================
 // GLOBAL
 // ======================================
@@ -4827,9 +4781,7 @@ window.approveVipRequest =
 
 
 console.log(
-    "ADMIN PART 7 READY"
-);
-
+    "ADMIN PART 7 READY");
         
 // ======================================
 // ADMIN.JS - PART 8
