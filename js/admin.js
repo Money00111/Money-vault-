@@ -3717,48 +3717,86 @@ function getVipDuration(request) {
 }
 
 
-
 // ======================================
 // FIND REFERRER
 // ======================================
 
-async function findReferralUser(user) {
+async function findReferrer(user, request = {}) {
+
+    console.log("========== FIND REFERRER ==========");
+
+    console.log(
+        "USER referredBy:",
+        user.referredBy
+    );
+
+    console.log(
+        "USER referralCodeUsed:",
+        user.referralCodeUsed
+    );
+
+    console.log(
+        "REQUEST referredBy:",
+        request.referredBy
+    );
+
+    console.log(
+        "REQUEST referralCodeUsed:",
+        request.referralCodeUsed
+    );
+
 
     // ==================================
     // 1. TRY referredBy
     // ==================================
 
-    const referredBy =
+    const possibleUid =
         String(
-            user.referredBy ?? ""
-        )
-        .trim();
+            user.referredBy ||
+            request.referredBy ||
+            ""
+        ).trim();
 
 
     if (
-        referredBy !== "" &&
-        referredBy !== "0" &&
-        referredBy !== "null" &&
-        referredBy !== "undefined"
+        possibleUid !== "" &&
+        possibleUid !== "0" &&
+        possibleUid !== "null" &&
+        possibleUid !== "undefined"
     ) {
 
-        const directRef =
+        console.log(
+            "TRYING REFERRED BY UID:",
+            possibleUid
+        );
+
+
+        const referrerSnapshot =
             await get(
                 ref(
                     db,
-                    "users/" + referredBy
+                    "users/" + possibleUid
                 )
             );
 
 
-        if (directRef.exists()) {
+        if (
+            referrerSnapshot.exists()
+        ) {
+
+            console.log(
+                "REFERRER FOUND BY UID:",
+                possibleUid
+            );
+
 
             return {
 
-                uid: referredBy,
+                uid:
+                    possibleUid,
 
                 data:
-                    directRef.val() || {}
+                    referrerSnapshot.val() || {}
 
             };
 
@@ -3768,29 +3806,39 @@ async function findReferralUser(user) {
 
 
     // ==================================
-    // 2. TRY referralCodeUsed
+    // 2. GET REFERRAL CODE
     // ==================================
 
-    const usedReferralCode =
+    const usedCode =
         String(
-            user.referralCodeUsed ?? ""
+            user.referralCodeUsed ||
+            request.referralCodeUsed ||
+            ""
         )
-        .trim()
-        .toUpperCase();
+            .trim()
+            .toUpperCase();
 
 
-    if (!usedReferralCode) {
+    console.log(
+        "REFERRAL CODE TO SEARCH:",
+        usedCode
+    );
+
+
+    if (!usedCode) {
+
+        console.warn(
+            "NO REFERRAL CODE FOUND"
+        );
 
         return null;
 
     }
 
 
-    console.log(
-        "SEARCHING REFERRAL CODE:",
-        usedReferralCode
-    );
-
+    // ==================================
+    // 3. READ USERS
+    // ==================================
 
     const usersSnapshot =
         await get(
@@ -3800,13 +3848,21 @@ async function findReferralUser(user) {
 
     if (!usersSnapshot.exists()) {
 
+        console.warn(
+            "USERS NODE EMPTY"
+        );
+
         return null;
 
     }
 
 
-    let foundReferralUser = null;
+    let foundReferrer = null;
 
+
+    // ==================================
+    // 4. SEARCH REFERRAL CODE
+    // ==================================
 
     usersSnapshot.forEach((child) => {
 
@@ -3814,20 +3870,28 @@ async function findReferralUser(user) {
             child.val() || {};
 
 
-        const savedReferralCode =
+        const savedCode =
             String(
-                data.referralCode ?? ""
+                data.referralCode || ""
             )
-            .trim()
-            .toUpperCase();
+                .trim()
+                .toUpperCase();
+
+
+        console.log(
+            "CHECK:",
+            child.key,
+            savedCode,
+            "VS",
+            usedCode
+        );
 
 
         if (
-            savedReferralCode ===
-            usedReferralCode
+            savedCode === usedCode
         ) {
 
-            foundReferralUser = {
+            foundReferrer = {
 
                 uid:
                     child.key,
@@ -3841,28 +3905,57 @@ async function findReferralUser(user) {
     });
 
 
-    if (foundReferralUser) {
+    // ==================================
+    // 5. RESULT
+    // ==================================
+
+    if (foundReferrer) {
+
+        console.log(
+            "================================"
+        );
 
         console.log(
             "REFERRER FOUND BY CODE:",
-            foundReferralUser.uid
+            foundReferrer.uid
         );
-
-    }
-    else {
 
         console.log(
-            "NO REFERRER FOUND FOR CODE:",
-            usedReferralCode
+            "REFERRAL CODE:",
+            usedCode
+        );
+
+        console.log(
+            "================================"
+        );
+
+    }
+
+    else {
+
+        console.warn(
+            "================================"
+        );
+
+        console.warn(
+            "REFERRER NOT FOUND"
+        );
+
+        console.warn(
+            "CODE:",
+            usedCode
+        );
+
+        console.warn(
+            "================================"
         );
 
     }
 
 
-    return foundReferralUser;
+    return foundReferrer;
 
 }
-
 
 
 // ======================================
