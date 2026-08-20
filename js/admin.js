@@ -4204,6 +4204,9 @@ async function approveVipRequest(id) {
         const user =
             userSnapshot.val() || {};
 
+        const referrer =
+    await findReferrer(user, request);
+
 
         // ==================================
         // USER BALANCE
