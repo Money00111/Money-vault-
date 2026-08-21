@@ -3621,12 +3621,10 @@ window.loadVipRequests =
 console.log(
     "ADMIN PART 6 READY - VIP BUTTON PROCESSING FIXED"
 );
-
 // ======================================
 // ADMIN.JS - PART 7
 // VIP APPROVE + REFERRAL BONUS
 // ======================================
-
 
 // ======================================
 // REFERRAL BONUS
@@ -3642,16 +3640,13 @@ const REFERRAL_BONUS_AMOUNT = 1000;
 function getVipDuration(request) {
 
     const possibleDuration = [
-
-        request.duration,
-        request.days,
-        request.durationDays,
-        request.vipDuration,
-        request.planDuration,
-        request.totalDays
-
+        request?.duration,
+        request?.days,
+        request?.durationDays,
+        request?.vipDuration,
+        request?.planDuration,
+        request?.totalDays
     ];
-
 
     for (const value of possibleDuration) {
 
@@ -3661,11 +3656,8 @@ function getVipDuration(request) {
             Number.isFinite(number) &&
             number > 0
         ) {
-
             return Math.round(number);
-
         }
-
     }
 
 
@@ -3673,23 +3665,19 @@ function getVipDuration(request) {
     // CALCULATE FROM PROFIT
     // ==================================
 
-    const dailyIncome =
-        Number(
-            request.dailyIncome ??
-            request.daily ??
-            request.dailyProfit ??
-            0
-        );
+    const dailyIncome = Number(
+        request?.dailyIncome ??
+        request?.daily ??
+        request?.dailyProfit ??
+        0
+    );
 
-
-    const totalProfit =
-        Number(
-            request.totalProfit ??
-            request.profit ??
-            request.total ??
-            0
-        );
-
+    const totalProfit = Number(
+        request?.totalProfit ??
+        request?.profit ??
+        request?.total ??
+        0
+    );
 
     if (
         dailyIncome > 0 &&
@@ -3699,21 +3687,15 @@ function getVipDuration(request) {
         const calculated =
             totalProfit / dailyIncome;
 
-
         if (
             Number.isFinite(calculated) &&
             calculated > 0
         ) {
-
             return Math.round(calculated);
-
         }
-
     }
 
-
     return 0;
-
 }
 
 
@@ -3723,40 +3705,40 @@ function getVipDuration(request) {
 
 async function findReferrer(user, request = {}) {
 
-    console.log("========== FIND REFERRER ==========");
+    console.log(
+        "========== FIND REFERRER =========="
+    );
 
     console.log(
         "USER referredBy:",
-        user.referredBy
+        user?.referredBy
     );
 
     console.log(
         "USER referralCodeUsed:",
-        user.referralCodeUsed
+        user?.referralCodeUsed
     );
 
     console.log(
         "REQUEST referredBy:",
-        request.referredBy
+        request?.referredBy
     );
 
     console.log(
         "REQUEST referralCodeUsed:",
-        request.referralCodeUsed
+        request?.referralCodeUsed
     );
 
 
     // ==================================
-    // 1. TRY referredBy
+    // 1. TRY REFERRED BY UID
     // ==================================
 
-    const possibleUid =
-        String(
-            user.referredBy ||
-            request.referredBy ||
-            ""
-        ).trim();
-
+    const possibleUid = String(
+        user?.referredBy ||
+        request?.referredBy ||
+        ""
+    ).trim();
 
     if (
         possibleUid !== "" &&
@@ -3770,15 +3752,12 @@ async function findReferrer(user, request = {}) {
             possibleUid
         );
 
-
-        const referrerSnapshot =
-            await get(
-                ref(
-                    db,
-                    "users/" + possibleUid
-                )
-            );
-
+        const referrerSnapshot = await get(
+            ref(
+                db,
+                "users/" + possibleUid
+            )
+        );
 
         if (
             referrerSnapshot.exists()
@@ -3789,19 +3768,12 @@ async function findReferrer(user, request = {}) {
                 possibleUid
             );
 
-
             return {
-
-                uid:
-                    possibleUid,
-
+                uid: possibleUid,
                 data:
                     referrerSnapshot.val() || {}
-
             };
-
         }
-
     }
 
 
@@ -3809,14 +3781,13 @@ async function findReferrer(user, request = {}) {
     // 2. GET REFERRAL CODE
     // ==================================
 
-    const usedCode =
-        String(
-            user.referralCodeUsed ||
-            request.referralCodeUsed ||
-            ""
-        )
-            .trim()
-            .toUpperCase();
+    const usedCode = String(
+        user?.referralCodeUsed ||
+        request?.referralCodeUsed ||
+        ""
+    )
+        .trim()
+        .toUpperCase();
 
 
     console.log(
@@ -3832,7 +3803,6 @@ async function findReferrer(user, request = {}) {
         );
 
         return null;
-
     }
 
 
@@ -3840,11 +3810,9 @@ async function findReferrer(user, request = {}) {
     // 3. READ USERS
     // ==================================
 
-    const usersSnapshot =
-        await get(
-            ref(db, "users")
-        );
-
+    const usersSnapshot = await get(
+        ref(db, "users")
+    );
 
     if (!usersSnapshot.exists()) {
 
@@ -3853,29 +3821,25 @@ async function findReferrer(user, request = {}) {
         );
 
         return null;
-
     }
-
-
-    let foundReferrer = null;
 
 
     // ==================================
     // 4. SEARCH REFERRAL CODE
     // ==================================
 
-    usersSnapshot.forEach((child) => {
+    let foundReferrer = null;
+
+    usersSnapshot.forEach(child => {
 
         const data =
             child.val() || {};
 
-
-        const savedCode =
-            String(
-                data.referralCode || ""
-            )
-                .trim()
-                .toUpperCase();
+        const savedCode = String(
+            data.referralCode || ""
+        )
+            .trim()
+            .toUpperCase();
 
 
         console.log(
@@ -3892,16 +3856,10 @@ async function findReferrer(user, request = {}) {
         ) {
 
             foundReferrer = {
-
-                uid:
-                    child.key,
-
+                uid: child.key,
                 data
-
             };
-
         }
-
     });
 
 
@@ -3916,7 +3874,7 @@ async function findReferrer(user, request = {}) {
         );
 
         console.log(
-            "REFERRER FOUND BY CODE:",
+            "REFERRER FOUND:",
             foundReferrer.uid
         );
 
@@ -3929,9 +3887,7 @@ async function findReferrer(user, request = {}) {
             "================================"
         );
 
-    }
-
-    else {
+    } else {
 
         console.warn(
             "================================"
@@ -3949,12 +3905,10 @@ async function findReferrer(user, request = {}) {
         console.warn(
             "================================"
         );
-
     }
 
 
     return foundReferrer;
-
 }
 
 
@@ -3971,7 +3925,16 @@ async function approveVipRequest(id) {
         );
 
         return;
+    }
 
+
+    if (!id) {
+
+        alert(
+            "Invalid VIP request."
+        );
+
+        return;
     }
 
 
@@ -3981,14 +3944,14 @@ async function approveVipRequest(id) {
         // REQUEST REFERENCE
         // ==================================
 
-        const requestRef =
-            ref(
-                db,
-                "vipPurchaseRequests/" + id
-            );
+        const requestRef = ref(
+            db,
+            "vipPurchaseRequests/" + id
+        );
 
 
         // ==================================
+        // STEP 1
         // CLAIM REQUEST
         // ==================================
 
@@ -3998,31 +3961,25 @@ async function approveVipRequest(id) {
                 current => {
 
                     if (!current) {
-
                         return;
-
                     }
-
 
                     const status =
                         String(
                             current.status ||
                             "pending"
-                        )
-                        .toLowerCase();
+                        ).toLowerCase();
 
 
+                    // ONLY PENDING
                     if (
                         status !== "pending"
                     ) {
-
                         return;
-
                     }
 
 
                     return {
-
                         ...current,
 
                         status:
@@ -4033,9 +3990,7 @@ async function approveVipRequest(id) {
 
                         processingBy:
                             currentAdmin.uid
-
                     };
-
                 }
             );
 
@@ -4049,7 +4004,6 @@ async function approveVipRequest(id) {
             );
 
             return;
-
         }
 
 
@@ -4060,20 +4014,7 @@ async function approveVipRequest(id) {
         const request =
             claimResult.snapshot.val() || {};
 
-const userSnap = await get(
-    ref(db, `users/${request.userId}`)
-);
 
-if (!userSnap.exists()) {
-    throw new Error("User not found");
-}
-
-const user = userSnap.val();
-
-const referrer =
-    await findReferrer(user, request);
-
-console.log("FINAL REFERRER:", referrer);
         // ==================================
         // USER UID
         // ==================================
@@ -4090,8 +4031,62 @@ console.log("FINAL REFERRER:", referrer);
             throw new Error(
                 "Invalid user ID."
             );
-
         }
+
+
+        // ==================================
+        // USER REFERENCE
+        // ==================================
+
+        const userRef = ref(
+            db,
+            "users/" + uid
+        );
+
+
+        // ==================================
+        // GET USER
+        // ==================================
+
+        const userSnapshot =
+            await get(userRef);
+
+
+        if (
+            !userSnapshot.exists()
+        ) {
+
+            throw new Error(
+                "User account not found."
+            );
+        }
+
+
+        const user =
+            userSnapshot.val() || {};
+
+
+        console.log(
+            "BUYER USER:",
+            uid
+        );
+
+
+        // ==================================
+        // FIND REFERRER
+        // ==================================
+
+        const referrer =
+            await findReferrer(
+                user,
+                request
+            );
+
+
+        console.log(
+            "FINAL REFERRER:",
+            referrer
+        );
 
 
         // ==================================
@@ -4105,36 +4100,37 @@ console.log("FINAL REFERRER:", referrer);
             "VIP Plan";
 
 
-        const price =
-            Number(
-                request.price ??
-                request.vipPrice ??
-                request.amount ??
-                0
-            );
+        const price = Number(
+            request.price ??
+            request.vipPrice ??
+            request.amount ??
+            0
+        );
 
 
-        const dailyIncome =
-            Number(
-                request.dailyIncome ??
-                request.daily ??
-                request.dailyProfit ??
-                0
-            );
+        const dailyIncome = Number(
+            request.dailyIncome ??
+            request.daily ??
+            request.dailyProfit ??
+            0
+        );
 
 
         const duration =
             getVipDuration(request);
 
 
-        let totalProfit =
-            Number(
-                request.totalProfit ??
-                request.profit ??
-                request.total ??
-                0
-            );
+        let totalProfit = Number(
+            request.totalProfit ??
+            request.profit ??
+            request.total ??
+            0
+        );
 
+
+        // ==================================
+        // CALCULATE TOTAL PROFIT
+        // ==================================
 
         if (
             totalProfit <= 0 &&
@@ -4144,7 +4140,6 @@ console.log("FINAL REFERRER:", referrer);
 
             totalProfit =
                 dailyIncome * duration;
-
         }
 
 
@@ -4160,7 +4155,6 @@ console.log("FINAL REFERRER:", referrer);
             throw new Error(
                 "Invalid VIP price."
             );
-
         }
 
 
@@ -4172,7 +4166,6 @@ console.log("FINAL REFERRER:", referrer);
             throw new Error(
                 "Invalid daily income."
             );
-
         }
 
 
@@ -4184,51 +4177,16 @@ console.log("FINAL REFERRER:", referrer);
             throw new Error(
                 "VIP duration is invalid."
             );
-
         }
-
-
-        // ==================================
-        // GET USER
-        // ==================================
-
-        const userRef =
-            ref(
-                db,
-                "users/" + uid
-            );
-
-
-        const userSnapshot =
-            await get(userRef);
-
-
-        if (
-            !userSnapshot.exists()
-        ) {
-
-            throw new Error(
-                "User account not found."
-            );
-
-        }
-
-
-        const user =
-            userSnapshot.val() || {};
-
-        const referrer =
-    await findReferrer(user, request);
 
 
         // ==================================
         // USER BALANCE
         // ==================================
 
-        const userBalance =
-            Number(
-                user.balance || 0
-            );
+        const userBalance = Number(
+            user.balance || 0
+        );
 
 
         if (
@@ -4239,7 +4197,6 @@ console.log("FINAL REFERRER:", referrer);
             throw new Error(
                 "User does not have enough balance."
             );
-
         }
 
 
@@ -4340,7 +4297,12 @@ console.log("FINAL REFERRER:", referrer);
 
             endDate,
 
+
+            // ==================================
+            // IMPORTANT
             // FIRST CLAIM AFTER 24 HOURS
+            // ==================================
+
             lastClaim:
                 approvedAt,
 
@@ -4355,7 +4317,6 @@ console.log("FINAL REFERRER:", referrer);
 
             earned:
                 0
-
         };
 
 
@@ -4369,24 +4330,15 @@ console.log("FINAL REFERRER:", referrer);
 
             id:
                 vipBuyerId
-
         };
 
 
         // ==================================
-        // BUYER BALANCE
+        // NEW BUYER BALANCE
         // ==================================
 
         const newUserBalance =
             userBalance - price;
-
-
-        // ==================================
-        // FIND REFERRAL USER
-        // ==================================
-
-        const foundReferralUser =
-            await findReferralUser(user);
 
 
         // ==================================
@@ -4433,7 +4385,7 @@ console.log("FINAL REFERRER:", referrer);
 
 
         // ==================================
-        // PURCHASE TRANSACTION
+        // VIP PURCHASE TRANSACTION
         // ==================================
 
         const purchaseTxRef =
@@ -4478,7 +4430,6 @@ console.log("FINAL REFERRER:", referrer);
 
             createdAt:
                 approvedAt
-
         };
 
 
@@ -4486,20 +4437,28 @@ console.log("FINAL REFERRER:", referrer);
         // REFERRAL BONUS
         // ==================================
 
-        if (
-            foundReferralUser
-        ) {
+        let referralBonusGiven =
+            false;
+
+        let referralBonusUid =
+            "";
+
+
+        if (referrer) {
 
             const referrerUid =
-                foundReferralUser.uid;
-
+                referrer.uid;
 
             const referrerData =
-                foundReferralUser.data || {};
+                referrer.data || {};
+
+
+            referralBonusUid =
+                referrerUid;
 
 
             // ==================================
-            // CHECK IF BONUS WAS ALREADY GIVEN
+            // CHECK REQUEST
             // ==================================
 
             const alreadyGiven =
@@ -4540,7 +4499,7 @@ console.log("FINAL REFERRER:", referrer);
 
 
                 // ==================================
-                // referralBonus
+                // REFERRAL BONUS
                 // ==================================
 
                 updates[
@@ -4553,7 +4512,7 @@ console.log("FINAL REFERRER:", referrer);
 
 
                 // ==================================
-                // referralEarnings
+                // REFERRAL EARNINGS
                 // ==================================
 
                 updates[
@@ -4566,7 +4525,7 @@ console.log("FINAL REFERRER:", referrer);
 
 
                 // ==================================
-                // SAVE referredBy
+                // SAVE REFERRER UID
                 // ==================================
 
                 updates[
@@ -4617,7 +4576,6 @@ console.log("FINAL REFERRER:", referrer);
 
                     createdAt:
                         approvedAt
-
                 };
 
 
@@ -4646,6 +4604,10 @@ console.log("FINAL REFERRER:", referrer);
                     id +
                     "/referralBonusGiven"
                 ] =
+                    true;
+
+
+                referralBonusGiven =
                     true;
 
 
@@ -4683,7 +4645,6 @@ console.log("FINAL REFERRER:", referrer);
                 console.log(
                     "Referral bonus already given."
                 );
-
             }
 
         }
@@ -4693,7 +4654,6 @@ console.log("FINAL REFERRER:", referrer);
             console.log(
                 "NO VALID REFERRER FOUND"
             );
-
         }
 
 
@@ -4766,7 +4726,7 @@ console.log("FINAL REFERRER:", referrer);
 
 
         // ==================================
-        // SAVE EVERYTHING
+        // SAVE EVERYTHING AT ONCE
         // ==================================
 
         await update(
@@ -4780,8 +4740,7 @@ console.log("FINAL REFERRER:", referrer);
         // ==================================
 
         if (
-            foundReferralUser &&
-            request.referralBonusGiven !== true
+            referralBonusGiven
         ) {
 
             alert(
@@ -4792,7 +4751,8 @@ console.log("FINAL REFERRER:", referrer);
         }
 
         else if (
-            foundReferralUser
+            referrer &&
+            request.referralBonusGiven === true
         ) {
 
             alert(
@@ -4806,10 +4766,15 @@ console.log("FINAL REFERRER:", referrer);
 
             alert(
                 "VIP approved successfully.\n\n" +
-                "No referral bonus: this user has no valid referral."
+                "No referral bonus: valid referrer not found."
             );
-
         }
+
+
+        console.log(
+            "VIP APPROVED SUCCESSFULLY:",
+            id
+        );
 
     }
 
@@ -4851,7 +4816,6 @@ console.log("FINAL REFERRER:", referrer);
 
                     processingBy:
                         null
-
                 }
             );
 
@@ -4863,7 +4827,6 @@ console.log("FINAL REFERRER:", referrer);
                 "RESTORE ERROR:",
                 restoreError
             );
-
         }
 
 
@@ -4874,11 +4837,8 @@ console.log("FINAL REFERRER:", referrer);
                 "Unknown error"
             )
         );
-
     }
-
 }
-
 
 
 // ======================================
@@ -4889,8 +4849,13 @@ window.approveVipRequest =
     approveVipRequest;
 
 
+// ======================================
+// PART 7 READY
+// ======================================
+
 console.log(
-    "ADMIN PART 7 READY");
+    "ADMIN PART 7 READY - VIP APPROVE + REFERRAL BONUS"
+);
         
 // ======================================
 // ADMIN.JS - PART 8
