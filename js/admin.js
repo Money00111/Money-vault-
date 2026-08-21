@@ -4794,16 +4794,16 @@ else {
         }
 
         else if (
-            referrer &&
-            request.referralBonusGiven === true
-        ) {
+    referrer &&
+    user.referralBonusGiven === true
+) {
 
-            alert(
-                "VIP approved successfully.\n\n" +
-                "Referral bonus was already given."
-            );
+    alert(
+        "VIP approved successfully.\n\n" +
+        "Referral bonus was already given for this user."
+    );
 
-        }
+}
 
         else {
 
