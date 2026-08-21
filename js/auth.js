@@ -23,7 +23,10 @@ import {
     set,
     get,
     update,
-    runTransaction
+    runTransaction,
+    query,
+    orderByChild,
+    equalTo
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
 
 
@@ -39,6 +42,8 @@ export async function registerUser(
     referralCode
 ) {
 
+    let createdAuthUser = null;
+
     try {
 
         // ==================================
@@ -51,26 +56,49 @@ export async function registerUser(
                 .toUpperCase();
 
 
-        console.log(
-            "================================"
-        );
-
-        console.log(
-            "REGISTRATION START"
-        );
-
+        console.log("================================");
+        console.log("REGISTRATION START");
         console.log(
             "REFERRAL CODE RECEIVED:",
             cleanReferralCode
         );
+        console.log("================================");
+
+
+        // ==================================
+        // WAIT FOR FIREBASE AUTH
+        // ==================================
+
+        await authReady;
+
+
+        // ==================================
+        // CREATE FIREBASE AUTH ACCOUNT FIRST
+        // ==================================
+
+        const userCredential =
+            await createUserWithEmailAndPassword(
+                auth,
+                email,
+                password
+            );
+
+
+        const user =
+            userCredential.user;
+
+        createdAuthUser =
+            user;
+
 
         console.log(
-            "================================"
+            "AUTH USER CREATED:",
+            user.uid
         );
 
 
         // ==================================
-        // FIND REFERRER BEFORE CREATING USER
+        // FIND REFERRER
         // ==================================
 
         let referrerUid = "";
@@ -81,14 +109,24 @@ export async function registerUser(
         if (cleanReferralCode !== "") {
 
             console.log(
-                "SEARCHING REFERRER..."
+                "SEARCHING REFERRER BY REFERRAL CODE..."
             );
 
 
-            const usersSnapshot =
-                await get(
-                    ref(db, "users")
+            // ==================================
+            // QUERY USERS BY referralCode
+            // ==================================
+
+            const referralQuery =
+                query(
+                    ref(db, "users"),
+                    orderByChild("referralCode"),
+                    equalTo(cleanReferralCode)
                 );
+
+
+            const usersSnapshot =
+                await get(referralQuery);
 
 
             if (usersSnapshot.exists()) {
@@ -100,27 +138,7 @@ export async function registerUser(
                             child.val() || {};
 
 
-                        const savedCode =
-                            String(
-                                data.referralCode || ""
-                            )
-                                .trim()
-                                .toUpperCase();
-
-
-                        console.log(
-                            "CHECK REFERRAL:",
-                            child.key,
-                            savedCode,
-                            "VS",
-                            cleanReferralCode
-                        );
-
-
-                        if (
-                            savedCode ===
-                            cleanReferralCode
-                        ) {
+                        if (!referrerUid) {
 
                             referrerUid =
                                 child.key;
@@ -142,9 +160,7 @@ export async function registerUser(
 
             if (referrerUid) {
 
-                console.log(
-                    "================================"
-                );
+                console.log("================================");
 
                 console.log(
                     "REFERRER FOUND:",
@@ -156,9 +172,7 @@ export async function registerUser(
                     cleanReferralCode
                 );
 
-                console.log(
-                    "================================"
-                );
+                console.log("================================");
 
             }
 
@@ -183,32 +197,11 @@ export async function registerUser(
 
 
         // ==================================
-        // CREATE FIREBASE AUTH ACCOUNT
-        // ==================================
-
-        const userCredential =
-            await createUserWithEmailAndPassword(
-                auth,
-                email,
-                password
-            );
-
-
-        const user =
-            userCredential.user;
-
-
-        console.log(
-            "AUTH USER CREATED:",
-            user.uid
-        );
-
-
-        // ==================================
         // REGISTRATION BONUS
         // ==================================
 
-        const registrationBonus = 500;
+        const registrationBonus =
+            500;
 
 
         // ==================================
@@ -275,7 +268,7 @@ export async function registerUser(
 
 
             // ==================================
-            // IMPORTANT REFERRAL DATA
+            // REFERRAL DATA
             // ==================================
 
             referredBy:
@@ -309,7 +302,7 @@ export async function registerUser(
 
 
         // ==================================
-        // SAVE USER
+        // SAVE NEW USER
         // ==================================
 
         await set(
@@ -364,7 +357,7 @@ export async function registerUser(
 
 
             // ==================================
-            // OPTIONAL: SAVE REFERRED USER
+            // SAVE REFERRED USER
             // ==================================
 
             await update(
@@ -408,17 +401,17 @@ export async function registerUser(
             );
 
             console.log(
-                "New User:",
+                "NEW USER:",
                 user.uid
             );
 
             console.log(
-                "Referrer:",
+                "REFERRER:",
                 referrerUid
             );
 
             console.log(
-                "Used Code:",
+                "USED CODE:",
                 cleanReferralCode
             );
 
@@ -441,9 +434,7 @@ export async function registerUser(
         // REGISTRATION COMPLETE
         // ==================================
 
-        console.log(
-            "================================"
-        );
+        console.log("================================");
 
         console.log(
             "REGISTRATION SUCCESSFUL"
@@ -455,25 +446,23 @@ export async function registerUser(
         );
 
         console.log(
-            "My Referral Code:",
+            "MY REFERRAL CODE:",
             myReferralCode
         );
 
         console.log(
-            "Referred By:",
+            "REFERRED BY:",
             referrerUid || ""
         );
 
         console.log(
-            "Referral Code Used:",
+            "REFERRAL CODE USED:",
             referrerUid
                 ? cleanReferralCode
                 : ""
         );
 
-        console.log(
-            "================================"
-        );
+        console.log("================================");
 
 
         return true;
@@ -481,23 +470,15 @@ export async function registerUser(
 
     } catch (error) {
 
-        console.error(
-            "================================"
-        );
+        console.error("================================");
 
         console.error(
             "REGISTRATION ERROR:",
             error
         );
 
-        console.error(
-            "================================"
-        );
+        console.error("================================");
 
-
-        // ==================================
-        // FIREBASE ERROR MESSAGE
-        // ==================================
 
         if (
             error.code ===
@@ -561,16 +542,8 @@ export async function loginUser(
 
     try {
 
-        // ==================================
-        // WAIT FOR FIREBASE
-        // ==================================
-
         await authReady;
 
-
-        // ==================================
-        // LOGIN
-        // ==================================
 
         const credential =
             await signInWithEmailAndPassword(
@@ -589,10 +562,6 @@ export async function loginUser(
             user.uid
         );
 
-
-        // ==================================
-        // CHECK USER DATA
-        // ==================================
 
         const snapshot =
             await get(
@@ -619,10 +588,6 @@ export async function loginUser(
             "USER DATA FOUND"
         );
 
-
-        // ==================================
-        // GO TO DASHBOARD
-        // ==================================
 
         window.location.href =
             "dashboard.html";
@@ -661,7 +626,6 @@ export async function logoutUser() {
     try {
 
         await signOut(auth);
-
 
         window.location.href =
             "login.html";
