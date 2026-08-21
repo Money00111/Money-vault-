@@ -26,6 +26,7 @@ import {
     runTransaction
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
 
+
 // ======================================
 // REGISTER USER
 // ======================================
@@ -41,6 +42,147 @@ export async function registerUser(
     try {
 
         // ==================================
+        // CLEAN REFERRAL CODE
+        // ==================================
+
+        const cleanReferralCode =
+            String(referralCode || "")
+                .trim()
+                .toUpperCase();
+
+
+        console.log(
+            "================================"
+        );
+
+        console.log(
+            "REGISTRATION START"
+        );
+
+        console.log(
+            "REFERRAL CODE RECEIVED:",
+            cleanReferralCode
+        );
+
+        console.log(
+            "================================"
+        );
+
+
+        // ==================================
+        // FIND REFERRER BEFORE CREATING USER
+        // ==================================
+
+        let referrerUid = "";
+
+        let referrerData = null;
+
+
+        if (cleanReferralCode !== "") {
+
+            console.log(
+                "SEARCHING REFERRER..."
+            );
+
+
+            const usersSnapshot =
+                await get(
+                    ref(db, "users")
+                );
+
+
+            if (usersSnapshot.exists()) {
+
+                usersSnapshot.forEach(
+                    (child) => {
+
+                        const data =
+                            child.val() || {};
+
+
+                        const savedCode =
+                            String(
+                                data.referralCode || ""
+                            )
+                                .trim()
+                                .toUpperCase();
+
+
+                        console.log(
+                            "CHECK REFERRAL:",
+                            child.key,
+                            savedCode,
+                            "VS",
+                            cleanReferralCode
+                        );
+
+
+                        if (
+                            savedCode ===
+                            cleanReferralCode
+                        ) {
+
+                            referrerUid =
+                                child.key;
+
+                            referrerData =
+                                data;
+
+                        }
+
+                    }
+                );
+
+            }
+
+
+            // ==================================
+            // REFERRER FOUND
+            // ==================================
+
+            if (referrerUid) {
+
+                console.log(
+                    "================================"
+                );
+
+                console.log(
+                    "REFERRER FOUND:",
+                    referrerUid
+                );
+
+                console.log(
+                    "REFERRER CODE:",
+                    cleanReferralCode
+                );
+
+                console.log(
+                    "================================"
+                );
+
+            }
+
+            else {
+
+                console.warn(
+                    "REFERRAL CODE NOT FOUND:",
+                    cleanReferralCode
+                );
+
+            }
+
+        }
+
+        else {
+
+            console.log(
+                "NO REFERRAL CODE USED"
+            );
+
+        }
+
+
+        // ==================================
         // CREATE FIREBASE AUTH ACCOUNT
         // ==================================
 
@@ -51,7 +193,15 @@ export async function registerUser(
                 password
             );
 
-        const user = userCredential.user;
+
+        const user =
+            userCredential.user;
+
+
+        console.log(
+            "AUTH USER CREATED:",
+            user.uid
+        );
 
 
         // ==================================
@@ -73,250 +223,256 @@ export async function registerUser(
 
 
         // ==================================
-        // CREATE USER ACCOUNT
+        // USER DATA
+        // ==================================
+
+        const userData = {
+
+            uid:
+                user.uid,
+
+            fullName:
+                fullName,
+
+            phone:
+                phone,
+
+            email:
+                email,
+
+            balance:
+                registrationBonus,
+
+            bonus:
+                registrationBonus,
+
+            referralBonus:
+                0,
+
+            referralEarnings:
+                0,
+
+            totalDeposit:
+                0,
+
+            totalWithdraw:
+                0,
+
+            totalTransactions:
+                0,
+
+            totalEarnings:
+                registrationBonus,
+
+            vip:
+                "VIP 0",
+
+            vipActive:
+                false,
+
+            referralCode:
+                myReferralCode,
+
+
+            // ==================================
+            // IMPORTANT REFERRAL DATA
+            // ==================================
+
+            referredBy:
+                referrerUid || "",
+
+            referralCodeUsed:
+                referrerUid
+                    ? cleanReferralCode
+                    : "",
+
+            referralCount:
+                0,
+
+            referralBonusGiven:
+                false,
+
+
+            country:
+                "Rwanda",
+
+            address:
+                "",
+
+            photoURL:
+                "",
+
+            createdAt:
+                Date.now()
+
+        };
+
+
+        // ==================================
+        // SAVE USER
         // ==================================
 
         await set(
-            ref(db, "users/" + user.uid),
-            {
-
-                uid: user.uid,
-
-                fullName: fullName,
-
-                phone: phone,
-
-                email: email,
-
-                balance: registrationBonus,
-
-                bonus: registrationBonus,
-
-                referralBonus: 0,
-
-                referralEarnings: 0,
-
-                totalDeposit: 0,
-
-                totalWithdraw: 0,
-
-                totalTransactions: 0,
-
-                totalEarnings: registrationBonus,
-
-                vip: "VIP 0",
-
-                vipActive: false,
-
-                referralCode: myReferralCode,
-
-                referredBy: "",
-
-                referralCodeUsed: "",
-
-                referralCount: 0,
-
-                referralBonusGiven: false,
-
-                country: "Rwanda",
-
-                address: "",
-
-                photoURL: "",
-
-                createdAt: Date.now()
-
-            }
+            ref(
+                db,
+                "users/" +
+                user.uid
+            ),
+            userData
         );
 
 
-// ======================================
-// REFERRAL SYSTEM
-// ======================================
-
-let referrerUid = null;
-
-const cleanReferralCode =
-    String(referralCode || "")
-        .trim()
-        .toUpperCase();
-
-
-// ======================================
-// DEBUG
-// ======================================
-
-console.log(
-    "REFERRAL CODE RECEIVED:",
-    cleanReferralCode
-);
-
-
-// ======================================
-// FIND REFERRER BY REFERRAL CODE
-// ======================================
-
-if (cleanReferralCode !== "") {
-
-    const usersSnapshot =
-        await get(
-            ref(db, "users")
+        console.log(
+            "USER DATA SAVED"
         );
 
 
-    if (usersSnapshot.exists()) {
+        // ==================================
+        // CONNECT REFERRAL
+        // ==================================
 
-        usersSnapshot.forEach((child) => {
-
-            const data =
-                child.val() || {};
-
-            const savedCode =
-                String(
-                    data.referralCode || ""
-                )
-                    .trim()
-                    .toUpperCase();
-
+        if (referrerUid) {
 
             console.log(
-                "CHECK REFERRAL:",
-                savedCode,
-                "vs",
-                cleanReferralCode
+                "CONNECTING REFERRAL..."
             );
 
 
             // ==================================
-            // MATCH REFERRAL CODE
+            // INCREASE REFERRAL COUNT
             // ==================================
 
-            if (
-                savedCode === cleanReferralCode &&
-                child.key !== user.uid
-            ) {
-
-                referrerUid =
-                    child.key;
-
-            }
-
-        });
-
-    }
-
-
-    // ==================================
-    // VALID REFERRER FOUND
-    // ==================================
-
-    if (referrerUid) {
-
-        console.log(
-            "REFERRER FOUND:",
-            referrerUid
-        );
-
-
-        // ==================================
-        // SAVE REFERRAL INFORMATION
-        // ==================================
-
-        await update(
-            ref(
-                db,
-                "users/" + user.uid
-            ),
-            {
-
-                referredBy:
-                    referrerUid,
-
-                referralCodeUsed:
-                    cleanReferralCode,
-
-                referralBonusGiven:
-                    false
-
-            }
-        );
-
-
-        // ==================================
-        // INCREASE REFERRAL COUNT
-        // ==================================
-
-        await runTransaction(
-            ref(
-                db,
-                "users/" +
-                referrerUid +
-                "/referralCount"
-            ),
-            current => {
-
-                return (
-                    Number(current || 0) + 1
+            const referralCountRef =
+                ref(
+                    db,
+                    "users/" +
+                    referrerUid +
+                    "/referralCount"
                 );
 
-            }
-        );
+
+            await runTransaction(
+                referralCountRef,
+                current => {
+
+                    return (
+                        Number(current || 0) + 1
+                    );
+
+                }
+            );
 
 
-        console.log(
-            "================================"
-        );
+            // ==================================
+            // OPTIONAL: SAVE REFERRED USER
+            // ==================================
 
-        console.log(
-            "REFERRAL CONNECTED SUCCESSFULLY"
-        );
+            await update(
+                ref(
+                    db,
+                    "users/" +
+                    referrerUid +
+                    "/referrals/" +
+                    user.uid
+                ),
+                {
 
-        console.log(
-            "New User UID:",
-            user.uid
-        );
+                    uid:
+                        user.uid,
 
-        console.log(
-            "Referral Code:",
-            cleanReferralCode
-        );
+                    fullName:
+                        fullName,
 
-        console.log(
-            "Referred By UID:",
-            referrerUid
-        );
+                    referralCode:
+                        cleanReferralCode,
 
-        console.log(
-            "================================"
-        );
+                    joinedAt:
+                        Date.now(),
 
-    }
+                    vipPurchased:
+                        false,
 
-    else {
+                    referralBonusGiven:
+                        false
 
-        console.warn(
-            "REFERRAL CODE NOT FOUND:",
-            cleanReferralCode
-        );
+                }
+            );
 
-    }
 
-}
+            console.log(
+                "================================"
+            );
 
-else {
+            console.log(
+                "REFERRAL CONNECTED SUCCESSFULLY"
+            );
 
-    console.log(
-        "NO REFERRAL CODE USED"
-    );
+            console.log(
+                "New User:",
+                user.uid
+            );
 
-}
+            console.log(
+                "Referrer:",
+                referrerUid
+            );
+
+            console.log(
+                "Used Code:",
+                cleanReferralCode
+            );
+
+            console.log(
+                "================================"
+            );
+
+        }
+
+        else {
+
+            console.log(
+                "NO VALID REFERRER"
+            );
+
+        }
+
+
         // ==================================
         // REGISTRATION COMPLETE
         // ==================================
 
         console.log(
-            "Registration successful:",
+            "================================"
+        );
+
+        console.log(
+            "REGISTRATION SUCCESSFUL"
+        );
+
+        console.log(
+            "UID:",
             user.uid
+        );
+
+        console.log(
+            "My Referral Code:",
+            myReferralCode
+        );
+
+        console.log(
+            "Referred By:",
+            referrerUid || ""
+        );
+
+        console.log(
+            "Referral Code Used:",
+            referrerUid
+                ? cleanReferralCode
+                : ""
+        );
+
+        console.log(
+            "================================"
         );
 
 
@@ -326,8 +482,16 @@ else {
     } catch (error) {
 
         console.error(
-            "Registration error:",
+            "================================"
+        );
+
+        console.error(
+            "REGISTRATION ERROR:",
             error
+        );
+
+        console.error(
+            "================================"
         );
 
 
@@ -371,7 +535,8 @@ else {
         else {
 
             alert(
-                error.message
+                error.message ||
+                "Registration failed."
             );
 
         }
@@ -385,21 +550,28 @@ else {
 
 
 
- 
-
 // ======================================
 // LOGIN USER
 // ======================================
 
-export async function loginUser(email, password) {
+export async function loginUser(
+    email,
+    password
+) {
 
     try {
 
-        // Wait for Firebase persistence
+        // ==================================
+        // WAIT FOR FIREBASE
+        // ==================================
+
         await authReady;
 
 
+        // ==================================
         // LOGIN
+        // ==================================
+
         const credential =
             await signInWithEmailAndPassword(
                 auth,
@@ -418,12 +590,16 @@ export async function loginUser(email, password) {
         );
 
 
+        // ==================================
         // CHECK USER DATA
+        // ==================================
+
         const snapshot =
             await get(
                 ref(
                     db,
-                    "users/" + user.uid
+                    "users/" +
+                    user.uid
                 )
             );
 
@@ -444,7 +620,10 @@ export async function loginUser(email, password) {
         );
 
 
-        // GO DIRECTLY TO DASHBOARD
+        // ==================================
+        // GO TO DASHBOARD
+        // ==================================
+
         window.location.href =
             "dashboard.html";
 
@@ -459,9 +638,11 @@ export async function loginUser(email, password) {
             error
         );
 
+
         alert(
             error.message
         );
+
 
         return false;
 
@@ -623,6 +804,30 @@ export function isLoggedIn() {
 
 
 
+// ======================================
+// AUTH READY
+// ======================================
+
 console.log(
-    "Auth.js Loaded Successfully"
+    "=================================="
+);
+
+console.log(
+    "Money Vault Auth.js Loaded"
+);
+
+console.log(
+    "Registration Ready"
+);
+
+console.log(
+    "Referral System Ready"
+);
+
+console.log(
+    "Login Ready"
+);
+
+console.log(
+    "=================================="
 );
