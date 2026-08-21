@@ -709,4 +709,371 @@ export async function registerUser(
             "auth/network-request-failed"
         ) {
 
-           
+            alert(
+                "Network error. Please check your internet connection."
+            );
+
+        }
+
+        else if (
+            error.code ===
+            "PERMISSION_DENIED" ||
+            error.code ===
+            "permission_denied"
+        ) {
+
+            alert(
+                "Firebase permission denied. Please check your database rules."
+            );
+
+        }
+
+        else {
+
+            alert(
+                error.message ||
+                "Registration failed."
+            );
+
+        }
+
+
+        return false;
+
+    }
+
+}
+
+
+
+// ======================================
+// LOGIN USER
+// ======================================
+
+export async function loginUser(
+    email,
+    password
+) {
+
+    try {
+
+        // ==================================
+        // WAIT FOR FIREBASE AUTH
+        // ==================================
+
+        await authReady;
+
+
+        // ==================================
+        // LOGIN
+        // ==================================
+
+        const credential =
+            await signInWithEmailAndPassword(
+                auth,
+                email,
+                password
+            );
+
+
+        const user =
+            credential.user;
+
+
+        console.log(
+            "LOGIN SUCCESS:",
+            user.uid
+        );
+
+
+        // ==================================
+        // CHECK USER DATA
+        // ==================================
+
+        const snapshot =
+            await get(
+                ref(
+                    db,
+                    "users/" +
+                    user.uid
+                )
+            );
+
+
+        if (!snapshot.exists()) {
+
+            alert(
+                "User account data not found."
+            );
+
+            return false;
+
+        }
+
+
+        console.log(
+            "USER DATA FOUND"
+        );
+
+
+        // ==================================
+        // GO TO DASHBOARD
+        // ==================================
+
+        window.location.href =
+            "dashboard.html";
+
+
+        return true;
+
+
+    }
+
+    catch (error) {
+
+        console.error(
+            "LOGIN ERROR:",
+            error
+        );
+
+
+        if (
+            error.code ===
+            "auth/invalid-credential"
+        ) {
+
+            alert(
+                "Email or password is incorrect."
+            );
+
+        }
+
+        else if (
+            error.code ===
+            "auth/user-not-found"
+        ) {
+
+            alert(
+                "User account not found."
+            );
+
+        }
+
+        else if (
+            error.code ===
+            "auth/wrong-password"
+        ) {
+
+            alert(
+                "Incorrect password."
+            );
+
+        }
+
+        else {
+
+            alert(
+                error.message ||
+                "Login failed."
+            );
+
+        }
+
+
+        return false;
+
+    }
+
+}
+
+
+
+// ======================================
+// LOGOUT USER
+// ======================================
+
+export async function logoutUser() {
+
+    try {
+
+        await signOut(
+            auth
+        );
+
+
+        window.location.href =
+            "login.html";
+
+
+    }
+
+    catch (error) {
+
+        console.error(
+            "Logout error:",
+            error
+        );
+
+
+        alert(
+            error.message ||
+            "Logout failed."
+        );
+
+    }
+
+}
+
+
+
+// ======================================
+// RESET PASSWORD
+// ======================================
+
+export async function resetPassword(
+    email
+) {
+
+    try {
+
+        await sendPasswordResetEmail(
+            auth,
+            email
+        );
+
+
+        alert(
+            "Password reset email sent."
+        );
+
+
+    }
+
+    catch (error) {
+
+        console.error(
+            "Password reset error:",
+            error
+        );
+
+
+        alert(
+            error.message ||
+            "Password reset failed."
+        );
+
+    }
+
+}
+
+
+
+// ======================================
+// GET CURRENT USER
+// ======================================
+
+export function getCurrentUser() {
+
+    return auth.currentUser;
+
+}
+
+
+
+// ======================================
+// AUTH STATE LISTENER
+// ======================================
+
+export function checkAuth(
+    callback
+) {
+
+    onAuthStateChanged(
+        auth,
+        user => {
+
+            if (user) {
+
+                callback(user);
+
+            }
+
+            else {
+
+                window.location.href =
+                    "login.html";
+
+            }
+
+        }
+    );
+
+}
+
+
+
+// ======================================
+// REQUIRE LOGIN
+// ======================================
+
+export function requireLogin() {
+
+    onAuthStateChanged(
+        auth,
+        user => {
+
+            if (!user) {
+
+                window.location.href =
+                    "login.html";
+
+            }
+
+        }
+    );
+
+}
+
+
+
+// ======================================
+// CHECK LOGIN STATUS
+// ======================================
+
+export function isLoggedIn() {
+
+    return (
+        auth.currentUser !== null
+    );
+
+}
+
+
+
+// ======================================
+// AUTH READY
+// ======================================
+
+console.log(
+    "=================================="
+);
+
+console.log(
+    "Money Vault Auth.js Loaded"
+);
+
+console.log(
+    "Registration Ready"
+);
+
+console.log(
+    "Referral System Ready"
+);
+
+console.log(
+    "Login Ready"
+);
+
+console.log(
+    "=================================="
+);
