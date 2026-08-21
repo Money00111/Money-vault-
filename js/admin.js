@@ -4433,229 +4433,272 @@ async function approveVipRequest(id) {
         };
 
 
+
+            
+
+
+          // ======================================
+// REFERRAL BONUS - ONCE PER REFERRED USER
+// ======================================
+
+let referralBonusGiven = false;
+
+let referralBonusUid = "";
+
+
+// ======================================
+// CHECK REFERRER
+// ======================================
+
+if (referrer) {
+
+    const referrerUid =
+        referrer.uid;
+
+    const referrerData =
+        referrer.data || {};
+
+    referralBonusUid =
+        referrerUid;
+
+
+    // ==================================
+    // IMPORTANT:
+    // CHECK BUYER USER
+    // NOT VIP REQUEST
+    // ==================================
+
+    const buyerReferralBonusGiven =
+        user.referralBonusGiven === true;
+
+
+    console.log(
+        "BUYER referralBonusGiven:",
+        buyerReferralBonusGiven
+    );
+
+
+    // ==================================
+    // BONUS ONLY ONCE
+    // ==================================
+
+    if (!buyerReferralBonusGiven) {
+
+        const currentBalance =
+            Number(
+                referrerData.balance || 0
+            );
+
+
+        const currentReferralBonus =
+            Number(
+                referrerData.referralBonus || 0
+            );
+
+
+        const currentReferralEarnings =
+            Number(
+                referrerData.referralEarnings || 0
+            );
+
+
+        // ==================================
+        // ADD 1,000 TO REFERRER BALANCE
+        // ==================================
+
+        updates[
+            "users/" +
+            referrerUid +
+            "/balance"
+        ] =
+            currentBalance +
+            REFERRAL_BONUS_AMOUNT;
+
+
         // ==================================
         // REFERRAL BONUS
         // ==================================
 
-        let referralBonusGiven =
-            false;
-
-        let referralBonusUid =
-            "";
-
-
-        if (referrer) {
-
-            const referrerUid =
-                referrer.uid;
-
-            const referrerData =
-                referrer.data || {};
-
-
-            referralBonusUid =
-                referrerUid;
-
-
-            // ==================================
-            // CHECK REQUEST
-            // ==================================
-
-            const alreadyGiven =
-                request.referralBonusGiven === true;
-
-
-            if (!alreadyGiven) {
-
-                const currentBalance =
-                    Number(
-                        referrerData.balance || 0
-                    );
-
-
-                const currentReferralBonus =
-                    Number(
-                        referrerData.referralBonus || 0
-                    );
-
-
-                const currentReferralEarnings =
-                    Number(
-                        referrerData.referralEarnings || 0
-                    );
-
-
-                // ==================================
-                // ADD 1,000 TO REFERRER BALANCE
-                // ==================================
-
-                updates[
-                    "users/" +
-                    referrerUid +
-                    "/balance"
-                ] =
-                    currentBalance +
-                    REFERRAL_BONUS_AMOUNT;
-
-
-                // ==================================
-                // REFERRAL BONUS
-                // ==================================
-
-                updates[
-                    "users/" +
-                    referrerUid +
-                    "/referralBonus"
-                ] =
-                    currentReferralBonus +
-                    REFERRAL_BONUS_AMOUNT;
-
-
-                // ==================================
-                // REFERRAL EARNINGS
-                // ==================================
-
-                updates[
-                    "users/" +
-                    referrerUid +
-                    "/referralEarnings"
-                ] =
-                    currentReferralEarnings +
-                    REFERRAL_BONUS_AMOUNT;
-
-
-                // ==================================
-                // SAVE REFERRER UID
-                // ==================================
-
-                updates[
-                    "users/" +
-                    uid +
-                    "/referredBy"
-                ] =
-                    referrerUid;
-
-
-                // ==================================
-                // REFERRAL TRANSACTION
-                // ==================================
-
-                const referralTxRef =
-                    push(
-                        ref(
-                            db,
-                            "transactions"
-                        )
-                    );
-
-
-                updates[
-                    "transactions/" +
-                    referralTxRef.key
-                ] = {
-
-                    uid:
-                        referrerUid,
-
-                    type:
-                        "referralBonus",
-
-                    amount:
-                        REFERRAL_BONUS_AMOUNT,
-
-                    sourceUid:
-                        uid,
-
-                    sourceRequestId:
-                        id,
-
-                    vipName,
-
-                    status:
-                        "completed",
-
-                    createdAt:
-                        approvedAt
-                };
-
-
-                // ==================================
-                // MARK BONUS AS GIVEN
-                // ==================================
-
-                updates[
-                    "vipPurchaseRequests/" +
-                    id +
-                    "/referralBonus"
-                ] =
-                    REFERRAL_BONUS_AMOUNT;
-
-
-                updates[
-                    "vipPurchaseRequests/" +
-                    id +
-                    "/referralBonusUid"
-                ] =
-                    referrerUid;
-
-
-                updates[
-                    "vipPurchaseRequests/" +
-                    id +
-                    "/referralBonusGiven"
-                ] =
-                    true;
-
-
-                referralBonusGiven =
-                    true;
-
-
-                console.log(
-                    "================================"
-                );
-
-                console.log(
-                    "REFERRAL BONUS SUCCESS"
-                );
-
-                console.log(
-                    "Buyer:",
-                    uid
-                );
-
-                console.log(
-                    "Referrer:",
-                    referrerUid
-                );
-
-                console.log(
-                    "Bonus:",
-                    REFERRAL_BONUS_AMOUNT
-                );
-
-                console.log(
-                    "================================"
-                );
-
-            }
-
-            else {
-
-                console.log(
-                    "Referral bonus already given."
-                );
-            }
-
-        }
-
-        else {
-
-            console.log(
-                "NO VALID REFERRER FOUND"
+        updates[
+            "users/" +
+            referrerUid +
+            "/referralBonus"
+        ] =
+            currentReferralBonus +
+            REFERRAL_BONUS_AMOUNT;
+
+
+        // ==================================
+        // REFERRAL EARNINGS
+        // ==================================
+
+        updates[
+            "users/" +
+            referrerUid +
+            "/referralEarnings"
+        ] =
+            currentReferralEarnings +
+            REFERRAL_BONUS_AMOUNT;
+
+
+        // ==================================
+        // MARK THIS REFERRED USER
+        // AS BONUS ALREADY GIVEN
+        // ==================================
+
+        updates[
+            "users/" +
+            uid +
+            "/referralBonusGiven"
+        ] =
+            true;
+
+
+        // ==================================
+        // SAVE REFERRER UID
+        // ==================================
+
+        updates[
+            "users/" +
+            uid +
+            "/referredBy"
+        ] =
+            referrerUid;
+
+
+        // ==================================
+        // REFERRAL TRANSACTION
+        // ==================================
+
+        const referralTxRef =
+            push(
+                ref(
+                    db,
+                    "transactions"
+                )
             );
-        }
 
+
+        updates[
+            "transactions/" +
+            referralTxRef.key
+        ] = {
+
+            uid:
+                referrerUid,
+
+            type:
+                "referralBonus",
+
+            amount:
+                REFERRAL_BONUS_AMOUNT,
+
+            sourceUid:
+                uid,
+
+            sourceRequestId:
+                id,
+
+            vipName,
+
+            status:
+                "completed",
+
+            createdAt:
+                approvedAt
+        };
+
+
+        // ==================================
+        // SAVE INFO ON VIP REQUEST
+        // ==================================
+
+        updates[
+            "vipPurchaseRequests/" +
+            id +
+            "/referralBonus"
+        ] =
+            REFERRAL_BONUS_AMOUNT;
+
+
+        updates[
+            "vipPurchaseRequests/" +
+            id +
+            "/referralBonusUid"
+        ] =
+            referrerUid;
+
+
+        updates[
+            "vipPurchaseRequests/" +
+            id +
+            "/referralBonusGiven"
+        ] =
+            true;
+
+
+        referralBonusGiven =
+            true;
+
+
+        console.log(
+            "================================"
+        );
+
+        console.log(
+            "REFERRAL BONUS GIVEN ONCE"
+        );
+
+        console.log(
+            "Buyer:",
+            uid
+        );
+
+        console.log(
+            "Referrer:",
+            referrerUid
+        );
+
+        console.log(
+            "Bonus:",
+            REFERRAL_BONUS_AMOUNT
+        );
+
+        console.log(
+            "================================"
+        );
+
+    }
+
+    else {
+
+        console.log(
+            "REFERRAL BONUS ALREADY GIVEN"
+        );
+
+        console.log(
+            "Buyer:",
+            uid
+        );
+
+        console.log(
+            "Referrer:",
+            referrerUid
+        );
+
+    }
+
+}
+
+else {
+
+    console.log(
+        "NO VALID REFERRER FOUND"
+    );
+
+}      
+
+                
 
         // ==================================
         // APPROVE REQUEST
