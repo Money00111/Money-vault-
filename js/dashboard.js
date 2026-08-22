@@ -75,29 +75,70 @@ logoutBtn?.addEventListener("click", async (e) => {
 });
 
 
+
 // ======================================
 // AUTH CHECK
 // ======================================
 
+let dashboardAuthChecked = false;
+
 onAuthStateChanged(auth, (user) => {
+
+    console.log(
+        "DASHBOARD AUTH STATE:",
+        user ? user.uid : "NO USER"
+    );
+
+
+    // ==================================
+    // FIRST AUTH STATE
+    // ==================================
+
+    if (!dashboardAuthChecked) {
+
+        dashboardAuthChecked = true;
+
+    }
+
+
+    // ==================================
+    // NO USER
+    // ==================================
 
     if (!user) {
 
         console.log(
-            "Dashboard: NO USER"
+            "Dashboard: User is not logged in"
         );
 
-        // Do not redirect immediately
+        // IMPORTANT:
+        // Do NOT redirect here immediately.
+
+        if (loadingScreen) {
+
+            loadingScreen.style.display =
+                "none";
+
+        }
+
         return;
 
     }
 
+
+    // ==================================
+    // USER FOUND
+    // ==================================
 
     console.log(
         "Dashboard User:",
         user.uid
     );
 
+
+    // ==================================
+    // LOAD DASHBOARD
+    // ==================================
 
     loadUser(user);
 
@@ -106,6 +147,7 @@ onAuthStateChanged(auth, (user) => {
     loadNotifications();
 
 });
+
 
 // ======================================
 // LOAD USER
