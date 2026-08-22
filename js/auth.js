@@ -607,7 +607,7 @@ export async function loginUser(
     try {
 
         // ==================================
-        // WAIT FOR AUTH PERSISTENCE
+        // WAIT FOR FIREBASE AUTH
         // ==================================
 
         await authReady;
@@ -636,45 +636,14 @@ export async function loginUser(
 
 
         // ==================================
-        // WAIT FOR AUTH STATE
-        // ==================================
-
-        await new Promise((resolve) => {
-
-            const unsubscribe =
-                onAuthStateChanged(
-                    auth,
-                    (currentUser) => {
-
-                        if (currentUser) {
-
-                            console.log(
-                                "AUTH STATE READY:",
-                                currentUser.uid
-                            );
-
-                            unsubscribe();
-
-                            resolve();
-
-                        }
-
-                    }
-                );
-
-        });
-
-
-        // ==================================
-        // CHECK USER DATA
+        // CHECK USER DATABASE DATA
         // ==================================
 
         const snapshot =
             await get(
                 ref(
                     db,
-                    "users/" +
-                    user.uid
+                    "users/" + user.uid
                 )
             );
 
@@ -686,6 +655,10 @@ export async function loginUser(
 
 
         if (!snapshot.exists()) {
+
+            console.error(
+                "USER AUTH EXISTS BUT DATABASE USER DOES NOT EXIST"
+            );
 
             alert(
                 "User account data not found."
@@ -702,12 +675,31 @@ export async function loginUser(
 
 
         // ==================================
+        // GIVE AUTH TIME TO PERSIST
+        // ==================================
+
+        await new Promise(
+            resolve => setTimeout(
+                resolve,
+                300
+            )
+        );
+
+
+        console.log(
+            "AUTH CURRENT USER:",
+            auth.currentUser
+                ? auth.currentUser.uid
+                : null
+        );
+
+
+        // ==================================
         // GO TO DASHBOARD
         // ==================================
 
-        window.location.replace(
-            "dashboard.html"
-        );
+        window.location.href =
+            "./dashboard.html";
 
 
         return true;
@@ -716,14 +708,21 @@ export async function loginUser(
     } catch (error) {
 
         console.error(
+            "================================"
+        );
+
+        console.error(
             "LOGIN ERROR:",
             error
         );
 
-
         console.error(
             "ERROR CODE:",
             error.code
+        );
+
+        console.error(
+            "================================"
         );
 
 
@@ -738,6 +737,8 @@ export async function loginUser(
     }
 
 }
+
+
         // ==================================
         // CHECK OWN USER DATA
         // ==================================
