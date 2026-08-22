@@ -594,6 +594,7 @@ console.log(
 
 
 
+
 // ======================================
 // LOGIN USER
 // ======================================
@@ -605,8 +606,16 @@ export async function loginUser(
 
     try {
 
+        // ==================================
+        // WAIT FOR AUTH PERSISTENCE
+        // ==================================
+
         await authReady;
 
+
+        // ==================================
+        // LOGIN
+        // ==================================
 
         const credential =
             await signInWithEmailAndPassword(
@@ -626,6 +635,109 @@ export async function loginUser(
         );
 
 
+        // ==================================
+        // WAIT FOR AUTH STATE
+        // ==================================
+
+        await new Promise((resolve) => {
+
+            const unsubscribe =
+                onAuthStateChanged(
+                    auth,
+                    (currentUser) => {
+
+                        if (currentUser) {
+
+                            console.log(
+                                "AUTH STATE READY:",
+                                currentUser.uid
+                            );
+
+                            unsubscribe();
+
+                            resolve();
+
+                        }
+
+                    }
+                );
+
+        });
+
+
+        // ==================================
+        // CHECK USER DATA
+        // ==================================
+
+        const snapshot =
+            await get(
+                ref(
+                    db,
+                    "users/" +
+                    user.uid
+                )
+            );
+
+
+        console.log(
+            "USER DATA EXISTS:",
+            snapshot.exists()
+        );
+
+
+        if (!snapshot.exists()) {
+
+            alert(
+                "User account data not found."
+            );
+
+            return false;
+
+        }
+
+
+        console.log(
+            "USER DATA FOUND"
+        );
+
+
+        // ==================================
+        // GO TO DASHBOARD
+        // ==================================
+
+        window.location.replace(
+            "dashboard.html"
+        );
+
+
+        return true;
+
+
+    } catch (error) {
+
+        console.error(
+            "LOGIN ERROR:",
+            error
+        );
+
+
+        console.error(
+            "ERROR CODE:",
+            error.code
+        );
+
+
+        alert(
+            error.message ||
+            "Login failed."
+        );
+
+
+        return false;
+
+    }
+
+}
         // ==================================
         // CHECK OWN USER DATA
         // ==================================
