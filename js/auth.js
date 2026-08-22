@@ -58,48 +58,67 @@ export async function registerUser(
         console.log("================================");
 
 
+
         // ==================================
-        // FIND REFERRER USING referralCodes
-        // ==================================
+// FIND REFERRER BEFORE CREATING USER
+// ==================================
 
-        let referrerUid = "";
+let referrerUid = "";
 
-        let referrerData = null;
-
-
-        if (cleanReferralCode !== "") {
-
-            console.log(
-                "SEARCHING REFERRAL CODE..."
-            );
+let referrerData = null;
 
 
-            const referralCodeSnapshot =
-                await get(
-                    ref(
-                        db,
-                        "referralCodes/" +
-                        cleanReferralCode
-                    )
-                );
+if (cleanReferralCode !== "") {
+
+    console.log(
+        "SEARCHING REFERRAL CODE..."
+    );
+
+    const referralSnapshot =
+        await get(
+            ref(
+                db,
+                "referralCodes/" +
+                cleanReferralCode
+            )
+        );
 
 
-            if (
-                referralCodeSnapshot.exists()
-            ) {
+    if (referralSnapshot.exists()) {
 
-                const referralData =
-                    referralCodeSnapshot.val() || {};
+        const referralData =
+            referralSnapshot.val() || {};
 
 
-                referrerUid =
-                    referralData.uid || "";
+        referrerUid =
+            referralData.uid || "";
 
 
-                console.log(
-                    "REFERRER UID FOUND:",
-                    referrerUid
-                );
+        console.log(
+            "REFERRER FOUND:",
+            referrerUid
+        );
+
+    }
+
+    else {
+
+        console.warn(
+            "REFERRAL CODE NOT FOUND:",
+            cleanReferralCode
+        );
+
+    }
+
+}
+
+else {
+
+    console.log(
+        "NO REFERRAL CODE USED"
+    );
+
+}
 
 
                 // ==================================
@@ -299,6 +318,27 @@ export async function registerUser(
         console.log(
             "USER DATA SAVED"
         );
+
+// ==================================
+// SAVE MY REFERRAL CODE
+// ==================================
+
+await set(
+    ref(
+        db,
+        "referralCodes/" +
+        myReferralCode
+    ),
+    {
+        uid:
+            user.uid
+    }
+);
+
+console.log(
+    "MY REFERRAL CODE SAVED:",
+    myReferralCode
+);
 
 
         // ==================================
