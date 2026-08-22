@@ -701,6 +701,12 @@ export async function loginUser(
         window.location.href =
             "./dashboard.html";
 
+        console.log(
+    "BEFORE DASHBOARD REDIRECT",
+    auth.currentUser
+        ? auth.currentUser.uid
+        : "NULL"
+);
 
         return true;
 
