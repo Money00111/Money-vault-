@@ -1,4 +1,4 @@
- // ======================================
+// ======================================
 // FIREBASE CONFIG
 // Money Vault
 // Realtime Database Version
@@ -8,23 +8,19 @@ import {
     initializeApp
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
 
-
 import {
     getAuth,
     setPersistence,
     browserLocalPersistence
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 
-
 import {
     getDatabase
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
 
-
 import {
     getStorage
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-storage.js";
-
 
 
 // ======================================
@@ -57,14 +53,12 @@ const firebaseConfig = {
 };
 
 
-
 // ======================================
 // INITIALIZE FIREBASE
 // ======================================
 
 const app =
     initializeApp(firebaseConfig);
-
 
 
 // ======================================
@@ -81,10 +75,8 @@ const storage =
     getStorage(app);
 
 
-
 // ======================================
 // AUTH PERSISTENCE
-// KEEP USER LOGGED IN
 // ======================================
 
 const authReady =
@@ -113,7 +105,6 @@ const authReady =
     });
 
 
-
 // ======================================
 // EXPORTS
 // ======================================
@@ -121,13 +112,9 @@ const authReady =
 export {
 
     app,
-
     auth,
-
     db,
-
     storage,
-
     authReady
 
 };
