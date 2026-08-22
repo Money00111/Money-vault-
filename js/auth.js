@@ -630,19 +630,54 @@ export async function loginUser(
         // CHECK OWN USER DATA
         // ==================================
 
-        const snapshot =
-            await get(
-                ref(
-                    db,
-                    "users/" +
-                    user.uid
-                )
-            );
+        const userRef = ref(
+    db,
+    "users/" + user.uid
+);
 
+console.log(
+    "LOGIN UID:",
+    user.uid
+);
 
-        if (
-            !snapshot.exists()
-        ) {
+console.log(
+    "READING USER PATH:",
+    "users/" + user.uid
+);
+
+const snapshot =
+    await get(userRef);
+
+console.log(
+    "USER DATA EXISTS:",
+    snapshot.exists()
+);
+
+console.log(
+    "USER DATA:",
+    snapshot.val()
+);
+
+if (!snapshot.exists()) {
+
+    alert(
+        "Firebase Auth login successful, but users/" +
+        user.uid +
+        " was not found."
+    );
+
+    return false;
+}
+
+console.log(
+    "USER DATA FOUND - GOING DASHBOARD"
+);
+
+window.location.href =
+    "dashboard.html";
+
+return true;
+         {
 
             alert(
                 "User account data not found."
