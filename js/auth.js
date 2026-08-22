@@ -1,7 +1,7 @@
 // ======================================
 // AUTH.JS - MONEY VAULT
 // REGISTER • LOGIN • LOGOUT • RESET
-// SECURE REFERRAL SYSTEM
+// REFERRAL SYSTEM
 // ======================================
 
 import {
@@ -22,7 +22,8 @@ import {
     ref,
     set,
     get,
-    update
+    update,
+    runTransaction
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
 
 
@@ -42,7 +43,6 @@ export async function registerUser(
 
         await authReady;
 
-
         // ==================================
         // CLEAN REFERRAL CODE
         // ==================================
@@ -52,27 +52,106 @@ export async function registerUser(
                 .trim()
                 .toUpperCase();
 
-
-        console.log(
-            "================================"
-        );
-
-        console.log(
-            "REGISTRATION START"
-        );
-
-        console.log(
-            "REFERRAL CODE:",
-            cleanReferralCode
-        );
-
-        console.log(
-            "================================"
-        );
+        console.log("================================");
+        console.log("REGISTRATION START");
+        console.log("REFERRAL CODE:", cleanReferralCode);
+        console.log("================================");
 
 
         // ==================================
-        // CREATE AUTH ACCOUNT FIRST
+        // FIND REFERRER USING referralCodes
+        // ==================================
+
+        let referrerUid = "";
+
+        let referrerData = null;
+
+
+        if (cleanReferralCode !== "") {
+
+            console.log(
+                "SEARCHING REFERRAL CODE..."
+            );
+
+
+            const referralCodeSnapshot =
+                await get(
+                    ref(
+                        db,
+                        "referralCodes/" +
+                        cleanReferralCode
+                    )
+                );
+
+
+            if (
+                referralCodeSnapshot.exists()
+            ) {
+
+                const referralData =
+                    referralCodeSnapshot.val() || {};
+
+
+                referrerUid =
+                    referralData.uid || "";
+
+
+                console.log(
+                    "REFERRER UID FOUND:",
+                    referrerUid
+                );
+
+
+                // ==================================
+                // READ ONLY THE REFERRER USER
+                // ==================================
+
+                if (referrerUid) {
+
+                    const referrerSnapshot =
+                        await get(
+                            ref(
+                                db,
+                                "users/" +
+                                referrerUid
+                            )
+                        );
+
+
+                    if (
+                        referrerSnapshot.exists()
+                    ) {
+
+                        referrerData =
+                            referrerSnapshot.val() || {};
+
+                    }
+
+                }
+
+            }
+
+            else {
+
+                console.warn(
+                    "REFERRAL CODE NOT FOUND:",
+                    cleanReferralCode
+                );
+
+                // IMPORTANT:
+                // We DO NOT stop registration.
+                // User can still register without
+                // a valid referral.
+
+                referrerUid = "";
+
+            }
+
+        }
+
+
+        // ==================================
+        // CREATE FIREBASE AUTH ACCOUNT
         // ==================================
 
         const userCredential =
@@ -94,87 +173,14 @@ export async function registerUser(
 
 
         // ==================================
-        // FIND REFERRER
-        // ==================================
-
-        let referrerUid = "";
-
-
-        if (cleanReferralCode !== "") {
-
-            console.log(
-                "SEARCHING REFERRAL CODE..."
-            );
-
-
-            const referralSnapshot =
-                await get(
-                    ref(
-                        db,
-                        "referralCodes/" +
-                        cleanReferralCode
-                    )
-                );
-
-
-            if (
-                referralSnapshot.exists()
-            ) {
-
-                const referralData =
-                    referralSnapshot.val() || {};
-
-
-                const possibleUid =
-                    String(
-                        referralData.uid || ""
-                    ).trim();
-
-
-                // ==================================
-                // PREVENT SELF REFERRAL
-                // ==================================
-
-                if (
-                    possibleUid &&
-                    possibleUid !== user.uid
-                ) {
-
-                    referrerUid =
-                        possibleUid;
-
-
-                    console.log(
-                        "REFERRER FOUND:",
-                        referrerUid
-                    );
-
-                }
-
-            }
-
-            else {
-
-                console.warn(
-                    "REFERRAL CODE NOT FOUND:",
-                    cleanReferralCode
-                );
-
-            }
-
-        }
-
-
-        // ==================================
         // REGISTRATION BONUS
         // ==================================
 
-        const registrationBonus =
-            500;
+        const registrationBonus = 500;
 
 
         // ==================================
-        // GENERATE MY REFERRAL CODE
+        // GENERATE REFERRAL CODE
         // ==================================
 
         const myReferralCode =
@@ -235,6 +241,11 @@ export async function registerUser(
             referralCode:
                 myReferralCode,
 
+
+            // ==================================
+            // REFERRAL INFORMATION
+            // ==================================
+
             referredBy:
                 referrerUid || "",
 
@@ -246,8 +257,15 @@ export async function registerUser(
             referralCount:
                 0,
 
+            // IMPORTANT:
+            // This belongs to the referred USER.
+            // It becomes true when the first
+            // qualifying VIP referral bonus
+            // is actually given.
+
             referralBonusGiven:
                 false,
+
 
             country:
                 "Rwanda",
@@ -260,87 +278,170 @@ export async function registerUser(
 
             createdAt:
                 Date.now()
+
         };
-
-
-        // ==================================
-        // PREPARE DATABASE UPDATE
-        // ==================================
-
-        const updates = {};
 
 
         // ==================================
         // SAVE USER
         // ==================================
 
-        updates[
-            "users/" +
-            user.uid
-        ] =
-            userData;
+        await set(
+            ref(
+                db,
+                "users/" +
+                user.uid
+            ),
+            userData
+        );
+
+
+        console.log(
+            "USER DATA SAVED"
+        );
 
 
         // ==================================
         // SAVE MY REFERRAL CODE
         // ==================================
 
-        updates[
-            "referralCodes/" +
-            myReferralCode
-        ] = {
-
-            uid:
-                user.uid
-
-        };
-
-
-        // ==================================
-        // SAVE REFERRAL CONNECTION
-        // ==================================
-
-        if (referrerUid) {
-
-            updates[
-                "users/" +
-                referrerUid +
-                "/referrals/" +
-                user.uid
-            ] = {
+        await set(
+            ref(
+                db,
+                "referralCodes/" +
+                myReferralCode
+            ),
+            {
 
                 uid:
                     user.uid,
 
-                fullName:
-                    fullName,
+                createdAt:
+                    Date.now()
 
-                referralCode:
-                    cleanReferralCode,
+            }
+        );
 
-                joinedAt:
-                    Date.now(),
 
-                vipPurchased:
-                    false,
+        console.log(
+            "MY REFERRAL CODE SAVED:",
+            myReferralCode
+        );
 
-                referralBonusGiven:
-                    false
 
-            };
+        // ==================================
+        // CONNECT REFERRAL
+        // ==================================
+
+        if (referrerUid) {
+
+            console.log(
+                "CONNECTING REFERRAL..."
+            );
+
+
+            // ==================================
+            // INCREASE REFERRER COUNT
+            // ==================================
+
+            const referralCountRef =
+                ref(
+                    db,
+                    "users/" +
+                    referrerUid +
+                    "/referralCount"
+                );
+
+
+            await runTransaction(
+                referralCountRef,
+                current => {
+
+                    return (
+                        Number(current || 0) + 1
+                    );
+
+                }
+            );
+
+
+            // ==================================
+            // SAVE REFERRED USER
+            // ==================================
+
+            await update(
+                ref(
+                    db,
+                    "users/" +
+                    referrerUid +
+                    "/referrals/" +
+                    user.uid
+                ),
+                {
+
+                    uid:
+                        user.uid,
+
+                    fullName:
+                        fullName,
+
+                    referralCode:
+                        cleanReferralCode,
+
+                    joinedAt:
+                        Date.now(),
+
+                    vipPurchased:
+                        false,
+
+                    referralBonusGiven:
+                        false
+
+                }
+            );
+
+
+            console.log(
+                "================================"
+            );
+
+            console.log(
+                "REFERRAL CONNECTED"
+            );
+
+            console.log(
+                "NEW USER:",
+                user.uid
+            );
+
+            console.log(
+                "REFERRER:",
+                referrerUid
+            );
+
+            console.log(
+                "CODE:",
+                cleanReferralCode
+            );
+
+            console.log(
+                "================================"
+            );
+
+        }
+
+        else {
+
+            console.log(
+                "NO VALID REFERRER"
+            );
 
         }
 
 
         // ==================================
-        // SAVE EVERYTHING
+        // REGISTRATION COMPLETE
         // ==================================
-
-        await update(
-            ref(db),
-            updates
-        );
-
 
         console.log(
             "================================"
@@ -366,13 +467,6 @@ export async function registerUser(
         );
 
         console.log(
-            "REFERRAL CODE USED:",
-            referrerUid
-                ? cleanReferralCode
-                : ""
-        );
-
-        console.log(
             "================================"
         );
 
@@ -380,7 +474,9 @@ export async function registerUser(
         return true;
 
 
-    } catch (error) {
+    }
+
+    catch (error) {
 
         console.error(
             "================================"
@@ -425,6 +521,17 @@ export async function registerUser(
 
             alert(
                 "Password is too weak."
+            );
+
+        }
+
+        else if (
+            error.code ===
+            "PERMISSION_DENIED"
+        ) {
+
+            alert(
+                "Permission denied. Please check Firebase Rules."
             );
 
         }
@@ -479,6 +586,10 @@ export async function loginUser(
         );
 
 
+        // ==================================
+        // CHECK OWN USER DATA
+        // ==================================
+
         const snapshot =
             await get(
                 ref(
@@ -502,57 +613,9 @@ export async function loginUser(
         }
 
 
-        // ==================================
-        // BACKUP REFERRAL CODE FOR OLD USERS
-        // ==================================
-
-        const userData =
-            snapshot.val() || {};
-
-
-        const myReferralCode =
-            String(
-                userData.referralCode || ""
-            )
-                .trim()
-                .toUpperCase();
-
-
-        if (myReferralCode !== "") {
-
-            const codeRef =
-                ref(
-                    db,
-                    "referralCodes/" +
-                    myReferralCode
-                );
-
-
-            const codeSnapshot =
-                await get(codeRef);
-
-
-            if (
-                !codeSnapshot.exists()
-            ) {
-
-                await set(
-                    codeRef,
-                    {
-                        uid:
-                            user.uid
-                    }
-                );
-
-
-                console.log(
-                    "OLD USER REFERRAL CODE RESTORED:",
-                    myReferralCode
-                );
-
-            }
-
-        }
+        console.log(
+            "USER DATA FOUND"
+        );
 
 
         window.location.href =
@@ -562,7 +625,9 @@ export async function loginUser(
         return true;
 
 
-    } catch (error) {
+    }
+
+    catch (error) {
 
         console.error(
             "LOGIN ERROR:",
@@ -570,9 +635,25 @@ export async function loginUser(
         );
 
 
-        alert(
-            error.message
-        );
+        if (
+            error.code ===
+            "auth/invalid-credential"
+        ) {
+
+            alert(
+                "Email or password is incorrect."
+            );
+
+        }
+
+        else {
+
+            alert(
+                error.message ||
+                "Login failed."
+            );
+
+        }
 
 
         return false;
@@ -584,7 +665,7 @@ export async function loginUser(
 
 
 // ======================================
-// LOGOUT USER
+// LOGOUT
 // ======================================
 
 export async function logoutUser() {
@@ -666,7 +747,7 @@ export function getCurrentUser() {
 
 
 // ======================================
-// AUTH STATE LISTENER
+// AUTH STATE
 // ======================================
 
 export function checkAuth(
@@ -675,7 +756,7 @@ export function checkAuth(
 
     onAuthStateChanged(
         auth,
-        (user) => {
+        user => {
 
             if (user) {
 
@@ -705,7 +786,7 @@ export function requireLogin() {
 
     onAuthStateChanged(
         auth,
-        (user) => {
+        user => {
 
             if (!user) {
 
@@ -722,7 +803,7 @@ export function requireLogin() {
 
 
 // ======================================
-// CHECK LOGIN STATUS
+// LOGIN STATUS
 // ======================================
 
 export function isLoggedIn() {
@@ -746,11 +827,11 @@ console.log(
 );
 
 console.log(
-    "Secure Referral System Ready"
+    "Registration Ready"
 );
 
 console.log(
-    "Registration Ready"
+    "Referral System Ready"
 );
 
 console.log(
