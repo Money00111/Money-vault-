@@ -256,65 +256,6 @@ document.getElementById("copyReferralBtn");
 const notificationList =
 document.getElementById("notificationList");
 
-
-// ======================================
-// COPY REFERRAL LINK
-// ======================================
-
-copyReferral?.addEventListener("click", async () => {
-
-    if (!referralLink || !referralLink.value) {
-
-        showToast("Referral link is not ready yet.");
-
-        return;
-    }
-
-    try {
-
-        await navigator.clipboard.writeText(
-            referralLink.value
-        );
-
-        showToast("Referral link copied successfully!");
-
-    } catch (error) {
-
-        console.error(
-            "Copy referral link error:",
-            error
-        );
-
-        referralLink.select();
-        referralLink.setSelectionRange(
-            0,
-            referralLink.value.length
-        );
-
-        try {
-
-            document.execCommand("copy");
-
-            showToast(
-                "Referral link copied successfully!"
-            );
-
-        } catch (err) {
-
-            console.error(
-                "Fallback copy failed:",
-                err
-            );
-
-            showToast(
-                "Failed to copy referral link."
-            );
-
-        }
-
-    }
-
-});
 // ======================================
 // LOAD TRANSACTIONS (FIXED)
 // ======================================
@@ -655,6 +596,168 @@ function showToast(message) {
     }, 3000);
 
 }
+
+// ======================================
+// COPY REFERRAL LINK - MOBILE FIX
+// ======================================
+
+const copyReferralBtn =
+    document.getElementById("copyReferralBtn");
+
+const referralLinkInput =
+    document.getElementById("referralLink");
+
+
+copyReferralBtn?.addEventListener("click", async () => {
+
+    const link =
+        referralLinkInput?.value?.trim();
+
+
+    // ==============================
+    // CHECK LINK
+    // ==============================
+
+    if (!link) {
+
+        showToast(
+            "Referral link is not ready yet."
+        );
+
+        return;
+    }
+
+
+    // ==============================
+    // METHOD 1
+    // MODERN CLIPBOARD
+    // ==============================
+
+    try {
+
+        if (
+            navigator.clipboard &&
+            window.isSecureContext
+        ) {
+
+            await navigator.clipboard.writeText(link);
+
+            showToast(
+                "Referral link copied!"
+            );
+
+            return;
+        }
+
+    } catch (error) {
+
+        console.log(
+            "Clipboard API failed:",
+            error
+        );
+
+    }
+
+
+    // ==============================
+    // METHOD 2
+    // MOBILE FALLBACK
+    // ==============================
+
+    try {
+
+        const textarea =
+            document.createElement("textarea");
+
+
+        textarea.value = link;
+
+
+        textarea.style.position =
+            "fixed";
+
+        textarea.style.left =
+            "-9999px";
+
+        textarea.style.top =
+            "0";
+
+        textarea.style.opacity =
+            "0";
+
+
+        document.body.appendChild(
+            textarea
+        );
+
+
+        textarea.focus();
+
+        textarea.select();
+
+        textarea.setSelectionRange(
+            0,
+            textarea.value.length
+        );
+
+
+        const copied =
+            document.execCommand("copy");
+
+
+        document.body.removeChild(
+            textarea
+        );
+
+
+        if (copied) {
+
+            showToast(
+                "Referral link copied!"
+            );
+
+        } else {
+
+            throw new Error(
+                "Copy command failed"
+            );
+
+        }
+
+
+    } catch (error) {
+
+        console.error(
+            "Referral copy failed:",
+            error
+        );
+
+
+        // ==========================
+        // FINAL FALLBACK
+        // ==========================
+
+        if (referralLinkInput) {
+
+            referralLinkInput.focus();
+
+            referralLinkInput.select();
+
+            referralLinkInput.setSelectionRange(
+                0,
+                referralLinkInput.value.length
+            );
+
+        }
+
+
+        showToast(
+            "Long press the link and select Copy."
+        );
+
+    }
+
+});
 
 // ======================================
 // SUPPORT BUTTON
