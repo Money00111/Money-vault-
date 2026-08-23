@@ -256,6 +256,65 @@ document.getElementById("copyReferralBtn");
 const notificationList =
 document.getElementById("notificationList");
 
+// ======================================
+// COPY REFERRAL LINK
+// ======================================
+
+copyReferral?.addEventListener("click", async () => {
+
+    if (!referralLink || !referralLink.value) {
+
+        showToast("Referral link is not ready yet.");
+
+        return;
+    }
+
+    try {
+
+        await navigator.clipboard.writeText(
+            referralLink.value
+        );
+
+        showToast("Referral link copied successfully!");
+
+    } catch (error) {
+
+        console.error(
+            "Copy referral link error:",
+            error
+        );
+
+        // Fallback for browsers that block clipboard API
+        referralLink.select();
+        referralLink.setSelectionRange(
+            0,
+            referralLink.value.length
+        );
+
+        try {
+
+            document.execCommand("copy");
+
+            showToast(
+                "Referral link copied successfully!"
+            );
+
+        } catch (err) {
+
+            console.error(
+                "Fallback copy failed:",
+                err
+            );
+
+            showToast(
+                "Failed to copy referral link."
+            );
+
+        }
+
+    }
+
+});
 
 // ======================================
 // LOAD TRANSACTIONS (FIXED)
