@@ -256,6 +256,7 @@ document.getElementById("copyReferralBtn");
 const notificationList =
 document.getElementById("notificationList");
 
+
 // ======================================
 // COPY REFERRAL LINK
 // ======================================
@@ -284,7 +285,6 @@ copyReferral?.addEventListener("click", async () => {
             error
         );
 
-        // Fallback for browsers that block clipboard API
         referralLink.select();
         referralLink.setSelectionRange(
             0,
@@ -315,7 +315,6 @@ copyReferral?.addEventListener("click", async () => {
     }
 
 });
-
 // ======================================
 // LOAD TRANSACTIONS (FIXED)
 // ======================================
