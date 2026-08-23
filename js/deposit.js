@@ -216,6 +216,84 @@ depositForm?.addEventListener("submit", async (e) => {
 
         };
 
+        // ======================================
+// CHECK DUPLICATE TRANSACTION ID
+// ======================================
+
+const enteredTransactionId =
+    transactionId.value.trim();
+
+if (!enteredTransactionId) {
+
+    alert("Please enter the Transaction ID.");
+
+    submitBtn.disabled = false;
+
+    submitBtn.innerHTML =
+        '<i class="fa-solid fa-paper-plane"></i> Submit Deposit Request';
+
+    return;
+}
+
+
+// Get all existing deposits
+
+const depositsSnapshot =
+    await get(ref(db, "depositRequests"));
+
+
+// Check whether this Transaction ID
+// has already been used
+
+let transactionIdExists = false;
+
+if (depositsSnapshot.exists()) {
+
+    depositsSnapshot.forEach((child) => {
+
+        const deposit = child.val();
+
+        const existingId =
+            String(
+                deposit.transactionId || ""
+            )
+            .trim()
+            .toLowerCase();
+
+        const newId =
+            enteredTransactionId
+                .toLowerCase();
+
+        if (existingId === newId) {
+
+            transactionIdExists = true;
+
+        }
+
+    });
+
+}
+
+
+// ======================================
+// DUPLICATE FOUND
+// ======================================
+
+if (transactionIdExists) {
+
+    alert(
+        "This Transaction ID has already been used. Please enter a new Transaction ID."
+    );
+
+    submitBtn.disabled = false;
+
+    submitBtn.innerHTML =
+        '<i class="fa-solid fa-paper-plane"></i> Submit Deposit Request';
+
+    return;
+
+}
+
         // Create new deposit record
 
         const depositRef = push(ref(db, "depositRequests"));
