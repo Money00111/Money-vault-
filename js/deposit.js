@@ -1,5 +1,8 @@
 // ======================================
-// DEPOSIT.JS PART 1
+// DEPOSIT.JS - COMPLETE FIXED VERSION
+// ======================================
+
+// ======================================
 // IMPORTS
 // ======================================
 
@@ -14,8 +17,12 @@ import {
     ref,
     push,
     set,
-    get
+    get,
+    query,
+    orderByChild,
+    equalTo
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
+
 
 // ======================================
 // ELEMENTS
@@ -49,11 +56,13 @@ const menuBtn = document.getElementById("menuBtn");
 
 const sidebar = document.getElementById("sidebar");
 
+
 // ======================================
 // CURRENT USER
 // ======================================
 
 let currentUser = null;
+
 
 // ======================================
 // AUTH CHECK
@@ -73,40 +82,48 @@ onAuthStateChanged(auth, async (user) => {
 
     loadingScreen.style.display = "none";
 
+    await loadDepositHistory();
+
 });
 
-       // ======================================
-// DEPOSIT.JS PART 2
-// SIDEBAR + COPY + LOGOUT
-// ======================================
 
-// Mobile Menu
+// ======================================
+// SIDEBAR
+// ======================================
 
 menuBtn?.addEventListener("click", () => {
 
-    sidebar.classList.toggle("active");
+    sidebar?.classList.toggle("active");
 
 });
+
 
 // ======================================
 // COPY PAYMENT NUMBERS
 // ======================================
 
 const mtnNumber = document.getElementById("mtnNumber");
+
 const airtelNumber = document.getElementById("airtelNumber");
 
 const copyMTN = document.getElementById("copyMTN");
+
 const copyAirtel = document.getElementById("copyAirtel");
+
 
 copyMTN?.addEventListener("click", async () => {
 
-    try{
+    try {
 
-        await navigator.clipboard.writeText(mtnNumber.textContent.trim());
+        await navigator.clipboard.writeText(
+            mtnNumber.textContent.trim()
+        );
 
         alert("MTN number copied successfully.");
 
-    }catch(error){
+    } catch (error) {
+
+        console.error(error);
 
         alert("Failed to copy MTN number.");
 
@@ -114,21 +131,27 @@ copyMTN?.addEventListener("click", async () => {
 
 });
 
+
 copyAirtel?.addEventListener("click", async () => {
 
-    try{
+    try {
 
-        await navigator.clipboard.writeText(airtelNumber.textContent.trim());
+        await navigator.clipboard.writeText(
+            airtelNumber.textContent.trim()
+        );
 
         alert("Airtel number copied successfully.");
 
-    }catch(error){
+    } catch (error) {
+
+        console.error(error);
 
         alert("Failed to copy Airtel number.");
 
     }
 
 });
+
 
 // ======================================
 // LOGOUT
@@ -138,23 +161,28 @@ logoutBtn?.addEventListener("click", async (e) => {
 
     e.preventDefault();
 
-    const ok = confirm("Are you sure you want to logout?");
+    const ok = confirm(
+        "Are you sure you want to logout?"
+    );
 
-    if(!ok) return;
+    if (!ok) return;
 
-    try{
+    try {
 
         await signOut(auth);
 
         window.location.href = "login.html";
 
-    }catch(error){
+    } catch (error) {
+
+        console.error(error);
 
         alert(error.message);
 
     }
 
 });
+
 
 // ======================================
 // DEFAULT PAYMENT DATE
@@ -164,18 +192,30 @@ const now = new Date();
 
 const offset = now.getTimezoneOffset();
 
-const local = new Date(now.getTime() - (offset * 60000));
+const local = new Date(
+    now.getTime() - (offset * 60000)
+);
 
-paymentDate.value = local.toISOString().slice(0,16);          
+if (paymentDate) {
+
+    paymentDate.value =
+        local.toISOString().slice(0, 16);
+
+}
+
 
 // ======================================
-// DEPOSIT.JS PART 3
 // SUBMIT DEPOSIT
 // ======================================
 
 depositForm?.addEventListener("submit", async (e) => {
 
     e.preventDefault();
+
+
+    // ======================================
+    // CHECK USER
+    // ======================================
 
     if (!currentUser) {
 
@@ -185,12 +225,126 @@ depositForm?.addEventListener("submit", async (e) => {
 
     }
 
+
+    // ======================================
+    // DISABLE BUTTON
+    // ======================================
+
     submitBtn.disabled = true;
 
     submitBtn.innerHTML =
         '<i class="fa-solid fa-spinner fa-spin"></i> Submitting...';
 
+
     try {
+
+
+        // ======================================
+        // GET TRANSACTION ID
+        // ======================================
+
+        const enteredTransactionId =
+            transactionId.value.trim();
+
+
+        if (!enteredTransactionId) {
+
+            alert(
+                "Please enter the Transaction ID."
+            );
+
+            return;
+
+        }
+
+
+        // ======================================
+        // GET USER'S OWN DEPOSITS ONLY
+        // ======================================
+        //
+        // IMPORTANT:
+        // We DO NOT read all depositRequests.
+        //
+        // This query only requests deposits
+        // belonging to currentUser.uid.
+        //
+        // ======================================
+
+        const userDepositsQuery = query(
+
+            ref(db, "depositRequests"),
+
+            orderByChild("uid"),
+
+            equalTo(currentUser.uid)
+
+        );
+
+
+        const depositsSnapshot =
+            await get(userDepositsQuery);
+
+
+        // ======================================
+        // CHECK DUPLICATE TRANSACTION ID
+        // ======================================
+
+        let transactionIdExists = false;
+
+
+        if (depositsSnapshot.exists()) {
+
+            depositsSnapshot.forEach((child) => {
+
+                const deposit = child.val();
+
+
+                const existingId =
+                    String(
+                        deposit.transactionId || ""
+                    )
+                    .trim()
+                    .toLowerCase();
+
+
+                const newId =
+                    enteredTransactionId
+                        .trim()
+                        .toLowerCase();
+
+
+                if (
+                    existingId &&
+                    existingId === newId
+                ) {
+
+                    transactionIdExists = true;
+
+                }
+
+            });
+
+        }
+
+
+        // ======================================
+        // DUPLICATE FOUND
+        // ======================================
+
+        if (transactionIdExists) {
+
+            alert(
+                "This Transaction ID has already been used. Please enter a new Transaction ID."
+            );
+
+            return;
+
+        }
+
+
+        // ======================================
+        // CREATE DEPOSIT DATA
+        // ======================================
 
         const depositData = {
 
@@ -200,15 +354,20 @@ depositForm?.addEventListener("submit", async (e) => {
 
             amount: Number(amount.value),
 
-            paymentMethod: paymentMethod.value,
+            paymentMethod:
+                paymentMethod.value,
 
-            senderPhone: senderPhone.value.trim(),
+            senderPhone:
+                senderPhone.value.trim(),
 
-            transactionId: transactionId.value.trim(),
+            transactionId:
+                enteredTransactionId,
 
-            paymentDate: paymentDate.value,
+            paymentDate:
+                paymentDate.value,
 
-            note: note.value.trim(),
+            note:
+                note.value.trim(),
 
             status: "pending",
 
@@ -216,105 +375,104 @@ depositForm?.addEventListener("submit", async (e) => {
 
         };
 
+
         // ======================================
-// CHECK DUPLICATE TRANSACTION ID
-// ======================================
+        // CREATE NEW DEPOSIT
+        // ======================================
 
-const enteredTransactionId =
-    transactionId.value.trim();
-
-if (!enteredTransactionId) {
-
-    alert("Please enter the Transaction ID.");
-
-    submitBtn.disabled = false;
-
-    submitBtn.innerHTML =
-        '<i class="fa-solid fa-paper-plane"></i> Submit Deposit Request';
-
-    return;
-}
+        const depositRef =
+            push(
+                ref(db, "depositRequests")
+            );
 
 
-// Get all existing deposits
-
-const depositsSnapshot =
-    await get(ref(db, "depositRequests"));
-
-
-// Check whether this Transaction ID
-// has already been used
-
-let transactionIdExists = false;
-
-if (depositsSnapshot.exists()) {
-
-    depositsSnapshot.forEach((child) => {
-
-        const deposit = child.val();
-
-        const existingId =
-            String(
-                deposit.transactionId || ""
-            )
-            .trim()
-            .toLowerCase();
-
-        const newId =
-            enteredTransactionId
-                .toLowerCase();
-
-        if (existingId === newId) {
-
-            transactionIdExists = true;
-
-        }
-
-    });
-
-}
+        await set(
+            depositRef,
+            depositData
+        );
 
 
-// ======================================
-// DUPLICATE FOUND
-// ======================================
-
-if (transactionIdExists) {
-
-    alert(
-        "This Transaction ID has already been used. Please enter a new Transaction ID."
-    );
-
-    submitBtn.disabled = false;
-
-    submitBtn.innerHTML =
-        '<i class="fa-solid fa-paper-plane"></i> Submit Deposit Request';
-
-    return;
-
-}
-
-        // Create new deposit record
-
-        const depositRef = push(ref(db, "depositRequests"));
-
-        await set(depositRef, depositData);
+        // ======================================
+        // REFRESH PAGE
+        // ======================================
 
         await refreshDepositPage();
 
-        depositStatus.textContent = "Pending Approval";
 
-        depositStatus.style.color = "#f59e0b";
+        // ======================================
+        // SUCCESS STATUS
+        // ======================================
 
-        alert("Deposit request submitted successfully.");
+        if (depositStatus) {
+
+            depositStatus.textContent =
+                "Pending Approval";
+
+            depositStatus.style.color =
+                "#f59e0b";
+
+        }
+
+
+        alert(
+            "Deposit request submitted successfully."
+        );
+
+
+        // ======================================
+        // RESET FORM
+        // ======================================
 
         depositForm.reset();
 
+
+        // Restore payment date
+        if (paymentDate) {
+
+            const resetNow = new Date();
+
+            const resetOffset =
+                resetNow.getTimezoneOffset();
+
+            const resetLocal =
+                new Date(
+                    resetNow.getTime() -
+                    (resetOffset * 60000)
+                );
+
+            paymentDate.value =
+                resetLocal
+                    .toISOString()
+                    .slice(0, 16);
+
+        }
+
+
     } catch (error) {
 
-        console.error(error);
+        console.error(
+            "DEPOSIT SUBMIT ERROR:",
+            error
+        );
 
-        alert(error.message);
+
+        if (
+            error?.code ===
+            "PERMISSION_DENIED"
+        ) {
+
+            alert(
+                "Permission denied. Please check your Firebase Database Rules."
+            );
+
+        } else {
+
+            alert(
+                error.message ||
+                "Failed to submit deposit request."
+            );
+
+        }
 
     } finally {
 
@@ -327,8 +485,8 @@ if (transactionIdExists) {
 
 });
 
+
 // ======================================
-// DEPOSIT.JS PART 4
 // LOAD DEPOSIT HISTORY
 // ======================================
 
@@ -336,119 +494,195 @@ async function loadDepositHistory() {
 
     if (!currentUser) return;
 
+
     try {
 
-        const depositsRef = ref(db, "depositRequests");
 
-        const snapshot = await get(depositsRef);
+        // ======================================
+        // GET CURRENT USER DEPOSITS ONLY
+        // ======================================
+
+        const userDepositsQuery = query(
+
+            ref(db, "depositRequests"),
+
+            orderByChild("uid"),
+
+            equalTo(currentUser.uid)
+
+        );
+
+
+        const snapshot =
+            await get(userDepositsQuery);
+
 
         historyList.innerHTML = "";
+
+
+        // ======================================
+        // NO DEPOSITS
+        // ======================================
 
         if (!snapshot.exists()) {
 
             historyList.innerHTML = `
+
                 <div class="empty-history">
 
                     <i class="fa-solid fa-wallet"></i>
 
                     <h3>No Deposit History</h3>
 
-                    <p>Your deposits will appear here.</p>
+                    <p>
+                        Your deposits will appear here.
+                    </p>
 
                 </div>
+
             `;
 
             return;
 
         }
 
+
         let found = false;
+
+
+        // ======================================
+        // DISPLAY USER'S DEPOSITS
+        // ======================================
 
         snapshot.forEach((child) => {
 
             const deposit = child.val();
 
-            if (deposit.uid !== currentUser.uid) return;
+
+            // Extra security check
+            if (
+                deposit.uid !==
+                currentUser.uid
+            ) {
+
+                return;
+
+            }
+
 
             found = true;
 
+
+            const safeAmount =
+                Number(deposit.amount || 0)
+                    .toLocaleString();
+
+
             historyList.innerHTML += `
 
-            <div class="history-card">
+                <div class="history-card">
 
-                <div class="history-info">
+                    <div class="history-info">
 
-                    <h3>${deposit.amount.toLocaleString()} RWF</h3>
+                        <h3>
+                            ${safeAmount} RWF
+                        </h3>
 
-                    <p><strong>Method:</strong> ${deposit.paymentMethod}</p>
+                        <p>
+                            <strong>Method:</strong>
+                            ${deposit.paymentMethod || "-"}
+                        </p>
 
-                    <p><strong>Phone:</strong> ${deposit.senderPhone}</p>
+                        <p>
+                            <strong>Phone:</strong>
+                            ${deposit.senderPhone || "-"}
+                        </p>
 
-                    <p><strong>Transaction ID:</strong> ${deposit.transactionId}</p>
+                        <p>
+                            <strong>Transaction ID:</strong>
+                            ${deposit.transactionId || "-"}
+                        </p>
 
-                    <p><strong>Date:</strong> ${deposit.paymentDate}</p>
+                        <p>
+                            <strong>Date:</strong>
+                            ${deposit.paymentDate || "-"}
+                        </p>
+
+                    </div>
+
+                    <span class="status ${deposit.status || "pending"}">
+
+                        ${formatStatus(deposit.status)}
+
+                    </span>
 
                 </div>
-
-                <span class="status ${deposit.status}">
-
-                    ${deposit.status}
-
-                </span>
-
-            </div>
 
             `;
 
         });
 
+
+        // ======================================
+        // NOTHING FOUND
+        // ======================================
+
         if (!found) {
 
             historyList.innerHTML = `
+
                 <div class="empty-history">
 
                     <i class="fa-solid fa-wallet"></i>
 
                     <h3>No Deposit History</h3>
 
-                    <p>You haven't submitted any deposit yet.</p>
+                    <p>
+                        You haven't submitted any deposit yet.
+                    </p>
 
                 </div>
+
             `;
 
         }
 
+
     } catch (error) {
 
-        console.error(error);
+        console.error(
+            "LOAD DEPOSIT HISTORY ERROR:",
+            error
+        );
+
+
+        if (
+            error?.code ===
+            "PERMISSION_DENIED"
+        ) {
+
+            historyList.innerHTML = `
+
+                <div class="empty-history">
+
+                    <i class="fa-solid fa-lock"></i>
+
+                    <h3>Permission Denied</h3>
+
+                    <p>
+                        Unable to load deposit history.
+                    </p>
+
+                </div>
+
+            `;
+
+        }
 
     }
 
 }
 
-// ======================================
-// DEPOSIT.JS PART 5
-// REFRESH HISTORY + STATUS
-// ======================================
-
-// Hamagara history nyuma yo kwinjira
-
-onAuthStateChanged(auth, async (user) => {
-
-    if (!user) {
-
-        window.location.href = "login.html";
-        return;
-
-    }
-
-    currentUser = user;
-
-    loadingScreen.style.display = "none";
-
-    await loadDepositHistory();
-
-});
 
 // ======================================
 // REFRESH AFTER SUBMIT
@@ -456,20 +690,21 @@ onAuthStateChanged(auth, async (user) => {
 
 async function refreshDepositPage() {
 
-    depositStatus.textContent = "Pending Approval";
-    depositStatus.style.color = "#f59e0b";
+    if (depositStatus) {
+
+        depositStatus.textContent =
+            "Pending Approval";
+
+        depositStatus.style.color =
+            "#f59e0b";
+
+    }
+
 
     await loadDepositHistory();
 
 }
 
-// ======================================
-// SUBMIT SUCCESS
-// Ongeraho iyi line nyuma ya:
-// await set(depositRef, depositData);
-// ======================================
-
-// await refreshDepositPage();
 
 // ======================================
 // FORMAT STATUS
@@ -477,22 +712,40 @@ async function refreshDepositPage() {
 
 function formatStatus(status) {
 
-    if (!status) return "Pending";
+    if (!status) {
 
-    switch (status.toLowerCase()) {
+        return "Pending";
+
+    }
+
+
+    switch (
+        String(status).toLowerCase()
+    ) {
 
         case "approved":
+
             return "Approved";
 
+
         case "rejected":
+
             return "Rejected";
 
+
+        case "pending":
+
+            return "Pending";
+
+
         default:
+
             return "Pending";
 
     }
 
 }
+
 
 // ======================================
 // FORMAT DATE
@@ -500,9 +753,14 @@ function formatStatus(status) {
 
 function formatDate(timestamp) {
 
-    if (!timestamp) return "-";
+    if (!timestamp) {
 
-    return new Date(timestamp).toLocaleString();
+        return "-";
+
+    }
+
+
+    return new Date(timestamp)
+        .toLocaleString();
 
 }
-
