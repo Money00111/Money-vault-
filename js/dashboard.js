@@ -811,6 +811,137 @@ window.addEventListener("error", (event) => {
 
 });
 
+// ======================================
+// COPY REFERRAL LINK
+// FINAL MOBILE FIX
+// ======================================
+
+window.copyReferralLink = async function () {
+
+    const input =
+        document.getElementById("referralLink");
+
+    if (!input) {
+
+        alert("Referral link field not found.");
+
+        return;
+    }
+
+    const link =
+        input.value.trim();
+
+    if (!link) {
+
+        alert("Referral link is empty.");
+
+        return;
+    }
+
+    console.log(
+        "COPYING REFERRAL LINK:",
+        link
+    );
+
+
+    // ==================================
+    // METHOD 1
+    // CLIPBOARD API
+    // ==================================
+
+    try {
+
+        await navigator.clipboard.writeText(link);
+
+        alert("Referral link copied successfully!");
+
+        return;
+
+    } catch (error) {
+
+        console.log(
+            "Clipboard API failed:",
+            error
+        );
+
+    }
+
+
+    // ==================================
+    // METHOD 2
+    // TEXTAREA FALLBACK
+    // ==================================
+
+    try {
+
+        const textarea =
+            document.createElement("textarea");
+
+        textarea.value = link;
+
+        textarea.style.position = "fixed";
+        textarea.style.left = "-9999px";
+        textarea.style.top = "0";
+
+        document.body.appendChild(
+            textarea
+        );
+
+        textarea.focus();
+
+        textarea.select();
+
+        textarea.setSelectionRange(
+            0,
+            textarea.value.length
+        );
+
+        const success =
+            document.execCommand("copy");
+
+        document.body.removeChild(
+            textarea
+        );
+
+
+        if (success) {
+
+            alert(
+                "Referral link copied successfully!"
+            );
+
+            return;
+
+        }
+
+    } catch (error) {
+
+        console.error(
+            "Fallback copy error:",
+            error
+        );
+
+    }
+
+
+    // ==================================
+    // FINAL MOBILE OPTION
+    // ==================================
+
+    input.focus();
+
+    input.select();
+
+    input.setSelectionRange(
+        0,
+        input.value.length
+    );
+
+    alert(
+        "Link selected. Long press it and choose Copy."
+    );
+
+};
 
 // ======================================
 // READY
