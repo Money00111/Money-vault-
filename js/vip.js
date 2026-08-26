@@ -284,48 +284,61 @@ function loadVipPackages() {
         // LOOP VIP PLANS
         // ==================================
 
-        snapshot.forEach((child, index) => {
+        const plans = [];
+
+snapshot.forEach((child) => {
+
+    plans.push({
+        key: child.key,
+        data: child.val()
+    });
+
+});
 
 
-            const vip =
-                child.val();
+// ======================================
+// SORT VIP PLANS IN CORRECT ORDER
+// VIP 1 → VIP 2 → VIP 3 → ... → VIP 11
+// ======================================
+
+plans.sort((a, b) => {
+
+    const nameA =
+        String(a.data.name || "").trim();
+
+    const nameB =
+        String(b.data.name || "").trim();
 
 
-            console.log(
-                "KEY:",
-                child.key
-            );
+    const numberA =
+        parseInt(
+            nameA.match(/\d+/)?.[0] || "999",
+            10
+        );
+
+    const numberB =
+        parseInt(
+            nameB.match(/\d+/)?.[0] || "999",
+            10
+        );
 
 
-            console.log(
-                "DATA:",
-                child.val()
-            );
+    return numberA - numberB;
+
+});
 
 
-            console.log(
-                "PRICE:",
-                vip.price
-            );
+// ======================================
+// DISPLAY VIP PLANS
+// ======================================
 
+plans.forEach((item, index) => {
 
-            console.log(
-                "DAILY:",
-                vip.dailyIncome
-            );
+    const child = {
+        key: item.key
+    };
 
-
-            console.log(
-                "DURATION:",
-                vip.duration
-            );
-
-
-            console.log(
-                "TOTAL PROFIT:",
-                vip.totalProfit
-            );
-
+    const vip = item.data;
 
             // ==================================
             // VIP DATA
