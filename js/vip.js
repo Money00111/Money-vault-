@@ -148,10 +148,9 @@ console.log("VIP PART 1 READY");
 
 
 
-
 // ======================================
 // VIP.JS - PART 2
-// LOAD VIP PLANS + VIP COLORS
+// LOAD VIP PLANS + VIP COLORS + SORT
 // ======================================
 
 
@@ -164,10 +163,6 @@ function getVipColorClass(name, index) {
     const value =
         String(name || "").toLowerCase().trim();
 
-
-    // ==================================
-    // VIP COLORS BY NAME
-    // ==================================
 
     if (value.includes("bronze"))
         return "bronze";
@@ -200,12 +195,7 @@ function getVipColorClass(name, index) {
         return "ultimate";
 
 
-    // ==================================
-    // FALLBACK BY ORDER
-    // ==================================
-
     const colors = [
-
         "bronze",
         "starter",
         "silver",
@@ -216,11 +206,62 @@ function getVipColorClass(name, index) {
         "elite",
         "royal",
         "ultimate"
-
     ];
 
 
     return colors[index] || "bronze";
+
+}
+
+
+
+// ======================================
+// GET VIP NUMBER
+// ======================================
+
+function getVipNumber(vip, key) {
+
+    // First check VIP name
+    const name =
+        String(vip?.name || "").trim();
+
+    let match =
+        name.match(/vip\s*[-_#:]?\s*(\d+)/i);
+
+    if (match) {
+
+        return Number(match[1]);
+
+    }
+
+
+    // Check Firebase key
+    const firebaseKey =
+        String(key || "").trim();
+
+    match =
+        firebaseKey.match(/vip\s*[-_#:]?\s*(\d+)/i);
+
+    if (match) {
+
+        return Number(match[1]);
+
+    }
+
+
+    // Check number anywhere in name
+    match =
+        name.match(/\d+/);
+
+    if (match) {
+
+        return Number(match[0]);
+
+    }
+
+
+    // Unknown VIP goes last
+    return 999999;
 
 }
 
@@ -237,7 +278,6 @@ function loadVipPackages() {
 
 
     onValue(vipRef, (snapshot) => {
-
 
         if (!vipGrid) {
 
@@ -274,85 +314,74 @@ function loadVipPackages() {
         }
 
 
-        console.log(
-            "SNAPSHOT:",
-            snapshot.val()
-        );
-
-
         // ==================================
-        // LOOP VIP PLANS
+        // GET ALL PLANS
         // ==================================
 
         const plans = [];
 
-snapshot.forEach((child) => {
 
-    plans.push({
-        key: child.key,
-        data: child.val()
-    });
+        snapshot.forEach((child) => {
 
-});
+            plans.push({
 
+                key:
+                    child.key,
 
-// ======================================
-// SORT VIP PLANS IN CORRECT ORDER
-// VIP 1 → VIP 2 → VIP 3 → ... → VIP 11
-// ======================================
+                data:
+                    child.val()
 
-plans.sort((a, b) => {
+            });
 
-    const nameA =
-        String(a.data.name || "").trim().toLowerCase();
-
-    const nameB =
-        String(b.data.name || "").trim().toLowerCase();
+        });
 
 
-    // ==================================
-    // GET VIP NUMBER
-    // ==================================
 
-    const matchA =
-        nameA.match(/vip\s*(\d+)/i);
+        // ==================================
+        // SORT VIP 1 → VIP 11
+        // ==================================
 
-    const matchB =
-        nameB.match(/vip\s*(\d+)/i);
+        plans.sort((a, b) => {
 
-
-    const numberA =
-        matchA
-            ? Number(matchA[1])
-            : 999999;
+            const numberA =
+                getVipNumber(
+                    a.data,
+                    a.key
+                );
 
 
-    const numberB =
-        matchB
-            ? Number(matchB[1])
-            : 999999;
+            const numberB =
+                getVipNumber(
+                    b.data,
+                    b.key
+                );
 
 
-    // ==================================
-    // SORT NUMERICALLY
-    // ==================================
+            console.log(
+                "SORT:",
+                a.data?.name,
+                numberA,
+                "→",
+                b.data?.name,
+                numberB
+            );
 
-    return numberA - numberB;
 
-});
-        
-        
-// ======================================
-// DISPLAY VIP PLANS
-// ======================================
+            return numberA - numberB;
 
-plans.forEach((item, index) => {
+        });
 
-    const child = {
-        key: item.key
-    };
 
-    const vip = item.data;
+
+        // ==================================
+        // DISPLAY PLANS
+        // ==================================
+
+        plans.forEach((item, index) => {
+
+            const vip =
+                item.data;
+
 
             // ==================================
             // VIP DATA
@@ -392,7 +421,7 @@ plans.forEach((item, index) => {
 
 
             // ==================================
-            // GET COLOR
+            // COLOR
             // ==================================
 
             const colorClass =
@@ -400,6 +429,7 @@ plans.forEach((item, index) => {
                     name,
                     index
                 );
+
 
 
             // ==================================
@@ -415,8 +445,9 @@ plans.forEach((item, index) => {
                 colorClass;
 
 
+
             // ==================================
-            // CARD HTML
+            // CARD
             // ==================================
 
             card.innerHTML = `
@@ -432,12 +463,16 @@ plans.forEach((item, index) => {
 
 
                 <h2>
+
                     ${name}
+
                 </h2>
 
 
                 <h1>
+
                     ${price.toLocaleString()} RWF
+
                 </h1>
 
 
@@ -446,7 +481,9 @@ plans.forEach((item, index) => {
                     Daily Income:
 
                     <b>
+
                         ${dailyIncome.toLocaleString()} RWF
+
                     </b>
 
                 </p>
@@ -457,7 +494,9 @@ plans.forEach((item, index) => {
                     Duration:
 
                     <b>
+
                         ${duration} Days
+
                     </b>
 
                 </p>
@@ -468,7 +507,9 @@ plans.forEach((item, index) => {
                     Total Profit:
 
                     <b>
+
                         ${totalProfit.toLocaleString()} RWF
+
                     </b>
 
                 </p>
@@ -499,14 +540,10 @@ plans.forEach((item, index) => {
             `;
 
 
-            // ==================================
-            // ADD CARD TO GRID
-            // ==================================
-
             vipGrid.appendChild(card);
 
-
         });
+
 
 
         // ==================================
@@ -525,12 +562,10 @@ plans.forEach((item, index) => {
 
     }, (error) => {
 
-
         console.error(
             "VIP LOAD ERROR:",
             error
         );
-
 
     });
 
@@ -538,9 +573,8 @@ plans.forEach((item, index) => {
 
 
 console.log(
-    "VIP PART 2 READY - VIP COLORS ENABLED"
+    "VIP PART 2 READY - NUMERIC SORT ENABLED"
 );
-            
 
 // ======================================
 // VIP.JS - PART 3
