@@ -153,6 +153,41 @@ console.log("VIP PART 1 READY");
 // LOAD VIP PLANS FROM FIREBASE
 // ======================================
 
+
+
+function getVipColorClass(name, index) {
+
+    const value = String(name || "").toLowerCase();
+
+    // VIP names
+    if (value.includes("bronze")) return "bronze";
+    if (value.includes("starter")) return "starter";
+    if (value.includes("silver")) return "silver";
+    if (value.includes("gold")) return "gold";
+    if (value.includes("platinum")) return "platinum";
+    if (value.includes("diamond")) return "diamond";
+    if (value.includes("premium")) return "premium";
+    if (value.includes("elite")) return "elite";
+    if (value.includes("royal")) return "royal";
+    if (value.includes("ultimate")) return "ultimate";
+
+    // If names are different, use order
+    const colors = [
+        "bronze",
+        "starter",
+        "silver",
+        "gold",
+        "platinum",
+        "diamond",
+        "premium",
+        "elite",
+        "royal",
+        "ultimate"
+    ];
+
+    return colors[index] || "bronze";
+        }
+
 function loadVipPackages() {
 
     const vipRef = ref(db, "vipPlans");
@@ -180,8 +215,7 @@ function loadVipPackages() {
         }
         console.log("SNAPSHOT:", snapshot.val());
 
-        snapshot.forEach((child) => {
-
+        snapshot.forEach((child, index) => {
             const vip = child.val()
 
 console.log("KEY:", child.key);
@@ -203,8 +237,11 @@ console.log(vip.totalProfit);
 
             const card = document.createElement("div");
 
-            card.className = "vip-card";
+const colorClass =
+    getVipColorClass(name, index);
 
+card.className =
+    "vip-card " + colorClass;
             card.innerHTML = `
                 <div class="vip-badge">
                     ${name}
@@ -259,6 +296,8 @@ console.log(vip.totalProfit);
     });
 
 }
+
+
 // ======================================
 // VIP.JS - PART 3
 // REGISTER BUY VIP BUTTONS
