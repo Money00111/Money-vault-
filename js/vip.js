@@ -148,31 +148,64 @@ console.log("VIP PART 1 READY");
 
 
 
- // ======================================
+
+// ======================================
 // VIP.JS - PART 2
-// LOAD VIP PLANS FROM FIREBASE
+// LOAD VIP PLANS + VIP COLORS
 // ======================================
 
 
+// ======================================
+// GET VIP COLOR CLASS
+// ======================================
 
 function getVipColorClass(name, index) {
 
-    const value = String(name || "").toLowerCase();
+    const value =
+        String(name || "").toLowerCase().trim();
 
-    // VIP names
-    if (value.includes("bronze")) return "bronze";
-    if (value.includes("starter")) return "starter";
-    if (value.includes("silver")) return "silver";
-    if (value.includes("gold")) return "gold";
-    if (value.includes("platinum")) return "platinum";
-    if (value.includes("diamond")) return "diamond";
-    if (value.includes("premium")) return "premium";
-    if (value.includes("elite")) return "elite";
-    if (value.includes("royal")) return "royal";
-    if (value.includes("ultimate")) return "ultimate";
 
-    // If names are different, use order
+    // ==================================
+    // VIP COLORS BY NAME
+    // ==================================
+
+    if (value.includes("bronze"))
+        return "bronze";
+
+    if (value.includes("starter"))
+        return "starter";
+
+    if (value.includes("silver"))
+        return "silver";
+
+    if (value.includes("gold"))
+        return "gold";
+
+    if (value.includes("platinum"))
+        return "platinum";
+
+    if (value.includes("diamond"))
+        return "diamond";
+
+    if (value.includes("premium"))
+        return "premium";
+
+    if (value.includes("elite"))
+        return "elite";
+
+    if (value.includes("royal"))
+        return "royal";
+
+    if (value.includes("ultimate"))
+        return "ultimate";
+
+
+    // ==================================
+    // FALLBACK BY ORDER
+    // ==================================
+
     const colors = [
+
         "bronze",
         "starter",
         "silver",
@@ -183,120 +216,304 @@ function getVipColorClass(name, index) {
         "elite",
         "royal",
         "ultimate"
+
     ];
 
+
     return colors[index] || "bronze";
-        }
+
+}
+
+
+
+// ======================================
+// LOAD VIP PLANS FROM FIREBASE
+// ======================================
 
 function loadVipPackages() {
 
-    const vipRef = ref(db, "vipPlans");
+    const vipRef =
+        ref(db, "vipPlans");
+
 
     onValue(vipRef, (snapshot) => {
 
+
         if (!vipGrid) {
-            console.log("vipGrid not found");
+
+            console.log(
+                "vipGrid not found"
+            );
+
             return;
+
         }
 
+
         vipGrid.innerHTML = "";
+
+
+        // ==================================
+        // NO VIP PLANS
+        // ==================================
 
         if (!snapshot.exists()) {
 
             vipGrid.innerHTML = `
+
                 <div class="emptyVip">
+
                     No VIP Plans Available
+
                 </div>
+
             `;
 
             return;
 
-            
         }
-        console.log("SNAPSHOT:", snapshot.val());
+
+
+        console.log(
+            "SNAPSHOT:",
+            snapshot.val()
+        );
+
+
+        // ==================================
+        // LOOP VIP PLANS
+        // ==================================
 
         snapshot.forEach((child, index) => {
-            const vip = child.val()
 
-console.log("KEY:", child.key);
-console.log("DATA:", child.val());
-console.log(vip.price);
-console.log(vip.dailyIncome);
-console.log(vip.duration);
-console.log(vip.totalProfit);
 
-            const name = vip.name || "VIP Plan";
-            const price = Number(vip.price ?? 0);
-            const dailyIncome = Number(vip.dailyIncome ?? 0);
-            const duration = Number(vip.duration ?? 0);
+            const vip =
+                child.val();
+
+
+            console.log(
+                "KEY:",
+                child.key
+            );
+
+
+            console.log(
+                "DATA:",
+                child.val()
+            );
+
+
+            console.log(
+                "PRICE:",
+                vip.price
+            );
+
+
+            console.log(
+                "DAILY:",
+                vip.dailyIncome
+            );
+
+
+            console.log(
+                "DURATION:",
+                vip.duration
+            );
+
+
+            console.log(
+                "TOTAL PROFIT:",
+                vip.totalProfit
+            );
+
+
+            // ==================================
+            // VIP DATA
+            // ==================================
+
+            const name =
+                vip.name || "VIP Plan";
+
+
+            const price =
+                Number(
+                    vip.price ?? 0
+                );
+
+
+            const dailyIncome =
+                Number(
+                    vip.dailyIncome ?? 0
+                );
+
+
+            const duration =
+                Number(
+                    vip.duration ?? 0
+                );
+
 
             const totalProfit =
                 vip.totalProfit != null
-                ? Number(vip.totalProfit)
+
+                ? Number(
+                    vip.totalProfit
+                )
+
                 : dailyIncome * duration;
 
-            const card = document.createElement("div");
 
-const colorClass =
-    getVipColorClass(name, index);
 
-card.className =
-    "vip-card " + colorClass;
+            // ==================================
+            // GET COLOR
+            // ==================================
+
+            const colorClass =
+                getVipColorClass(
+                    name,
+                    index
+                );
+
+
+            // ==================================
+            // CREATE CARD
+            // ==================================
+
+            const card =
+                document.createElement("div");
+
+
+            card.className =
+                "vip-card " +
+                colorClass;
+
+
+            // ==================================
+            // CARD HTML
+            // ==================================
+
             card.innerHTML = `
+
                 <div class="vip-badge">
+
                     ${name}
+
                 </div>
+
 
                 <i class="fas fa-gem vip-icon"></i>
 
-                <h2>${name}</h2>
 
-                <h1>${price.toLocaleString()} RWF</h1>
+                <h2>
+                    ${name}
+                </h2>
+
+
+                <h1>
+                    ${price.toLocaleString()} RWF
+                </h1>
+
 
                 <p>
+
                     Daily Income:
-                    <b>${dailyIncome.toLocaleString()} RWF</b>
+
+                    <b>
+                        ${dailyIncome.toLocaleString()} RWF
+                    </b>
+
                 </p>
 
+
                 <p>
+
                     Duration:
-                    <b>${duration} Days</b>
+
+                    <b>
+                        ${duration} Days
+                    </b>
+
                 </p>
 
+
                 <p>
+
                     Total Profit:
-                    <b>${totalProfit.toLocaleString()} RWF</b>
+
+                    <b>
+                        ${totalProfit.toLocaleString()} RWF
+                    </b>
+
                 </p>
+
 
                 <button
+
                     class="buyVipBtn"
+
                     data-vip="${name}"
+
                     data-price="${price}"
+
                     data-daily="${dailyIncome}"
+
                     data-profit="${totalProfit}"
-                    data-days="${duration}">
+
+                    data-days="${duration}"
+
+                >
 
                     <i class="fas fa-cart-shopping"></i>
+
                     Buy Now
 
                 </button>
+
             `;
+
+
+            // ==================================
+            // ADD CARD TO GRID
+            // ==================================
 
             vipGrid.appendChild(card);
 
+
         });
 
+
+        // ==================================
+        // REGISTER BUTTONS
+        // ==================================
+
         registerVipButtons();
+
+
+        // ==================================
+        // UPDATE BUTTONS
+        // ==================================
+
         updateVipButtons();
+
 
     }, (error) => {
 
-        console.error("VIP LOAD ERROR:", error);
+
+        console.error(
+            "VIP LOAD ERROR:",
+            error
+        );
+
 
     });
 
 }
 
+
+console.log(
+    "VIP PART 2 READY - VIP COLORS ENABLED"
+);
+            
 
 // ======================================
 // VIP.JS - PART 3
