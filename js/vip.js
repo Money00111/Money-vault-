@@ -304,30 +304,44 @@ snapshot.forEach((child) => {
 plans.sort((a, b) => {
 
     const nameA =
-        String(a.data.name || "").trim();
+        String(a.data.name || "").trim().toLowerCase();
 
     const nameB =
-        String(b.data.name || "").trim();
+        String(b.data.name || "").trim().toLowerCase();
+
+
+    // ==================================
+    // GET VIP NUMBER
+    // ==================================
+
+    const matchA =
+        nameA.match(/vip\s*(\d+)/i);
+
+    const matchB =
+        nameB.match(/vip\s*(\d+)/i);
 
 
     const numberA =
-        parseInt(
-            nameA.match(/\d+/)?.[0] || "999",
-            10
-        );
+        matchA
+            ? Number(matchA[1])
+            : 999999;
+
 
     const numberB =
-        parseInt(
-            nameB.match(/\d+/)?.[0] || "999",
-            10
-        );
+        matchB
+            ? Number(matchB[1])
+            : 999999;
 
+
+    // ==================================
+    // SORT NUMERICALLY
+    // ==================================
 
     return numberA - numberB;
 
 });
-
-
+        
+        
 // ======================================
 // DISPLAY VIP PLANS
 // ======================================
