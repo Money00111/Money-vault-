@@ -1,9 +1,10 @@
 /* =========================================
    MONEY VAULT
-   VIP.CSS - CLEAN VERSION
+   VIP.CSS - PREMIUM VERSION
 ========================================= */
 
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
+
 
 /* =========================================
    GLOBAL
@@ -16,16 +17,43 @@
     font-family:'Poppins',sans-serif;
 }
 
+html{
+    scroll-behavior:smooth;
+}
+
 body{
-    background:#0f172a;
+    background:
+        radial-gradient(
+            circle at top right,
+            rgba(59,130,246,.08),
+            transparent 35%
+        ),
+        radial-gradient(
+            circle at bottom left,
+            rgba(124,58,237,.08),
+            transparent 35%
+        ),
+        #0f172a;
+
     color:#fff;
+
     display:flex;
+
     min-height:100vh;
+
     overflow-x:hidden;
 }
 
 button{
     font-family:'Poppins',sans-serif;
+}
+
+a{
+    -webkit-tap-highlight-color:transparent;
+}
+
+button{
+    -webkit-tap-highlight-color:transparent;
 }
 
 
@@ -35,28 +63,55 @@ button{
 
 .sidebar{
     position:fixed;
+
     left:0;
     top:0;
+
     width:260px;
     height:100vh;
-    background:#111827;
+
+    background:
+        linear-gradient(
+            180deg,
+            #111827,
+            #0b1220
+        );
+
     padding:25px;
+
     border-right:1px solid rgba(255,255,255,.08);
+
     z-index:1000;
+
+    box-shadow:
+        10px 0 35px rgba(0,0,0,.15);
 }
 
 .logo{
     display:flex;
+
     align-items:center;
+
     gap:12px;
+
     margin-bottom:40px;
+
     font-size:22px;
-    font-weight:700;
+
+    font-weight:800;
+
     color:#FFD700;
+
+    letter-spacing:.3px;
 }
 
 .logo i{
     font-size:28px;
+
+    filter:
+        drop-shadow(
+            0 0 8px rgba(255,215,0,.35)
+        );
 }
 
 .sidebar ul{
@@ -64,30 +119,62 @@ button{
 }
 
 .sidebar ul li{
-    margin-bottom:12px;
+    margin-bottom:10px;
 }
 
 .sidebar ul li a{
     display:flex;
+
     align-items:center;
+
     gap:15px;
-    padding:15px;
-    border-radius:12px;
+
+    padding:14px 15px;
+
+    border-radius:13px;
+
     text-decoration:none;
+
     color:#cbd5e1;
-    transition:.3s;
-    font-size:16px;
+
+    transition:
+        background .25s ease,
+        color .25s ease,
+        transform .25s ease;
+
+    font-size:15px;
+
+    font-weight:500;
 }
 
-.sidebar ul li a:hover,
-.sidebar ul li a.active{
-    background:linear-gradient(135deg,#2563eb,#7c3aed);
+.sidebar ul li a:hover{
+    background:rgba(255,255,255,.06);
+
     color:#fff;
+
+    transform:translateX(4px);
+}
+
+.sidebar ul li a.active{
+    background:
+        linear-gradient(
+            135deg,
+            #2563eb,
+            #7c3aed
+        );
+
+    color:#fff;
+
+    box-shadow:
+        0 8px 25px rgba(37,99,235,.25);
 }
 
 .sidebar ul li a i{
     width:24px;
+
     text-align:center;
+
+    font-size:17px;
 }
 
 
@@ -97,8 +184,12 @@ button{
 
 .main{
     margin-left:260px;
+
     width:calc(100% - 260px);
+
     padding:30px;
+
+    min-height:100vh;
 }
 
 
@@ -108,39 +199,77 @@ button{
 
 .topbar{
     display:flex;
+
     justify-content:space-between;
+
     align-items:center;
+
+    gap:20px;
+
     margin-bottom:30px;
 }
 
 #menuBtn{
     display:none;
-    background:#2563eb;
+
+    background:
+        linear-gradient(
+            135deg,
+            #2563eb,
+            #7c3aed
+        );
+
     border:none;
+
     color:#fff;
+
     padding:12px 15px;
-    border-radius:10px;
+
+    border-radius:11px;
+
     font-size:20px;
+
     cursor:pointer;
+
+    box-shadow:
+        0 8px 20px rgba(37,99,235,.25);
 }
 
 .balance-box{
-    background:linear-gradient(135deg,#2563eb,#7c3aed);
-    padding:18px 25px;
-    border-radius:16px;
+    background:
+        linear-gradient(
+            135deg,
+            #2563eb,
+            #7c3aed
+        );
+
+    padding:17px 25px;
+
+    border-radius:17px;
+
     text-align:right;
-    box-shadow:0 10px 30px rgba(0,0,0,.35);
+
+    box-shadow:
+        0 10px 30px rgba(0,0,0,.35),
+        0 0 25px rgba(99,102,241,.12);
+
+    border:1px solid rgba(255,255,255,.1);
 }
 
 .balance-box p{
-    font-size:14px;
-    opacity:.9;
+    font-size:13px;
+
+    opacity:.85;
 }
 
 .balance-box h2{
-    margin-top:6px;
-    font-size:28px;
-    font-weight:700;
+    margin-top:5px;
+
+    font-size:27px;
+
+    font-weight:800;
+
+    letter-spacing:.3px;
 }
 
 
@@ -149,36 +278,153 @@ button{
 ========================================= */
 
 .vip-hero{
-    padding:25px;
-    border-radius:18px;
-    background:linear-gradient(
-        135deg,
-        rgba(37,99,235,.18),
-        rgba(124,58,237,.18)
-    );
-    border:1px solid rgba(255,255,255,.08);
+    position:relative;
+
+    display:flex;
+
+    justify-content:space-between;
+
+    align-items:center;
+
+    gap:30px;
+
+    padding:30px;
+
+    border-radius:22px;
+
+    overflow:hidden;
+
+    background:
+        linear-gradient(
+            135deg,
+            rgba(37,99,235,.18),
+            rgba(124,58,237,.18)
+        );
+
+    border:1px solid rgba(255,255,255,.09);
+
+    box-shadow:
+        0 20px 50px rgba(0,0,0,.2);
+}
+
+.vip-hero::before{
+    content:"";
+
+    position:absolute;
+
+    width:300px;
+    height:300px;
+
+    top:-180px;
+    right:-80px;
+
+    background:
+        rgba(99,102,241,.15);
+
+    border-radius:50%;
+
+    filter:blur(10px);
+
+    pointer-events:none;
+}
+
+.vip-hero::after{
+    content:"";
+
+    position:absolute;
+
+    width:250px;
+    height:250px;
+
+    bottom:-170px;
+    left:-100px;
+
+    background:
+        rgba(37,99,235,.12);
+
+    border-radius:50%;
+
+    filter:blur(10px);
+
+    pointer-events:none;
+}
+
+.hero-left{
+    position:relative;
+
+    z-index:2;
 }
 
 .hero-left h1{
-    font-size:28px;
+    font-size:30px;
+
+    font-weight:800;
+
+    margin-bottom:8px;
+}
+
+.hero-left p{
+    color:#cbd5e1;
+
+    line-height:1.7;
+
+    max-width:700px;
 }
 
 .hero-right{
+    position:relative;
+
+    z-index:2;
+
     font-size:80px;
+
+    filter:
+        drop-shadow(
+            0 0 20px rgba(255,215,0,.25)
+        );
+}
+
+.hero-info{
+    position:relative;
+
+    z-index:2;
+
+    display:flex;
+
+    gap:15px;
+
+    flex-wrap:wrap;
+
+    margin-top:22px;
 }
 
 .info-box{
     min-width:130px;
-    padding:15px;
+
+    padding:15px 18px;
+
+    border-radius:14px;
+
+    background:
+        rgba(255,255,255,.06);
+
+    border:1px solid rgba(255,255,255,.08);
+
+    backdrop-filter:blur(8px);
 }
 
 .info-box h3{
     font-size:20px;
+
+    font-weight:800;
+
+    margin-bottom:3px;
 }
 
 .info-box p{
-    font-size:14px;
-    color:#e5e7eb;
+    font-size:13px;
+
+    color:#cbd5e1;
 }
 
 
@@ -188,11 +434,15 @@ button{
 
 .vip-grid{
     display:grid;
-    grid-template-columns:repeat(
-        auto-fit,
-        minmax(260px,1fr)
-    );
+
+    grid-template-columns:
+        repeat(
+            auto-fit,
+            minmax(260px,1fr)
+        );
+
     gap:22px;
+
     margin-top:30px;
 }
 
@@ -203,9 +453,13 @@ button{
 
 .vip-card{
     position:relative;
+
     padding:25px;
+
     border-radius:22px;
+
     overflow:hidden;
+
     border:2px solid rgba(255,255,255,.12);
 
     transition:
@@ -215,23 +469,36 @@ button{
 
     box-shadow:
         0 10px 30px rgba(0,0,0,.35);
+
+    min-height:430px;
+
+    display:flex;
+
+    flex-direction:column;
 }
 
 .vip-card:hover{
-    transform:translateY(-10px) scale(1.015);
+    transform:
+        translateY(-10px)
+        scale(1.015);
 }
 
 .vip-card::before{
     content:"";
+
     position:absolute;
+
     width:180px;
     height:180px;
+
     top:-90px;
     left:-90px;
 
-    background:rgba(255,255,255,.12);
+    background:
+        rgba(255,255,255,.12);
 
     border-radius:50%;
+
     filter:blur(5px);
 
     pointer-events:none;
@@ -239,15 +506,20 @@ button{
 
 .vip-card::after{
     content:"";
+
     position:absolute;
+
     width:220px;
     height:220px;
+
     right:-120px;
     bottom:-120px;
 
-    background:rgba(255,255,255,.08);
+    background:
+        rgba(255,255,255,.08);
 
     border-radius:50%;
+
     filter:blur(10px);
 
     pointer-events:none;
@@ -260,6 +532,7 @@ button{
 
 .vip-badge{
     position:absolute;
+
     top:18px;
     right:-48px;
 
@@ -270,6 +543,7 @@ button{
     padding:8px;
 
     font-size:12px;
+
     font-weight:800;
 
     transform:rotate(45deg);
@@ -277,6 +551,8 @@ button{
     color:#fff;
 
     z-index:5;
+
+    letter-spacing:.4px;
 }
 
 
@@ -286,6 +562,7 @@ button{
 
 .vip-icon{
     position:relative;
+
     z-index:2;
 
     display:block;
@@ -309,6 +586,7 @@ button{
 
 .vip-card h2{
     position:relative;
+
     z-index:2;
 
     text-align:center;
@@ -327,6 +605,7 @@ button{
 
 .vip-card h1{
     position:relative;
+
     z-index:2;
 
     text-align:center;
@@ -345,9 +624,12 @@ button{
 
 .vip-card ul{
     position:relative;
+
     z-index:2;
 
     list-style:none;
+
+    flex:1;
 }
 
 .vip-card ul li{
@@ -357,6 +639,8 @@ button{
 
     border-bottom:
         1px solid rgba(255,255,255,.12);
+
+    color:#f8fafc;
 }
 
 .vip-card ul li:last-child{
@@ -370,17 +654,18 @@ button{
 
 .buyVipBtn{
     position:relative;
+
     z-index:10;
 
     width:100%;
 
     margin-top:18px;
 
-    padding:13px;
+    padding:14px;
 
     border:none;
 
-    border-radius:12px;
+    border-radius:13px;
 
     font-size:15px;
 
@@ -388,7 +673,12 @@ button{
 
     cursor:pointer;
 
-    transition:.25s;
+    transition:
+        transform .25s ease,
+        box-shadow .25s ease,
+        background .25s ease;
+
+    min-height:48px;
 }
 
 .buyVipBtn:hover{
@@ -430,11 +720,15 @@ button{
 
 .bronze .buyVipBtn{
     background:#cd7f32;
+
     color:#fff;
 }
 
 .bronze .buyVipBtn:hover{
     background:#b56b24;
+
+    box-shadow:
+        0 8px 20px rgba(205,127,50,.3);
 }
 
 
@@ -468,11 +762,15 @@ button{
 
 .starter .buyVipBtn{
     background:#3b82f6;
+
     color:#fff;
 }
 
 .starter .buyVipBtn:hover{
     background:#1d4ed8;
+
+    box-shadow:
+        0 8px 20px rgba(59,130,246,.35);
 }
 
 
@@ -498,6 +796,7 @@ button{
 
 .silver .vip-badge{
     background:#c0c0c0;
+
     color:#111;
 }
 
@@ -507,11 +806,15 @@ button{
 
 .silver .buyVipBtn{
     background:#e5e7eb;
+
     color:#111827;
 }
 
 .silver .buyVipBtn:hover{
     background:#fff;
+
+    box-shadow:
+        0 8px 20px rgba(255,255,255,.2);
 }
 
 
@@ -537,6 +840,7 @@ button{
 
 .gold .vip-badge{
     background:#ffd700;
+
     color:#111;
 }
 
@@ -546,11 +850,15 @@ button{
 
 .gold .buyVipBtn{
     background:#ffd700;
+
     color:#111;
 }
 
 .gold .buyVipBtn:hover{
     background:#ffc107;
+
+    box-shadow:
+        0 8px 25px rgba(255,215,0,.35);
 }
 
 
@@ -576,6 +884,7 @@ button{
 
 .platinum .vip-badge{
     background:#e2e8f0;
+
     color:#111827;
 }
 
@@ -585,11 +894,15 @@ button{
 
 .platinum .buyVipBtn{
     background:#e2e8f0;
+
     color:#111827;
 }
 
 .platinum .buyVipBtn:hover{
     background:#fff;
+
+    box-shadow:
+        0 8px 22px rgba(255,255,255,.2);
 }
 
 
@@ -615,6 +928,7 @@ button{
 
 .diamond .vip-badge{
     background:#38bdf8;
+
     color:#082f49;
 }
 
@@ -624,11 +938,15 @@ button{
 
 .diamond .buyVipBtn{
     background:#0ea5e9;
+
     color:#fff;
 }
 
 .diamond .buyVipBtn:hover{
     background:#0284c7;
+
+    box-shadow:
+        0 8px 25px rgba(14,165,233,.35);
 }
 
 
@@ -654,6 +972,7 @@ button{
 
 .premium .vip-badge{
     background:#c084fc;
+
     color:#3b0764;
 }
 
@@ -663,11 +982,15 @@ button{
 
 .premium .buyVipBtn{
     background:#a855f7;
+
     color:#fff;
 }
 
 .premium .buyVipBtn:hover{
     background:#9333ea;
+
+    box-shadow:
+        0 8px 25px rgba(168,85,247,.35);
 }
 
 
@@ -693,6 +1016,7 @@ button{
 
 .elite .vip-badge{
     background:#22d3ee;
+
     color:#083344;
 }
 
@@ -702,11 +1026,15 @@ button{
 
 .elite .buyVipBtn{
     background:#06b6d4;
+
     color:#fff;
 }
 
 .elite .buyVipBtn:hover{
     background:#0891b2;
+
+    box-shadow:
+        0 8px 25px rgba(6,182,212,.35);
 }
 
 
@@ -732,6 +1060,7 @@ button{
 
 .royal .vip-badge{
     background:#fbbf24;
+
     color:#451a03;
 }
 
@@ -741,11 +1070,15 @@ button{
 
 .royal .buyVipBtn{
     background:#f59e0b;
+
     color:#111827;
 }
 
 .royal .buyVipBtn:hover{
     background:#d97706;
+
+    box-shadow:
+        0 8px 25px rgba(245,158,11,.35);
 }
 
 
@@ -822,10 +1155,20 @@ button{
         0 15px 40px rgba(0,0,0,.35);
 }
 
+.vip-card.active::before{
+    background:
+        rgba(34,197,94,.12);
+}
+
 .vip-card.active .buyVipBtn{
     background:#22c55e;
+
     color:#fff;
+
     cursor:default;
+
+    box-shadow:
+        0 0 18px rgba(34,197,94,.25);
 }
 
 
@@ -834,24 +1177,33 @@ button{
 ========================================= */
 
 .claim-timer-box{
-    background:#111827;
+    background:
+        linear-gradient(
+            135deg,
+            #111827,
+            #172033
+        );
+
     color:#fff;
 
-    padding:15px;
+    padding:16px;
 
-    border-radius:12px;
+    border-radius:14px;
 
     text-align:center;
 
     margin-bottom:15px;
 
     border:1px solid rgba(255,255,255,.08);
+
+    box-shadow:
+        inset 0 1px 0 rgba(255,255,255,.03);
 }
 
 .claim-timer-box p{
     margin:0;
 
-    font-size:14px;
+    font-size:13px;
 
     opacity:.8;
 }
@@ -862,6 +1214,8 @@ button{
     font-size:26px;
 
     letter-spacing:2px;
+
+    font-weight:800;
 }
 
 .claim-btn{
@@ -871,25 +1225,58 @@ button{
 
     border:none;
 
-    border-radius:12px;
+    border-radius:13px;
 
-    background:#16a34a;
+    background:
+        linear-gradient(
+            135deg,
+            #16a34a,
+            #22c55e
+        );
 
     color:#fff;
 
     font-size:16px;
 
-    font-weight:bold;
+    font-weight:800;
 
     cursor:pointer;
 
-    transition:.25s;
+    transition:
+        transform .25s ease,
+        box-shadow .25s ease,
+        background .25s ease;
+
+    box-shadow:
+        0 8px 20px rgba(22,163,74,.2);
 }
 
 .claim-btn:hover{
-    background:#15803d;
+    background:
+        linear-gradient(
+            135deg,
+            #15803d,
+            #16a34a
+        );
 
     transform:scale(1.02);
+
+    box-shadow:
+        0 10px 25px rgba(22,163,74,.3);
+}
+
+.claim-btn:active{
+    transform:scale(.98);
+}
+
+.claim-btn:disabled{
+    opacity:.55;
+
+    cursor:not-allowed;
+
+    transform:none;
+
+    box-shadow:none;
 }
 
 
@@ -898,7 +1285,7 @@ button{
 ========================================= */
 
 .vip-benefits{
-    margin-top:50px;
+    margin-top:55px;
 }
 
 .vip-benefits h2{
@@ -909,19 +1296,29 @@ button{
     margin-bottom:30px;
 
     color:#FFD700;
+
+    font-weight:800;
 }
 
 .benefits-grid{
     display:grid;
 
     grid-template-columns:
-        repeat(auto-fit,minmax(250px,1fr));
+        repeat(
+            auto-fit,
+            minmax(250px,1fr)
+        );
 
     gap:25px;
 }
 
 .benefit-card{
-    background:#1e293b;
+    background:
+        linear-gradient(
+            145deg,
+            #1e293b,
+            #172033
+        );
 
     padding:30px;
 
@@ -929,7 +1326,10 @@ button{
 
     text-align:center;
 
-    transition:.35s;
+    transition:
+        transform .35s ease,
+        background .35s ease,
+        box-shadow .35s ease;
 
     border:1px solid rgba(255,255,255,.08);
 }
@@ -938,6 +1338,9 @@ button{
     transform:translateY(-8px);
 
     background:#273549;
+
+    box-shadow:
+        0 15px 35px rgba(0,0,0,.25);
 }
 
 .benefit-card i{
@@ -946,18 +1349,27 @@ button{
     color:#FFD700;
 
     margin-bottom:20px;
+
+    filter:
+        drop-shadow(
+            0 0 10px rgba(255,215,0,.2)
+        );
 }
 
 .benefit-card h3{
     margin-bottom:12px;
 
     font-size:22px;
+
+    font-weight:700;
 }
 
 .benefit-card p{
     color:#cbd5e1;
 
     line-height:1.7;
+
+    font-size:14px;
 }
 
 
@@ -981,6 +1393,7 @@ button{
     display:flex;
 
     align-items:center;
+
     justify-content:center;
 
     text-decoration:none;
@@ -990,15 +1403,22 @@ button{
     color:#fff;
 
     box-shadow:
-        0 10px 25px rgba(0,0,0,.35);
+        0 10px 25px rgba(0,0,0,.35),
+        0 0 20px rgba(37,211,102,.15);
 
-    transition:.3s;
+    transition:
+        transform .3s ease,
+        box-shadow .3s ease;
 
     z-index:1000;
 }
 
 .support-btn:hover{
     transform:scale(1.1);
+
+    box-shadow:
+        0 12px 30px rgba(0,0,0,.4),
+        0 0 25px rgba(37,211,102,.25);
 }
 
 
@@ -1023,10 +1443,14 @@ footer h2{
     color:#FFD700;
 
     margin-bottom:10px;
+
+    font-weight:800;
 }
 
 footer p{
     margin-top:8px;
+
+    font-size:14px;
 }
 
 
@@ -1043,7 +1467,12 @@ footer p{
     width:100%;
     height:100%;
 
-    background:#0f172a;
+    background:
+        radial-gradient(
+            circle at center,
+            #172554,
+            #0f172a 60%
+        );
 
     display:flex;
 
@@ -1060,15 +1489,21 @@ footer p{
     width:70px;
     height:70px;
 
-    border:6px solid rgba(255,255,255,.2);
+    border:6px solid rgba(255,255,255,.15);
 
     border-top:6px solid #FFD700;
 
+    border-right:6px solid #7c3aed;
+
     border-radius:50%;
 
-    animation:spin 1s linear infinite;
+    animation:
+        spin 1s linear infinite;
 
     margin-bottom:20px;
+
+    box-shadow:
+        0 0 25px rgba(255,215,0,.12);
 }
 
 @keyframes spin{
@@ -1094,7 +1529,14 @@ footer p{
     top:20px;
     right:20px;
 
-    background:#22c55e;
+    max-width:calc(100vw - 40px);
+
+    background:
+        linear-gradient(
+            135deg,
+            #16a34a,
+            #22c55e
+        );
 
     color:#fff;
 
@@ -1108,9 +1550,14 @@ footer p{
 
     transform:translateY(-20px);
 
-    transition:.3s;
+    transition:
+        opacity .3s ease,
+        transform .3s ease;
 
     z-index:99999;
+
+    box-shadow:
+        0 10px 30px rgba(0,0,0,.3);
 }
 
 .toast.show{
@@ -1129,11 +1576,14 @@ footer p{
     .sidebar{
         left:-260px;
 
-        transition:.35s;
+        transition:.35s ease;
     }
 
     .sidebar.active{
         left:0;
+
+        box-shadow:
+            10px 0 40px rgba(0,0,0,.45);
     }
 
     .main{
@@ -1158,12 +1608,18 @@ footer p{
         flex-direction:column;
 
         text-align:center;
+
+        padding:25px;
+    }
+
+    .hero-left{
+        width:100%;
     }
 
     .hero-right{
-        margin-top:25px;
+        margin-top:10px;
 
-        font-size:90px;
+        font-size:85px;
     }
 
     .hero-info{
@@ -1185,32 +1641,85 @@ footer p{
 
 @media(max-width:600px){
 
+    body{
+        display:block;
+    }
+
     .main{
         padding:15px;
+    }
+
+    .topbar{
+        align-items:flex-start;
+    }
+
+    #menuBtn{
+        padding:10px 13px;
+
+        font-size:19px;
+    }
+
+    .vip-hero{
+        padding:22px;
+
+        border-radius:18px;
+
+        gap:10px;
+    }
+
+    .hero-left h1{
+        font-size:24px;
+    }
+
+    .hero-left p{
+        font-size:13px;
+    }
+
+    .hero-right{
+        font-size:70px;
+
+        margin-top:5px;
+    }
+
+    .hero-info{
+        display:grid;
+
+        grid-template-columns:
+            repeat(2,1fr);
+
+        width:100%;
+
+        gap:10px;
+    }
+
+    .info-box{
+        min-width:0;
+
+        padding:13px 10px;
+    }
+
+    .info-box h3{
+        font-size:18px;
+    }
+
+    .info-box p{
+        font-size:12px;
     }
 
     .vip-grid{
         grid-template-columns:1fr;
 
         gap:18px;
-    }
 
-    .benefits-grid{
-        grid-template-columns:1fr;
-    }
-
-    .hero-left h1{
-        font-size:25px;
-    }
-
-    .balance-box h2{
-        font-size:22px;
+        margin-top:22px;
     }
 
     .vip-card{
         padding:22px;
 
         border-radius:20px;
+
+        min-height:0;
     }
 
     .vip-card h1{
@@ -1223,6 +1732,40 @@ footer p{
 
     .vip-icon{
         font-size:52px;
+
+        margin-top:22px;
+    }
+
+    .vip-card ul li{
+        font-size:13px;
+
+        padding:8px 0;
+    }
+
+    .buyVipBtn{
+        min-height:50px;
+
+        font-size:15px;
+    }
+
+    .vip-benefits{
+        margin-top:40px;
+    }
+
+    .vip-benefits h2{
+        font-size:27px;
+
+        margin-bottom:22px;
+    }
+
+    .benefits-grid{
+        grid-template-columns:1fr;
+
+        gap:17px;
+    }
+
+    .benefit-card{
+        padding:25px 20px;
     }
 
     .support-btn{
@@ -1231,6 +1774,29 @@ footer p{
 
         right:15px;
         bottom:15px;
+
+        font-size:26px;
+    }
+
+    .toast{
+        top:15px;
+
+        right:15px;
+        left:15px;
+
+        max-width:none;
+
+        text-align:center;
+
+        padding:13px 16px;
+
+        font-size:13px;
+    }
+
+    footer{
+        margin-top:40px;
+
+        padding:28px 15px;
     }
 
 }
@@ -1246,12 +1812,34 @@ footer p{
         padding:12px;
     }
 
+    .vip-hero{
+        padding:18px;
+    }
+
+    .hero-left h1{
+        font-size:22px;
+    }
+
+    .hero-right{
+        font-size:60px;
+    }
+
+    .hero-info{
+        grid-template-columns:1fr;
+    }
+
     .vip-card{
         padding:18px;
+
+        border-radius:18px;
     }
 
     .vip-card h1{
         font-size:25px;
+    }
+
+    .vip-card h2{
+        font-size:20px;
     }
 
     .vip-icon{
@@ -1262,4 +1850,48 @@ footer p{
         right:-55px;
     }
 
+}
+
+
+/* =========================================
+   TOUCH DEVICES
+========================================= */
+
+@media(hover:none){
+
+    .vip-card:hover{
+        transform:none;
+    }
+
+    .benefit-card:hover{
+        transform:none;
+    }
+
+    .support-btn:hover{
+        transform:none;
+    }
+
+    .buyVipBtn:hover{
+        transform:none;
+    }
+}
+
+
+/* =========================================
+   REDUCED MOTION
+========================================= */
+
+@media(prefers-reduced-motion:reduce){
+
+    *,
+    *::before,
+    *::after{
+        animation-duration:.01ms !important;
+
+        animation-iteration-count:1 !important;
+
+        scroll-behavior:auto !important;
+
+        transition-duration:.01ms !important;
+    }
 }
