@@ -763,20 +763,19 @@ copyReferralBtn?.addEventListener("click", async () => {
 // SUPPORT BUTTON
 // ======================================
 
-const supportBtn = document.querySelector(".support-btn");
+const supportBtn =
+    document.querySelector(".support-btn");
 
 supportBtn?.addEventListener("click", (e) => {
 
     e.preventDefault();
 
     window.open(
-        "https://wa.me/250788846187",
+        "https://wa.me/250722993296",
         "_blank"
     );
 
 });
-
-
 // ======================================
 // HIDE LOADING IF STILL VISIBLE
 // ======================================
