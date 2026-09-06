@@ -727,6 +727,52 @@ transform:scale(1.1);
 }
 
 /* ===========================
+   WHATSAPP SUPPORT BUTTON
+=========================== */
+
+.support-btn {
+    position: fixed;
+    right: 18px;
+    bottom: 90px;
+
+    width: 70px;
+    height: 70px;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+
+    gap: 4px;
+
+    background: #25D366;
+    color: white;
+
+    border-radius: 50%;
+
+    text-decoration: none;
+
+    z-index: 9999;
+
+    box-shadow: 0 6px 18px rgba(0,0,0,0.25);
+}
+
+.support-btn span {
+    font-size: 9px;
+    font-weight: 700;
+    line-height: 1;
+    text-align: center;
+}
+
+.support-btn i {
+    font-size: 27px;
+}
+
+.support-btn:hover {
+    transform: scale(1.05);
+}
+
+/* ===========================
 FOOTER
 =========================== */
 
