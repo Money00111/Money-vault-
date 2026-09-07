@@ -2959,5 +2959,2825 @@ console.log(
     "ADMIN.JS PART 6 READY"
 );
 
+// ==========================================
+// ADMIN.JS — PART 7
+// VIP Purchase Requests
+// ==========================================
 
 
+// ==========================================
+// 1. LOAD VIP REQUESTS
+// ==========================================
+
+async function loadVipRequests() {
+
+    try {
+
+        await window.waitForAdmin();
+
+        console.log(
+            "Loading VIP purchase requests..."
+        );
+
+
+        const vipRequestsRef =
+            ref(db, "vipPurchaseRequests");
+
+
+        onValue(
+            vipRequestsRef,
+            async (snapshot) => {
+
+                const container =
+                    document.getElementById(
+                        "vipRequests"
+                    );
+
+
+                if (!container) {
+
+                    console.warn(
+                        "vipRequests container not found"
+                    );
+
+                    return;
+                }
+
+
+                // ----------------------------------
+                // EMPTY STATE
+                // ----------------------------------
+
+                if (!snapshot.exists()) {
+
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            Aucun demande VIP trouvée.
+                        </div>
+                    `;
+
+                    return;
+                }
+
+
+                const requests = [];
+
+
+                // ----------------------------------
+                // GET REQUESTS
+                // ----------------------------------
+
+                snapshot.forEach((child) => {
+
+                    const data =
+                        child.val() || {};
+
+                    requests.push({
+                        id: child.key,
+                        ...data
+                    });
+
+                });
+
+
+                // ----------------------------------
+                // SORT NEWEST FIRST
+                // ----------------------------------
+
+                requests.sort((a, b) => {
+
+                    return (
+                        numberValue(b.createdAt) -
+                        numberValue(a.createdAt)
+                    );
+
+                });
+
+
+                // ----------------------------------
+                // LOAD USERS
+                // ----------------------------------
+
+                const userCache = {};
+
+
+                await Promise.all(
+
+                    requests.map(
+                        async (request) => {
+
+                            if (!request.uid) {
+                                return;
+                            }
+
+
+                            try {
+
+                                const userSnapshot =
+                                    await get(
+                                        ref(
+                                            db,
+                                            `users/${request.uid}`
+                                        )
+                                    );
+
+
+                                if (
+                                    userSnapshot.exists()
+                                ) {
+
+                                    userCache[
+                                        request.uid
+                                    ] =
+                                        userSnapshot.val();
+
+                                }
+
+                            }
+
+                            catch (error) {
+
+                                console.error(
+                                    "VIP USER LOAD ERROR:",
+                                    request.uid,
+                                    error
+                                );
+
+                            }
+
+                        }
+                    )
+
+                );
+
+
+                // ----------------------------------
+                // RENDER VIP REQUESTS
+                // ----------------------------------
+
+                container.innerHTML =
+                    requests.map((request) => {
+
+                        const status =
+                            normalizeStatus(
+                                request.status
+                            );
+
+
+                        const user =
+                            userCache[
+                                request.uid
+                            ] || {};
+
+
+                        const name =
+                            user.name ||
+                            user.fullName ||
+                            user.username ||
+                            "Utilisateur";
+
+
+                        const email =
+                            user.email ||
+                            request.email ||
+                            "";
+
+
+                        const vipName =
+                            request.vipName ||
+                            request.name ||
+                            request.planName ||
+                            "VIP";
+
+
+                        const price =
+                            numberValue(
+                                request.price ??
+                                request.vipPrice ??
+                                request.amount
+                            );
+
+
+                        const dailyIncome =
+                            numberValue(
+                                request.dailyIncome ??
+                                request.daily
+                            );
+
+
+                        const totalProfit =
+                            numberValue(
+                                request.totalProfit ??
+                                request.profit
+                            );
+
+
+                        const duration =
+                            request.duration ||
+                            request.days ||
+                            "-";
+
+
+                        const createdAt =
+                            request.createdAt
+                                ? new Date(
+                                    numberValue(
+                                        request.createdAt
+                                    )
+                                ).toLocaleString(
+                                    "fr-FR"
+                                )
+                                : "-";
+
+
+                        // ----------------------------------
+                        // STATUS LABEL
+                        // ----------------------------------
+
+                        let statusLabel =
+                            "En attente";
+
+
+                        if (
+                            status === "approved"
+                        ) {
+
+                            statusLabel =
+                                "Approuvé";
+
+                        }
+
+                        else if (
+                            status === "rejected"
+                        ) {
+
+                            statusLabel =
+                                "Rejeté";
+
+                        }
+
+                        else if (
+                            status === "processing"
+                        ) {
+
+                            statusLabel =
+                                "Traitement...";
+
+                        }
+
+                        else if (
+                            status ===
+                            "processing_error"
+                        ) {
+
+                            statusLabel =
+                                "Erreur de traitement";
+
+                        }
+
+
+                        // ----------------------------------
+                        // ACTIONS
+                        // ----------------------------------
+
+                        let actionsHTML = "";
+
+
+                        if (
+                            status === "pending"
+                        ) {
+
+                            actionsHTML = `
+                                <div class="request-actions">
+
+                                    <button
+                                        type="button"
+                                        class="vipApproveBtn"
+                                        data-id="${escapeHTML(
+                                            request.id
+                                        )}"
+                                    >
+                                        ✓ Approuver
+                                    </button>
+
+
+                                    <button
+                                        type="button"
+                                        class="vipRejectBtn"
+                                        data-id="${escapeHTML(
+                                            request.id
+                                        )}"
+                                    >
+                                        ✕ Rejeter
+                                    </button>
+
+                                </div>
+                            `;
+
+                        }
+
+                        else if (
+                            status === "processing"
+                        ) {
+
+                            actionsHTML = `
+                                <div class="request-processing">
+                                    Traitement en cours...
+                                </div>
+                            `;
+
+                        }
+
+
+                        // ----------------------------------
+                        // VIP CARD
+                        // ----------------------------------
+
+                        return `
+                            <div
+                                class="vip-request-card"
+                                data-id="${escapeHTML(
+                                    request.id
+                                )}"
+                            >
+
+                                <div class="request-header">
+
+                                    <div>
+
+                                        <h3>
+                                            ${escapeHTML(
+                                                vipName
+                                            )}
+                                        </h3>
+
+                                        <small>
+                                            ID:
+                                            ${escapeHTML(
+                                                request.id
+                                            )}
+                                        </small>
+
+                                    </div>
+
+
+                                    <span
+                                        class="request-status status-${escapeHTML(
+                                            status
+                                        )}"
+                                    >
+                                        ${escapeHTML(
+                                            statusLabel
+                                        )}
+                                    </span>
+
+                                </div>
+
+
+                                <div class="request-user">
+
+                                    <strong>
+                                        ${escapeHTML(
+                                            name
+                                        )}
+                                    </strong>
+
+                                    <span>
+                                        ${escapeHTML(
+                                            email
+                                        )}
+                                    </span>
+
+                                </div>
+
+
+                                <div class="request-details">
+
+                                    <div class="detail-item">
+
+                                        <span>
+                                            Prix
+                                        </span>
+
+                                        <strong>
+                                            ${formatMoney(
+                                                price
+                                            )}
+                                        </strong>
+
+                                    </div>
+
+
+                                    <div class="detail-item">
+
+                                        <span>
+                                            Revenu quotidien
+                                        </span>
+
+                                        <strong>
+                                            ${formatMoney(
+                                                dailyIncome
+                                            )}
+                                        </strong>
+
+                                    </div>
+
+
+                                    <div class="detail-item">
+
+                                        <span>
+                                            Profit total
+                                        </span>
+
+                                        <strong>
+                                            ${formatMoney(
+                                                totalProfit
+                                            )}
+                                        </strong>
+
+                                    </div>
+
+
+                                    <div class="detail-item">
+
+                                        <span>
+                                            Durée
+                                        </span>
+
+                                        <strong>
+                                            ${escapeHTML(
+                                                String(
+                                                    duration
+                                                )
+                                            )}
+                                        </strong>
+
+                                    </div>
+
+
+                                    <div class="detail-item">
+
+                                        <span>
+                                            UID
+                                        </span>
+
+                                        <strong>
+                                            ${escapeHTML(
+                                                request.uid ||
+                                                "-"
+                                            )}
+                                        </strong>
+
+                                    </div>
+
+
+                                    <div class="detail-item">
+
+                                        <span>
+                                            Date de demande
+                                        </span>
+
+                                        <strong>
+                                            ${escapeHTML(
+                                                createdAt
+                                            )}
+                                        </strong>
+
+                                    </div>
+
+                                </div>
+
+
+                                ${actionsHTML}
+
+                            </div>
+                        `;
+
+                    }).join("");
+
+
+                // ----------------------------------
+                // ACTIVATE BUTTONS
+                // ----------------------------------
+
+                activateVipRequestButtons();
+
+            }
+        );
+
+
+    }
+
+    catch (error) {
+
+        console.error(
+            "LOAD VIP REQUESTS ERROR:",
+            error
+        );
+
+    }
+
+}
+
+
+// ==========================================
+// 2. ACTIVATE VIP BUTTONS
+// ==========================================
+
+function activateVipRequestButtons() {
+
+
+    // ----------------------------------
+    // APPROVE
+    // ----------------------------------
+
+    const approveButtons =
+        document.querySelectorAll(
+            ".vipApproveBtn"
+        );
+
+
+    approveButtons.forEach((button) => {
+
+        button.addEventListener(
+            "click",
+            async () => {
+
+                const id =
+                    button.dataset.id;
+
+
+                if (!id) {
+
+                    console.error(
+                        "VIP request ID missing."
+                    );
+
+                    return;
+                }
+
+
+                await approveVipRequest(id);
+
+            }
+        );
+
+    });
+
+
+    // ----------------------------------
+    // REJECT
+    // ----------------------------------
+
+    const rejectButtons =
+        document.querySelectorAll(
+            ".vipRejectBtn"
+        );
+
+
+    rejectButtons.forEach((button) => {
+
+        button.addEventListener(
+            "click",
+            async () => {
+
+                const id =
+                    button.dataset.id;
+
+
+                if (!id) {
+
+                    console.error(
+                        "VIP request ID missing."
+                    );
+
+                    return;
+                }
+
+
+                await rejectVipRequest(id);
+
+            }
+        );
+
+    });
+
+}
+
+
+// ==========================================
+// 3. EXPOSE FUNCTIONS
+// ==========================================
+
+window.loadVipRequests =
+    loadVipRequests;
+
+
+window.activateVipRequestButtons =
+    activateVipRequestButtons;
+
+
+// ==========================================
+// 4. PART 7 READY
+// ==========================================
+
+console.log(
+    "ADMIN.JS PART 7 READY"
+
+    // ==========================================
+// ADMIN.JS — PART 8
+// VIP Approve / Reject
+// ==========================================
+
+
+// ==========================================
+// CONSTANT
+// ==========================================
+
+const REFERRAL_BONUS_AMOUNT = 1000;
+
+
+// ==========================================
+// 1. GET VIP DURATION
+// ==========================================
+
+function getVipDuration(request) {
+
+    let duration =
+        Number(
+            request.duration ??
+            request.days ??
+            0
+        );
+
+
+    if (
+        !Number.isFinite(duration) ||
+        duration <= 0
+    ) {
+
+        const dailyIncome =
+            numberValue(
+                request.dailyIncome ??
+                request.daily
+            );
+
+
+        const totalProfit =
+            numberValue(
+                request.totalProfit ??
+                request.profit
+            );
+
+
+        if (
+            dailyIncome > 0 &&
+            totalProfit > 0
+        ) {
+
+            duration =
+                totalProfit / dailyIncome;
+
+        }
+
+    }
+
+
+    if (
+        !Number.isFinite(duration) ||
+        duration <= 0
+    ) {
+
+        throw new Error(
+            "Durée VIP invalide."
+        );
+    }
+
+
+    return Math.ceil(duration);
+}
+
+
+// ==========================================
+// 2. APPROVE VIP REQUEST
+// ==========================================
+
+async function approveVipRequest(id) {
+
+    if (!id) {
+
+        console.error(
+            "VIP request ID is missing."
+        );
+
+        return;
+    }
+
+
+    try {
+
+        await window.waitForAdmin();
+
+
+        const confirmed = confirm(
+            "Voulez-vous vraiment approuver cette demande VIP ?"
+        );
+
+
+        if (!confirmed) return;
+
+
+        const requestRef =
+            ref(
+                db,
+                `vipPurchaseRequests/${id}`
+            );
+
+
+        // ----------------------------------
+        // LOCK REQUEST
+        // pending -> processing
+        // ----------------------------------
+
+        const lockResult =
+            await runTransaction(
+                requestRef,
+                (currentData) => {
+
+                    if (!currentData) {
+                        return;
+                    }
+
+
+                    const status =
+                        normalizeStatus(
+                            currentData.status
+                        );
+
+
+                    if (status !== "pending") {
+                        return;
+                    }
+
+
+                    return {
+
+                        ...currentData,
+
+                        status:
+                            "processing",
+
+                        processingAt:
+                            Date.now(),
+
+                        processingBy:
+                            window.adminState
+                                .currentAdmin?.uid || ""
+
+                    };
+
+                }
+            );
+
+
+        if (!lockResult.committed) {
+
+            alert(
+                "Cette demande VIP a déjà été traitée ou n'existe plus."
+            );
+
+            return;
+        }
+
+
+        const request =
+            lockResult.snapshot.val() || {};
+
+
+        const uid =
+            request.uid;
+
+
+        if (!uid) {
+
+            throw new Error(
+                "UID utilisateur manquant."
+            );
+        }
+
+
+        // ----------------------------------
+        // VIP DATA
+        // ----------------------------------
+
+        const vipName =
+            request.vipName ||
+            request.name ||
+            request.planName ||
+            "VIP";
+
+
+        const price =
+            numberValue(
+                request.price ??
+                request.vipPrice ??
+                request.amount
+            );
+
+
+        const dailyIncome =
+            numberValue(
+                request.dailyIncome ??
+                request.daily
+            );
+
+
+        const totalProfit =
+            numberValue(
+                request.totalProfit ??
+                request.profit
+            );
+
+
+        const duration =
+            getVipDuration(request);
+
+
+        if (
+            !Number.isFinite(price) ||
+            price <= 0
+        ) {
+
+            throw new Error(
+                "Prix VIP invalide."
+            );
+        }
+
+
+        if (
+            !Number.isFinite(dailyIncome) ||
+            dailyIncome <= 0
+        ) {
+
+            throw new Error(
+                "Revenu quotidien VIP invalide."
+            );
+        }
+
+
+        if (
+            !Number.isFinite(totalProfit) ||
+            totalProfit <= 0
+        ) {
+
+            throw new Error(
+                "Profit total VIP invalide."
+            );
+        }
+
+
+        // ----------------------------------
+        // CREATE VIP BUYER
+        // IMPORTANT:
+        // NO DAILY INCOME CREDIT HERE
+        // ----------------------------------
+
+        const vipBuyerRef =
+            push(
+                ref(db, "vipBuyers")
+            );
+
+
+        const approvedAt =
+            Date.now();
+
+
+        const vipBuyerData = {
+
+            uid: uid,
+
+            vipName: vipName,
+
+            price: price,
+
+            dailyIncome:
+                dailyIncome,
+
+            totalProfit:
+                totalProfit,
+
+            duration:
+                duration,
+
+            startDate:
+                approvedAt,
+
+            lastClaim:
+                approvedAt,
+
+            claimedAmount:
+                0,
+
+            status:
+                "active",
+
+            purchaseRequestId:
+                id,
+
+            createdAt:
+                approvedAt,
+
+            approvedAt:
+                approvedAt,
+
+            approvedBy:
+                window.adminState
+                    .currentAdmin?.uid || ""
+
+        };
+
+
+        await set(
+            vipBuyerRef,
+            vipBuyerData
+        );
+
+
+        // ----------------------------------
+        // CREATE VIP TRANSACTION
+        // ----------------------------------
+
+        const transactionRef =
+            push(
+                ref(db, "transactions")
+            );
+
+
+        const transactionData = {
+
+            uid: uid,
+
+            type: "vip",
+
+            amount: price,
+
+            status: "approved",
+
+            vipName: vipName,
+
+            vipBuyerId:
+                vipBuyerRef.key,
+
+            vipPurchaseRequestId:
+                id,
+
+            createdAt:
+                Date.now(),
+
+            approvedAt:
+                Date.now(),
+
+            approvedBy:
+                window.adminState
+                    .currentAdmin?.uid || ""
+
+        };
+
+
+        await set(
+            transactionRef,
+            transactionData
+        );
+
+
+        // ----------------------------------
+        // REFERRAL BONUS
+        // ----------------------------------
+
+        const userRef =
+            ref(
+                db,
+                `users/${uid}`
+            );
+
+
+        const userSnapshot =
+            await get(userRef);
+
+
+        if (userSnapshot.exists()) {
+
+            const user =
+                userSnapshot.val() || {};
+
+
+            const referredBy =
+                user.referredBy;
+
+
+            if (referredBy) {
+
+                const referrerRef =
+                    ref(
+                        db,
+                        `users/${referredBy}`
+                    );
+
+
+                const referralResult =
+                    await runTransaction(
+                        referrerRef,
+                        (referrerData) => {
+
+                            if (!referrerData) {
+                                return;
+                            }
+
+
+                            const referrer =
+                                referrerData || {};
+
+
+                            const referralEarnings =
+                                numberValue(
+                                    referrer.referralEarnings
+                                );
+
+
+                            return {
+
+                                ...referrer,
+
+                                referralEarnings:
+                                    referralEarnings +
+                                    REFERRAL_BONUS_AMOUNT,
+
+                                updatedAt:
+                                    Date.now()
+
+                            };
+
+                        }
+                    );
+
+
+                if (referralResult.committed) {
+
+                    console.log(
+                        "REFERRAL BONUS ADDED:",
+                        referredBy,
+                        REFERRAL_BONUS_AMOUNT
+                    );
+
+                }
+
+            }
+
+        }
+
+
+        // ----------------------------------
+        // FINALIZE REQUEST
+        // ----------------------------------
+
+        await update(
+            requestRef,
+            {
+
+                status:
+                    "approved",
+
+                approvedAt:
+                    Date.now(),
+
+                approvedBy:
+                    window.adminState
+                        .currentAdmin?.uid || "",
+
+                vipBuyerId:
+                    vipBuyerRef.key,
+
+                transactionKey:
+                    transactionRef.key
+
+            }
+        );
+
+
+        alert(
+            "Demande VIP approuvée avec succès."
+        );
+
+
+        console.log(
+            "VIP APPROVED:",
+            id,
+            uid,
+            vipName
+        );
+
+    }
+
+    catch (error) {
+
+        console.error(
+            "APPROVE VIP ERROR:",
+            error
+        );
+
+
+        // ----------------------------------
+        // MARK PROCESSING ERROR
+        // ----------------------------------
+
+        try {
+
+            await update(
+                ref(
+                    db,
+                    `vipPurchaseRequests/${id}`
+                ),
+                {
+
+                    status:
+                        "processing_error",
+
+                    errorMessage:
+                        error.message ||
+                        "Erreur inconnue",
+
+                    errorAt:
+                        Date.now(),
+
+                    errorBy:
+                        window.adminState
+                            .currentAdmin?.uid || ""
+
+                }
+            );
+
+        }
+
+        catch (updateError) {
+
+            console.error(
+                "ERROR UPDATING VIP STATUS:",
+                updateError
+            );
+
+        }
+
+
+        alert(
+            "Erreur lors de l'approbation VIP :\n" +
+            (
+                error.message ||
+                "Erreur inconnue"
+            )
+        );
+
+    }
+
+}
+
+
+// ==========================================
+// 3. REJECT VIP REQUEST
+// ==========================================
+
+async function rejectVipRequest(id) {
+
+    if (!id) {
+
+        console.error(
+            "VIP request ID is missing."
+        );
+
+        return;
+    }
+
+
+    try {
+
+        await window.waitForAdmin();
+
+
+        const confirmed = confirm(
+            "Voulez-vous vraiment rejeter cette demande VIP ?"
+        );
+
+
+        if (!confirmed) return;
+
+
+        const requestRef =
+            ref(
+                db,
+                `vipPurchaseRequests/${id}`
+            );
+
+
+        const result =
+            await runTransaction(
+                requestRef,
+                (currentData) => {
+
+                    if (!currentData) {
+                        return;
+                    }
+
+
+                    const status =
+                        normalizeStatus(
+                            currentData.status
+                        );
+
+
+                    if (status !== "pending") {
+                        return;
+                    }
+
+
+                    return {
+
+                        ...currentData,
+
+                        status:
+                            "rejected",
+
+                        rejectedAt:
+                            Date.now(),
+
+                        rejectedBy:
+                            window.adminState
+                                .currentAdmin?.uid || ""
+
+                    };
+
+                }
+            );
+
+
+        if (!result.committed) {
+
+            alert(
+                "Cette demande VIP a déjà été traitée ou n'existe plus."
+            );
+
+            return;
+        }
+
+
+        alert(
+            "Demande VIP rejetée."
+        );
+
+
+        console.log(
+            "VIP REJECTED:",
+            id
+        );
+
+    }
+
+    catch (error) {
+
+        console.error(
+            "REJECT VIP ERROR:",
+            error
+        );
+
+
+        alert(
+            "Erreur lors du rejet VIP :\n" +
+            (
+                error.message ||
+                "Erreur inconnue"
+            )
+        );
+
+    }
+
+}
+
+
+// ==========================================
+// 4. EXPOSE FUNCTIONS
+// ==========================================
+
+window.getVipDuration =
+    getVipDuration;
+
+
+window.approveVipRequest =
+    approveVipRequest;
+
+
+window.rejectVipRequest =
+    rejectVipRequest;
+
+
+// ==========================================
+// 5. PART 8 READY
+// ==========================================
+
+console.log(
+    "ADMIN.JS PART 8 READY"
+);
+
+// ==========================================
+// ADMIN.JS — PART 9
+// VIP Buyers
+// ==========================================
+
+
+// ==========================================
+// 1. LOAD VIP BUYERS
+// ==========================================
+
+async function loadVipBuyers() {
+
+    try {
+
+        await window.waitForAdmin();
+
+        console.log(
+            "Loading VIP buyers..."
+        );
+
+
+        const vipBuyersRef =
+            ref(db, "vipBuyers");
+
+
+        onValue(
+            vipBuyersRef,
+            async (snapshot) => {
+
+                const container =
+                    document.getElementById(
+                        "vipBuyers"
+                    );
+
+
+                if (!container) {
+
+                    console.warn(
+                        "vipBuyers container not found"
+                    );
+
+                    return;
+                }
+
+
+                // ----------------------------------
+                // EMPTY STATE
+                // ----------------------------------
+
+                if (!snapshot.exists()) {
+
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            Aucun VIP actif trouvé.
+                        </div>
+                    `;
+
+                    return;
+                }
+
+
+                const buyers = [];
+
+
+                // ----------------------------------
+                // GET VIP BUYERS
+                // ----------------------------------
+
+                snapshot.forEach((child) => {
+
+                    const data =
+                        child.val() || {};
+
+                    buyers.push({
+                        id: child.key,
+                        ...data
+                    });
+
+                });
+
+
+                // ----------------------------------
+                // SORT NEWEST FIRST
+                // ----------------------------------
+
+                buyers.sort((a, b) => {
+
+                    return (
+                        numberValue(b.approvedAt) -
+                        numberValue(a.approvedAt)
+                    );
+
+                });
+
+
+                // ----------------------------------
+                // LOAD USERS
+                // ----------------------------------
+
+                const userCache = {};
+
+
+                await Promise.all(
+
+                    buyers.map(
+                        async (buyer) => {
+
+                            if (!buyer.uid) {
+                                return;
+                            }
+
+
+                            try {
+
+                                const userSnapshot =
+                                    await get(
+                                        ref(
+                                            db,
+                                            `users/${buyer.uid}`
+                                        )
+                                    );
+
+
+                                if (
+                                    userSnapshot.exists()
+                                ) {
+
+                                    userCache[
+                                        buyer.uid
+                                    ] =
+                                        userSnapshot.val();
+
+                                }
+
+                            }
+
+                            catch (error) {
+
+                                console.error(
+                                    "VIP BUYER USER LOAD ERROR:",
+                                    buyer.uid,
+                                    error
+                                );
+
+                            }
+
+                        }
+                    )
+
+                );
+
+
+                // ----------------------------------
+                // RENDER VIP BUYERS
+                // ----------------------------------
+
+                container.innerHTML =
+                    buyers.map((buyer) => {
+
+                        const user =
+                            userCache[
+                                buyer.uid
+                            ] || {};
+
+
+                        const name =
+                            user.name ||
+                            user.fullName ||
+                            user.username ||
+                            "Utilisateur";
+
+
+                        const email =
+                            user.email ||
+                            "";
+
+
+                        const vipName =
+                            buyer.vipName ||
+                            buyer.name ||
+                            "VIP";
+
+
+                        const price =
+                            numberValue(
+                                buyer.price
+                            );
+
+
+                        const dailyIncome =
+                            numberValue(
+                                buyer.dailyIncome
+                            );
+
+
+                        const totalProfit =
+                            numberValue(
+                                buyer.totalProfit
+                            );
+
+
+                        const duration =
+                            buyer.duration ||
+                            "-";
+
+
+                        const claimedAmount =
+                            numberValue(
+                                buyer.claimedAmount
+                            );
+
+
+                        const startDate =
+                            buyer.startDate ||
+                            buyer.approvedAt ||
+                            buyer.createdAt;
+
+
+                        const lastClaim =
+                            buyer.lastClaim;
+
+
+                        const status =
+                            String(
+                                buyer.status ||
+                                "active"
+                            ).toLowerCase();
+
+
+                        const startDateFormatted =
+                            startDate
+                                ? new Date(
+                                    numberValue(
+                                        startDate
+                                    )
+                                ).toLocaleString(
+                                    "fr-FR"
+                                )
+                                : "-";
+
+
+                        const lastClaimFormatted =
+                            lastClaim
+                                ? new Date(
+                                    numberValue(
+                                        lastClaim
+                                    )
+                                ).toLocaleString(
+                                    "fr-FR"
+                                )
+                                : "-";
+
+
+                        let statusLabel =
+                            "Actif";
+
+
+                        if (
+                            status === "expired"
+                        ) {
+
+                            statusLabel =
+                                "Expiré";
+
+                        }
+
+                        else if (
+                            status === "inactive"
+                        ) {
+
+                            statusLabel =
+                                "Inactif";
+
+                        }
+
+
+                        // ----------------------------------
+                        // VIP BUYER CARD
+                        // ----------------------------------
+
+                        return `
+                            <div
+                                class="vip-buyer-card"
+                                data-id="${escapeHTML(
+                                    buyer.id
+                                )}"
+                            >
+
+                                <div class="request-header">
+
+                                    <div>
+
+                                        <h3>
+                                            ${escapeHTML(
+                                                vipName
+                                            )}
+                                        </h3>
+
+                                        <small>
+                                            ID:
+                                            ${escapeHTML(
+                                                buyer.id
+                                            )}
+                                        </small>
+
+                                    </div>
+
+
+                                    <span
+                                        class="request-status status-${escapeHTML(
+                                            status
+                                        )}"
+                                    >
+                                        ${escapeHTML(
+                                            statusLabel
+                                        )}
+                                    </span>
+
+                                </div>
+
+
+                                <div class="request-user">
+
+                                    <strong>
+                                        ${escapeHTML(
+                                            name
+                                        )}
+                                    </strong>
+
+                                    <span>
+                                        ${escapeHTML(
+                                            email
+                                        )}
+                                    </span>
+
+                                </div>
+
+
+                                <div class="request-details">
+
+                                    <div class="detail-item">
+
+                                        <span>
+                                            Prix
+                                        </span>
+
+                                        <strong>
+                                            ${formatMoney(
+                                                price
+                                            )}
+                                        </strong>
+
+                                    </div>
+
+
+                                    <div class="detail-item">
+
+                                        <span>
+                                            Revenu quotidien
+                                        </span>
+
+                                        <strong>
+                                            ${formatMoney(
+                                                dailyIncome
+                                            )}
+                                        </strong>
+
+                                    </div>
+
+
+                                    <div class="detail-item">
+
+                                        <span>
+                                            Profit total
+                                        </span>
+
+                                        <strong>
+                                            ${formatMoney(
+                                                totalProfit
+                                            )}
+                                        </strong>
+
+                                    </div>
+
+
+                                    <div class="detail-item">
+
+                                        <span>
+                                            Durée
+                                        </span>
+
+                                        <strong>
+                                            ${escapeHTML(
+                                                String(
+                                                    duration
+                                                )
+                                            )}
+                                        </strong>
+
+                                    </div>
+
+
+                                    <div class="detail-item">
+
+                                        <span>
+                                            Déjà réclamé
+                                        </span>
+
+                                        <strong>
+                                            ${formatMoney(
+                                                claimedAmount
+                                            )}
+                                        </strong>
+
+                                    </div>
+
+
+                                    <div class="detail-item">
+
+                                        <span>
+                                            Début
+                                        </span>
+
+                                        <strong>
+                                            ${escapeHTML(
+                                                startDateFormatted
+                                            )}
+                                        </strong>
+
+                                    </div>
+
+
+                                    <div class="detail-item">
+
+                                        <span>
+                                            Dernier claim
+                                        </span>
+
+                                        <strong>
+                                            ${escapeHTML(
+                                                lastClaimFormatted
+                                            )}
+                                        </strong>
+
+                                    </div>
+
+
+                                    <div class="detail-item">
+
+                                        <span>
+                                            UID
+                                        </span>
+
+                                        <strong>
+                                            ${escapeHTML(
+                                                buyer.uid ||
+                                                "-"
+                                            )}
+                                        </strong>
+
+                                    </div>
+
+                                </div>
+
+                            </div>
+                        `;
+
+                    }).join("");
+
+            }
+        );
+
+
+    }
+
+    catch (error) {
+
+        console.error(
+            "LOAD VIP BUYERS ERROR:",
+            error
+        );
+
+    }
+
+}
+
+
+// ==========================================
+// 2. EXPOSE FUNCTION
+// ==========================================
+
+window.loadVipBuyers =
+    loadVipBuyers;
+
+
+// ==========================================
+// 3. PART 9 READY
+// ==========================================
+
+console.log(
+    "ADMIN.JS PART 9 READY"
+);
+
+// ==========================================
+// ADMIN.JS — PART 10
+// Users Management
+// ==========================================
+
+
+// ==========================================
+// 1. LOAD USERS
+// ==========================================
+
+async function loadUsers() {
+
+    try {
+
+        await window.waitForAdmin();
+
+        console.log("Loading users...");
+
+
+        const usersRef =
+            ref(db, "users");
+
+
+        onValue(
+            usersRef,
+            async (snapshot) => {
+
+                const container =
+                    document.getElementById(
+                        "usersList"
+                    );
+
+
+                if (!container) {
+
+                    console.warn(
+                        "usersList container not found"
+                    );
+
+                    return;
+                }
+
+
+                // ----------------------------------
+                // EMPTY STATE
+                // ----------------------------------
+
+                if (!snapshot.exists()) {
+
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            Aucun utilisateur trouvé.
+                        </div>
+                    `;
+
+                    return;
+                }
+
+
+                const users = [];
+
+
+                // ----------------------------------
+                // GET USERS
+                // ----------------------------------
+
+                snapshot.forEach((child) => {
+
+                    const data =
+                        child.val() || {};
+
+                    users.push({
+                        id: child.key,
+                        ...data
+                    });
+
+                });
+
+
+                // ----------------------------------
+                // SORT BY CREATED DATE
+                // ----------------------------------
+
+                users.sort((a, b) => {
+
+                    return (
+                        numberValue(b.createdAt) -
+                        numberValue(a.createdAt)
+                    );
+
+                });
+
+
+                // ----------------------------------
+                // LOAD VIP BUYERS
+                // ----------------------------------
+
+                const vipSnapshot =
+                    await get(
+                        ref(db, "vipBuyers")
+                    );
+
+
+                const vipByUser = {};
+
+
+                if (vipSnapshot.exists()) {
+
+                    vipSnapshot.forEach((child) => {
+
+                        const vip =
+                            child.val() || {};
+
+
+                        if (
+                            vip.uid &&
+                            String(
+                                vip.status ||
+                                "active"
+                            ).toLowerCase() ===
+                                "active"
+                        ) {
+
+                            vipByUser[vip.uid] =
+                                vip;
+
+                        }
+
+                    });
+
+                }
+
+
+                // ----------------------------------
+                // RENDER USERS
+                // ----------------------------------
+
+                container.innerHTML =
+                    users.map((user) => {
+
+                        const uid =
+                            user.id;
+
+
+                        const name =
+                            user.name ||
+                            user.fullName ||
+                            user.username ||
+                            "Utilisateur";
+
+
+                        const email =
+                            user.email ||
+                            "-";
+
+
+                        const phone =
+                            user.phone ||
+                            "-";
+
+
+                        const balance =
+                            numberValue(
+                                user.balance
+                            );
+
+
+                        const totalDeposits =
+                            numberValue(
+                                user.totalDeposits
+                            );
+
+
+                        const totalWithdrawals =
+                            numberValue(
+                                user.totalWithdrawals
+                            );
+
+
+                        const referralEarnings =
+                            numberValue(
+                                user.referralEarnings
+                            );
+
+
+                        const totalTransactions =
+                            numberValue(
+                                user.totalTransactions
+                            );
+
+
+                        const referralCode =
+                            user.referralCode ||
+                            "-";
+
+
+                        const referredBy =
+                            user.referredBy ||
+                            "-";
+
+
+                        const vip =
+                            vipByUser[uid];
+
+
+                        const vipName =
+                            vip?.vipName ||
+                            vip?.name ||
+                            "-";
+
+
+                        const userStatus =
+                            user.status ||
+                            "active";
+
+
+                        const createdAt =
+                            user.createdAt
+                                ? new Date(
+                                    numberValue(
+                                        user.createdAt
+                                    )
+                                ).toLocaleString(
+                                    "fr-FR"
+                                )
+                                : "-";
+
+
+                        return `
+                            <div
+                                class="user-card"
+                                data-id="${escapeHTML(
+                                    uid
+                                )}"
+                            >
+
+                                <div class="request-header">
+
+                                    <div>
+
+                                        <h3>
+                                            ${escapeHTML(
+                                                name
+                                            )}
+                                        </h3>
+
+                                        <small>
+                                            UID:
+                                            ${escapeHTML(
+                                                uid
+                                            )}
+                                        </small>
+
+                                    </div>
+
+
+                                    <span
+                                        class="request-status status-${escapeHTML(
+                                            String(
+                                                userStatus
+                                            ).toLowerCase()
+                                        )}"
+                                    >
+                                        ${escapeHTML(
+                                            String(
+                                                userStatus
+                                            )
+                                        )}
+                                    </span>
+
+                                </div>
+
+
+                                <div class="request-user">
+
+                                    <span>
+                                        ${escapeHTML(
+                                            email
+                                        )}
+                                    </span>
+
+                                    <span>
+                                        ${escapeHTML(
+                                            phone
+                                        )}
+                                    </span>
+
+                                </div>
+
+
+                                <div class="request-details">
+
+                                    <div class="detail-item">
+
+                                        <span>
+                                            Solde
+                                        </span>
+
+                                        <strong>
+                                            ${formatMoney(
+                                                balance
+                                            )}
+                                        </strong>
+
+                                    </div>
+
+
+                                    <div class="detail-item">
+
+                                        <span>
+                                            Total dépôts
+                                        </span>
+
+                                        <strong>
+                                            ${formatMoney(
+                                                totalDeposits
+                                            )}
+                                        </strong>
+
+                                    </div>
+
+
+                                    <div class="detail-item">
+
+                                        <span>
+                                            Total retraits
+                                        </span>
+
+                                        <strong>
+                                            ${formatMoney(
+                                                totalWithdrawals
+                                            )}
+                                        </strong>
+
+                                    </div>
+
+
+                                    <div class="detail-item">
+
+                                        <span>
+                                            Gains de parrainage
+                                        </span>
+
+                                        <strong>
+                                            ${formatMoney(
+                                                referralEarnings
+                                            )}
+                                        </strong>
+
+                                    </div>
+
+
+                                    <div class="detail-item">
+
+                                        <span>
+                                            Transactions
+                                        </span>
+
+                                        <strong>
+                                            ${escapeHTML(
+                                                String(
+                                                    totalTransactions
+                                                )
+                                            )}
+                                        </strong>
+
+                                    </div>
+
+
+                                    <div class="detail-item">
+
+                                        <span>
+                                            Code de parrainage
+                                        </span>
+
+                                        <strong>
+                                            ${escapeHTML(
+                                                referralCode
+                                            )}
+                                        </strong>
+
+                                    </div>
+
+
+                                    <div class="detail-item">
+
+                                        <span>
+                                            Parrain
+                                        </span>
+
+                                        <strong>
+                                            ${escapeHTML(
+                                                referredBy
+                                            )}
+                                        </strong>
+
+                                    </div>
+
+
+                                    <div class="detail-item">
+
+                                        <span>
+                                            VIP
+                                        </span>
+
+                                        <strong>
+                                            ${escapeHTML(
+                                                vipName
+                                            )}
+                                        </strong>
+
+                                    </div>
+
+
+                                    <div class="detail-item">
+
+                                        <span>
+                                            Inscription
+                                        </span>
+
+                                        <strong>
+                                            ${escapeHTML(
+                                                createdAt
+                                            )}
+                                        </strong>
+
+                                    </div>
+
+                                </div>
+
+                            </div>
+                        `;
+
+                    }).join("");
+
+            }
+        );
+
+
+    }
+
+    catch (error) {
+
+        console.error(
+            "LOAD USERS ERROR:",
+            error
+        );
+
+    }
+
+}
+
+
+// ==========================================
+// 2. EXPOSE FUNCTION
+// ==========================================
+
+window.loadUsers =
+    loadUsers;
+
+
+// ==========================================
+// 3. PART 10 READY
+// ==========================================
+
+console.log(
+    "ADMIN.JS PART 10 READY"
+);
+);
+
+// ==========================================
+// ADMIN.JS — PART 11
+// Transactions Management
+// ==========================================
+
+
+// ==========================================
+// 1. LOAD TRANSACTIONS
+// ==========================================
+
+async function loadTransactions() {
+
+    try {
+
+        await window.waitForAdmin();
+
+        console.log("Loading transactions...");
+
+
+        const transactionsRef =
+            ref(db, "transactions");
+
+
+        onValue(
+            transactionsRef,
+            async (snapshot) => {
+
+                const container =
+                    document.getElementById(
+                        "transactionsList"
+                    );
+
+
+                if (!container) {
+
+                    console.warn(
+                        "transactionsList container not found"
+                    );
+
+                    return;
+                }
+
+
+                // ----------------------------------
+                // EMPTY STATE
+                // ----------------------------------
+
+                if (!snapshot.exists()) {
+
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            Aucune transaction trouvée.
+                        </div>
+                    `;
+
+                    return;
+                }
+
+
+                const transactions = [];
+
+
+                // ----------------------------------
+                // GET TRANSACTIONS
+                // ----------------------------------
+
+                snapshot.forEach((child) => {
+
+                    const data =
+                        child.val() || {};
+
+                    transactions.push({
+                        id: child.key,
+                        ...data
+                    });
+
+                });
+
+
+                // ----------------------------------
+                // SORT NEWEST FIRST
+                // ----------------------------------
+
+                transactions.sort((a, b) => {
+
+                    return (
+                        numberValue(b.createdAt) -
+                        numberValue(a.createdAt)
+                    );
+
+                });
+
+
+                // ----------------------------------
+                // LOAD USERS
+                // ----------------------------------
+
+                const userCache = {};
+
+
+                await Promise.all(
+                    transactions.map(
+                        async (transaction) => {
+
+                            if (!transaction.uid) {
+                                return;
+                            }
+
+
+                            if (
+                                userCache[
+                                    transaction.uid
+                                ]
+                            ) {
+                                return;
+                            }
+
+
+                            try {
+
+                                const userSnapshot =
+                                    await get(
+                                        ref(
+                                            db,
+                                            `users/${transaction.uid}`
+                                        )
+                                    );
+
+
+                                if (
+                                    userSnapshot.exists()
+                                ) {
+
+                                    userCache[
+                                        transaction.uid
+                                    ] =
+                                        userSnapshot.val();
+
+                                }
+
+                            }
+                            catch (error) {
+
+                                console.error(
+                                    "TRANSACTION USER LOAD ERROR:",
+                                    transaction.uid,
+                                    error
+                                );
+
+                            }
+
+                        }
+                    )
+                );
+
+
+                // ----------------------------------
+                // RENDER
+                // ----------------------------------
+
+                container.innerHTML =
+                    transactions.map(
+                        (transaction) => {
+
+                            const user =
+                                userCache[
+                                    transaction.uid
+                                ] || {};
+
+
+                            const name =
+                                user.name ||
+                                user.fullName ||
+                                user.username ||
+                                "Utilisateur";
+
+
+                            const email =
+                                user.email ||
+                                "-";
+
+
+                            const amount =
+                                numberValue(
+                                    transaction.amount
+                                );
+
+
+                            const type =
+                                String(
+                                    transaction.type ||
+                                    "unknown"
+                                ).toLowerCase();
+
+
+                            const status =
+                                normalizeStatus(
+                                    transaction.status
+                                );
+
+
+                            // ----------------------------------
+                            // TYPE LABEL
+                            // ----------------------------------
+
+                            let typeLabel =
+                                "Transaction";
+
+
+                            if (
+                                type === "deposit"
+                            ) {
+
+                                typeLabel =
+                                    "Dépôt";
+
+                            }
+                            else if (
+                                type === "withdraw"
+                            ) {
+
+                                typeLabel =
+                                    "Retrait";
+
+                            }
+                            else if (
+                                type === "vip"
+                            ) {
+
+                                typeLabel =
+                                    "VIP";
+
+                            }
+                            else if (
+                                type === "bonus"
+                            ) {
+
+                                typeLabel =
+                                    "Bonus";
+
+                            }
+                            else if (
+                                type === "profit"
+                            ) {
+
+                                typeLabel =
+                                    "Profit";
+
+                            }
+                            else if (
+                                type === "referral"
+                            ) {
+
+                                typeLabel =
+                                    "Parrainage";
+
+                            }
+
+
+                            // ----------------------------------
+                            // STATUS LABEL
+                            // ----------------------------------
+
+                            let statusLabel =
+                                "En attente";
+
+
+                            if (
+                                status === "approved"
+                            ) {
+
+                                statusLabel =
+                                    "Approuvé";
+
+                            }
+                            else if (
+                                status === "rejected"
+                            ) {
+
+                                statusLabel =
+                                    "Rejeté";
+
+                            }
+                            else if (
+                                status === "processing"
+                            ) {
+
+                                statusLabel =
+                                    "Traitement...";
+
+                            }
+                            else if (
+                                status === "processing_error"
+                            ) {
+
+                                statusLabel =
+                                    "Erreur";
+
+                            }
+
+
+                            // ----------------------------------
+                            // DATE
+                            // ----------------------------------
+
+                            const createdAt =
+                                transaction.createdAt
+                                    ? new Date(
+                                        numberValue(
+                                            transaction.createdAt
+                                        )
+                                    ).toLocaleString(
+                                        "fr-FR"
+                                    )
+                                    : "-";
+
+
+                            // ----------------------------------
+                            // EXTRA INFO
+                            // ----------------------------------
+
+                            const transactionId =
+                                transaction.transactionId ||
+                                transaction.txId ||
+                                "-";
+
+
+                            const paymentMethod =
+                                transaction.paymentMethod ||
+                                transaction.method ||
+                                "-";
+
+
+                            return `
+                                <div
+                                    class="transaction-card"
+                                    data-id="${escapeHTML(
+                                        transaction.id
+                                    )}"
+                                >
+
+                                    <div class="request-header">
+
+                                        <div>
+
+                                            <h3>
+                                                ${escapeHTML(
+                                                    typeLabel
+                                                )}
+                                            </h3>
+
+                                            <small>
+                                                ID:
+                                                ${escapeHTML(
+                                                    transaction.id
+                                                )}
+                                            </small>
+
+                                        </div>
+
+
+                                        <span
+                                            class="request-status status-${escapeHTML(
+                                                status
+                                            )}"
+                                        >
+                                            ${escapeHTML(
+                                                statusLabel
+                                            )}
+                                        </span>
+
+                                    </div>
+
+
+                                    <div class="request-user">
+
+                                        <strong>
+                                            ${escapeHTML(
+                                                name
+                                            )}
+                                        </strong>
+
+                                        <span>
+                                            ${escapeHTML(
+                                                email
+                                            )}
+                                        </span>
+
+                                    </div>
+
+
+                                    <div class="request-details">
+
+                                        <div class="detail-item">
+
+                                            <span>
+                                                Montant
+                                            </span>
+
+                                            <strong>
+                                                ${formatMoney(
+                                                    amount
+                                                )}
+                                            </strong>
+
+                                        </div>
+
+
+                                        <div class="detail-item">
+
+                                            <span>
+                                                Type
+                                            </span>
+
+                                            <strong>
+                                                ${escapeHTML(
+                                                    typeLabel
+                                                )}
+                                            </strong>
+
+                                        </div>
+
+
+                                        <div class="detail-item">
+
+                                            <span>
+                                                Méthode
+                                            </span>
+
+                                            <strong>
+                                                ${escapeHTML(
+                                                    paymentMethod
+                                                )}
+                                            </strong>
+
+                                        </div>
+
+
+                                        <div class="detail-item">
+
+                                            <span>
+                                                Transaction ID
+                                            </span>
+
+                                            <strong>
+                                                ${escapeHTML(
+                                                    transactionId
+                                                )}
+                                            </strong>
+
+                                        </div>
+
+
+                                        <div class="detail-item">
+
+                                            <span>
+                                                UID
+                                            </span>
+
+                                            <strong>
+                                                ${escapeHTML(
+                                                    transaction.uid ||
+                                                    "-"
+                                                )}
+                                            </strong>
+
+                                        </div>
+
+
+                                        <div class="detail-item">
+
+                                            <span>
+                                                Date
+                                            </span>
+
+                                            <strong>
+                                                ${escapeHTML(
+                                                    createdAt
+                                                )}
+                                            </strong>
+
+                                        </div>
+
+                                    </div>
+
+                                </div>
+                            `;
+
+                        }
+                    ).join("");
+
+            }
+        );
+
+
+    }
+    catch (error) {
+
+        console.error(
+            "LOAD TRANSACTIONS ERROR:",
+            error
+        );
+
+    }
+
+}
+
+
+// ==========================================
+// 2. EXPOSE FUNCTION
+// ==========================================
+
+window.loadTransactions =
+    loadTransactions;
+
+
+// ==========================================
+// 3. PART 11 READY
+// ==========================================
+
+console.log(
+    "ADMIN.JS PART 11 READY"
+);
