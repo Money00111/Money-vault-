@@ -4791,3 +4791,687 @@ console.log(
     "ADMIN.JS PART 9 READY"
 );
 
+// ==========================================
+// ADMIN.JS — PART 10
+// USERS MANAGEMENT
+// ==========================================
+
+async function loadUsers() {
+
+    try {
+
+        await window.waitForAdmin();
+
+        console.log("PART 10: Loading users...");
+
+        const usersRef = ref(db, "users");
+
+        onValue(
+            usersRef,
+            (snapshot) => {
+
+                const container =
+                    document.getElementById("usersList");
+
+                if (!container) {
+                    console.warn(
+                        "usersList container not found"
+                    );
+                    return;
+                }
+
+                if (!snapshot.exists()) {
+
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            Aucun utilisateur trouvé.
+                        </div>
+                    `;
+
+                    return;
+                }
+
+                const users = [];
+
+                snapshot.forEach((child) => {
+
+                    const user =
+                        child.val() || {};
+
+                    users.push({
+                        id: child.key,
+                        ...user
+                    });
+
+                });
+
+
+                users.sort((a, b) => {
+
+                    return (
+                        numberValue(b.createdAt) -
+                        numberValue(a.createdAt)
+                    );
+
+                });
+
+
+                container.innerHTML =
+                    users.map((user) => {
+
+                        const uid =
+                            user.id || "-";
+
+                        const name =
+                            user.name ||
+                            user.fullName ||
+                            user.username ||
+                            "Utilisateur";
+
+                        const email =
+                            user.email || "-";
+
+                        const phone =
+                            user.phone || "-";
+
+                        const balance =
+                            numberValue(
+                                user.balance
+                            );
+
+                        const totalDeposits =
+                            numberValue(
+                                user.totalDeposits
+                            );
+
+                        const totalWithdrawals =
+                            numberValue(
+                                user.totalWithdrawals
+                            );
+
+                        const referralEarnings =
+                            numberValue(
+                                user.referralEarnings
+                            );
+
+                        const totalTransactions =
+                            numberValue(
+                                user.totalTransactions
+                            );
+
+                        const referralCode =
+                            user.referralCode || "-";
+
+                        const referredBy =
+                            user.referredBy || "-";
+
+                        const status =
+                            String(
+                                user.status ||
+                                "active"
+                            ).toLowerCase();
+
+                        const createdAt =
+                            user.createdAt
+                                ? new Date(
+                                    numberValue(
+                                        user.createdAt
+                                    )
+                                ).toLocaleString(
+                                    "fr-FR"
+                                )
+                                : "-";
+
+
+                        return `
+                            <div
+                                class="user-card"
+                                data-id="${escapeHTML(uid)}"
+                            >
+
+                                <div class="request-header">
+
+                                    <div>
+
+                                        <h3>
+                                            ${escapeHTML(name)}
+                                        </h3>
+
+                                        <small>
+                                            UID:
+                                            ${escapeHTML(uid)}
+                                        </small>
+
+                                    </div>
+
+                                    <span
+                                        class="request-status status-${escapeHTML(status)}"
+                                    >
+                                        ${escapeHTML(status)}
+                                    </span>
+
+                                </div>
+
+
+                                <div class="request-user">
+
+                                    <span>
+                                        ${escapeHTML(email)}
+                                    </span>
+
+                                    <span>
+                                        ${escapeHTML(phone)}
+                                    </span>
+
+                                </div>
+
+
+                                <div class="request-details">
+
+                                    <div class="detail-item">
+                                        <span>Solde</span>
+                                        <strong>
+                                            ${formatMoney(balance)}
+                                        </strong>
+                                    </div>
+
+                                    <div class="detail-item">
+                                        <span>Total dépôts</span>
+                                        <strong>
+                                            ${formatMoney(totalDeposits)}
+                                        </strong>
+                                    </div>
+
+                                    <div class="detail-item">
+                                        <span>Total retraits</span>
+                                        <strong>
+                                            ${formatMoney(totalWithdrawals)}
+                                        </strong>
+                                    </div>
+
+                                    <div class="detail-item">
+                                        <span>
+                                            Gains de parrainage
+                                        </span>
+                                        <strong>
+                                            ${formatMoney(
+                                                referralEarnings
+                                            )}
+                                        </strong>
+                                    </div>
+
+                                    <div class="detail-item">
+                                        <span>
+                                            Transactions
+                                        </span>
+                                        <strong>
+                                            ${escapeHTML(
+                                                String(
+                                                    totalTransactions
+                                                )
+                                            )}
+                                        </strong>
+                                    </div>
+
+                                    <div class="detail-item">
+                                        <span>
+                                            Code de parrainage
+                                        </span>
+                                        <strong>
+                                            ${escapeHTML(
+                                                referralCode
+                                            )}
+                                        </strong>
+                                    </div>
+
+                                    <div class="detail-item">
+                                        <span>
+                                            Parrain
+                                        </span>
+                                        <strong>
+                                            ${escapeHTML(
+                                                referredBy
+                                            )}
+                                        </strong>
+                                    </div>
+
+                                    <div class="detail-item">
+                                        <span>
+                                            Inscription
+                                        </span>
+                                        <strong>
+                                            ${escapeHTML(
+                                                createdAt
+                                            )}
+                                        </strong>
+                                    </div>
+
+                                </div>
+
+                            </div>
+                        `;
+
+                    }).join("");
+
+                console.log(
+                    "PART 10: Users loaded:",
+                    users.length
+                );
+
+            },
+            (error) => {
+
+                console.error(
+                    "PART 10 FIREBASE ERROR:",
+                    error
+                );
+
+            }
+        );
+
+    }
+    catch (error) {
+
+        console.error(
+            "PART 10 ERROR:",
+            error
+        );
+
+    }
+
+}
+
+
+window.loadUsers = loadUsers;
+
+console.log("ADMIN.JS PART 10 READY");
+
+// ==========================================
+// ADMIN.JS — PART 11
+// TRANSACTIONS MANAGEMENT
+// ==========================================
+
+async function loadTransactions() {
+
+    try {
+
+        await window.waitForAdmin();
+
+        console.log(
+            "PART 11: Loading transactions..."
+        );
+
+        const transactionsRef =
+            ref(db, "transactions");
+
+
+        onValue(
+            transactionsRef,
+            (snapshot) => {
+
+                const container =
+                    document.getElementById(
+                        "transactionsList"
+                    );
+
+
+                if (!container) {
+
+                    console.warn(
+                        "transactionsList container not found"
+                    );
+
+                    return;
+                }
+
+
+                if (!snapshot.exists()) {
+
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            Aucune transaction trouvée.
+                        </div>
+                    `;
+
+                    return;
+                }
+
+
+                const transactions = [];
+
+
+                snapshot.forEach((child) => {
+
+                    const transaction =
+                        child.val() || {};
+
+                    transactions.push({
+
+                        id: child.key,
+
+                        ...transaction
+
+                    });
+
+                });
+
+
+                transactions.sort((a, b) => {
+
+                    return (
+                        numberValue(b.createdAt) -
+                        numberValue(a.createdAt)
+                    );
+
+                });
+
+
+                container.innerHTML =
+                    transactions.map(
+                        (transaction) => {
+
+                            const amount =
+                                numberValue(
+                                    transaction.amount
+                                );
+
+
+                            const type =
+                                String(
+                                    transaction.type ||
+                                    "transaction"
+                                ).toLowerCase();
+
+
+                            const status =
+                                normalizeStatus(
+                                    transaction.status
+                                );
+
+
+                            let typeLabel =
+                                "Transaction";
+
+
+                            if (
+                                type === "deposit"
+                            ) {
+
+                                typeLabel =
+                                    "Dépôt";
+
+                            }
+                            else if (
+                                type === "withdraw"
+                            ) {
+
+                                typeLabel =
+                                    "Retrait";
+
+                            }
+                            else if (
+                                type === "vip"
+                            ) {
+
+                                typeLabel =
+                                    "VIP";
+
+                            }
+                            else if (
+                                type === "bonus"
+                            ) {
+
+                                typeLabel =
+                                    "Bonus";
+
+                            }
+                            else if (
+                                type === "profit"
+                            ) {
+
+                                typeLabel =
+                                    "Profit";
+
+                            }
+                            else if (
+                                type === "referral"
+                            ) {
+
+                                typeLabel =
+                                    "Parrainage";
+
+                            }
+
+
+                            let statusLabel =
+                                "En attente";
+
+
+                            if (
+                                status === "approved"
+                            ) {
+
+                                statusLabel =
+                                    "Approuvé";
+
+                            }
+                            else if (
+                                status === "rejected"
+                            ) {
+
+                                statusLabel =
+                                    "Rejeté";
+
+                            }
+                            else if (
+                                status === "processing"
+                            ) {
+
+                                statusLabel =
+                                    "Traitement...";
+
+                            }
+                            else if (
+                                status ===
+                                "processing_error"
+                            ) {
+
+                                statusLabel =
+                                    "Erreur";
+
+                            }
+
+
+                            const createdAt =
+                                transaction.createdAt
+                                    ? new Date(
+                                        numberValue(
+                                            transaction.createdAt
+                                        )
+                                    ).toLocaleString(
+                                        "fr-FR"
+                                    )
+                                    : "-";
+
+
+                            return `
+
+                                <div
+                                    class="transaction-card"
+                                    data-id="${escapeHTML(
+                                        transaction.id
+                                    )}"
+                                >
+
+                                    <div
+                                        class="request-header"
+                                    >
+
+                                        <div>
+
+                                            <h3>
+                                                ${escapeHTML(
+                                                    typeLabel
+                                                )}
+                                            </h3>
+
+                                            <small>
+                                                ID:
+                                                ${escapeHTML(
+                                                    transaction.id
+                                                )}
+                                            </small>
+
+                                        </div>
+
+
+                                        <span
+                                            class="request-status status-${escapeHTML(
+                                                status
+                                            )}"
+                                        >
+                                            ${escapeHTML(
+                                                statusLabel
+                                            )}
+                                        </span>
+
+                                    </div>
+
+
+                                    <div
+                                        class="request-details"
+                                    >
+
+                                        <div
+                                            class="detail-item"
+                                        >
+
+                                            <span>
+                                                Montant
+                                            </span>
+
+                                            <strong>
+                                                ${formatMoney(
+                                                    amount
+                                                )}
+                                            </strong>
+
+                                        </div>
+
+
+                                        <div
+                                            class="detail-item"
+                                        >
+
+                                            <span>
+                                                Type
+                                            </span>
+
+                                            <strong>
+                                                ${escapeHTML(
+                                                    typeLabel
+                                                )}
+                                            </strong>
+
+                                        </div>
+
+
+                                        <div
+                                            class="detail-item"
+                                        >
+
+                                            <span>
+                                                UID
+                                            </span>
+
+                                            <strong>
+                                                ${escapeHTML(
+                                                    transaction.uid ||
+                                                    "-"
+                                                )}
+                                            </strong>
+
+                                        </div>
+
+
+                                        <div
+                                            class="detail-item"
+                                        >
+
+                                            <span>
+                                                Transaction ID
+                                            </span>
+
+                                            <strong>
+                                                ${escapeHTML(
+                                                    transaction.transactionId ||
+                                                    transaction.txId ||
+                                                    "-"
+                                                )}
+                                            </strong>
+
+                                        </div>
+
+
+                                        <div
+                                            class="detail-item"
+                                        >
+
+                                            <span>
+                                                Date
+                                            </span>
+
+                                            <strong>
+                                                ${escapeHTML(
+                                                    createdAt
+                                                )}
+                                            </strong>
+
+                                        </div>
+
+                                    </div>
+
+                                </div>
+
+                            `;
+
+                        }
+                    ).join("");
+
+
+                console.log(
+                    "PART 11: Transactions loaded:",
+                    transactions.length
+                );
+
+            },
+            (error) => {
+
+                console.error(
+                    "PART 11 FIREBASE ERROR:",
+                    error
+                );
+
+            }
+        );
+
+    }
+    catch (error) {
+
+        console.error(
+            "PART 11 ERROR:",
+            error
+        );
+
+    }
+
+}
+
+
+window.loadTransactions =
+    loadTransactions;
+
+
+console.log(
+    "ADMIN.JS PART 11 READY"
+);
