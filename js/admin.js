@@ -1333,56 +1333,46 @@ async function approveDeposit(id) {
         // UPDATE USER BALANCE SAFELY
         // ==================================
 
-        const balanceTransaction =
-            await runTransaction(
-                userRef,
-                user => {
+        const userSnap = await get(userRef);
 
-                    if (!user) {
-                        return;
-                    }
+if (!userSnap.exists()) {
+    throw new Error(
+        "User account not found for UID: " + uid
+    );
+}
 
+const balanceTransaction =
+    await runTransaction(
+        userRef,
+        user => {
 
-                    const currentBalance =
-                        Number(
-                            user.balance || 0
-                        );
+            if (!user) {
+                return;
+            }
 
+            const currentBalance =
+                Number(user.balance || 0);
 
-                    const currentTotalDeposit =
-                        Number(
-                            user.totalDeposit || 0
-                        );
+            const currentTotalDeposit =
+                Number(user.totalDeposit || 0);
 
+            return {
+                ...user,
 
-                    return {
+                balance:
+                    currentBalance + amount,
 
-                        ...user,
-
-                        balance:
-                            currentBalance +
-                            amount,
-
-                        totalDeposit:
-                            currentTotalDeposit +
-                            amount
-
-                    };
-
-                }
-            );
-
-
-        if (
-            !balanceTransaction.committed
-        ) {
-
-            throw new Error(
-                "Could not update user balance."
-            );
-
+                totalDeposit:
+                    currentTotalDeposit + amount
+            };
         }
+    );
 
+if (!balanceTransaction.committed) {
+    throw new Error(
+        "Firebase could not update user balance."
+    );
+}
 
         // ==================================
         // STEP 3
