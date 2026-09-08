@@ -749,19 +749,18 @@ console.log("VIP PART 4 REQUEST SYSTEM READY");
 
 // ======================================
 // VIP.JS - PART 5
-// LOAD USER VIP PLANS
+// LOAD USER VIP PLANS FROM vipBuyers
 // ======================================
 
 function loadUserVipPlans() {
 
     if (!currentUser) return;
 
-    const vipRef = ref(
-        db,
-        "users/" + currentUser.uid + "/vipPlans"
-    );
+    const vipRef = ref(db, "vipBuyers");
 
     onValue(vipRef, (snapshot) => {
+
+        if (!ownedVipList) return;
 
         ownedVipList.innerHTML = "";
 
@@ -777,47 +776,170 @@ function loadUserVipPlans() {
                 </div>
             `;
 
-            currentVip.textContent = "VIP 0";
-            dailyIncome.textContent = "0 RWF";
-            totalProfit.textContent = "0 RWF";
+            if (currentVip)
+                currentVip.textContent = "VIP 0";
+
+            if (dailyIncome)
+                dailyIncome.textContent = "0 RWF";
+
+            if (totalProfit)
+                totalProfit.textContent = "0 RWF";
+
+            updateVipButtons();
 
             return;
         }
+
 
         snapshot.forEach((child) => {
 
             const vip = child.val();
 
-            if (vip.status === "active") {
+            // ONLY CURRENT USER
+            if (!vip || vip.uid !== currentUser.uid) {
+                return;
+            }
+
+
+            const name =
+                vip.vipName ||
+                vip.name ||
+                "VIP Plan";
+
+
+            const price =
+                Number(vip.price || 0);
+
+
+            const daily =
+                Number(vip.dailyIncome || 0);
+
+
+            const profit =
+                Number(vip.totalProfit || 0);
+
+
+            const duration =
+                Number(
+                    vip.duration ||
+                    vip.totalDays ||
+                    vip.days ||
+                    0
+                );
+
+
+            const startDate =
+                Number(
+                    vip.startDate ||
+                    vip.purchasedAt ||
+                    vip.approvedAt ||
+                    vip.createdAt ||
+                    0
+                );
+
+
+            // ==================================
+            // CALCULATE REMAINING DAYS
+            // ==================================
+
+            let remainingDays =
+                duration;
+
+
+            if (startDate > 0 && duration > 0) {
+
+                const daysPassed =
+                    Math.floor(
+                        (Date.now() - startDate) /
+                        86400000
+                    );
+
+                remainingDays =
+                    Math.max(
+                        duration - daysPassed,
+                        0
+                    );
+            }
+
+
+            let status =
+                String(
+                    vip.status || "active"
+                ).toLowerCase();
+
+
+            if (
+                remainingDays <= 0 &&
+                duration > 0
+            ) {
+
+                status = "expired";
+
+            }
+
+
+            if (status === "active") {
 
                 activeCount++;
 
-                totalDaily += Number(vip.dailyIncome || 0);
+                totalDaily += daily;
 
-                totalProfitAmount += Number(vip.totalProfit || 0);
+                totalProfitAmount += profit;
 
             }
+
+
+            // ==================================
+            // DISPLAY VIP
+            // ==================================
 
             ownedVipList.innerHTML += `
 
                 <div class="owned-vip-card">
 
-                    <h3>${vip.vipName}</h3>
+                    <h3>
+                        ${name}
+                    </h3>
+
+                    <p>
+                        Price:
+                        <b>
+                            ${price.toLocaleString()} RWF
+                        </b>
+                    </p>
 
                     <p>
                         Daily Income:
-                        <b>${Number(vip.dailyIncome || 0).toLocaleString()} RWF</b>
+                        <b>
+                            ${daily.toLocaleString()} RWF
+                        </b>
+                    </p>
+
+                    <p>
+                        Duration:
+                        <b>
+                            ${duration} Days
+                        </b>
                     </p>
 
                     <p>
                         Remaining Days:
-                        <b>${vip.remainingDays || 0}</b>
+                        <b>
+                            ${remainingDays} Days
+                        </b>
+                    </p>
+
+                    <p>
+                        Total Profit:
+                        <b>
+                            ${profit.toLocaleString()} RWF
+                        </b>
                     </p>
 
                     <p>
                         Status:
                         <span class="vip-status">
-                            ${vip.status}
+                            ${status}
                         </span>
                     </p>
 
@@ -827,14 +949,41 @@ function loadUserVipPlans() {
 
         });
 
-        currentVip.textContent =
-            activeCount + " Active VIP";
 
-        dailyIncome.textContent =
-            totalDaily.toLocaleString() + " RWF";
+        // ==================================
+        // SUMMARY
+        // ==================================
 
-        totalProfit.textContent =
-            totalProfitAmount.toLocaleString() + " RWF";
+        if (currentVip) {
+
+            currentVip.textContent =
+                activeCount +
+                " Active VIP";
+
+        }
+
+
+        if (dailyIncome) {
+
+            dailyIncome.textContent =
+                totalDaily.toLocaleString() +
+                " RWF";
+
+        }
+
+
+        if (totalProfit) {
+
+            totalProfit.textContent =
+                totalProfitAmount.toLocaleString() +
+                " RWF";
+
+        }
+
+
+        // ==================================
+        // UPDATE BUY BUTTONS
+        // ==================================
 
         updateVipButtons();
 
@@ -842,7 +991,11 @@ function loadUserVipPlans() {
 
 }
 
-console.log("VIP PART 5 READY");
+console.log(
+    "VIP PART 5 - vipBuyers CONNECTED"
+);
+
+        
 // ======================================
 // VIP.JS - PART 9
 // UPDATE VIP BUTTONS
