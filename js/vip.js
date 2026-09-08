@@ -2648,4 +2648,818 @@ console.log(
 );
 
         
-        
+       // ======================================
+// VIP.JS - PART 8
+// DAILY CLAIM TIMER
+// ======================================
+
+let claimTimerInterval = null;
+
+
+// ======================================
+// START CLAIM TIMER
+// ======================================
+
+function startClaimTimer() {
+
+    // Stop previous timer
+    if (claimTimerInterval) {
+
+        clearInterval(
+            claimTimerInterval
+        );
+
+        claimTimerInterval = null;
+
+    }
+
+
+    if (!currentUser) {
+        return;
+    }
+
+
+    const claimButton =
+        document.getElementById(
+            "claimDailyIncome"
+        );
+
+
+    if (!claimButton) {
+
+        console.log(
+            "Claim button not found."
+        );
+
+        return;
+
+    }
+
+
+    const vipRef =
+        ref(
+            db,
+            `users/${currentUser.uid}/vipPlans`
+        );
+
+
+    // ==================================
+    // READ VIP PLANS
+    // ==================================
+
+    get(vipRef)
+        .then((snapshot) => {
+
+            if (!snapshot.exists()) {
+
+                claimButton.disabled = true;
+
+                claimButton.innerHTML =
+                    '<i class="fas fa-lock"></i> No Active VIP';
+
+                return;
+
+            }
+
+
+            const plans =
+                snapshot.val() || {};
+
+
+            // ==================================
+            // UPDATE TIMER
+            // ==================================
+
+            const updateTimer = () => {
+
+                const now =
+                    Date.now();
+
+
+                let nextClaimTime = null;
+
+                let hasActiveVip = false;
+
+
+                Object.values(plans).forEach(
+                    (plan) => {
+
+                        if (!plan) {
+                            return;
+                        }
+
+
+                        const status =
+                            String(
+                                plan.status ||
+                                "active"
+                            ).toLowerCase();
+
+
+                        if (
+                            status !== "active"
+                        ) {
+
+                            return;
+
+                        }
+
+
+                        const daily =
+                            Number(
+                                plan.dailyIncome ??
+                                plan.daily ??
+                                0
+                            );
+
+
+                        if (daily <= 0) {
+                            return;
+                        }
+
+
+                        // ------------------------------
+                        // CHECK EXPIRATION
+                        // ------------------------------
+
+                        const startDate =
+                            Number(
+                                plan.startDate ??
+                                plan.purchasedAt ??
+                                plan.approvedAt ??
+                                plan.createdAt ??
+                                0
+                            );
+
+
+                        const duration =
+                            Number(
+                                plan.totalDays ??
+                                plan.duration ??
+                                plan.days ??
+                                0
+                            );
+
+
+                        let endDate =
+                            Number(
+                                plan.endDate || 0
+                            );
+
+
+                        if (
+                            !endDate &&
+                            startDate &&
+                            duration > 0
+                        ) {
+
+                            endDate =
+                                startDate +
+                                (
+                                    duration *
+                                    24 *
+                                    60 *
+                                    60 *
+                                    1000
+                                );
+
+                        }
+
+
+                        if (
+                            endDate &&
+                            now >= endDate
+                        ) {
+
+                            return;
+
+                        }
+
+
+                        hasActiveVip = true;
+
+
+                        // ------------------------------
+                        // LAST CLAIM
+                        // ------------------------------
+
+                        const lastClaim =
+                            Number(
+                                plan.lastClaim || 0
+                            );
+
+
+                        const twentyFourHours =
+                            24 *
+                            60 *
+                            60 *
+                            1000;
+
+
+                        const claimTime =
+                            lastClaim
+                                ? lastClaim +
+                                  twentyFourHours
+                                : (
+                                    startDate +
+                                    twentyFourHours
+                                );
+
+
+                        // Pick earliest eligible claim
+                        if (
+                            nextClaimTime === null ||
+                            claimTime < nextClaimTime
+                        ) {
+
+                            nextClaimTime =
+                                claimTime;
+
+                        }
+
+                    }
+                );
+
+
+                // ==================================
+                // NO ACTIVE VIP
+                // ==================================
+
+                if (!hasActiveVip) {
+
+                    claimButton.disabled =
+                        true;
+
+                    claimButton.innerHTML =
+                        '<i class="fas fa-lock"></i> No Active VIP';
+
+                    return;
+
+                }
+
+
+                // ==================================
+                // CLAIM AVAILABLE
+                // ==================================
+
+                if (
+                    nextClaimTime !== null &&
+                    now >= nextClaimTime
+                ) {
+
+                    claimButton.disabled =
+                        false;
+
+                    claimButton.innerHTML =
+                        '<i class="fas fa-coins"></i> Claim Now';
+
+                    return;
+
+                }
+
+
+                // ==================================
+                // CALCULATE REMAINING TIME
+                // ==================================
+
+                const remaining =
+                    Math.max(
+                        0,
+                        nextClaimTime - now
+                    );
+
+
+                const totalSeconds =
+                    Math.floor(
+                        remaining / 1000
+                    );
+
+
+                const hours =
+                    Math.floor(
+                        totalSeconds / 3600
+                    );
+
+
+                const minutes =
+                    Math.floor(
+                        (
+                            totalSeconds % 3600
+                        ) / 60
+                    );
+
+
+                const seconds =
+                    totalSeconds % 60;
+
+
+                claimButton.disabled =
+                    true;
+
+
+                claimButton.innerHTML =
+                    `
+                    <i class="fas fa-clock"></i>
+                    Claim in
+                    ${hours}h
+                    ${minutes}m
+                    ${seconds}s
+                    `;
+
+            };
+
+
+            // First update
+            updateTimer();
+
+
+            // Update every second
+            claimTimerInterval =
+                setInterval(
+                    updateTimer,
+                    1000
+                );
+
+        })
+        .catch((error) => {
+
+            console.error(
+                "CLAIM TIMER ERROR:",
+                error
+            );
+
+        });
+
+}
+
+
+
+
+console.log(
+    "VIP PART 8 READY"
+); 
+
+
+    // ======================================
+// VIP.JS - PART 9
+// UPDATE VIP BUY BUTTONS
+// ======================================
+
+async function updateVipButtons() {
+
+    if (!currentUser) {
+        return;
+    }
+
+
+    const buttons =
+        document.querySelectorAll(
+            ".buyVipBtn"
+        );
+
+
+    if (!buttons.length) {
+        return;
+    }
+
+
+    try {
+
+        // ==================================
+        // USER VIP PLANS
+        // ==================================
+
+        const vipPlansRef =
+            ref(
+                db,
+                `users/${currentUser.uid}/vipPlans`
+            );
+
+
+        const vipSnapshot =
+            await get(vipPlansRef);
+
+
+        const ownedPlans =
+            vipSnapshot.exists()
+                ? vipSnapshot.val() || {}
+                : {};
+
+
+        // ==================================
+        // USER PURCHASE REQUESTS ONLY
+        // ==================================
+
+        const requestsQuery =
+            query(
+                ref(
+                    db,
+                    "vipPurchaseRequests"
+                ),
+                orderByChild("uid"),
+                equalTo(currentUser.uid)
+            );
+
+
+        const requestSnapshot =
+            await get(requestsQuery);
+
+
+        const requests =
+            requestSnapshot.exists()
+                ? requestSnapshot.val() || {}
+                : {};
+
+
+        // ==================================
+        // UPDATE BUTTONS
+        // ==================================
+
+        buttons.forEach(
+            (button) => {
+
+                const vipName =
+                    button.dataset.vip || "";
+
+
+                let purchased = false;
+
+                let pending = false;
+
+
+                // ==================================
+                // CHECK OWNED VIP
+                // ==================================
+
+                Object.values(
+                    ownedPlans
+                ).forEach(
+                    (plan) => {
+
+                        if (!plan) {
+                            return;
+                        }
+
+
+                        const planName =
+                            plan.vipName ||
+                            plan.name ||
+                            "";
+
+
+                        if (
+                            planName !== vipName
+                        ) {
+                            return;
+                        }
+
+
+                        const status =
+                            String(
+                                plan.status ||
+                                "active"
+                            ).toLowerCase();
+
+
+                        if (
+                            status === "active" ||
+                            status === "expired"
+                        ) {
+
+                            purchased = true;
+
+                        }
+
+                    }
+                );
+
+
+                // ==================================
+                // CHECK REQUEST
+                // ==================================
+
+                Object.values(
+                    requests
+                ).forEach(
+                    (request) => {
+
+                        if (!request) {
+                            return;
+                        }
+
+
+                        const requestName =
+                            request.vipName ||
+                            request.name ||
+                            "";
+
+
+                        const status =
+                            String(
+                                request.status ||
+                                ""
+                            ).toLowerCase();
+
+
+                        if (
+                            requestName === vipName &&
+                            (
+                                status === "pending" ||
+                                status === "processing"
+                            )
+                        ) {
+
+                            pending = true;
+
+                        }
+
+                    }
+                );
+
+
+                // ==================================
+                // PURCHASED
+                // ==================================
+
+                if (purchased) {
+
+                    button.disabled =
+                        true;
+
+                    button.classList.add(
+                        "purchased"
+                    );
+
+                    button.innerHTML =
+                        `
+                        <i class="fas fa-check-circle"></i>
+                        Purchased
+                        `;
+
+                    button.style.display =
+                        "none";
+
+                    return;
+
+                }
+
+
+                // ==================================
+                // PENDING
+                // ==================================
+
+                if (pending) {
+
+                    button.disabled =
+                        true;
+
+                    button.classList.add(
+                        "purchased"
+                    );
+
+                    button.innerHTML =
+                        `
+                        <i class="fas fa-clock"></i>
+                        Pending
+                        `;
+
+                    button.style.display =
+                        "none";
+
+                    return;
+
+                }
+
+
+                // ==================================
+                // AVAILABLE
+                // ==================================
+
+                button.disabled =
+                    false;
+
+                button.dataset.buying =
+                    "false";
+
+                button.classList.remove(
+                    "purchased"
+                );
+
+                button.style.display =
+                    "";
+
+
+                button.innerHTML =
+                    `
+                    <i class="fas fa-cart-shopping"></i>
+                    Buy Now
+                    `;
+
+            }
+        );
+
+
+        console.log(
+            "VIP BUY BUTTONS UPDATED"
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "UPDATE VIP BUTTONS ERROR:",
+            error
+        );
+
+    }
+
+}
+
+
+console.log(
+    "VIP PART 9 READY"
+);
+// ======================================
+// VIP.JS - PART 10
+// FINAL VIP INITIALIZATION
+// ======================================
+
+
+// ======================================
+// REFRESH VIP SYSTEM
+// ======================================
+
+function refreshVipSystem() {
+
+    if (!currentUser) {
+        return;
+    }
+
+
+    updateVipButtons();
+
+    startClaimTimer();
+
+
+    console.log(
+        "VIP SYSTEM REFRESHED"
+    );
+
+}
+
+
+// ======================================
+// CLAIM BUTTON - ONE LISTENER ONLY
+// ======================================
+
+const claimButton =
+    document.getElementById(
+        "claimDailyIncome"
+    );
+
+
+if (claimButton) {
+
+    claimButton.addEventListener(
+        "click",
+        async () => {
+
+            // ==============================
+            // PREVENT CLICK WHEN DISABLED
+            // ==============================
+
+            if (
+                claimButton.disabled
+            ) {
+                return;
+            }
+
+
+            await claimDailyIncome();
+
+        }
+    );
+
+}
+
+
+// ======================================
+// PAGE VISIBILITY
+// ======================================
+
+document.addEventListener(
+    "visibilitychange",
+    () => {
+
+        if (
+            document.visibilityState ===
+            "visible"
+        ) {
+
+            refreshVipSystem();
+
+        }
+
+    }
+);
+
+
+// ======================================
+// START AFTER FIRST AUTH
+// ======================================
+
+let vipSystemStarted = false;
+
+
+onAuthStateChanged(
+    auth,
+    (user) => {
+
+        if (!user) {
+
+            currentUser = null;
+
+            vipSystemStarted = false;
+
+            console.log(
+                "NO USER LOGGED IN"
+            );
+
+            return;
+
+        }
+
+
+        currentUser =
+            user;
+
+
+        console.log(
+            "VIP AUTH READY:",
+            currentUser.uid
+        );
+
+
+        // ==================================
+        // PREVENT DUPLICATE START
+        // ==================================
+
+        if (
+            vipSystemStarted
+        ) {
+
+            refreshVipSystem();
+
+            return;
+
+        }
+
+
+        vipSystemStarted = true;
+
+
+        // ==================================
+        // LOAD VIP SYSTEM
+        // ==================================
+
+        loadUserData();
+
+        loadVipPackages();
+
+        loadUserVipPlans();
+
+        checkVipExpiration();
+
+        startClaimTimer();
+
+        updateVipButtons();
+
+
+        console.log(
+            "MONEY VAULT VIP SYSTEM STARTED"
+        );
+
+    }
+);
+
+
+// ======================================
+// FINAL READY
+// ======================================
+
+console.log(
+    "================================"
+);
+
+console.log(
+    "MONEY VAULT VIP SYSTEM READY"
+);
+
+console.log(
+    "PART 1 - 10 LOADED"
+);
+
+console.log(
+    "================================"
+);
+    
