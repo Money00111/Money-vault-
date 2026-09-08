@@ -5291,6 +5291,50 @@ async function approveVipRequest(id) {
         if (!confirmed) {
             return;
         }
+const userBalanceRef =
+    ref(
+        db,
+        `users/${uid}/balance`
+    );
+
+const balanceResult =
+    await runTransaction(
+        userBalanceRef,
+        currentBalance => {
+
+            const balance =
+                Number(currentBalance || 0);
+
+            if (balance < price) {
+                return;
+            }
+
+            return balance - price;
+        }
+    );
+
+if (!balanceResult.committed) {
+
+    await update(
+        requestRef,
+        {
+            status: "rejected",
+            rejectedAt: Date.now(),
+            rejectionReason:
+                "Insufficient balance at approval time.",
+            processingAt: null,
+            processingBy: null
+        }
+    );
+
+    alert(
+        "VIP purchase rejected: insufficient balance."
+    );
+
+    return;
+}
+
+
 
 
         // ==================================
@@ -5670,70 +5714,64 @@ async function approveVipRequest(id) {
             vipBuyerRef.key;
 
 
-        const endDate =
-            now +
-            (
-                duration *
-                24 *
-                60 *
-                60 *
-                1000
-            );
+               const userVipPlanRef =
+    ref(
+        db,
+        `users/${uid}/vipPlans/${vipBuyerId}`
+    );
 
+const userVipPlan = {
 
-        await set(
-            vipBuyerRef,
-            {
+    vipName: vipName,
 
-                uid:
-                    uid,
+    name: vipName,
 
-                vipName:
-                    vipName,
+    price: price,
 
-                price:
-                    price,
+    vipPrice: price,
 
-                dailyIncome:
-                    dailyIncome,
+    dailyIncome: dailyIncome,
 
-                totalProfit:
-                    totalProfit,
+    daily: dailyIncome,
 
-                duration:
-                    duration,
+    totalProfit: totalProfit,
 
-                totalDays:
-                    duration,
+    profit: totalProfit,
 
-                startDate:
-                    now,
+    duration: duration,
 
-                lastClaim:
-                    now,
+    totalDays: duration,
 
-                claimedAmount:
-                    0,
+    days: duration,
 
-                status:
-                    "active",
+    startDate: now,
 
-                purchaseRequestId:
-                    id,
+    approvedAt: now,
 
-                createdAt:
-                    now,
+    lastClaim: now,
 
-                approvedAt:
-                    now,
+    claimedAmount: 0,
 
-                approvedBy:
-                    currentAdmin?.uid ||
-                    auth.currentUser?.uid ||
-                    null
+    totalEarned: 0,
 
-            }
-        );
+    earned: 0,
+
+    claimCount: 0,
+
+    status: "active",
+
+    purchaseRequestId: id,
+
+    vipBuyerId: vipBuyerId,
+
+    createdAt: now
+
+};
+
+await set(
+    userVipPlanRef,
+    userVipPlan
+);     
 
 
         // ==================================
