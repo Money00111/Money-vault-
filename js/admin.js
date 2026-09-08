@@ -1,4 +1,4 @@
-[9/8, 02:50] Epizo: // ==========================================
+// ==========================================
 // ADMIN.JS — PART 1
 // Money Vault Admin Panel
 // Firebase Auth + Realtime Database
@@ -7568,3 +7568,843 @@ window.renderUsers =
 
 window.renderUserCard =
     renderUserCard;
+
+// ======================================
+// ADMIN.JS - PART 11
+// TRANSACTIONS
+// ======================================
+
+async function loadTransactions() {
+
+    try {
+
+        await window.waitForAdmin();
+
+        const transactionsRef =
+            ref(db, "transactions");
+
+
+        onValue(
+            transactionsRef,
+            snapshot => {
+
+                const data =
+                    snapshot.val() || {};
+
+
+                // --------------------------------------
+                // CONVERT OBJECT TO ARRAY
+                // --------------------------------------
+
+                const transactions =
+                    Object.entries(data)
+                        .map(([id, item]) => ({
+                            id,
+                            ...item
+                        }));
+
+
+                // --------------------------------------
+                // SORT NEWEST FIRST
+                // --------------------------------------
+
+                transactions.sort(
+                    (a, b) =>
+                        (Number(b.createdAt) || 0) -
+                        (Number(a.createdAt) || 0)
+                );
+
+
+                // --------------------------------------
+                // HTML ELEMENTS
+                // --------------------------------------
+
+                const container =
+                    document.getElementById(
+                        "transactionList"
+                    );
+
+
+                const emptyState =
+                    document.getElementById(
+                        "emptyTransaction"
+                    );
+
+
+                if (!container) {
+
+                    console.error(
+                        "transactionList element not found."
+                    );
+
+                    return;
+                }
+
+
+                container.innerHTML = "";
+
+
+                // --------------------------------------
+                // EMPTY STATE
+                // --------------------------------------
+
+                if (transactions.length === 0) {
+
+                    if (emptyState) {
+
+                        emptyState.style.display =
+                            "block";
+                    }
+
+                    return;
+                }
+
+
+                if (emptyState) {
+
+                    emptyState.style.display =
+                        "none";
+                }
+
+
+                // --------------------------------------
+                // RENDER TRANSACTIONS
+                // --------------------------------------
+
+                transactions.forEach(
+                    transaction => {
+
+                        container.insertAdjacentHTML(
+                            "beforeend",
+                            renderTransactionCard(
+                                transaction
+                            )
+                        );
+
+                    }
+                );
+
+
+                // --------------------------------------
+                // ACTIVATE SEARCH / FILTER
+                // --------------------------------------
+
+                activateTransactionSearch();
+
+            },
+
+            error => {
+
+                console.error(
+                    "Error loading transactions:",
+                    error
+                );
+
+
+                const container =
+                    document.getElementById(
+                        "transactionList"
+                    );
+
+
+                if (container) {
+
+                    container.innerHTML = `
+                        <div class="error-message">
+                            Failed to load transactions.
+                        </div>
+                    `;
+                }
+
+            }
+        );
+
+    } catch (error) {
+
+        console.error(
+            "loadTransactions error:",
+            error
+        );
+    }
+}
+
+
+
+// ======================================
+// RENDER TRANSACTION CARD
+// ======================================
+
+function renderTransactionCard(
+    transaction
+) {
+
+    const id =
+        escapeHTML(
+            transaction.id || "N/A"
+        );
+
+
+    const uid =
+        escapeHTML(
+            transaction.uid || "N/A"
+        );
+
+
+    const type =
+        normalizeStatus(
+            transaction.type ||
+            "unknown"
+        );
+
+
+    const status =
+        normalizeStatus(
+            transaction.status ||
+            "pending"
+        );
+
+
+    const amount =
+        numberValue(
+            transaction.amount
+        );
+
+
+    const paymentMethod =
+        escapeHTML(
+            transaction.paymentMethod ||
+            transaction.method ||
+            "N/A"
+        );
+
+
+    const phone =
+        escapeHTML(
+            transaction.phone ||
+            transaction.senderPhone ||
+            transaction.receiverPhone ||
+            transaction.withdrawPhone ||
+            "N/A"
+        );
+
+
+    const transactionId =
+        escapeHTML(
+            transaction.transactionId ||
+            "N/A"
+        );
+
+
+    const createdAt =
+        transaction.createdAt
+            ? new Date(
+                Number(transaction.createdAt)
+              ).toLocaleString()
+            : "N/A";
+
+
+    const approvedAt =
+        transaction.approvedAt
+            ? new Date(
+                Number(transaction.approvedAt)
+              ).toLocaleString()
+            : "";
+
+
+    const rejectedAt =
+        transaction.rejectedAt
+            ? new Date(
+                Number(transaction.rejectedAt)
+              ).toLocaleString()
+            : "";
+
+
+    // --------------------------------------
+    // TRANSACTION TYPE TEXT
+    // --------------------------------------
+
+    let typeText = "Transaction";
+
+
+    if (type === "deposit") {
+
+        typeText = "Deposit";
+
+    } else if (type === "withdraw") {
+
+        typeText = "Withdraw";
+
+    } else if (type === "vip") {
+
+        typeText = "VIP Purchase";
+
+    } else if (type === "profit") {
+
+        typeText = "Profit";
+
+    } else if (type === "bonus") {
+
+        typeText = "Bonus";
+
+    } else if (type === "referral") {
+
+        typeText = "Referral Bonus";
+
+    } else {
+
+        typeText =
+            escapeHTML(
+                transaction.type ||
+                "Transaction"
+            );
+    }
+
+
+    // --------------------------------------
+    // STATUS TEXT
+    // --------------------------------------
+
+    let statusText = "Pending";
+
+
+    if (status === "approved") {
+
+        statusText = "Approved";
+
+    } else if (status === "rejected") {
+
+        statusText = "Rejected";
+
+    } else if (status === "pending") {
+
+        statusText = "Pending";
+
+    } else if (status === "processing") {
+
+        statusText = "Processing";
+
+    } else if (
+        status === "processing_error"
+    ) {
+
+        statusText = "Processing Error";
+
+    } else {
+
+        statusText =
+            escapeHTML(
+                transaction.status ||
+                "Pending"
+            );
+    }
+
+
+    // --------------------------------------
+    // EXTRA DATA
+    // --------------------------------------
+
+    const vipName =
+        escapeHTML(
+            transaction.vipName ||
+            ""
+        );
+
+
+    const withdrawRequestId =
+        escapeHTML(
+            transaction.withdrawRequestId ||
+            ""
+        );
+
+
+    const depositRequestId =
+        escapeHTML(
+            transaction.depositRequestId ||
+            ""
+        );
+
+
+    // --------------------------------------
+    // RETURN CARD
+    // --------------------------------------
+
+    return `
+        <div
+            class="transaction-card"
+            data-id="${id}"
+            data-uid="${uid.toLowerCase()}"
+            data-type="${escapeHTML(type)}"
+            data-status="${escapeHTML(status)}"
+            data-search="${escapeHTML(
+                (
+                    (
+                        transaction.uid || ""
+                    ) +
+                    " " +
+                    (
+                        transaction.transactionId || ""
+                    ) +
+                    " " +
+                    (
+                        transaction.type || ""
+                    ) +
+                    " " +
+                    (
+                        transaction.vipName || ""
+                    )
+                ).toLowerCase()
+            )}"
+        >
+
+            <div class="transaction-card-header">
+
+                <div>
+
+                    <h3>
+                        ${escapeHTML(typeText)}
+                    </h3>
+
+                    <small>
+                        ID: ${id}
+                    </small>
+
+                </div>
+
+
+                <span
+                    class="status-badge status-${escapeHTML(status)}"
+                >
+                    ${statusText}
+                </span>
+
+            </div>
+
+
+            <div class="transaction-amount">
+
+                <span>
+                    Amount
+                </span>
+
+                <strong>
+                    ${formatMoney(amount)}
+                </strong>
+
+            </div>
+
+
+            <div class="transaction-info">
+
+                <div class="info-row">
+
+                    <span>
+                        User UID
+                    </span>
+
+                    <strong>
+                        ${uid}
+                    </strong>
+
+                </div>
+
+
+                <div class="info-row">
+
+                    <span>
+                        Type
+                    </span>
+
+                    <strong>
+                        ${escapeHTML(typeText)}
+                    </strong>
+
+                </div>
+
+
+                <div class="info-row">
+
+                    <span>
+                        Status
+                    </span>
+
+                    <strong>
+                        ${statusText}
+                    </strong>
+
+                </div>
+
+
+                ${
+                    transaction.transactionId
+                    ? `
+                    <div class="info-row">
+
+                        <span>
+                            Transaction ID
+                        </span>
+
+                        <strong>
+                            ${transactionId}
+                        </strong>
+
+                    </div>
+                    `
+                    : ""
+                }
+
+
+                ${
+                    transaction.paymentMethod ||
+                    transaction.method
+                    ? `
+                    <div class="info-row">
+
+                        <span>
+                            Payment Method
+                        </span>
+
+                        <strong>
+                            ${paymentMethod}
+                        </strong>
+
+                    </div>
+                    `
+                    : ""
+                }
+
+
+                ${
+                    transaction.phone ||
+                    transaction.senderPhone ||
+                    transaction.receiverPhone ||
+                    transaction.withdrawPhone
+                    ? `
+                    <div class="info-row">
+
+                        <span>
+                            Phone
+                        </span>
+
+                        <strong>
+                            ${phone}
+                        </strong>
+
+                    </div>
+                    `
+                    : ""
+                }
+
+
+                ${
+                    vipName
+                    ? `
+                    <div class="info-row">
+
+                        <span>
+                            VIP Plan
+                        </span>
+
+                        <strong>
+                            ${vipName}
+                        </strong>
+
+                    </div>
+                    `
+                    : ""
+                }
+
+
+                ${
+                    withdrawRequestId
+                    ? `
+                    <div class="info-row">
+
+                        <span>
+                            Withdraw Request
+                        </span>
+
+                        <strong>
+                            ${withdrawRequestId}
+                        </strong>
+
+                    </div>
+                    `
+                    : ""
+                }
+
+
+                ${
+                    depositRequestId
+                    ? `
+                    <div class="info-row">
+
+                        <span>
+                            Deposit Request
+                        </span>
+
+                        <strong>
+                            ${depositRequestId}
+                        </strong>
+
+                    </div>
+                    `
+                    : ""
+                }
+
+
+                <div class="info-row">
+
+                    <span>
+                        Created At
+                    </span>
+
+                    <strong>
+                        ${createdAt}
+                    </strong>
+
+                </div>
+
+
+                ${
+                    approvedAt
+                    ? `
+                    <div class="info-row">
+
+                        <span>
+                            Approved At
+                        </span>
+
+                        <strong>
+                            ${approvedAt}
+                        </strong>
+
+                    </div>
+                    `
+                    : ""
+                }
+
+
+                ${
+                    rejectedAt
+                    ? `
+                    <div class="info-row">
+
+                        <span>
+                            Rejected At
+                        </span>
+
+                        <strong>
+                            ${rejectedAt}
+                        </strong>
+
+                    </div>
+                    `
+                    : ""
+                }
+
+            </div>
+
+        </div>
+    `;
+}
+
+
+
+// ======================================
+// TRANSACTION SEARCH + FILTER
+// ======================================
+
+function activateTransactionSearch() {
+
+    const searchInput =
+        document.getElementById(
+            "transactionSearch"
+        );
+
+
+    const filterSelect =
+        document.getElementById(
+            "transactionFilter"
+        );
+
+
+    if (
+        !searchInput &&
+        !filterSelect
+    ) {
+        return;
+    }
+
+
+    // --------------------------------------
+    // PREVENT DUPLICATE LISTENERS
+    // --------------------------------------
+
+    if (
+        searchInput &&
+        searchInput.dataset.searchActive !== "true"
+    ) {
+
+        searchInput.dataset.searchActive =
+            "true";
+
+
+        searchInput.addEventListener(
+            "input",
+            applyTransactionFilters
+        );
+    }
+
+
+    if (
+        filterSelect &&
+        filterSelect.dataset.filterActive !== "true"
+    ) {
+
+        filterSelect.dataset.filterActive =
+            "true";
+
+
+        filterSelect.addEventListener(
+            "change",
+            applyTransactionFilters
+        );
+    }
+}
+
+
+
+// ======================================
+// APPLY TRANSACTION FILTERS
+// ======================================
+
+function applyTransactionFilters() {
+
+    const searchInput =
+        document.getElementById(
+            "transactionSearch"
+        );
+
+
+    const filterSelect =
+        document.getElementById(
+            "transactionFilter"
+        );
+
+
+    const search =
+        (
+            searchInput?.value ||
+            ""
+        )
+            .trim()
+            .toLowerCase();
+
+
+    const selectedFilter =
+        normalizeStatus(
+            filterSelect?.value ||
+            "all"
+        );
+
+
+    const cards =
+        document.querySelectorAll(
+            "#transactionList .transaction-card"
+        );
+
+
+    cards.forEach(card => {
+
+        const cardSearch =
+            (
+                card.dataset.search ||
+                ""
+            ).toLowerCase();
+
+
+        const cardType =
+            normalizeStatus(
+                card.dataset.type ||
+                ""
+            );
+
+
+        const cardStatus =
+            normalizeStatus(
+                card.dataset.status ||
+                ""
+            );
+
+
+        // --------------------------------------
+        // SEARCH MATCH
+        // --------------------------------------
+
+        const searchMatch =
+            !search ||
+            cardSearch.includes(search);
+
+
+        // --------------------------------------
+        // FILTER MATCH
+        // --------------------------------------
+
+        let filterMatch = true;
+
+
+        if (
+            selectedFilter &&
+            selectedFilter !== "all"
+        ) {
+
+            if (
+                selectedFilter === "approved" ||
+                selectedFilter === "rejected" ||
+                selectedFilter === "pending" ||
+                selectedFilter === "processing"
+            ) {
+
+                filterMatch =
+                    cardStatus ===
+                    selectedFilter;
+
+            } else {
+
+                filterMatch =
+                    cardType ===
+                    selectedFilter;
+            }
+        }
+
+
+        // --------------------------------------
+        // DISPLAY
+        // --------------------------------------
+
+        card.style.display =
+            searchMatch &&
+            filterMatch
+                ? ""
+                : "none";
+
+    });
+}
+
+
+
+// ======================================
+// EXPOSE FUNCTIONS
+// ======================================
+
+window.loadTransactions =
+    loadTransactions;
+
+window.renderTransactionCard =
+    renderTransactionCard;
+
+window.activateTransactionSearch =
+    activateTransactionSearch;
+
+window.applyTransactionFilters =
+    applyTransactionFilters;
