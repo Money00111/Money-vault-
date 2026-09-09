@@ -1,274 +1,444 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Money Vault | VIP Plans</title><link rel="stylesheet" href="css/vip.css"><link rel="stylesheet"
-href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"></head><body><!-- ===========================
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0">
+
+    <title>Money Vault | VIP Plans</title>
+
+    <link
+        rel="stylesheet"
+        href="css/vip.css">
+
+    <link
+        rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+
+</head>
+
+<body>
+
+<!-- ===========================
 LOADING SCREEN
-=========================== --><div id="loadingScreen" class="loading-screen"><div class="loader"></div>
+=========================== -->
 
-<h2>Money Vault</h2>
+<div
+    id="loadingScreen"
+    class="loading-screen">
 
-<p>Loading VIP Plans...</p>
-
-</div><!-- ===========================
-SIDEBAR
-=========================== --><aside class="sidebar" id="sidebar"><div class="logo">
-
-    <i class="fas fa-gem"></i>
+    <div class="loader"></div>
 
     <h2>Money Vault</h2>
 
+    <p>Loading VIP Plans...</p>
+
 </div>
 
-<ul>
 
-    <li>
-        <a href="dashboard.html">
-            <i class="fas fa-house"></i>
-            <span>Dashboard</span>
-        </a>
-    </li>
+<!-- ===========================
+SIDEBAR
+=========================== -->
 
-    <li>
-        <a href="deposit.html">
-            <i class="fas fa-wallet"></i>
-            <span>Deposit</span>
-        </a>
-    </li>
+<aside
+    class="sidebar"
+    id="sidebar">
 
-    <li>
-        <a href="withdraw.html">
-            <i class="fas fa-money-bill-wave"></i>
-            <span>Withdraw</span>
-        </a>
-    </li>
+    <div class="logo">
 
-    <li>
-        <a href="transactions.html">
-            <i class="fas fa-list"></i>
-            <span>Transactions</span>
-        </a>
-    </li>
+        <i class="fas fa-gem"></i>
 
-    <li>
-        <a href="vip.html" class="active">
-            <i class="fas fa-crown"></i>
-            <span>VIP Plans</span>
-        </a>
-    </li>
+        <h2>Money Vault</h2>
 
-    <li>
-        <a href="profile.html">
-            <i class="fas fa-user"></i>
-            <span>Profile</span>
-        </a>
-    </li>
+    </div>
 
-    <li>
-        <a href="#" id="logoutBtn">
-            <i class="fas fa-right-from-bracket"></i>
-            <span>Logout</span>
-        </a>
-    </li>
+    <ul>
 
-</ul>
+        <li>
+            <a href="dashboard.html">
+                <i class="fas fa-house"></i>
+                <span>Dashboard</span>
+            </a>
+        </li>
 
-</aside><!-- ===========================
+        <li>
+            <a href="deposit.html">
+                <i class="fas fa-wallet"></i>
+                <span>Deposit</span>
+            </a>
+        </li>
+
+        <li>
+            <a href="withdraw.html">
+                <i class="fas fa-money-bill-wave"></i>
+                <span>Withdraw</span>
+            </a>
+        </li>
+
+        <li>
+            <a href="transactions.html">
+                <i class="fas fa-list"></i>
+                <span>Transactions</span>
+            </a>
+        </li>
+
+        <li>
+            <a
+                href="vip.html"
+                class="active">
+
+                <i class="fas fa-crown"></i>
+
+                <span>VIP Plans</span>
+
+            </a>
+        </li>
+
+        <li>
+            <a href="profile.html">
+
+                <i class="fas fa-user"></i>
+
+                <span>Profile</span>
+
+            </a>
+        </li>
+
+        <li>
+            <a
+                href="#"
+                id="logoutBtn">
+
+                <i class="fas fa-right-from-bracket"></i>
+
+                <span>Logout</span>
+
+            </a>
+        </li>
+
+    </ul>
+
+</aside>
+
+
+<!-- ===========================
 MAIN
-=========================== --><main class="main"><header class="topbar"><button id="menuBtn" type="button">
-    <i class="fas fa-bars"></i>
-</button>
+=========================== -->
 
-<h2>VIP Membership</h2>
+<main class="main">
 
-<div class="balance-box">
 
-    <p>Your Balance</p>
+    <!-- ===========================
+    TOPBAR
+    =========================== -->
 
-    <h2 id="balance">0 RWF</h2>
+    <header class="topbar">
 
-</div>
+        <button
+            id="menuBtn"
+            type="button">
 
-</header><!-- ===========================
-VIP HERO
-=========================== --><section class="vip-hero"><div class="hero-left">
+            <i class="fas fa-bars"></i>
 
-    <h1>
-        <i class="fas fa-crown"></i>
-        Upgrade Your Account
-    </h1>
+        </button>
 
-    <p>
-        Choose a VIP Plan and start earning daily income with Money Vault.
-    </p>
+        <h2>VIP Membership</h2>
 
-    <div class="hero-info">
+        <div class="balance-box">
 
-        <div class="owned-vips">
+            <p>Your Balance</p>
 
-            <h3>Your VIP Plans</h3>
+            <h2 id="balance">
+                0 RWF
+            </h2>
 
-            <div id="ownedVipList">
-                No VIP purchased.
+        </div>
+
+    </header>
+
+
+    <!-- ===========================
+    VIP HERO
+    =========================== -->
+
+    <section class="vip-hero">
+
+        <div class="hero-left">
+
+            <h1>
+
+                <i class="fas fa-crown"></i>
+
+                Upgrade Your Account
+
+            </h1>
+
+            <p>
+                Choose a VIP Plan and start earning
+                daily income with Money Vault.
+            </p>
+
+
+            <!-- ===========================
+            HERO INFORMATION
+            =========================== -->
+
+            <div class="hero-info">
+
+
+                <!-- OWNED VIP -->
+
+                <div class="owned-vips">
+
+                    <h3>
+                        Your VIP Plans
+                    </h3>
+
+                    <div id="ownedVipList">
+
+                        <div class="empty-vip">
+                            No VIP purchased.
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <!-- CURRENT VIP -->
+
+                <div class="info-box">
+
+                    <h3 id="currentVip">
+                        VIP 0
+                    </h3>
+
+                    <p>
+                        Current VIP
+                    </p>
+
+                </div>
+
+
+                <!-- DAILY INCOME -->
+
+                <div class="info-box">
+
+                    <h3 id="dailyIncome">
+                        0 RWF
+                    </h3>
+
+                    <p>
+                        Daily Income
+                    </p>
+
+                </div>
+
+
+                <!-- TOTAL PROFIT -->
+
+                <div class="info-box">
+
+                    <h3 id="totalProfit">
+                        0 RWF
+                    </h3>
+
+                    <p>
+                        Total Profit
+                    </p>
+
+                </div>
+
             </div>
 
         </div>
 
 
-        <div class="info-box">
+        <!-- HERO ICON -->
 
-            <h3 id="currentVip">
-                VIP 0
-            </h3>
+        <div class="hero-right">
 
-            <p>Current VIP</p>
+            <i class="fas fa-gem hero-icon"></i>
 
         </div>
 
+    </section>
 
-        <div class="info-box">
 
-            <h3 id="dailyIncome">
-                0 RWF
-            </h3>
+    <!-- ===========================
+    CLAIM DAILY INCOME
+    =========================== -->
 
-            <p>Daily Income</p>
+    <section class="claim-section">
+
+        <h2>
+            Daily Income
+        </h2>
+
+        <p id="claimTimer">
+            No Active VIP
+        </p>
+
+
+        <button
+            id="claimDailyIncome"
+            class="claim-btn"
+            type="button"
+            disabled>
+
+            <i class="fas fa-lock"></i>
+
+            Claim Daily Income
+
+        </button>
+
+    </section>
+
+
+    <!-- ===========================
+    VIP PLANS
+    =========================== -->
+
+    <section
+        class="vip-grid"
+        id="vipGrid">
+    </section>
+
+
+    <!-- ===========================
+    VIP BENEFITS
+    =========================== -->
+
+    <section class="vip-benefits">
+
+        <h2>
+            Why Upgrade to VIP?
+        </h2>
+
+        <div class="benefits-grid">
+
+
+            <div class="benefit-card">
+
+                <i class="fas fa-coins"></i>
+
+                <h3>
+                    Daily Income
+                </h3>
+
+                <p>
+                    Receive daily earnings directly
+                    into your Money Vault balance.
+                </p>
+
+            </div>
+
+
+            <div class="benefit-card">
+
+                <i class="fas fa-bolt"></i>
+
+                <h3>
+                    Fast Activation
+                </h3>
+
+                <p>
+                    Your VIP plan becomes active
+                    after Admin approval.
+                </p>
+
+            </div>
+
+
+            <div class="benefit-card">
+
+                <i class="fas fa-shield-alt"></i>
+
+                <h3>
+                    Secure Investment
+                </h3>
+
+                <p>
+                    All VIP purchases are securely
+                    stored in your account.
+                </p>
+
+            </div>
+
+
+            <div class="benefit-card">
+
+                <i class="fas fa-headset"></i>
+
+                <h3>
+                    24/7 Support
+                </h3>
+
+                <p>
+                    VIP members receive faster
+                    customer support.
+                </p>
+
+            </div>
 
         </div>
 
-
-        <div class="info-box">
-
-            <h3 id="totalProfit">
-                0 RWF
-            </h3>
-
-            <p>Total Profit</p>
-
-        </div>
-
-    </div>
-
-</div>
+    </section>
 
 
-<div class="hero-right">
+    <!-- ===========================
+    SUPPORT BUTTON
+    =========================== -->
 
-    <i class="fas fa-gem hero-icon"></i>
+    <a
+        href="https://wa.me/250788846187"
+        class="support-btn"
+        target="_blank"
+        rel="noopener noreferrer">
 
-</div>
+        <i class="fab fa-whatsapp"></i>
 
-</section><!-- ===========================
-CLAIM DAILY INCOME
-=========================== --><section class="claim-section"><h2>Daily Income</h2>
-
-<p id="claimTimer">
-    Ready to Claim
-</p>
-
-<!-- IMPORTANT:
-     This ID must match vip.js
--->
-
-<button
-    id="claimDailyIncome"
-    type="button"
-    disabled>
-    Claim Daily Income
-</button>
-
-</section><!-- ===========================
-VIP PLANS
-=========================== --><section
-    class="vip-grid"
-    id="vipGrid"></section><!-- ===========================
-VIP BENEFITS
-=========================== --><section class="vip-benefits"><h2>Why Upgrade to VIP?</h2>
-
-<div class="benefits-grid">
+    </a>
 
 
-    <div class="benefit-card">
+    <!-- ===========================
+    FOOTER
+    =========================== -->
 
-        <i class="fas fa-coins"></i>
+    <footer>
 
-        <h3>Daily Income</h3>
+        <h2>
+
+            <i class="fas fa-gem"></i>
+
+            Money Vault
+
+        </h2>
 
         <p>
-            Receive daily earnings directly into your Money Vault balance.
+            Upgrade your VIP level and grow
+            your earnings securely.
         </p>
-
-    </div>
-
-
-    <div class="benefit-card">
-
-        <i class="fas fa-bolt"></i>
-
-        <h3>Instant Activation</h3>
 
         <p>
-            Your VIP plan becomes active immediately after purchase.
+            © 2026 Money Vault.
+            All Rights Reserved.
         </p>
 
-    </div>
+    </footer>
+
+</main>
 
 
-    <div class="benefit-card">
-
-        <i class="fas fa-shield-alt"></i>
-
-        <h3>Secure Investment</h3>
-
-        <p>
-            All VIP purchases are securely stored in your account.
-        </p>
-
-    </div>
-
-
-    <div class="benefit-card">
-
-        <i class="fas fa-headset"></i>
-
-        <h3>24/7 Support</h3>
-
-        <p>
-            VIP members receive faster customer support.
-        </p>
-
-    </div>
-
-</div>
-
-</section><!-- ===========================
-SUPPORT BUTTON
-=========================== --><a
-href="https://wa.me/250788846187"
-class="support-btn"
-target="_blank"
-rel="noopener noreferrer">
-
-<i class="fab fa-whatsapp"></i>
-
-</a><!-- ===========================
-FOOTER
-=========================== --><footer><h2>
-
-    <i class="fas fa-gem"></i>
-
-    Money Vault
-
-</h2>
-
-<p>
-    Upgrade your VIP level and grow your earnings securely.
-</p>
-
-<p>
-    © 2026 Money Vault. All Rights Reserved.
-</p>
-
-</footer></main><!-- ===========================
+<!-- ===========================
 JAVASCRIPT
-=========================== --><script
+=========================== -->
+
+<script
     type="module"
     src="js/vip.js">
 </script>
