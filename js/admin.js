@@ -8063,5 +8063,1191 @@ console.log(
     "Money Vault: Part 5 — Withdraw Requests loaded."
 );
 
+/* =========================================================
+   MONEY VAULT - ADMIN.JS
+   PART 6
+   APPROVE / REJECT WITHDRAW
+   CURRENCY: RWF / FRW
+========================================================= */
 
+
+/* =========================================================
+   APPROVE WITHDRAW
+========================================================= */
+
+async function approveWithdraw(id) {
+
+    let requestRef = null;
+    let userRef = null;
+
+    try {
+
+        await waitForAdmin();
+
+
+        /* -----------------------------------------
+           ADMIN CHECK
+        ----------------------------------------- */
+
+        if (!currentAdmin?.uid) {
+
+            showToast(
+                "Admin session is not ready.",
+                "error"
+            );
+
+            return;
+        }
+
+
+        /* -----------------------------------------
+           VALIDATE REQUEST ID
+        ----------------------------------------- */
+
+        if (!id) {
+
+            showToast(
+                "Invalid withdraw request.",
+                "error"
+            );
+
+            return;
+        }
+
+
+        requestRef =
+            ref(db, `withdrawRequests/${id}`);
+
+
+        /* -----------------------------------------
+           READ REQUEST
+        ----------------------------------------- */
+
+        const requestSnapshot =
+            await get(requestRef);
+
+
+        if (!requestSnapshot.exists()) {
+
+            showToast(
+                "Withdraw request not found.",
+                "error"
+            );
+
+            return;
+        }
+
+
+        const request =
+            requestSnapshot.val() || {};
+
+
+        const status =
+            normalizeStatus(request.status);
+
+
+        /* -----------------------------------------
+           ONLY PENDING CAN BE APPROVED
+        ----------------------------------------- */
+
+        if (status !== "pending") {
+
+            showToast(
+                `This request is already ${status}.`,
+                "warning"
+            );
+
+            return;
+        }
+
+
+        /* -----------------------------------------
+           USER ID
+        ----------------------------------------- */
+
+        const uid =
+            request.uid ||
+            request.userId ||
+            request.userUID;
+
+
+        if (!uid) {
+
+            showToast(
+                "Withdraw request has no user ID.",
+                "error"
+            );
+
+            return;
+        }
+
+
+        /* -----------------------------------------
+           AMOUNT
+        ----------------------------------------- */
+
+        const amount =
+            numberValue(
+                request.amount ??
+                request.withdrawAmount ??
+                request.requestedAmount
+            );
+
+
+        if (!Number.isFinite(amount) || amount <= 0) {
+
+            showToast(
+                "Invalid withdraw amount.",
+                "error"
+            );
+
+            return;
+        }
+
+
+        /* -----------------------------------------
+           CONFIRM APPROVAL
+        ----------------------------------------- */
+
+        const confirmed =
+            window.confirm(
+                `Approve withdraw of ${formatMoney(amount)}?`
+            );
+
+
+        if (!confirmed) {
+            return;
+        }
+
+
+        const adminUid =
+            currentAdmin.uid;
+
+
+        /* =====================================================
+           STEP 1
+           ATOMIC LOCK
+
+           pending -> processing
+
+           This prevents two admins or two clicks
+           from approving the same request.
+        ===================================================== */
+
+        const lockResult =
+            await runTransaction(
+                requestRef,
+                currentRequest => {
+
+                    if (!currentRequest) {
+                        return;
+                    }
+
+
+                    if (
+                        normalizeStatus(
+                            currentRequest.status
+                        ) !== "pending"
+                    ) {
+
+                        return;
+
+                    }
+
+
+                    return {
+
+                        ...currentRequest,
+
+                        status:
+                            "processing",
+
+                        processingAt:
+                            Date.now(),
+
+                        processingBy:
+                            adminUid
+
+                    };
+
+                }
+            );
+
+
+        if (!lockResult.committed) {
+
+            showToast(
+                "This withdraw request was already processed.",
+                "warning"
+            );
+
+            return;
+        }
+
+
+        /* =====================================================
+           STEP 2
+           USER REFERENCE
+        ===================================================== */
+
+        userRef =
+            ref(db, `users/${uid}`);
+
+
+        /* =====================================================
+           STEP 3
+           ATOMIC BALANCE DEDUCTION
+        ===================================================== */
+
+        const userTransaction =
+            await runTransaction(
+                userRef,
+                currentUser => {
+
+                    /* -----------------------------------------
+                       USER MUST EXIST
+                    ----------------------------------------- */
+
+                    if (!currentUser) {
+                        return;
+                    }
+
+
+                    const balance =
+                        numberValue(
+                            currentUser.balance
+                        );
+
+
+                    /* -----------------------------------------
+                       PREVENT NEGATIVE BALANCE
+                    ----------------------------------------- */
+
+                    if (balance < amount) {
+                        return;
+                    }
+
+
+                    const totalWithdrawals =
+                        numberValue(
+                            currentUser.totalWithdrawals
+                        );
+
+
+                    const totalTransactions =
+                        numberValue(
+                            currentUser.totalTransactions
+                        );
+
+
+                    return {
+
+                        ...currentUser,
+
+                        balance:
+                            balance - amount,
+
+                        totalWithdrawals:
+                            totalWithdrawals + amount,
+
+                        totalTransactions:
+                            totalTransactions + 1,
+
+                        updatedAt:
+                            Date.now()
+
+                    };
+
+                }
+            );
+
+
+        /* =====================================================
+           STEP 4
+           CHECK BALANCE TRANSACTION
+        ===================================================== */
+
+        if (!userTransaction.committed) {
+
+            /*
+             * The balance was NOT deducted.
+             * Therefore it is safe to reject the request.
+             */
+
+            await runTransaction(
+                requestRef,
+                currentRequest => {
+
+                    if (!currentRequest) {
+                        return;
+                    }
+
+
+                    /*
+                     * Only change processing -> rejected.
+                     *
+                     * If another process changed it,
+                     * do not overwrite that result.
+                     */
+
+                    if (
+                        normalizeStatus(
+                            currentRequest.status
+                        ) !== "processing"
+                    ) {
+
+                        return;
+
+                    }
+
+
+                    return {
+
+                        ...currentRequest,
+
+                        status:
+                            "rejected",
+
+                        rejectionReason:
+                            "Insufficient balance or user account was not found.",
+
+                        rejectedAt:
+                            Date.now(),
+
+                        rejectedBy:
+                            adminUid
+
+                    };
+
+                }
+            );
+
+
+            showToast(
+                "Withdraw rejected: insufficient balance.",
+                "warning"
+            );
+
+
+            refreshWithdrawAfterAction();
+
+            return;
+        }
+
+
+        /* =====================================================
+           STEP 5
+           CREATE TRANSACTION RECORD
+        ===================================================== */
+
+        let transactionKey = null;
+
+        const transactionCreatedAt =
+            Date.now();
+
+
+        try {
+
+            const transactionRef =
+                push(
+                    ref(db, "transactions")
+                );
+
+
+            transactionKey =
+                transactionRef.key;
+
+
+            await set(
+                transactionRef,
+                {
+
+                    uid:
+                        uid,
+
+                    type:
+                        "withdraw",
+
+                    transactionType:
+                        "withdraw",
+
+                    amount:
+                        amount,
+
+                    status:
+                        "approved",
+
+                    currency:
+                        "RWF",
+
+                    paymentMethod:
+                        request.paymentMethod ||
+                        request.method ||
+                        request.provider ||
+                        request.paymentProvider ||
+                        "",
+
+                    phone:
+                        request.phone ||
+                        request.phoneNumber ||
+                        request.mobile ||
+                        "",
+
+                    accountName:
+                        request.accountName ||
+                        request.accountHolder ||
+                        request.receiverName ||
+                        "",
+
+                    accountNumber:
+                        request.accountNumber ||
+                        request.account ||
+                        request.phone ||
+                        request.phoneNumber ||
+                        request.mobile ||
+                        "",
+
+                    withdrawRequestId:
+                        id,
+
+                    requestId:
+                        id,
+
+                    createdAt:
+                        transactionCreatedAt,
+
+                    timestamp:
+                        transactionCreatedAt,
+
+                    approvedAt:
+                        transactionCreatedAt,
+
+                    approvedBy:
+                        adminUid
+
+                }
+            );
+
+        } catch (transactionError) {
+
+            console.error(
+                "Withdraw transaction creation error:",
+                transactionError
+            );
+
+
+            /*
+             * IMPORTANT:
+             *
+             * Balance has already been deducted.
+             *
+             * We MUST NOT put the request back to pending.
+             * Otherwise admin could approve it again and
+             * deduct the balance twice.
+             */
+
+            try {
+
+                await update(
+                    requestRef,
+                    {
+
+                        status:
+                            "processing_error",
+
+                        processingError:
+                            "Balance was deducted, but the transaction record could not be created.",
+
+                        processingErrorAt:
+                            Date.now(),
+
+                        processingErrorBy:
+                            adminUid
+
+                    }
+                );
+
+            } catch (statusError) {
+
+                console.error(
+                    "Unable to mark withdraw processing error:",
+                    statusError
+                );
+
+            }
+
+
+            showToast(
+                "Balance was deducted, but transaction recording failed. Do NOT approve this request again.",
+                "error"
+            );
+
+
+            refreshWithdrawAfterAction();
+
+            return;
+        }
+
+
+        /* =====================================================
+           STEP 6
+           FINALIZE REQUEST
+        ===================================================== */
+
+        try {
+
+            await update(
+                requestRef,
+                {
+
+                    status:
+                        "approved",
+
+                    approvedAt:
+                        transactionCreatedAt,
+
+                    approvedBy:
+                        adminUid,
+
+                    transactionKey:
+                        transactionKey,
+
+                    transactionId:
+                        transactionKey,
+
+                    currency:
+                        "RWF"
+
+                }
+            );
+
+        } catch (finalizeError) {
+
+            /*
+             * Balance + transaction already exist.
+             *
+             * Do not retry approval.
+             * Mark the request so admin knows that
+             * processing completed but final request
+             * status could not be written.
+             */
+
+            console.error(
+                "Withdraw finalization error:",
+                finalizeError
+            );
+
+
+            try {
+
+                await update(
+                    requestRef,
+                    {
+
+                        status:
+                            "processing_error",
+
+                        processingError:
+                            "Withdrawal balance deduction and transaction record were completed, but request finalization failed.",
+
+                        processingErrorAt:
+                            Date.now(),
+
+                        processingErrorBy:
+                            adminUid,
+
+                        transactionKey:
+                            transactionKey,
+
+                        transactionId:
+                            transactionKey
+
+                    }
+                );
+
+            } catch (statusError) {
+
+                console.error(
+                    "Unable to save final processing error:",
+                    statusError
+                );
+
+            }
+
+
+            showToast(
+                "Withdrawal was processed, but request finalization failed. Do NOT approve it again.",
+                "error"
+            );
+
+
+            refreshWithdrawAfterAction();
+
+            return;
+        }
+
+
+        /* =====================================================
+           SUCCESS
+        ===================================================== */
+
+        showToast(
+            `Withdraw of ${formatMoney(amount)} approved successfully.`,
+            "success"
+        );
+
+
+        /* =====================================================
+           REFRESH ALL ADMIN DATA
+        ===================================================== */
+
+        refreshWithdrawAfterAction();
+
+
+    } catch (error) {
+
+        console.error(
+            "approveWithdraw error:",
+            error
+        );
+
+
+        /* =====================================================
+           ERROR SAFETY
+        ===================================================== */
+
+        try {
+
+            if (requestRef) {
+
+                const latestSnapshot =
+                    await get(requestRef);
+
+
+                if (latestSnapshot.exists()) {
+
+                    const latest =
+                        latestSnapshot.val() || {};
+
+
+                    const latestStatus =
+                        normalizeStatus(
+                            latest.status
+                        );
+
+
+                    /*
+                     * Only mark processing_error if it
+                     * is still processing.
+                     *
+                     * Never overwrite approved/rejected.
+                     */
+
+                    if (
+                        latestStatus === "processing"
+                    ) {
+
+                        await update(
+                            requestRef,
+                            {
+
+                                status:
+                                    "processing_error",
+
+                                processingError:
+                                    error?.message ||
+                                    "Unknown withdrawal processing error.",
+
+                                processingErrorAt:
+                                    Date.now(),
+
+                                processingErrorBy:
+                                    currentAdmin?.uid ||
+                                    null
+
+                            }
+                        );
+
+                    }
+
+                }
+
+            }
+
+        } catch (cleanupError) {
+
+            console.error(
+                "Withdraw approval cleanup error:",
+                cleanupError
+            );
+
+        }
+
+
+        showToast(
+            error?.message ||
+            "Failed to approve withdraw.",
+            "error"
+        );
+
+
+        refreshWithdrawAfterAction();
+
+    }
+
+}
+
+
+/* =========================================================
+   REJECT WITHDRAW
+========================================================= */
+
+async function rejectWithdraw(id) {
+
+    try {
+
+        await waitForAdmin();
+
+
+        /* -----------------------------------------
+           ADMIN CHECK
+        ----------------------------------------- */
+
+        if (!currentAdmin?.uid) {
+
+            showToast(
+                "Admin session is not ready.",
+                "error"
+            );
+
+            return;
+        }
+
+
+        /* -----------------------------------------
+           VALIDATE ID
+        ----------------------------------------- */
+
+        if (!id) {
+
+            showToast(
+                "Invalid withdraw request.",
+                "error"
+            );
+
+            return;
+        }
+
+
+        const requestRef =
+            ref(db, `withdrawRequests/${id}`);
+
+
+        /* -----------------------------------------
+           READ REQUEST
+        ----------------------------------------- */
+
+        const snapshot =
+            await get(requestRef);
+
+
+        if (!snapshot.exists()) {
+
+            showToast(
+                "Withdraw request not found.",
+                "error"
+            );
+
+            return;
+        }
+
+
+        const request =
+            snapshot.val() || {};
+
+
+        const status =
+            normalizeStatus(request.status);
+
+
+        /* -----------------------------------------
+           ONLY PENDING CAN BE REJECTED
+        ----------------------------------------- */
+
+        if (status !== "pending") {
+
+            showToast(
+                `Only pending withdraw requests can be rejected. Current status: ${status}.`,
+                "warning"
+            );
+
+            return;
+        }
+
+
+        const amount =
+            numberValue(
+                request.amount ??
+                request.withdrawAmount ??
+                request.requestedAmount
+            );
+
+
+        /* -----------------------------------------
+           CONFIRM
+        ----------------------------------------- */
+
+        const confirmed =
+            window.confirm(
+                `Reject withdraw of ${formatMoney(amount)}?`
+            );
+
+
+        if (!confirmed) {
+            return;
+        }
+
+
+        /* -----------------------------------------
+           REJECTION REASON
+        ----------------------------------------- */
+
+        let reason =
+            window.prompt(
+                "Reason for rejection (optional):",
+                ""
+            );
+
+
+        reason =
+            String(reason || "").trim();
+
+
+        const adminUid =
+            currentAdmin.uid;
+
+
+        /* =====================================================
+           ATOMIC PENDING -> REJECTED
+        ===================================================== */
+
+        const result =
+            await runTransaction(
+                requestRef,
+                currentRequest => {
+
+                    if (!currentRequest) {
+                        return;
+                    }
+
+
+                    /*
+                     * Prevent rejecting a request that
+                     * another admin already processed.
+                     */
+
+                    if (
+                        normalizeStatus(
+                            currentRequest.status
+                        ) !== "pending"
+                    ) {
+
+                        return;
+
+                    }
+
+
+                    return {
+
+                        ...currentRequest,
+
+                        status:
+                            "rejected",
+
+                        rejectionReason:
+                            reason ||
+                            "Rejected by administrator.",
+
+                        rejectedAt:
+                            Date.now(),
+
+                        rejectedBy:
+                            adminUid,
+
+                        currency:
+                            "RWF"
+
+                    };
+
+                }
+            );
+
+
+        /* -----------------------------------------
+           TRANSACTION DID NOT COMMIT
+        ----------------------------------------- */
+
+        if (!result.committed) {
+
+            showToast(
+                "This withdraw request was already processed.",
+                "warning"
+            );
+
+            return;
+        }
+
+
+        /* =====================================================
+           CREATE REJECTION TRANSACTION RECORD
+        ===================================================== */
+
+        /*
+         * This is only a history record.
+         * It does NOT change the user's balance.
+         *
+         * If the history write fails, the request remains
+         * rejected because the rejection itself already
+         * succeeded.
+         */
+
+        try {
+
+            const transactionRef =
+                push(
+                    ref(db, "transactions")
+                );
+
+
+            const rejectedAt =
+                Date.now();
+
+
+            await set(
+                transactionRef,
+                {
+
+                    uid:
+                        request.uid ||
+                        request.userId ||
+                        request.userUID ||
+                        "",
+
+                    type:
+                        "withdraw",
+
+                    transactionType:
+                        "withdraw",
+
+                    amount:
+                        amount,
+
+                    status:
+                        "rejected",
+
+                    currency:
+                        "RWF",
+
+                    paymentMethod:
+                        request.paymentMethod ||
+                        request.method ||
+                        request.provider ||
+                        "",
+
+                    phone:
+                        request.phone ||
+                        request.phoneNumber ||
+                        request.mobile ||
+                        "",
+
+                    accountName:
+                        request.accountName ||
+                        request.accountHolder ||
+                        request.receiverName ||
+                        "",
+
+                    withdrawRequestId:
+                        id,
+
+                    requestId:
+                        id,
+
+                    rejectionReason:
+                        reason ||
+                        "Rejected by administrator.",
+
+                    createdAt:
+                        rejectedAt,
+
+                    timestamp:
+                        rejectedAt,
+
+                    rejectedAt:
+                        rejectedAt,
+
+                    rejectedBy:
+                        adminUid
+
+                }
+            );
+
+
+            /*
+             * Save the history transaction key on the
+             * request without changing its rejected status.
+             */
+
+            await update(
+                requestRef,
+                {
+
+                    rejectionTransactionKey:
+                        transactionRef.key
+
+                }
+            );
+
+
+        } catch (historyError) {
+
+            console.error(
+                "Withdraw rejection history error:",
+                historyError
+            );
+
+            /*
+             * Do NOT turn the request back to pending.
+             * It is already safely rejected.
+             */
+
+            showToast(
+                "Withdraw rejected, but transaction history could not be recorded.",
+                "warning"
+            );
+
+
+            refreshWithdrawAfterAction();
+
+            return;
+        }
+
+
+        /* =====================================================
+           SUCCESS
+        ===================================================== */
+
+        showToast(
+            "Withdraw request rejected successfully.",
+            "success"
+        );
+
+
+        /* =====================================================
+           REFRESH
+        ===================================================== */
+
+        refreshWithdrawAfterAction();
+
+    } catch (error) {
+
+        console.error(
+            "rejectWithdraw error:",
+            error
+        );
+
+
+        showToast(
+            error?.message ||
+            "Failed to reject withdraw.",
+            "error"
+        );
+
+
+        refreshWithdrawAfterAction();
+
+    }
+
+}
+
+
+/* =========================================================
+   REFRESH AFTER WITHDRAW ACTION
+========================================================= */
+
+function refreshWithdrawAfterAction() {
+
+    try {
+
+        if (
+            typeof renderWithdrawRequests ===
+            "function"
+        ) {
+
+            renderWithdrawRequests();
+
+        }
+
+
+        if (
+            typeof renderDashboard ===
+            "function"
+        ) {
+
+            renderDashboard();
+
+        }
+
+
+        if (
+            typeof renderUsers ===
+            "function"
+        ) {
+
+            renderUsers();
+
+        }
+
+
+        if (
+            typeof renderTransactions ===
+            "function"
+        ) {
+
+            renderTransactions();
+
+        }
+
+    } catch (error) {
+
+        console.error(
+            "Withdraw UI refresh error:",
+            error
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   GLOBAL EXPORTS
+========================================================= */
+
+window.approveWithdraw =
+    approveWithdraw;
+
+window.rejectWithdraw =
+    rejectWithdraw;
+
+window.refreshWithdrawAfterAction =
+    refreshWithdrawAfterAction;
+
+
+/* =========================================================
+   DEBUG
+========================================================= */
+
+console.log(
+    "Money Vault: Part 6 — Approve / Reject Withdraw loaded."
+);
    
