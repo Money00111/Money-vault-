@@ -841,20 +841,18 @@ async function buyVip(button) {
         // SUCCESS
         // ==================================
 
-        button.innerHTML = `
-            <i class="fas fa-clock"></i>
-            Pending
-        `;
+button.innerHTML = `
+    <i class="fas fa-clock"></i>
+    Pending
+`;
 
-        button.classList.add(
-            "purchased"
-        );
+button.classList.add("purchased");
 
-        button.style.display =
-            "none";
+button.disabled = true;
 
-        button.disabled = true;
+button.dataset.buying = "false";
 
+button.style.display = "";
 
         alert(
             `VIP purchase request sent successfully!\n\n` +
