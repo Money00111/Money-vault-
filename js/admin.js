@@ -556,7 +556,499 @@ function openPage(
         return false;
     }
 
+   
+/* =========================================================
+   MONEY VAULT - ADMIN.JS
+   QUICK ACTIONS
+   RWF / FRW
+   =========================================================
+   PURPOSE:
+   - Open the correct admin section
+   - Immediately load/render its list
+   - Prevent duplicate event listeners
+   - Work with Parts 3, 5, 7, 10 and 11
+========================================================= */
 
+
+/* =========================================================
+   SAFE QUICK ACTION RUNNER
+========================================================= */
+
+async function runQuickAction({
+    buttonId,
+    page,
+    loader,
+    renderer,
+    label
+}) {
+
+    const button = document.getElementById(buttonId);
+
+    if (!button) {
+        console.warn(
+            `Money Vault: Quick Action button #${buttonId} not found.`
+        );
+        return;
+    }
+
+    /* Prevent duplicate listener */
+    if (button.dataset.quickActionBound === "true") {
+        return;
+    }
+
+    button.dataset.quickActionBound = "true";
+
+    button.addEventListener("click", async (event) => {
+
+        event.preventDefault();
+
+        try {
+
+            /* -----------------------------------------
+               1. OPEN PAGE FIRST
+            ----------------------------------------- */
+
+            if (typeof openPage === "function") {
+                openPage(page);
+            }
+            else if (typeof window.openPage === "function") {
+                window.openPage(page);
+            }
+            else {
+                console.error(
+                    "Money Vault: openPage() ntibonetse."
+                );
+                return;
+            }
+
+
+            /* -----------------------------------------
+               2. SHOW LOADING STATE
+            ----------------------------------------- */
+
+            const originalHTML = button.innerHTML;
+
+            button.disabled = true;
+
+            button.dataset.originalHTML = originalHTML;
+
+            button.innerHTML = `
+                <i class="fa-solid fa-spinner fa-spin"></i>
+                Loading...
+            `;
+
+
+            /* -----------------------------------------
+               3. LOAD DATA
+            ----------------------------------------- */
+
+            if (typeof loader === "function") {
+                await loader();
+            }
+
+
+            /* -----------------------------------------
+               4. RENDER DATA
+            ----------------------------------------- */
+
+            if (typeof renderer === "function") {
+                renderer();
+            }
+
+
+            /* -----------------------------------------
+               5. RESTORE BUTTON
+            ----------------------------------------- */
+
+            button.disabled = false;
+
+            if (button.dataset.originalHTML) {
+                button.innerHTML =
+                    button.dataset.originalHTML;
+            }
+
+
+            console.log(
+                `✅ Quick Action loaded: ${label}`
+            );
+
+        }
+        catch (error) {
+
+            console.error(
+                `❌ Quick Action error: ${label}`,
+                error
+            );
+
+            button.disabled = false;
+
+            if (button.dataset.originalHTML) {
+                button.innerHTML =
+                    button.dataset.originalHTML;
+            }
+
+            if (typeof showToast === "function") {
+                showToast(
+                    `Failed to load ${label}.`,
+                    "error"
+                );
+            }
+        }
+
+    });
+}
+
+
+/* =========================================================
+   DEPOSITS
+   ========================================================= */
+
+runQuickAction({
+    buttonId: "openDeposits",
+    page: "deposits",
+
+    loader: async () => {
+
+        if (typeof window.loadDeposits === "function") {
+            await window.loadDeposits();
+        }
+    },
+
+    renderer: () => {
+
+        if (typeof window.renderDepositRequests === "function") {
+            window.renderDepositRequests();
+        }
+    },
+
+    label: "Deposits"
+});
+
+
+/* =========================================================
+   WITHDRAWS
+   ========================================================= */
+
+runQuickAction({
+    buttonId: "openWithdraws",
+    page: "withdraws",
+
+    loader: async () => {
+
+        if (typeof window.loadWithdraws === "function") {
+            await window.loadWithdraws();
+        }
+    },
+
+    renderer: () => {
+
+        if (typeof window.renderWithdrawRequests === "function") {
+            window.renderWithdrawRequests();
+        }
+    },
+
+    label: "Withdraws"
+});
+
+
+/* =========================================================
+   VIP REQUESTS
+   ========================================================= */
+
+runQuickAction({
+    buttonId: "openVipRequests",
+    page: "vipRequests",
+
+    loader: async () => {
+
+        if (typeof window.loadVipRequests === "function") {
+            await window.loadVipRequests();
+        }
+    },
+
+    renderer: () => {
+
+        if (typeof window.renderVipRequests === "function") {
+            window.renderVipRequests();
+        }
+    },
+
+    label: "VIP Requests"
+});
+
+
+/* =========================================================
+   VIP BUYERS
+   ========================================================= */
+
+runQuickAction({
+    buttonId: "openVipBuyers",
+    page: "vipBuyers",
+
+    loader: async () => {
+
+        if (typeof window.loadVipBuyers === "function") {
+            await window.loadVipBuyers();
+        }
+    },
+
+    renderer: () => {
+
+        if (typeof window.renderVipBuyers === "function") {
+            window.renderVipBuyers();
+        }
+    },
+
+    label: "VIP Buyers"
+});
+
+
+/* =========================================================
+   USERS
+   ========================================================= */
+
+runQuickAction({
+    buttonId: "openUsers",
+    page: "users",
+
+    loader: async () => {
+
+        if (typeof window.loadUsers === "function") {
+            await window.loadUsers();
+        }
+    },
+
+    renderer: () => {
+
+        if (typeof window.renderUsers === "function") {
+            window.renderUsers();
+        }
+    },
+
+    label: "Users"
+});
+
+
+/* =========================================================
+   TRANSACTIONS
+   ========================================================= */
+
+runQuickAction({
+    buttonId: "openTransactions",
+    page: "transactions",
+
+    loader: async () => {
+
+        if (typeof window.loadTransactions === "function") {
+            await window.loadTransactions();
+        }
+    },
+
+    renderer: () => {
+
+        if (typeof window.renderTransactions === "function") {
+            window.renderTransactions();
+        }
+    },
+
+    label: "Transactions"
+});
+
+
+/* =========================================================
+   BONUS REQUESTS
+========================================================= */
+
+runQuickAction({
+    buttonId: "openBonusRequests",
+    page: "bonusRequests",
+
+    loader: async () => {
+
+        if (typeof window.loadBonusRequests === "function") {
+            await window.loadBonusRequests();
+        }
+    },
+
+    renderer: () => {
+
+        if (typeof window.renderBonusRequests === "function") {
+            window.renderBonusRequests();
+        }
+    },
+
+    label: "Bonus Requests"
+});
+
+
+/* =========================================================
+   SETTINGS
+   =========================================================
+   Settings nta list is required, therefore only page
+   irafungurwa.
+========================================================= */
+
+runQuickAction({
+    buttonId: "openSettings",
+    page: "settings",
+
+    loader: async () => {
+        if (typeof window.loadSettings === "function") {
+            await window.loadSettings();
+        }
+    },
+
+    renderer: () => {},
+
+    label: "Settings"
+});
+
+
+/* =========================================================
+   DASHBOARD
+   ========================================================= */
+
+runQuickAction({
+    buttonId: "openDashboard",
+    page: "dashboard",
+
+    loader: async () => {
+        if (typeof window.loadDashboard === "function") {
+            await window.loadDashboard();
+        }
+    },
+
+    renderer: () => {
+        if (typeof window.renderDashboard === "function") {
+            window.renderDashboard();
+        }
+    },
+
+    label: "Dashboard"
+});
+
+
+/* =========================================================
+   OPTIONAL REFRESH CURRENT PAGE
+========================================================= */
+
+window.refreshQuickActionPage = async function () {
+
+    const currentPage =
+        window.adminState?.currentPage ||
+        localStorage.getItem("adminCurrentPage") ||
+        "dashboard";
+
+    try {
+
+        switch (currentPage) {
+
+            case "deposits":
+                if (window.loadDeposits)
+                    await window.loadDeposits();
+
+                if (window.renderDepositRequests)
+                    window.renderDepositRequests();
+                break;
+
+
+            case "withdraws":
+                if (window.loadWithdraws)
+                    await window.loadWithdraws();
+
+                if (window.renderWithdrawRequests)
+                    window.renderWithdrawRequests();
+                break;
+
+
+            case "vipRequests":
+                if (window.loadVipRequests)
+                    await window.loadVipRequests();
+
+                if (window.renderVipRequests)
+                    window.renderVipRequests();
+                break;
+
+
+            case "vipBuyers":
+                if (window.loadVipBuyers)
+                    await window.loadVipBuyers();
+
+                if (window.renderVipBuyers)
+                    window.renderVipBuyers();
+                break;
+
+
+            case "users":
+                if (window.loadUsers)
+                    await window.loadUsers();
+
+                if (window.renderUsers)
+                    window.renderUsers();
+                break;
+
+
+            case "transactions":
+                if (window.loadTransactions)
+                    await window.loadTransactions();
+
+                if (window.renderTransactions)
+                    window.renderTransactions();
+                break;
+
+
+            case "bonusRequests":
+                if (window.loadBonusRequests)
+                    await window.loadBonusRequests();
+
+                if (window.renderBonusRequests)
+                    window.renderBonusRequests();
+                break;
+
+
+            case "settings":
+                if (window.loadSettings)
+                    await window.loadSettings();
+                break;
+
+
+            case "dashboard":
+                if (window.loadDashboard)
+                    await window.loadDashboard();
+
+                if (window.renderDashboard)
+                    window.renderDashboard();
+                break;
+        }
+
+    }
+    catch (error) {
+
+        console.error(
+            "Quick Action refresh error:",
+            error
+        );
+
+    }
+
+};
+
+
+/* =========================================================
+   INITIALIZATION
+========================================================= */
+
+console.log(
+    "✅ Money Vault Quick Actions loaded."
+);
+
+console.log(
+    "📋 Quick Actions: Deposits, Withdraws, VIP Requests, VIP Buyers, Users, Transactions, Bonus Requests, Settings."
+);
+
+console.log(
+    "💰 Currency: RWF / FRW"
+);
     /* -----------------------------------------
        VALIDATE PAGE
     ----------------------------------------- */
