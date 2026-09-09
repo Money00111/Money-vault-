@@ -21,6 +21,92 @@ import {
     runTransaction
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
 
+/* =========================================================
+   GLOBAL TOAST NOTIFICATION
+========================================================= */
+
+function showToast(message, type = "info") {
+
+    const container =
+        document.getElementById("toastContainer");
+
+    /* -----------------------------------------
+       FALLBACK
+    ----------------------------------------- */
+
+    if (!container) {
+        console.log(`[${type}] ${message}`);
+        return;
+    }
+
+    const toast =
+        document.createElement("div");
+
+    toast.className =
+        `toast toast-${String(type).toLowerCase()}`;
+
+    toast.innerHTML = `
+        <div class="toast-icon">
+            <i class="${
+                type === "success"
+                    ? "fa-solid fa-circle-check"
+                    : type === "error"
+                        ? "fa-solid fa-circle-xmark"
+                        : type === "warning"
+                            ? "fa-solid fa-triangle-exclamation"
+                            : "fa-solid fa-circle-info"
+            }"></i>
+        </div>
+
+        <div class="toast-message">
+            ${escapeHTML(message)}
+        </div>
+
+        <button
+            type="button"
+            class="toast-close"
+            aria-label="Close"
+        >
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+    `;
+
+    container.appendChild(toast);
+
+    requestAnimationFrame(() => {
+        toast.classList.add("show");
+    });
+
+    const closeToast = () => {
+
+        toast.classList.remove("show");
+
+        setTimeout(() => {
+            toast.remove();
+        }, 300);
+
+    };
+
+    toast
+        .querySelector(".toast-close")
+        ?.addEventListener(
+            "click",
+            closeToast
+        );
+
+    setTimeout(
+        closeToast,
+        4000
+    );
+}
+
+
+/* -----------------------------------------
+   GLOBAL EXPORT
+----------------------------------------- */
+
+window.showToast = showToast;
+
 // ==========================================
 // GLOBAL ADMIN STATE
 // ==========================================
