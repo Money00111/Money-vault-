@@ -1384,8 +1384,86 @@ async function updateVipButtons() {
                 : {};
 
 
+        // ======================================
+// UPDATE BUY BUTTONS
+// Money Vault - VIP Buy Button State
+// Currency: RWF
+//
+// RULE:
+// - Active VIP => only THAT VIP disabled
+// - Pending request => only THAT VIP disabled
+// - Processing request => only THAT VIP disabled
+// - Other VIPs => Buy Now remains available
+// - Expired VIP => Buy Now returns
+// - NEVER hide buttons
+// ======================================
+
+async function updateVipButtons() {
+
+    if (!currentUser) {
+        return;
+    }
+
+    const buttons =
+        document.querySelectorAll(".buyVipBtn");
+
+    if (!buttons.length) {
+        return;
+    }
+
+    try {
+
         // ==================================
-        // UPDATE EACH BUY BUTTON
+        // GET USER VIP PLANS
+        // ==================================
+
+        const ownedSnapshot =
+            await get(
+                ref(
+                    db,
+                    `users/${currentUser.uid}/vipPlans`
+                )
+            );
+
+        const owned =
+            ownedSnapshot.exists()
+                ? (ownedSnapshot.val() || {})
+                : {};
+
+
+        // ==================================
+        // GET USER PURCHASE REQUESTS
+        // ==================================
+
+        const requestsQuery =
+            query(
+                ref(
+                    db,
+                    "vipPurchaseRequests"
+                ),
+                orderByChild("uid"),
+                equalTo(currentUser.uid)
+            );
+
+        const requestSnapshot =
+            await get(requestsQuery);
+
+        const requests =
+            requestSnapshot.exists()
+                ? (requestSnapshot.val() || {})
+                : {};
+
+
+        // ==================================
+        // CURRENT TIME
+        // ==================================
+
+        const now =
+            Date.now();
+
+
+        // ==================================
+        // CHECK EVERY VIP BUTTON SEPARATELY
         // ==================================
 
         buttons.forEach((button) => {
@@ -1400,10 +1478,293 @@ async function updateVipButtons() {
             }
 
 
-            let activeVip = null;
+            let activeVip = false;
             let pendingRequest = false;
             let processingRequest = false;
 
+
+            // ==================================
+            // CHECK OWNED VIP
+            // ONLY MATCH THIS VIP
+            // ==================================
+
+            Object.values(owned).forEach((plan) => {
+
+                if (!plan) {
+                    return;
+                }
+
+
+                const ownedName =
+                    String(
+                        plan.vipName ||
+                        plan.name ||
+                        plan.planName ||
+                        ""
+                    ).trim();
+
+
+                // IMPORTANT:
+                // Do not block other VIPs.
+                if (
+                    ownedName !== vipName
+                ) {
+                    return;
+                }
+
+
+                const status =
+                    String(
+                        plan.status ||
+                        ""
+                    ).toLowerCase()
+                    .trim();
+
+
+                const startDate =
+                    Number(
+                        plan.startDate ??
+                        plan.approvedAt ??
+                        plan.createdAt ??
+                        0
+                    );
+
+
+                const duration =
+                    Number(
+                        plan.totalDays ??
+                        plan.duration ??
+                        plan.days ??
+                        0
+                    );
+
+
+                let endDate =
+                    Number(
+                        plan.endDate || 0
+                    );
+
+
+                // ==================================
+                // CALCULATE END DATE
+                // ==================================
+
+                if (
+                    !endDate &&
+                    startDate > 0 &&
+                    duration > 0
+                ) {
+
+                    endDate =
+                        startDate +
+                        duration * DAY;
+
+                }
+
+
+                // ==================================
+                // EXPIRED?
+                // ==================================
+
+                const expired =
+                    endDate > 0 &&
+                    now >= endDate;
+
+
+                // ==================================
+                // ACTIVE ONLY IF NOT EXPIRED
+                // ==================================
+
+                if (
+                    !expired &&
+                    (
+                        status === "active" ||
+                        status === ""
+                    )
+                ) {
+
+                    activeVip = true;
+
+                }
+
+            });
+
+
+            // ==================================
+            // CHECK PURCHASE REQUESTS
+            // ONLY THIS VIP
+            // ==================================
+
+            Object.values(requests).forEach((request) => {
+
+                if (!request) {
+                    return;
+                }
+
+
+                const requestName =
+                    String(
+                        request.vipName ||
+                        request.name ||
+                        request.planName ||
+                        ""
+                    ).trim();
+
+
+                // IMPORTANT:
+                // Request for VIP 1 must NOT block VIP 2.
+                if (
+                    requestName !== vipName
+                ) {
+                    return;
+                }
+
+
+                const status =
+                    String(
+                        request.status || ""
+                    ).toLowerCase()
+                    .trim();
+
+
+                if (
+                    status === "pending"
+                ) {
+
+                    pendingRequest = true;
+
+                }
+
+
+                if (
+                    status === "processing"
+                ) {
+
+                    processingRequest = true;
+
+                }
+
+            });
+
+
+            // ==================================
+            // ACTIVE VIP
+            // ==================================
+
+            if (activeVip) {
+
+                button.disabled = true;
+
+                button.dataset.buying =
+                    "false";
+
+                button.classList.add(
+                    "purchased"
+                );
+
+                button.style.display =
+                    "";
+
+                button.innerHTML = `
+                    <i class="fas fa-check-circle"></i>
+                    Active
+                `;
+
+                return;
+
+            }
+
+
+            // ==================================
+            // PROCESSING
+            // ==================================
+
+            if (processingRequest) {
+
+                button.disabled = true;
+
+                button.dataset.buying =
+                    "false";
+
+                button.classList.add(
+                    "purchased"
+                );
+
+                button.style.display =
+                    "";
+
+                button.innerHTML = `
+                    <i class="fas fa-spinner fa-spin"></i>
+                    Processing...
+                `;
+
+                return;
+
+            }
+
+
+            // ==================================
+            // PENDING
+            // ==================================
+
+            if (pendingRequest) {
+
+                button.disabled = true;
+
+                button.dataset.buying =
+                    "false";
+
+                button.classList.add(
+                    "purchased"
+                );
+
+                button.style.display =
+                    "";
+
+                button.innerHTML = `
+                    <i class="fas fa-clock"></i>
+                    Pending
+                `;
+
+                return;
+
+            }
+
+
+            // ==================================
+            // AVAILABLE
+            // ==================================
+
+            button.disabled = false;
+
+            button.dataset.buying =
+                "false";
+
+            button.classList.remove(
+                "purchased"
+            );
+
+            button.style.display =
+                "";
+
+            button.innerHTML = `
+                <i class="fas fa-cart-shopping"></i>
+                Buy Now
+            `;
+
+        });
+
+    } catch (error) {
+
+        console.error(
+            "UPDATE VIP BUTTONS ERROR:",
+            error
+        );
+
+    }
+
+}
+        
 
             // ==================================
             // CHECK OWNED VIP
