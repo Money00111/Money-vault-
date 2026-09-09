@@ -1,7 +1,8 @@
-// ======================================
-// VIP.JS
-// Money Vault - VIP System
-// ======================================
+// ============================================================
+// MONEY VAULT - VIP.JS
+// VERSION: CLEAN / FIXED
+// CURRENCY: RWF / FRW
+// ============================================================
 
 import { auth, db } from "./firebase.js";
 
@@ -24,47 +25,29 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
 
 
-// ======================================
-// DOM
-// ======================================
+// ============================================================
+// DOM ELEMENTS
+// ============================================================
 
-const sidebar =
-    document.getElementById("sidebar");
+const sidebar = document.getElementById("sidebar");
+const menuBtn = document.getElementById("menuBtn");
+const logoutBtn = document.getElementById("logoutBtn");
 
-const menuBtn =
-    document.getElementById("menuBtn");
+const balanceEl = document.getElementById("balance");
+const currentVipEl = document.getElementById("currentVip");
+const dailyIncomeEl = document.getElementById("dailyIncome");
+const totalProfitEl = document.getElementById("totalProfit");
 
-const logoutBtn =
-    document.getElementById("logoutBtn");
+const ownedVipList = document.getElementById("ownedVipList");
+const vipGrid = document.getElementById("vipGrid");
 
-const balanceEl =
-    document.getElementById("balance");
-
-const currentVipEl =
-    document.getElementById("currentVip");
-
-const dailyIncomeEl =
-    document.getElementById("dailyIncome");
-
-const totalProfitEl =
-    document.getElementById("totalProfit");
-
-const ownedVipList =
-    document.getElementById("ownedVipList");
-
-const vipGrid =
-    document.getElementById("vipGrid");
-
-const claimButton =
-    document.getElementById("claimDailyIncome");
-
-const claimTimer =
-    document.getElementById("claimTimer");
+const claimButton = document.getElementById("claimButton");
+const claimTimer = document.getElementById("claimTimer");
 
 
-// ======================================
-// VARIABLES
-// ======================================
+// ============================================================
+// GLOBAL STATE
+// ============================================================
 
 let currentUser = null;
 let userData = {};
@@ -74,885 +57,601 @@ let claimInProgress = false;
 let claimTimerInterval = null;
 let authStarted = false;
 
-
-// ======================================
-// CONSTANTS
-// ======================================
-
 const DAY = 24 * 60 * 60 * 1000;
 
 
-// ======================================
-// SIDEBAR
-// ======================================
+// ============================================================
+// BASIC HELPERS
+// ============================================================
 
-menuBtn?.addEventListener("click", () => {
+function numberValue(value, fallback = 0) {
+    const n = Number(value);
 
-    sidebar?.classList.toggle("active");
+    return Number.isFinite(n) ? n : fallback;
+}
 
-});
+
+function normalizeName(value) {
+    return String(value || "")
+        .trim()
+        .toLowerCase()
+        .replace(/\s+/g, " ");
+}
 
 
-// ======================================
-// LOGOUT
-// ======================================
+function normalizeStatus(value) {
+    return String(value || "")
+        .trim()
+        .toLowerCase();
+}
 
-logoutBtn?.addEventListener("click", async (event) => {
 
-    event.preventDefault();
+function formatMoney(value) {
+    const amount = numberValue(value);
 
-    if (!confirm("Logout?")) {
-        return;
+    return `${amount.toLocaleString("en-US", {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2
+    })} RWF`;
+}
+
+
+function formatDate(value) {
+    const timestamp = numberValue(value);
+
+    if (!timestamp) {
+        return "—";
     }
 
     try {
-
-        await signOut(auth);
-
-        location.href = "login.html";
-
-    } catch (error) {
-
-        console.error(
-            "LOGOUT ERROR:",
-            error
-        );
-
-        alert(
-            "Logout failed: " +
-            (error.message || error)
-        );
-
+        return new Date(timestamp).toLocaleString("en-GB", {
+            year: "numeric",
+            month: "short",
+            day: "2-digit",
+            hour: "2-digit",
+            minute: "2-digit"
+        });
+    } catch {
+        return "—";
     }
-
-});
-
-
-// ======================================
-// AUTH
-// ======================================
-
-onAuthStateChanged(auth, (user) => {
-
-    if (!user) {
-
-        currentUser = null;
-
-        stopClaimTimer();
-
-        location.href = "login.html";
-
-        return;
-
-    }
-
-    currentUser = user;
-
-    console.log(
-        "VIP AUTH:",
-        currentUser.uid
-    );
-
-    if (authStarted) {
-
-        refreshVipSystem();
-
-        return;
-
-    }
-
-    authStarted = true;
-
-    loadUserData();
-
-    loadVipPackages();
-
-    loadUserVipPlans();
-
-    checkVipExpiration();
-
-    startClaimTimer();
-
-});
-
-
-// ======================================
-// LOAD USER DATA
-// ======================================
-
-function loadUserData() {
-
-    if (!currentUser) {
-        return;
-    }
-
-    const userRef =
-        ref(
-            db,
-            `users/${currentUser.uid}`
-        );
-
-    onValue(
-        userRef,
-        (snapshot) => {
-
-            if (!snapshot.exists()) {
-
-                userData = {};
-
-                updateBalance(0);
-
-                return;
-
-            }
-
-            userData =
-                snapshot.val() || {};
-
-            const amount =
-                Number(
-                    userData.balance || 0
-                );
-
-            updateBalance(amount);
-
-        },
-        (error) => {
-
-            console.error(
-                "USER DATA ERROR:",
-                error
-            );
-
-        }
-    );
-
 }
 
 
-// ======================================
-// BALANCE
-// ======================================
-
-function updateBalance(amount) {
-
-    if (!balanceEl) {
-        return;
-    }
-
-    balanceEl.textContent =
-        `${Number(amount || 0).toLocaleString()} RWF`;
-
-}
-
-
-// ======================================
-// VIP COLOR
-// ======================================
-
-function getVipColorClass(name, index) {
-
-    const value =
-        String(name || "")
-            .toLowerCase()
-            .trim();
-
-    const colors = [
-        "bronze",
-        "starter",
-        "silver",
-        "gold",
-        "platinum",
-        "diamond",
-        "premium",
-        "elite",
-        "royal",
-        "ultimate"
-    ];
-
-    for (const color of colors) {
-
-        if (value.includes(color)) {
-
-            return color;
-
-        }
-
-    }
-
-    return colors[index] || "bronze";
-
-}
-
-
-// ======================================
-// VIP NUMBER
-// ======================================
-
-function getVipNumber(plan, key) {
-
-    const name =
-        String(
-            plan?.name ||
-            plan?.vipName ||
-            ""
-        );
-
-    const firebaseKey =
-        String(key || "");
-
-    const text =
-        `${name} ${firebaseKey}`;
-
-    const match =
-        text.match(
-            /(?:vip\s*)?[-_#:]?\s*(\d+)/i
-        );
-
-    if (match) {
-
-        return Number(match[1]);
-
-    }
-
-    return 999999;
-
-}
-
-
-// ======================================
-// LOAD VIP PACKAGES
-// ======================================
-
-function loadVipPackages() {
-
-    const vipRef =
-        ref(
-            db,
-            "vipPlans"
-        );
-
-    onValue(
-        vipRef,
-        (snapshot) => {
-
-            if (!vipGrid) {
-                return;
-            }
-
-            vipGrid.innerHTML = "";
-
-            if (!snapshot.exists()) {
-
-                vipGrid.innerHTML = `
-                    <div class="emptyVip">
-                        No VIP Plans Available
-                    </div>
-                `;
-
-                return;
-
-            }
-
-            const plans = [];
-
-            snapshot.forEach((child) => {
-
-                plans.push({
-                    key: child.key,
-                    data: child.val() || {}
-                });
-
-            });
-
-            plans.sort((a, b) => {
-
-                return (
-                    getVipNumber(
-                        a.data,
-                        a.key
-                    ) -
-                    getVipNumber(
-                        b.data,
-                        b.key
-                    )
-                );
-
-            });
-
-            plans.forEach((item, index) => {
-
-                createVipCard(
-                    item.key,
-                    item.data,
-                    index
-                );
-
-            });
-
-            updateVipButtons();
-
-        },
-        (error) => {
-
-            console.error(
-                "VIP PLANS ERROR:",
-                error
-            );
-
-            if (vipGrid) {
-
-                vipGrid.innerHTML = `
-                    <div class="emptyVip">
-                        Unable to load VIP Plans.
-                    </div>
-                `;
-
-            }
-
-        }
-    );
-
-}
-
-
-// ======================================
-// CREATE VIP CARD
-// ======================================
-
-function createVipCard(key, vip, index) {
-
-    const name =
-        String(
-            vip.name ||
-            vip.vipName ||
-            "VIP Plan"
-        );
-
-    const price =
-        Number(
-            vip.price ??
-            vip.vipPrice ??
-            0
-        );
-
-    const daily =
-        Number(
-            vip.dailyIncome ??
-            vip.daily ??
-            0
-        );
-
-    const duration =
-        Number(
-            vip.duration ??
-            vip.totalDays ??
-            vip.days ??
-            0
-        );
-
-    const profit =
-        Number(
-            vip.totalProfit ??
-            vip.profit ??
-            (
-                daily * duration
-            )
-        );
-
-    const color =
-        getVipColorClass(
-            name,
-            index
-        );
-
-    const card =
-        document.createElement("div");
-
-    card.className =
-        `vip-card ${color}`;
-
-    card.innerHTML = `
-
-        <div class="vip-badge">
-            ${escapeHtml(name)}
-        </div>
-
-        <i class="fas fa-gem vip-icon"></i>
-
-        <h2>
-            ${escapeHtml(name)}
-        </h2>
-
-        <h1>
-            ${price.toLocaleString()} RWF
-        </h1>
-
-        <p>
-            Daily Income:
-            <b>
-                ${daily.toLocaleString()} RWF
-            </b>
-        </p>
-
-        <p>
-            Duration:
-            <b>
-                ${duration} Days
-            </b>
-        </p>
-
-        <p>
-            Total Profit:
-            <b>
-                ${profit.toLocaleString()} RWF
-            </b>
-        </p>
-
-        <button
-            type="button"
-            class="buyVipBtn"
-            data-vip="${escapeHtml(name)}"
-            data-price="${price}"
-            data-daily="${daily}"
-            data-profit="${profit}"
-            data-days="${duration}"
-        >
-
-            <i class="fas fa-cart-shopping"></i>
-
-            Buy Now
-
-        </button>
-
-    `;
-
-    vipGrid.appendChild(card);
-
-    const button =
-        card.querySelector(".buyVipBtn");
-
-    button?.addEventListener(
-        "click",
-        () => {
-
-            buyVip(button);
-
-        }
-    );
-
-}
-
-
-// ======================================
-// ESCAPE HTML
-// ======================================
-
-function escapeHtml(value) {
-
-    return String(value)
+function escapeHTML(value) {
+    return String(value ?? "")
         .replace(/&/g, "&amp;")
         .replace(/</g, "&lt;")
         .replace(/>/g, "&gt;")
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#039;");
+}
+
+
+function getVipName(plan) {
+    if (!plan) return "";
+
+    return String(
+        plan.vipName ||
+        plan.name ||
+        plan.planName ||
+        ""
+    ).trim();
+}
+
+
+function getVipPrice(plan) {
+    return numberValue(
+        plan?.price ??
+        plan?.amount ??
+        plan?.cost
+    );
+}
+
+
+function getVipDailyIncome(plan) {
+    return numberValue(
+        plan?.dailyIncome ??
+        plan?.dailyProfit ??
+        plan?.daily
+    );
+}
+
+
+function getVipTotalProfit(plan) {
+    return numberValue(
+        plan?.totalProfit ??
+        plan?.profit ??
+        plan?.totalIncome
+    );
+}
+
+
+function getVipDuration(plan) {
+    return numberValue(
+        plan?.duration ??
+        plan?.totalDays ??
+        plan?.days
+    );
+}
+
+
+function getVipStartDate(plan) {
+    return numberValue(
+        plan?.startDate ??
+        plan?.approvedAt ??
+        plan?.createdAt
+    );
+}
+
+
+function getVipEndDate(plan) {
+
+    const savedEndDate = numberValue(plan?.endDate);
+
+    if (savedEndDate) {
+        return savedEndDate;
+    }
+
+    const startDate = getVipStartDate(plan);
+    const duration = getVipDuration(plan);
+
+    if (startDate && duration) {
+        return startDate + (duration * DAY);
+    }
+
+    return 0;
+}
+
+
+function isVipExpired(plan, now = Date.now()) {
+
+    const endDate = getVipEndDate(plan);
+
+    if (!endDate) {
+        return false;
+    }
+
+    return now >= endDate;
+}
+
+
+function isVipActive(plan, now = Date.now()) {
+
+    if (!plan) {
+        return false;
+    }
+
+    const status = normalizeStatus(plan.status);
+
+    if (isVipExpired(plan, now)) {
+        return false;
+    }
+
+    if (status === "expired") {
+        return false;
+    }
+
+    if (status === "inactive") {
+        return false;
+    }
+
+    return status === "active" || status === "";
+}
+
+
+// ============================================================
+// SIDEBAR
+// ============================================================
+
+if (menuBtn) {
+
+    menuBtn.addEventListener("click", () => {
+
+        sidebar?.classList.toggle("active");
+
+    });
 
 }
 
 
-// ======================================
-// BUY VIP
-// ======================================
+document.querySelectorAll(".sidebar a").forEach(link => {
 
-async function buyVip(button) {
+    link.addEventListener("click", () => {
 
-    if (
-        !button ||
-        button.dataset.buying === "true"
-    ) {
-        return;
-    }
+        sidebar?.classList.remove("active");
 
-    if (!currentUser) {
+    });
 
-        alert("Please login first.");
-
-        return;
-
-    }
-
-    button.dataset.buying = "true";
-    button.disabled = true;
-
-    const originalHTML =
-        button.innerHTML;
-
-    try {
-
-        const vipName =
-            button.dataset.vip || "";
-
-        const price =
-            Number(
-                button.dataset.price || 0
-            );
-
-        const dailyIncome =
-            Number(
-                button.dataset.daily || 0
-            );
-
-        const totalProfit =
-            Number(
-                button.dataset.profit || 0
-            );
-
-        const totalDays =
-            Number(
-                button.dataset.days || 0
-            );
+});
 
 
-        if (
-            !vipName ||
-            !Number.isFinite(price) ||
-            price <= 0 ||
-            !Number.isFinite(dailyIncome) ||
-            dailyIncome <= 0 ||
-            !Number.isFinite(totalDays) ||
-            totalDays <= 0
-        ) {
+// ============================================================
+// LOGOUT
+// ============================================================
 
-            throw new Error(
-                "Invalid VIP plan information."
-            );
+if (logoutBtn) {
+
+    logoutBtn.addEventListener("click", async () => {
+
+        try {
+
+            stopClaimTimer();
+
+            await signOut(auth);
+
+            window.location.href = "login.html";
+
+        } catch (error) {
+
+            console.error("Logout error:", error);
+
+            alert("Failed to logout.");
 
         }
 
-
-        // ==================================
-        // GET FRESH BALANCE
-        // ==================================
-
-        const userSnapshot =
-            await get(
-                ref(
-                    db,
-                    `users/${currentUser.uid}`
-                )
-            );
-
-
-        if (!userSnapshot.exists()) {
-
-            throw new Error(
-                "User account not found."
-            );
-
-        }
-
-
-        const freshUser =
-            userSnapshot.val() || {};
-
-
-        const currentBalance =
-            Number(
-                freshUser.balance || 0
-            );
-
-
-        if (currentBalance < price) {
-
-            throw new Error(
-                `Insufficient balance.\n\n` +
-                `VIP Price: ${price.toLocaleString()} RWF\n` +
-                `Your Balance: ${currentBalance.toLocaleString()} RWF`
-            );
-
-        }
-
-
-        // ==================================
-        // CONFIRM
-        // ==================================
-
-        const confirmed =
-            confirm(
-                `Buy ${vipName}?\n\n` +
-                `Price: ${price.toLocaleString()} RWF\n` +
-                `Daily Income: ${dailyIncome.toLocaleString()} RWF\n` +
-                `Duration: ${totalDays} Days\n` +
-                `Total Profit: ${totalProfit.toLocaleString()} RWF\n\n` +
-                `Your balance will be deducted after Admin approval.`
-            );
-
-
-        if (!confirmed) {
-
-            button.disabled = false;
-            button.dataset.buying = "false";
-
-            return;
-
-        }
-
-
-        button.innerHTML = `
-            <i class="fas fa-spinner fa-spin"></i>
-            Processing...
-        `;
-
-
-        // ==================================
-        // CHECK EXISTING REQUESTS
-        // ==================================
-
-        const requestsQuery =
-            query(
-                ref(
-                    db,
-                    "vipPurchaseRequests"
-                ),
-                orderByChild("uid"),
-                equalTo(
-                    currentUser.uid
-                )
-            );
-
-
-        const snapshot =
-            await get(requestsQuery);
-
-
-        let alreadyExists = false;
-
-
-        if (snapshot.exists()) {
-
-            snapshot.forEach((child) => {
-
-                const request =
-                    child.val() || {};
-
-
-                const requestName =
-                    request.vipName ||
-                    request.name ||
-                    request.planName ||
-                    "";
-
-
-                const status =
-                    String(
-                        request.status || ""
-                    ).toLowerCase();
-
-
-                if (
-                    requestName === vipName &&
-                    (
-                        status === "pending" ||
-                        status === "processing" ||
-                        status === "approved"
-                    )
-                ) {
-
-                    alreadyExists = true;
-
-                }
-
-            });
-
-        }
-
-
-        if (alreadyExists) {
-
-            button.innerHTML = `
-                <i class="fas fa-clock"></i>
-                Pending
-            `;
-
-            button.style.display =
-                "none";
-
-            alert(
-                `You already have a request or purchase for ${vipName}.`
-            );
-
-            return;
-
-        }
-
-
-        // ==================================
-        // CREATE REQUEST
-        // ==================================
-
-        const requestRef =
-            push(
-                ref(
-                    db,
-                    "vipPurchaseRequests"
-                )
-            );
-
-
-        await set(
-            requestRef,
-            {
-
-                uid:
-                    currentUser.uid,
-
-                email:
-                    currentUser.email || "",
-
-                vipName:
-                    vipName,
-
-                price:
-                    price,
-
-                dailyIncome:
-                    dailyIncome,
-
-                totalProfit:
-                    totalProfit,
-
-                duration:
-                    totalDays,
-
-                totalDays:
-                    totalDays,
-
-                status:
-                    "pending",
-
-                createdAt:
-                    Date.now()
-
-            }
-        );
-
-
-        // ==================================
-        // SUCCESS
-        // ==================================
-
-button.innerHTML = `
-    <i class="fas fa-clock"></i>
-    Pending
-`;
-
-button.disabled = true;
-
-button.dataset.buying = "false";
-
-button.classList.add("purchased");
-
-button.style.display = "";
-
-        alert(
-            `VIP purchase request sent successfully!\n\n` +
-            `${vipName}\n` +
-            `Price: ${price.toLocaleString()} RWF\n\n` +
-            `Please wait for Admin approval.`
-        );
-
-
-        console.log(
-            "VIP REQUEST CREATED:",
-            requestRef.key
-        );
-
-
-    } catch (error) {
-
-        console.error(
-            "BUY VIP ERROR:",
-            error
-        );
-
-
-        button.innerHTML =
-            originalHTML;
-
-        button.disabled =
-            false;
-
-        button.dataset.buying =
-            "false";
-
-
-        alert(
-            "VIP purchase failed:\n\n" +
-            (
-                error.message ||
-                error
-            )
-        );
-
-    }
+    });
 
 }
 
 
-// ======================================
-// LOAD USER VIP PLANS
-// ======================================
+// ============================================================
+// AUTHENTICATION
+// ============================================================
 
-function loadUserVipPlans() {
+function startAuthentication() {
 
-    if (!currentUser) {
+    if (authStarted) {
         return;
     }
 
+    authStarted = true;
 
-    const vipRef =
-        ref(
-            db,
-            `users/${currentUser.uid}/vipPlans`
-        );
+    onAuthStateChanged(auth, async user => {
 
+        if (!user) {
 
-    onValue(
-        vipRef,
-        (snapshot) => {
+            currentUser = null;
 
-            userVipPlans =
-                snapshot.exists()
-                    ? (
-                        snapshot.val() ||
-                        {}
-                    )
-                    : {};
+            stopClaimTimer();
 
+            window.location.href = "login.html";
 
-            renderOwnedVipPlans();
+            return;
+        }
 
-            updateVipButtons();
+        currentUser = user;
+
+        console.log("VIP AUTH USER:", user.uid);
+
+        try {
+
+            await loadUserData();
+            await loadVipPackages();
+            await loadUserVipPlans();
+
+            await checkVipExpiration();
+
+            updateBalanceUI();
+
+            updateVipSummary();
+
+            await updateVipButtons();
 
             startClaimTimer();
 
-        },
-        (error) => {
+        } catch (error) {
 
-            console.error(
-                "USER VIP PLANS ERROR:",
-                error
-            );
+            console.error("VIP INITIALIZATION ERROR:", error);
 
         }
-    );
+
+    });
 
 }
 
 
-// ======================================
-// RENDER OWNED VIP
-// ======================================
+// ============================================================
+// LOAD USER DATA
+// ============================================================
+
+async function loadUserData() {
+
+    if (!currentUser) {
+        return;
+    }
+
+    const userRef = ref(
+        db,
+        `users/${currentUser.uid}`
+    );
+
+    const snapshot = await get(userRef);
+
+    if (snapshot.exists()) {
+
+        userData = snapshot.val() || {};
+
+    } else {
+
+        userData = {};
+
+    }
+
+    updateBalanceUI();
+
+}
+
+
+// ============================================================
+// USER DATA REALTIME LISTENER
+// ============================================================
+
+function listenToUserData() {
+
+    if (!currentUser) {
+        return;
+    }
+
+    const userRef = ref(
+        db,
+        `users/${currentUser.uid}`
+    );
+
+    onValue(userRef, snapshot => {
+
+        if (!snapshot.exists()) {
+            return;
+        }
+
+        userData = snapshot.val() || {};
+
+        updateBalanceUI();
+
+        updateVipSummary();
+
+    });
+
+}
+
+
+// ============================================================
+// BALANCE UI
+// ============================================================
+
+function updateBalanceUI() {
+
+    if (!balanceEl) {
+        return;
+    }
+
+    const balance = numberValue(
+        userData?.balance
+    );
+
+    balanceEl.textContent = formatMoney(balance);
+
+}
+
+
+// ============================================================
+// LOAD VIP PACKAGES
+// ============================================================
+
+async function loadVipPackages() {
+
+    if (!vipGrid) {
+        console.warn("vipGrid not found.");
+        return;
+    }
+
+    const vipRef = ref(db, "vipPlans");
+
+    onValue(vipRef, snapshot => {
+
+        vipGrid.innerHTML = "";
+
+        if (!snapshot.exists()) {
+
+            vipGrid.innerHTML = `
+                <div class="empty-vip">
+                    <i class="fas fa-box-open"></i>
+                    <p>No VIP plans available.</p>
+                </div>
+            `;
+
+            return;
+        }
+
+        const plans = [];
+
+        snapshot.forEach(child => {
+
+            const plan = child.val() || {};
+
+            plans.push({
+                id: child.key,
+                ...plan
+            });
+
+        });
+
+        plans.sort((a, b) => {
+
+            return getVipNumber(a) - getVipNumber(b);
+
+        });
+
+        plans.forEach(plan => {
+
+            createVipCard(plan);
+
+        });
+
+        updateVipButtons();
+
+    });
+
+}
+
+
+// ============================================================
+// VIP NUMBER
+// ============================================================
+
+function getVipNumber(plan) {
+
+    const name = getVipName(plan);
+
+    const match = name.match(
+        /(?:vip\s*)?(\d+)/i
+    );
+
+    if (match) {
+        return numberValue(match[1]);
+    }
+
+    const price = getVipPrice(plan);
+
+    return price || 999999;
+}
+
+
+// ============================================================
+// VIP CARD
+// ============================================================
+
+function createVipCard(plan) {
+
+    if (!vipGrid) {
+        return;
+    }
+
+    const vipName = getVipName(plan);
+
+    if (!vipName) {
+        return;
+    }
+
+    const price = getVipPrice(plan);
+    const dailyIncome = getVipDailyIncome(plan);
+    const totalProfit = getVipTotalProfit(plan);
+    const duration = getVipDuration(plan);
+
+    const card = document.createElement("div");
+
+    card.className = "vip-card";
+
+    card.innerHTML = `
+        <div class="vip-card-header">
+
+            <div class="vip-icon">
+                <i class="fas fa-crown"></i>
+            </div>
+
+            <div class="vip-title">
+                <h3>${escapeHTML(vipName)}</h3>
+                <span>VIP Investment Plan</span>
+            </div>
+
+        </div>
+
+        <div class="vip-price">
+            ${formatMoney(price)}
+        </div>
+
+        <div class="vip-details">
+
+            <div class="vip-detail">
+                <span>Daily Income</span>
+                <strong>${formatMoney(dailyIncome)}</strong>
+            </div>
+
+            <div class="vip-detail">
+                <span>Total Profit</span>
+                <strong>${formatMoney(totalProfit)}</strong>
+            </div>
+
+            <div class="vip-detail">
+                <span>Duration</span>
+                <strong>${duration} Days</strong>
+            </div>
+
+        </div>
+
+        <button
+            type="button"
+            class="buyVipBtn"
+        >
+            <i class="fas fa-cart-shopping"></i>
+            Buy Now
+        </button>
+    `;
+
+    const button = card.querySelector(".buyVipBtn");
+
+    if (!button) {
+        return;
+    }
+
+    button.dataset.vip = vipName;
+    button.dataset.price = String(price);
+    button.dataset.daily = String(dailyIncome);
+    button.dataset.profit = String(totalProfit);
+    button.dataset.days = String(duration);
+    button.dataset.buying = "false";
+
+    button.addEventListener("click", () => {
+
+        buyVip(button);
+
+    });
+
+    vipGrid.appendChild(card);
+
+}
+
+
+// ============================================================
+// LOAD USER VIP PLANS
+// ============================================================
+
+async function loadUserVipPlans() {
+
+    if (!currentUser) {
+        return;
+    }
+
+    const plansRef = ref(
+        db,
+        `users/${currentUser.uid}/vipPlans`
+    );
+
+    onValue(plansRef, snapshot => {
+
+        userVipPlans = {};
+
+        if (snapshot.exists()) {
+
+            userVipPlans = snapshot.val() || {};
+
+        }
+
+        renderOwnedVipPlans();
+
+        updateVipSummary();
+
+        updateVipButtons();
+
+        startClaimTimer();
+
+    });
+
+}
+
+
+// ============================================================
+// RENDER OWNED VIP PLANS
+// ============================================================
 
 function renderOwnedVipPlans() {
 
@@ -960,373 +659,366 @@ function renderOwnedVipPlans() {
         return;
     }
 
+    ownedVipList.innerHTML = "";
 
-    ownedVipList.innerHTML =
-        "";
+    const plans = Object.entries(
+        userVipPlans || {}
+    );
 
-
-    const entries =
-        Object.entries(
-            userVipPlans || {}
-        );
-
-
-    if (!entries.length) {
+    if (!plans.length) {
 
         ownedVipList.innerHTML = `
             <div class="empty-vip">
-                No VIP purchased.
+                <i class="fas fa-crown"></i>
+                <p>You do not have an active VIP plan yet.</p>
             </div>
         `;
 
-        updateSummary(
-            0,
-            0,
-            0
-        );
-
         return;
-
     }
 
+    const now = Date.now();
 
-    let activeCount = 0;
+    plans.sort((a, b) => {
 
-    let dailyTotal = 0;
+        return getVipStartDate(b[1]) -
+               getVipStartDate(a[1]);
 
-    let profitTotal = 0;
+    });
 
+    plans.forEach(([id, plan]) => {
 
-    entries.sort(
-        ([keyA, a], [keyB, b]) =>
-            getVipNumber(
-                a,
-                keyA
-            ) -
-            getVipNumber(
-                b,
-                keyB
-            )
-    );
+        if (!plan) {
+            return;
+        }
 
+        const vipName = getVipName(plan);
 
-    entries.forEach(
-        ([id, plan]) => {
+        const price = getVipPrice(plan);
 
-            if (!plan) {
-                return;
-            }
+        const dailyIncome =
+            getVipDailyIncome(plan);
 
+        const totalProfit =
+            getVipTotalProfit(plan);
 
-            const name =
-                plan.vipName ||
-                plan.name ||
-                "VIP Plan";
+        const duration =
+            getVipDuration(plan);
 
+        const startDate =
+            getVipStartDate(plan);
 
-            const price =
-                Number(
-                    plan.price ??
-                    plan.vipPrice ??
-                    0
-                );
+        const endDate =
+            getVipEndDate(plan);
 
+        const expired =
+            isVipExpired(plan, now);
 
-            const daily =
-                Number(
-                    plan.dailyIncome ??
-                    plan.daily ??
-                    0
-                );
-
-
-            const duration =
-                Number(
-                    plan.totalDays ??
-                    plan.duration ??
-                    plan.days ??
-                    0
-                );
-
-
-            const profit =
-                Number(
-                    plan.totalProfit ??
-                    plan.profit ??
-                    0
-                );
-
-
-            const startDate =
-                Number(
-                    plan.startDate ??
-                    plan.approvedAt ??
-                    plan.createdAt ??
-                    0
-                );
-
-
-            let endDate =
-                Number(
-                    plan.endDate || 0
-                );
-
-
-            if (
-                !endDate &&
-                startDate &&
-                duration > 0
-            ) {
-
-                endDate =
-                    startDate +
-                    duration * DAY;
-
-            }
-
-
-            let remainingDays = 0;
-
-
-            if (endDate) {
-
-                remainingDays =
-                    Math.max(
-                        0,
-                        Math.ceil(
-                            (
-                                endDate -
-                                Date.now()
-                            ) / DAY
-                        )
-                    );
-
-            }
-
-
-            let status =
-                String(
-                    plan.status ||
+        const status =
+            expired
+                ? "expired"
+                : (
+                    normalizeStatus(plan.status) ||
                     "active"
-                ).toLowerCase();
-
-
-            if (
-                endDate &&
-                Date.now() > endDate
-            ) {
-
-                status =
-                    "expired";
-
-            }
-
-
-            if (
-                status === "active"
-            ) {
-
-                activeCount++;
-
-                dailyTotal += daily;
-
-            }
-
-
-            profitTotal += profit;
-
-
-            const card =
-                document.createElement(
-                    "div"
                 );
 
+        let remainingDays = 0;
 
-            card.className =
-                "owned-vip-card";
+        if (endDate > now) {
 
+            remainingDays = Math.ceil(
+                (endDate - now) / DAY
+            );
 
-            card.dataset.vipId =
-                id;
+        }
 
+        const card = document.createElement("div");
 
-            card.innerHTML = `
+        card.className =
+            `owned-vip-card ${status}`;
 
-                <div class="owned-vip-header">
+        card.innerHTML = `
 
-                    <div class="owned-vip-name">
+            <div class="owned-vip-header">
 
-                        <i class="fas fa-crown"></i>
+                <div>
 
-                        <span>
-                            ${escapeHtml(name)}
-                        </span>
+                    <h3>
+                        ${escapeHTML(vipName)}
+                    </h3>
 
-                    </div>
-
-                    <span
-                        class="vip-status ${status}">
+                    <span class="vip-status ${status}">
                         ${status.toUpperCase()}
                     </span>
 
                 </div>
 
+                <i class="fas fa-crown"></i>
 
-                <div class="owned-vip-info">
+            </div>
 
-                    <div class="vip-info-item">
+            <div class="owned-vip-info">
 
-                        <span>
-                            Price
-                        </span>
-
-                        <strong>
-                            ${price.toLocaleString()} RWF
-                        </strong>
-
-                    </div>
-
-
-                    <div class="vip-info-item">
-
-                        <span>
-                            Daily Income
-                        </span>
-
-                        <strong>
-                            ${daily.toLocaleString()} RWF
-                        </strong>
-
-                    </div>
-
-
-                    <div class="vip-info-item">
-
-                        <span>
-                            Duration
-                        </span>
-
-                        <strong>
-                            ${duration} Days
-                        </strong>
-
-                    </div>
-
-
-                    <div class="vip-info-item">
-
-                        <span>
-                            Remaining
-                        </span>
-
-                        <strong>
-                            ${remainingDays} Days
-                        </strong>
-
-                    </div>
-
-
-                    <div class="vip-info-item">
-
-                        <span>
-                            Total Profit
-                        </span>
-
-                        <strong>
-                            ${profit.toLocaleString()} RWF
-                        </strong>
-
-                    </div>
-
-
-                    <div class="vip-info-item">
-
-                        <span>
-                            Started
-                        </span>
-
-                        <strong>
-                            ${
-                                startDate
-                                    ? new Date(
-                                        startDate
-                                    ).toLocaleDateString()
-                                    : "N/A"
-                            }
-                        </strong>
-
-                    </div>
-
+                <div>
+                    <span>Price</span>
+                    <strong>
+                        ${formatMoney(price)}
+                    </strong>
                 </div>
 
-            `;
+                <div>
+                    <span>Daily Income</span>
+                    <strong>
+                        ${formatMoney(dailyIncome)}
+                    </strong>
+                </div>
 
+                <div>
+                    <span>Total Profit</span>
+                    <strong>
+                        ${formatMoney(totalProfit)}
+                    </strong>
+                </div>
 
-            ownedVipList.appendChild(
-                card
-            );
+                <div>
+                    <span>Duration</span>
+                    <strong>
+                        ${duration} Days
+                    </strong>
+                </div>
 
-        }
-    );
+                <div>
+                    <span>Remaining</span>
+                    <strong>
+                        ${remainingDays} Days
+                    </strong>
+                </div>
 
+                <div>
+                    <span>Earned</span>
+                    <strong>
+                        ${formatMoney(
+                            plan.totalEarned ??
+                            plan.earned ??
+                            plan.claimedAmount ??
+                            0
+                        )}
+                    </strong>
+                </div>
 
-    updateSummary(
-        activeCount,
-        dailyTotal,
-        profitTotal
-    );
+            </div>
+
+            <div class="owned-vip-dates">
+
+                <div>
+                    <span>Started</span>
+                    <strong>
+                        ${formatDate(startDate)}
+                    </strong>
+                </div>
+
+                <div>
+                    <span>Ends</span>
+                    <strong>
+                        ${formatDate(endDate)}
+                    </strong>
+                </div>
+
+            </div>
+
+        `;
+
+        ownedVipList.appendChild(card);
+
+    });
 
 }
 
 
-// ======================================
-// UPDATE SUMMARY
-// ======================================
+// ============================================================
+// VIP SUMMARY
+// ============================================================
 
-function updateSummary(
-    activeCount,
-    dailyTotal,
-    profitTotal
-) {
+function updateVipSummary() {
+
+    const now = Date.now();
+
+    let activeCount = 0;
+    let dailyTotal = 0;
+    let totalProfit = 0;
+
+    Object.values(userVipPlans || {})
+        .forEach(plan => {
+
+            if (!plan) {
+                return;
+            }
+
+            if (!isVipActive(plan, now)) {
+                return;
+            }
+
+            activeCount++;
+
+            dailyTotal +=
+                getVipDailyIncome(plan);
+
+            totalProfit +=
+                getVipTotalProfit(plan);
+
+        });
 
     if (currentVipEl) {
 
         currentVipEl.textContent =
             activeCount > 0
                 ? `${activeCount} Active`
-                : "No Active VIP";
+                : "VIP 0";
 
     }
-
 
     if (dailyIncomeEl) {
 
         dailyIncomeEl.textContent =
-            `${Number(
-                dailyTotal || 0
-            ).toLocaleString()} RWF`;
+            formatMoney(dailyTotal);
 
     }
-
 
     if (totalProfitEl) {
 
         totalProfitEl.textContent =
-            `${Number(
-                profitTotal || 0
-            ).toLocaleString()} RWF`;
+            formatMoney(totalProfit);
 
     }
 
 }
 
 
+// ============================================================
+// GET ACTIVE OWNED VIP BY NAME
+// ============================================================
 
-// ======================================
-// UPDATE BUY BUTTONS
-// Money Vault - VIP Buy Button State
-// Currency: RWF
-// ======================================
+function hasActiveVip(vipName) {
+
+    const target =
+        normalizeName(vipName);
+
+    const now = Date.now();
+
+    return Object.values(userVipPlans || {})
+        .some(plan => {
+
+            if (!plan) {
+                return false;
+            }
+
+            const name =
+                normalizeName(
+                    getVipName(plan)
+                );
+
+            if (name !== target) {
+                return false;
+            }
+
+            return isVipActive(plan, now);
+
+        });
+
+}
+
+
+// ============================================================
+// LOAD USER VIP PURCHASE REQUESTS
+// ============================================================
+
+async function getUserVipRequests() {
+
+    if (!currentUser) {
+        return {};
+    }
+
+    const requestsQuery = query(
+        ref(db, "vipPurchaseRequests"),
+        orderByChild("uid"),
+        equalTo(currentUser.uid)
+    );
+
+    const snapshot =
+        await get(requestsQuery);
+
+    if (!snapshot.exists()) {
+        return {};
+    }
+
+    return snapshot.val() || {};
+
+}
+
+
+// ============================================================
+// CHECK PENDING / PROCESSING REQUEST
+// ============================================================
+
+async function getVipRequestState(vipName) {
+
+    const target =
+        normalizeName(vipName);
+
+    const requests =
+        await getUserVipRequests();
+
+    let pending = false;
+    let processing = false;
+
+    Object.values(requests)
+        .forEach(request => {
+
+            if (!request) {
+                return;
+            }
+
+            const requestName =
+                normalizeName(
+                    request.vipName ||
+                    request.name ||
+                    request.planName
+                );
+
+            if (requestName !== target) {
+                return;
+            }
+
+            const status =
+                normalizeStatus(
+                    request.status
+                );
+
+            if (status === "pending") {
+
+                pending = true;
+
+            }
+
+            if (status === "processing") {
+
+                processing = true;
+
+            }
+
+        });
+
+    return {
+        pending,
+        processing
+    };
+
+}
+
+
+// ============================================================
+// UPDATE ALL BUY BUTTONS
+// ============================================================
 
 async function updateVipButtons() {
 
@@ -1335,17 +1027,15 @@ async function updateVipButtons() {
     }
 
     const buttons =
-        document.querySelectorAll(".buyVipBtn");
+        document.querySelectorAll(
+            ".buyVipBtn"
+        );
 
     if (!buttons.length) {
         return;
     }
 
     try {
-
-        // ==================================
-        // GET USER OWNED VIP PLANS
-        // ==================================
 
         const ownedSnapshot =
             await get(
@@ -1357,116 +1047,30 @@ async function updateVipButtons() {
 
         const owned =
             ownedSnapshot.exists()
-                ? (ownedSnapshot.val() || {})
-                : {};
-
-
-        // ==================================
-        // GET PURCHASE REQUESTS
-        // ==================================
-
-        const requestsQuery =
-            query(
-                ref(
-                    db,
-                    "vipPurchaseRequests"
-                ),
-                orderByChild("uid"),
-                equalTo(currentUser.uid)
-            );
-
-        const requestSnapshot =
-            await get(requestsQuery);
-
-        const requests =
-            requestSnapshot.exists()
-                ? (requestSnapshot.val() || {})
-                : {};
-
-
-        // ======================================
-// UPDATE BUY BUTTONS
-// Money Vault - VIP Buy Button State
-// Currency: RWF
-//
-// RULE:
-// - Active VIP => only THAT VIP disabled
-// - Pending request => only THAT VIP disabled
-// - Processing request => only THAT VIP disabled
-// - Other VIPs => Buy Now remains available
-// - Expired VIP => Buy Now returns
-// - NEVER hide buttons
-// ======================================
-
-async function updateVipButtons() {
-
-    if (!currentUser) {
-        return;
-    }
-
-    const buttons =
-        document.querySelectorAll(".buyVipBtn");
-
-    if (!buttons.length) {
-        return;
-    }
-
-    try {
-
-        // ==================================
-        // GET USER VIP PLANS
-        // ==================================
-
-        const ownedSnapshot =
-            await get(
-                ref(
-                    db,
-                    `users/${currentUser.uid}/vipPlans`
+                ? (
+                    ownedSnapshot.val() || {}
                 )
-            );
-
-        const owned =
-            ownedSnapshot.exists()
-                ? (ownedSnapshot.val() || {})
                 : {};
 
-
-        // ==================================
-        // GET USER PURCHASE REQUESTS
-        // ==================================
-
-        const requestsQuery =
-            query(
-                ref(
-                    db,
-                    "vipPurchaseRequests"
-                ),
-                orderByChild("uid"),
-                equalTo(currentUser.uid)
-            );
+        const requestsQuery = query(
+            ref(db, "vipPurchaseRequests"),
+            orderByChild("uid"),
+            equalTo(currentUser.uid)
+        );
 
         const requestSnapshot =
             await get(requestsQuery);
 
         const requests =
             requestSnapshot.exists()
-                ? (requestSnapshot.val() || {})
+                ? (
+                    requestSnapshot.val() || {}
+                )
                 : {};
 
+        const now = Date.now();
 
-        // ==================================
-        // CURRENT TIME
-        // ==================================
-
-        const now =
-            Date.now();
-
-
-        // ==================================
-        // CHECK EVERY VIP BUTTON SEPARATELY
-        // ==================================
-
-        buttons.forEach((button) => {
+        buttons.forEach(button => {
 
             const vipName =
                 String(
@@ -1477,155 +1081,389 @@ async function updateVipButtons() {
                 return;
             }
 
+            const target =
+                normalizeName(vipName);
 
             let activeVip = false;
             let pendingRequest = false;
             let processingRequest = false;
 
-
-            // ==================================
+            // ----------------------------------------
             // CHECK OWNED VIP
-            // ONLY MATCH THIS VIP
-            // ==================================
+            // ----------------------------------------
 
-            Object.values(owned).forEach((plan) => {
+            Object.values(owned)
+                .forEach(plan => {
+
+                    if (!plan) {
+                        return;
+                    }
+
+                    const ownedName =
+                        normalizeName(
+                            getVipName(plan)
+                        );
+
+                    if (ownedName !== target) {
+                        return;
+                    }
+
+                    if (
+                        isVipActive(
+                            plan,
+                            now
+                        )
+                    ) {
+
+                        activeVip = true;
+
+                    }
+
+                });
+
+
+            // ----------------------------------------
+            // CHECK REQUESTS
+            // ----------------------------------------
+
+            Object.values(requests)
+                .forEach(request => {
+
+                    if (!request) {
+                        return;
+                    }
+
+                    const requestName =
+                        normalizeName(
+                            request.vipName ||
+                            request.name ||
+                            request.planName
+                        );
+
+                    if (requestName !== target) {
+                        return;
+                    }
+
+                    const status =
+                        normalizeStatus(
+                            request.status
+                        );
+
+                    if (status === "pending") {
+
+                        pendingRequest = true;
+
+                    }
+
+                    if (status === "processing") {
+
+                        processingRequest = true;
+
+                    }
+
+                });
+
+
+            // ----------------------------------------
+            // ACTIVE VIP
+            // ----------------------------------------
+
+            if (activeVip) {
+
+                button.disabled = true;
+
+                button.dataset.buying =
+                    "false";
+
+                button.classList.add(
+                    "purchased"
+                );
+
+                button.style.display = "";
+
+                button.innerHTML = `
+                    <i class="fas fa-check-circle"></i>
+                    Active
+                `;
+
+                return;
+            }
+
+
+            // ----------------------------------------
+            // PROCESSING
+            // ----------------------------------------
+
+            if (processingRequest) {
+
+                button.disabled = true;
+
+                button.dataset.buying =
+                    "false";
+
+                button.classList.add(
+                    "purchased"
+                );
+
+                button.style.display = "";
+
+                button.innerHTML = `
+                    <i class="fas fa-spinner fa-spin"></i>
+                    Processing...
+                `;
+
+                return;
+            }
+
+
+            // ----------------------------------------
+            // PENDING
+            // ----------------------------------------
+
+            if (pendingRequest) {
+
+                button.disabled = true;
+
+                button.dataset.buying =
+                    "false";
+
+                button.classList.add(
+                    "purchased"
+                );
+
+                button.style.display = "";
+
+                button.innerHTML = `
+                    <i class="fas fa-clock"></i>
+                    Pending
+                `;
+
+                return;
+            }
+
+
+            // ----------------------------------------
+            // AVAILABLE
+            // ----------------------------------------
+
+            button.disabled = false;
+
+            button.dataset.buying =
+                "false";
+
+            button.classList.remove(
+                "purchased"
+            );
+
+            button.style.display = "";
+
+            button.innerHTML = `
+                <i class="fas fa-cart-shopping"></i>
+                Buy Now
+            `;
+
+        });
+
+    } catch (error) {
+
+        console.error(
+            "UPDATE VIP BUTTONS ERROR:",
+            error
+        );
+
+    }
+
+}
+
+
+// ============================================================
+// BUY VIP
+// ============================================================
+
+async function buyVip(button) {
+
+    if (!currentUser) {
+
+        alert(
+            "Please login first."
+        );
+
+        return;
+
+    }
+
+    if (!button) {
+        return;
+    }
+
+    if (
+        button.dataset.buying ===
+        "true"
+    ) {
+
+        return;
+
+    }
+
+    const vipName =
+        String(
+            button.dataset.vip || ""
+        ).trim();
+
+    const price =
+        numberValue(
+            button.dataset.price
+        );
+
+    const dailyIncome =
+        numberValue(
+            button.dataset.daily
+        );
+
+    const totalProfit =
+        numberValue(
+            button.dataset.profit
+        );
+
+    const duration =
+        numberValue(
+            button.dataset.days
+        );
+
+
+    if (!vipName) {
+
+        alert(
+            "VIP plan name is missing."
+        );
+
+        return;
+
+    }
+
+
+    if (
+        price <= 0 ||
+        duration <= 0
+    ) {
+
+        alert(
+            "Invalid VIP plan information."
+        );
+
+        return;
+
+    }
+
+
+    // ========================================================
+    // LOCK BUTTON
+    // ========================================================
+
+    button.dataset.buying =
+        "true";
+
+    button.disabled = true;
+
+
+    try {
+
+        // ====================================================
+        // CHECK ACTIVE OWNED VIP
+        // ====================================================
+
+        const ownedSnapshot =
+            await get(
+                ref(
+                    db,
+                    `users/${currentUser.uid}/vipPlans`
+                )
+            );
+
+        const owned =
+            ownedSnapshot.exists()
+                ? (
+                    ownedSnapshot.val() || {}
+                )
+                : {};
+
+        const target =
+            normalizeName(vipName);
+
+        let activeOwnedVip = false;
+
+        Object.values(owned)
+            .forEach(plan => {
 
                 if (!plan) {
                     return;
                 }
 
+                const name =
+                    normalizeName(
+                        getVipName(plan)
+                    );
 
-                const ownedName =
-                    String(
-                        plan.vipName ||
-                        plan.name ||
-                        plan.planName ||
-                        ""
-                    ).trim();
-
-
-                // IMPORTANT:
-                // Do not block other VIPs.
-                if (
-                    ownedName !== vipName
-                ) {
+                if (name !== target) {
                     return;
                 }
 
-
-                const status =
-                    String(
-                        plan.status ||
-                        ""
-                    ).toLowerCase()
-                    .trim();
-
-
-                const startDate =
-                    Number(
-                        plan.startDate ??
-                        plan.approvedAt ??
-                        plan.createdAt ??
-                        0
-                    );
-
-
-                const duration =
-                    Number(
-                        plan.totalDays ??
-                        plan.duration ??
-                        plan.days ??
-                        0
-                    );
-
-
-                let endDate =
-                    Number(
-                        plan.endDate || 0
-                    );
-
-
-                // ==================================
-                // CALCULATE END DATE
-                // ==================================
-
                 if (
-                    !endDate &&
-                    startDate > 0 &&
-                    duration > 0
+                    isVipActive(plan)
                 ) {
 
-                    endDate =
-                        startDate +
-                        duration * DAY;
-
-                }
-
-
-                // ==================================
-                // EXPIRED?
-                // ==================================
-
-                const expired =
-                    endDate > 0 &&
-                    now >= endDate;
-
-
-                // ==================================
-                // ACTIVE ONLY IF NOT EXPIRED
-                // ==================================
-
-                if (
-                    !expired &&
-                    (
-                        status === "active" ||
-                        status === ""
-                    )
-                ) {
-
-                    activeVip = true;
+                    activeOwnedVip = true;
 
                 }
 
             });
 
 
-            // ==================================
-            // CHECK PURCHASE REQUESTS
-            // ONLY THIS VIP
-            // ==================================
+        if (activeOwnedVip) {
 
-            Object.values(requests).forEach((request) => {
+            alert(
+                `You already have an active ${vipName}.`
+            );
+
+            await updateVipButtons();
+
+            return;
+
+        }
+
+
+        // ====================================================
+        // CHECK EXISTING REQUESTS
+        // ====================================================
+
+        const requests =
+            await getUserVipRequests();
+
+        let pendingRequest = false;
+        let processingRequest = false;
+
+        Object.values(requests)
+            .forEach(request => {
 
                 if (!request) {
                     return;
                 }
 
-
                 const requestName =
-                    String(
+                    normalizeName(
                         request.vipName ||
                         request.name ||
-                        request.planName ||
-                        ""
-                    ).trim();
+                        request.planName
+                    );
 
-
-                // IMPORTANT:
-                // Request for VIP 1 must NOT block VIP 2.
-                if (
-                    requestName !== vipName
-                ) {
+                if (requestName !== target) {
                     return;
                 }
 
-
                 const status =
-                    String(
-                        request.status || ""
-                    ).toLowerCase()
-                    .trim();
-
+                    normalizeStatus(
+                        request.status
+                    );
 
                 if (
                     status === "pending"
@@ -1634,7 +1472,6 @@ async function updateVipButtons() {
                     pendingRequest = true;
 
                 }
-
 
                 if (
                     status === "processing"
@@ -1647,374 +1484,235 @@ async function updateVipButtons() {
             });
 
 
-            // ==================================
-            // ACTIVE VIP
-            // ==================================
+        if (processingRequest) {
 
-            if (activeVip) {
+            alert(
+                `${vipName} is currently being processed. Please wait.`
+            );
 
-                button.disabled = true;
+            await updateVipButtons();
 
-                button.dataset.buying =
-                    "false";
+            return;
 
-                button.classList.add(
-                    "purchased"
-                );
-
-                button.style.display =
-                    "";
-
-                button.innerHTML = `
-                    <i class="fas fa-check-circle"></i>
-                    Active
-                `;
-
-                return;
-
-            }
+        }
 
 
-            // ==================================
-            // PROCESSING
-            // ==================================
+        if (pendingRequest) {
 
-            if (processingRequest) {
+            alert(
+                `You already have a pending request for ${vipName}.`
+            );
 
-                button.disabled = true;
+            await updateVipButtons();
 
-                button.dataset.buying =
-                    "false";
+            return;
 
-                button.classList.add(
-                    "purchased"
-                );
-
-                button.style.display =
-                    "";
-
-                button.innerHTML = `
-                    <i class="fas fa-spinner fa-spin"></i>
-                    Processing...
-                `;
-
-                return;
-
-            }
+        }
 
 
-            // ==================================
-            // PENDING
-            // ==================================
+        // ====================================================
+        // GET LATEST USER BALANCE
+        // ====================================================
 
-            if (pendingRequest) {
+        const userSnapshot =
+            await get(
+                ref(
+                    db,
+                    `users/${currentUser.uid}`
+                )
+            );
 
-                button.disabled = true;
+        if (!userSnapshot.exists()) {
 
-                button.dataset.buying =
-                    "false";
+            alert(
+                "User account data was not found."
+            );
 
-                button.classList.add(
-                    "purchased"
-                );
+            return;
 
-                button.style.display =
-                    "";
+        }
 
-                button.innerHTML = `
-                    <i class="fas fa-clock"></i>
-                    Pending
-                `;
+        const latestUser =
+            userSnapshot.val() || {};
 
-                return;
-
-            }
+        userData =
+            latestUser;
 
 
-            // ==================================
-            // AVAILABLE
-            // ==================================
+        const balance =
+            numberValue(
+                latestUser.balance
+            );
 
-            button.disabled = false;
+
+        if (balance < price) {
+
+            alert(
+                `Insufficient balance.\n\n` +
+                `Required: ${formatMoney(price)}\n` +
+                `Available: ${formatMoney(balance)}`
+            );
+
+            return;
+
+        }
+
+
+        // ====================================================
+        // CONFIRM PURCHASE REQUEST
+        // ====================================================
+
+        const confirmed =
+            confirm(
+                `Buy ${vipName}?\n\n` +
+                `Price: ${formatMoney(price)}\n` +
+                `Daily Income: ${formatMoney(dailyIncome)}\n` +
+                `Total Profit: ${formatMoney(totalProfit)}\n` +
+                `Duration: ${duration} Days`
+            );
+
+        if (!confirmed) {
+
+            return;
+
+        }
+
+
+        // ====================================================
+        // CREATE REQUEST
+        // ====================================================
+
+        const requestRef =
+            push(
+                ref(
+                    db,
+                    "vipPurchaseRequests"
+                )
+            );
+
+        const now =
+            Date.now();
+
+
+        const requestData = {
+
+            uid: currentUser.uid,
+
+            email:
+                currentUser.email ||
+                latestUser.email ||
+                "",
+
+            fullName:
+                latestUser.fullName ||
+                latestUser.name ||
+                currentUser.displayName ||
+                "User",
+
+            phone:
+                latestUser.phone ||
+                latestUser.phoneNumber ||
+                "",
+
+            vipName,
+
+            price,
+
+            dailyIncome,
+
+            totalProfit,
+
+            duration,
+
+            currency: "RWF",
+
+            paymentMethod:
+                "Account Balance",
+
+            status:
+                "pending",
+
+            createdAt:
+                now,
+
+            requestedAt:
+                now
+
+        };
+
+
+        await set(
+            requestRef,
+            requestData
+        );
+
+
+        // ====================================================
+        // SUCCESS
+        // ====================================================
+
+        button.dataset.buying =
+            "false";
+
+        button.disabled = true;
+
+        button.classList.add(
+            "purchased"
+        );
+
+        button.style.display = "";
+
+        button.innerHTML = `
+            <i class="fas fa-clock"></i>
+            Pending
+        `;
+
+
+        alert(
+            `${vipName} purchase request submitted successfully.\n\n` +
+            `Please wait for admin approval.`
+        );
+
+
+        await updateVipButtons();
+
+
+    } catch (error) {
+
+        console.error(
+            "BUY VIP ERROR:",
+            error
+        );
+
+        alert(
+            "Unable to submit VIP request.\n\n" +
+            (error?.message || "Please try again.")
+        );
+
+    } finally {
+
+        if (
+            button.dataset.buying ===
+            "true"
+        ) {
 
             button.dataset.buying =
                 "false";
 
-            button.classList.remove(
-                "purchased"
-            );
-
-            button.style.display =
-                "";
-
-            button.innerHTML = `
-                <i class="fas fa-cart-shopping"></i>
-                Buy Now
-            `;
-
-        });
-
-    } catch (error) {
-
-        console.error(
-            "UPDATE VIP BUTTONS ERROR:",
-            error
-        );
-
-    }
-
-}
-        
-
-            // ==================================
-            // CHECK OWNED VIP
-            // ==================================
-
-            Object.values(owned).forEach((plan) => {
-
-                if (!plan) {
-                    return;
-                }
-
-                const name =
-                    String(
-                        plan.vipName ||
-                        plan.name ||
-                        ""
-                    ).trim();
-
-                if (name !== vipName) {
-                    return;
-                }
-
-
-                const status =
-                    String(
-                        plan.status ||
-                        "active"
-                    ).toLowerCase();
-
-
-                const startDate =
-                    Number(
-                        plan.startDate ??
-                        plan.approvedAt ??
-                        plan.createdAt ??
-                        0
-                    );
-
-
-                const duration =
-                    Number(
-                        plan.totalDays ??
-                        plan.duration ??
-                        plan.days ??
-                        0
-                    );
-
-
-                let endDate =
-                    Number(
-                        plan.endDate || 0
-                    );
-
-
-                // ==================================
-                // CALCULATE END DATE IF MISSING
-                // ==================================
-
-                if (
-                    !endDate &&
-                    startDate &&
-                    duration > 0
-                ) {
-
-                    endDate =
-                        startDate +
-                        duration * DAY;
-
-                }
-
-
-                const now =
-                    Date.now();
-
-
-                // ==================================
-                // CHECK WHETHER VIP IS STILL ACTIVE
-                // ==================================
-
-                const isExpired =
-                    endDate > 0 &&
-                    now >= endDate;
-
-
-                if (
-                    status === "active" &&
-                    !isExpired
-                ) {
-
-                    activeVip = plan;
-
-                }
-
-            });
-
-
-            // ==================================
-            // CHECK REQUEST STATUS
-            // ==================================
-
-            Object.values(requests).forEach((request) => {
-
-                if (!request) {
-                    return;
-                }
-
-                const name =
-                    String(
-                        request.vipName ||
-                        request.name ||
-                        request.planName ||
-                        ""
-                    ).trim();
-
-                if (name !== vipName) {
-                    return;
-                }
-
-
-                const status =
-                    String(
-                        request.status || ""
-                    ).toLowerCase();
-
-
-                if (status === "pending") {
-
-                    pendingRequest = true;
-
-                }
-
-
-                if (status === "processing") {
-
-                    processingRequest = true;
-
-                }
-
-            });
-
-
-            // ==================================
-            // ACTIVE VIP
-            // ==================================
-
-            if (activeVip) {
-
-                button.disabled = true;
-
-                button.dataset.buying = "false";
-
-                button.classList.add("purchased");
-
-                button.innerHTML = `
-                    <i class="fas fa-check-circle"></i>
-                    Active
-                `;
-
-                // IMPORTANT:
-                // Do NOT hide the button.
-                button.style.display = "";
-
-                return;
-            }
-
-
-            // ==================================
-            // PENDING REQUEST
-            // ==================================
-
-            if (pendingRequest) {
-
-                button.disabled = true;
-
-                button.dataset.buying = "false";
-
-                button.classList.add("purchased");
-
-                button.innerHTML = `
-                    <i class="fas fa-clock"></i>
-                    Pending
-                `;
-
-                // IMPORTANT:
-                // Button remains visible.
-                button.style.display = "";
-
-                return;
-            }
-
-
-            // ==================================
-            // PROCESSING REQUEST
-            // ==================================
-
-            if (processingRequest) {
-
-                button.disabled = true;
-
-                button.dataset.buying = "false";
-
-                button.classList.add("purchased");
-
-                button.innerHTML = `
-                    <i class="fas fa-spinner fa-spin"></i>
-                    Processing...
-                `;
-
-                // IMPORTANT:
-                // Button remains visible.
-                button.style.display = "";
-
-                return;
-            }
-
-
-            // ==================================
-            // AVAILABLE TO BUY
-            // ==================================
-
             button.disabled = false;
 
-            button.dataset.buying = "false";
+        }
 
-            button.classList.remove("purchased");
-
-            button.style.display = "";
-
-            button.innerHTML = `
-                <i class="fas fa-cart-shopping"></i>
-                Buy Now
-            `;
-
-        });
-
-
-    } catch (error) {
-
-        console.error(
-            "UPDATE VIP BUTTONS ERROR:",
-            error
-        );
+        await updateVipButtons();
 
     }
 
 }
 
-// ======================================
+
+// ============================================================
 // VIP EXPIRATION
-// ======================================
+// ============================================================
 
 async function checkVipExpiration() {
 
@@ -2022,161 +1720,65 @@ async function checkVipExpiration() {
         return;
     }
 
-
-    try {
-
-        const vipRef =
-            ref(
-                db,
-                `users/${currentUser.uid}/vipPlans`
-            );
-
-
-        const snapshot =
-            await get(vipRef);
-
-
-        if (!snapshot.exists()) {
-            return;
-        }
-
-
-        const plans =
-            snapshot.val() || {};
-
-
-        const now =
-            Date.now();
-
-
-        const updates = {};
-
-
-        Object.entries(
-            plans
-        ).forEach(
-            ([id, plan]) => {
-
-                if (!plan) {
-                    return;
-                }
-
-
-                const duration =
-                    Number(
-                        plan.totalDays ??
-                        plan.duration ??
-                        plan.days ??
-                        0
-                    );
-
-
-                const startDate =
-                    Number(
-                        plan.startDate ??
-                        plan.approvedAt ??
-                        plan.createdAt ??
-                        0
-                    );
-
-
-                let endDate =
-                    Number(
-                        plan.endDate || 0
-                    );
-
-
-                if (
-                    !endDate &&
-                    startDate &&
-                    duration > 0
-                ) {
-
-                    endDate =
-                        startDate +
-                        duration * DAY;
-
-
-                    updates[
-                        `${id}/endDate`
-                    ] =
-                        endDate;
-
-                }
-
-
-                if (!endDate) {
-                    return;
-                }
-
-
-                const remainingDays =
-                    Math.max(
-                        0,
-                        Math.ceil(
-                            (
-                                endDate -
-                                now
-                            ) / DAY
-                        )
-                    );
-
-
-                updates[
-                    `${id}/remainingDays`
-                ] =
-                    remainingDays;
-
-
-                if (
-                    now >= endDate
-                ) {
-
-                    updates[
-                        `${id}/status`
-                    ] =
-                        "expired";
-
-                } else {
-
-                    if (
-                        String(
-                            plan.status ||
-                            "active"
-                        ).toLowerCase() !==
-                        "expired"
-                    ) {
-
-                        updates[
-                            `${id}/status`
-                        ] =
-                            "active";
-
-                    }
-
-                }
-
-            }
+    const plansRef =
+        ref(
+            db,
+            `users/${currentUser.uid}/vipPlans`
         );
 
+    const snapshot =
+        await get(plansRef);
 
-        if (
-            Object.keys(updates).length
-        ) {
+    if (!snapshot.exists()) {
+        return;
+    }
 
-            await update(
-                vipRef,
-                updates
-            );
+    const plans =
+        snapshot.val() || {};
 
-        }
+    const now =
+        Date.now();
+
+    const updates = {};
+
+    Object.entries(plans)
+        .forEach(([id, plan]) => {
+
+            if (!plan) {
+                return;
+            }
+
+            const endDate =
+                getVipEndDate(plan);
+
+            if (!endDate) {
+                return;
+            }
+
+            if (
+                now >= endDate &&
+                normalizeStatus(plan.status) !==
+                "expired"
+            ) {
+
+                updates[
+                    `${id}/status`
+                ] = "expired";
+
+                updates[
+                    `${id}/active`
+                ] = false;
+
+            }
+
+        });
 
 
-    } catch (error) {
+    if (Object.keys(updates).length) {
 
-        console.error(
-            "VIP EXPIRATION ERROR:",
-            error
+        await update(
+            plansRef,
+            updates
         );
 
     }
@@ -2184,9 +1786,9 @@ async function checkVipExpiration() {
 }
 
 
-// ======================================
+// ============================================================
 // CLAIM TIMER
-// ======================================
+// ============================================================
 
 function startClaimTimer() {
 
@@ -2203,10 +1805,6 @@ function startClaimTimer() {
 }
 
 
-// ======================================
-// STOP CLAIM TIMER
-// ======================================
-
 function stopClaimTimer() {
 
     if (claimTimerInterval) {
@@ -2215,186 +1813,121 @@ function stopClaimTimer() {
             claimTimerInterval
         );
 
-        claimTimerInterval =
-            null;
+        claimTimerInterval = null;
 
     }
 
 }
 
 
-// ======================================
-// UPDATE CLAIM TIMER
-// ======================================
-
-function updateClaimTimer() {
-
-    if (!claimButton) {
-        return;
-    }
-
-
-    if (!currentUser) {
-
-        claimButton.disabled =
-            true;
-
-        return;
-
-    }
-
-
-    const plans =
-        userVipPlans || {};
-
+function getNextClaimTime() {
 
     const now =
         Date.now();
 
+    let nextTime = 0;
 
-    let earliestNextClaim =
-        Infinity;
-
-
-    let canClaim =
-        false;
-
-
-    Object.values(
-        plans
-    ).forEach(
-        (plan) => {
+    Object.values(userVipPlans || {})
+        .forEach(plan => {
 
             if (!plan) {
                 return;
             }
 
-
-            const status =
-                String(
-                    plan.status ||
-                    "active"
-                ).toLowerCase();
-
-
-            if (
-                status !== "active"
-            ) {
+            if (!isVipActive(plan, now)) {
                 return;
             }
-
-
-            const daily =
-                Number(
-                    plan.dailyIncome ??
-                    plan.daily ??
-                    0
-                );
-
-
-            if (daily <= 0) {
-                return;
-            }
-
-
-            const startDate =
-                Number(
-                    plan.startDate ??
-                    plan.approvedAt ??
-                    plan.createdAt ??
-                    0
-                );
-
-
-            const duration =
-                Number(
-                    plan.totalDays ??
-                    plan.duration ??
-                    plan.days ??
-                    0
-                );
-
-
-            let endDate =
-                Number(
-                    plan.endDate || 0
-                );
-
-
-            if (
-                !endDate &&
-                startDate &&
-                duration > 0
-            ) {
-
-                endDate =
-                    startDate +
-                    duration * DAY;
-
-            }
-
-
-            if (
-                endDate &&
-                now > endDate
-            ) {
-                return;
-            }
-
 
             const lastClaim =
-                Number(
-                    plan.lastClaim || 0
+                numberValue(
+                    plan.lastClaim ??
+                    plan.lastClaimTime ??
+                    plan.lastProfitTime ??
+                    getVipStartDate(plan)
                 );
 
-
             const nextClaim =
-                lastClaim > 0
-                    ? lastClaim + DAY
-                    : startDate + DAY;
-
+                lastClaim + DAY;
 
             if (
-                now >= nextClaim
+                nextClaim > now &&
+                (
+                    !nextTime ||
+                    nextClaim < nextTime
+                )
             ) {
 
-                canClaim =
-                    true;
-
-            } else {
-
-                if (
-                    nextClaim <
-                    earliestNextClaim
-                ) {
-
-                    earliestNextClaim =
-                        nextClaim;
-
-                }
+                nextTime = nextClaim;
 
             }
 
-        }
-    );
+        });
+
+    return nextTime;
+
+}
 
 
-    if (canClaim) {
+function updateClaimTimer() {
 
-        claimButton.disabled =
-            false;
+    if (!claimTimer) {
+        return;
+    }
 
-        claimButton.innerHTML = `
-            <i class="fas fa-coins"></i>
-            Claim Daily Income
-        `;
+    const now =
+        Date.now();
+
+    let activeCount = 0;
+    let claimAvailable = false;
+    let nextClaimTime = 0;
+
+    Object.values(userVipPlans || {})
+        .forEach(plan => {
+
+            if (!plan) {
+                return;
+            }
+
+            if (!isVipActive(plan, now)) {
+                return;
+            }
+
+            activeCount++;
+
+            const lastClaim =
+                numberValue(
+                    plan.lastClaim ??
+                    plan.lastClaimTime ??
+                    plan.lastProfitTime ??
+                    getVipStartDate(plan)
+                );
+
+            const next =
+                lastClaim + DAY;
+
+            if (now >= next) {
+
+                claimAvailable = true;
+
+            } else if (
+                !nextClaimTime ||
+                next < nextClaimTime
+            ) {
+
+                nextClaimTime = next;
+
+            }
+
+        });
 
 
-        if (claimTimer) {
+    if (!activeCount) {
 
-            claimTimer.textContent =
-                "Available now";
+        claimTimer.textContent =
+            "No active VIP";
 
+        if (claimButton) {
+            claimButton.disabled = true;
         }
 
         return;
@@ -2402,26 +1935,28 @@ function updateClaimTimer() {
     }
 
 
-    claimButton.disabled =
-        true;
+    if (claimAvailable) {
+
+        claimTimer.textContent =
+            "Daily income is ready!";
+
+        if (claimButton) {
+            claimButton.disabled =
+                claimInProgress;
+        }
+
+        return;
+
+    }
 
 
-    if (
-        earliestNextClaim ===
-        Infinity
-    ) {
+    if (!nextClaimTime) {
 
-        claimButton.innerHTML = `
-            <i class="fas fa-clock"></i>
-            Claim Daily Income
-        `;
+        claimTimer.textContent =
+            "Waiting...";
 
-
-        if (claimTimer) {
-
-            claimTimer.textContent =
-                "No active VIP income available";
-
+        if (claimButton) {
+            claimButton.disabled = true;
         }
 
         return;
@@ -2432,60 +1967,51 @@ function updateClaimTimer() {
     const remaining =
         Math.max(
             0,
-            earliestNextClaim -
-            now
+            nextClaimTime - now
         );
 
 
     const hours =
         Math.floor(
-            remaining /
-            (60 * 60 * 1000)
+            remaining / (60 * 60 * 1000)
         );
-
 
     const minutes =
         Math.floor(
-            (
-                remaining %
-                (60 * 60 * 1000)
-            ) /
+            (remaining %
+                (60 * 60 * 1000)) /
             (60 * 1000)
         );
 
-
     const seconds =
         Math.floor(
-            (
-                remaining %
-                (60 * 1000)
-            ) /
+            (remaining %
+                (60 * 1000)) /
             1000
         );
 
 
-    if (claimTimer) {
+    claimTimer.textContent =
+        `Next claim in ${String(hours).padStart(2, "0")}:` +
+        `${String(minutes).padStart(2, "0")}:` +
+        `${String(seconds).padStart(2, "0")}`;
 
-        claimTimer.textContent =
-            `Next claim in ${String(hours).padStart(2, "0")}:` +
-            `${String(minutes).padStart(2, "0")}:` +
-            `${String(seconds).padStart(2, "0")}`;
+
+    if (claimButton) {
+
+        claimButton.disabled =
+            true;
 
     }
 
 }
 
 
-// ======================================
+// ============================================================
 // CLAIM DAILY INCOME
-// ======================================
+// ============================================================
 
 async function claimDailyIncome() {
-
-    if (claimInProgress) {
-        return;
-    }
-
 
     if (!currentUser) {
 
@@ -2497,15 +2023,15 @@ async function claimDailyIncome() {
 
     }
 
+    if (claimInProgress) {
+        return;
+    }
 
-    claimInProgress =
-        true;
-
+    claimInProgress = true;
 
     if (claimButton) {
 
-        claimButton.disabled =
-            true;
+        claimButton.disabled = true;
 
         claimButton.innerHTML = `
             <i class="fas fa-spinner fa-spin"></i>
@@ -2527,361 +2053,413 @@ async function claimDailyIncome() {
         const result =
             await runTransaction(
                 userRef,
-                (user) => {
+                currentData => {
 
-                    if (!user) {
+                    if (!currentData) {
                         return;
                     }
-
-
-                    const plans =
-                        user.vipPlans || {};
-
-
-                    let balance =
-                        Number(
-                            user.balance || 0
-                        );
-
 
                     const now =
                         Date.now();
 
+                    const plans =
+                        currentData.vipPlans ||
+                        {};
 
-                    let claimedTotal =
+                    let totalClaim =
                         0;
 
+                    let changed =
+                        false;
 
-                    Object.entries(
-                        plans
-                    ).forEach(
-                        ([id, plan]) => {
+                    const updatedPlans =
+                        {
+                            ...plans
+                        };
+
+
+                    Object.entries(plans)
+                        .forEach(([id, plan]) => {
 
                             if (!plan) {
                                 return;
                             }
 
+                            const startDate =
+                                getVipStartDate(plan);
+
+                            const endDate =
+                                getVipEndDate(plan);
 
                             const status =
-                                String(
-                                    plan.status ||
-                                    "active"
-                                ).toLowerCase();
+                                normalizeStatus(
+                                    plan.status
+                                );
+
+                            if (
+                                status ===
+                                "expired"
+                            ) {
+                                return;
+                            }
+
+                            if (
+                                endDate &&
+                                now >= endDate
+                            ) {
+
+                                updatedPlans[id] = {
+
+                                    ...plan,
+
+                                    status:
+                                        "expired",
+
+                                    active:
+                                        false
+
+                                };
+
+                                changed = true;
+
+                                return;
+
+                            }
 
 
                             if (
+                                status &&
                                 status !== "active"
                             ) {
                                 return;
                             }
 
 
-                            const daily =
-                                Number(
-                                    plan.dailyIncome ??
-                                    plan.daily ??
-                                    0
-                                );
-
-
                             if (
-                                daily <= 0
-                            ) {
-                                return;
-                            }
-
-
-                            const startDate =
-                                Number(
-                                    plan.startDate ??
-                                    plan.approvedAt ??
-                                    plan.createdAt ??
-                                    0
-                                );
-
-
-                            const duration =
-                                Number(
-                                    plan.totalDays ??
-                                    plan.duration ??
-                                    plan.days ??
-                                    0
-                                );
-
-
-                            let endDate =
-                                Number(
-                                    plan.endDate || 0
-                                );
-
-
-                            if (
-                                !endDate &&
                                 startDate &&
-                                duration > 0
+                                now < startDate
                             ) {
-
-                                endDate =
-                                    startDate +
-                                    duration * DAY;
-
+                                return;
                             }
 
 
+                            const dailyIncome =
+                                getVipDailyIncome(
+                                    plan
+                                );
+
                             if (
-                                endDate &&
-                                now > endDate
+                                dailyIncome <= 0
                             ) {
-
                                 return;
-
                             }
 
 
                             const lastClaim =
-                                Number(
-                                    plan.lastClaim ||
-                                    0
+                                numberValue(
+                                    plan.lastClaim ??
+                                    plan.lastClaimTime ??
+                                    plan.lastProfitTime ??
+                                    startDate
                                 );
 
 
                             const nextClaim =
-                                lastClaim > 0
-                                    ? lastClaim + DAY
-                                    : startDate + DAY;
+                                lastClaim + DAY;
 
 
                             if (
                                 now < nextClaim
                             ) {
+                                return;
+                            }
+
+
+                            const totalEarned =
+                                numberValue(
+                                    plan.totalEarned ??
+                                    plan.earned ??
+                                    plan.claimedAmount
+                                );
+
+
+                            const maxProfit =
+                                getVipTotalProfit(
+                                    plan
+                                );
+
+
+                            let claimAmount =
+                                dailyIncome;
+
+
+                            if (
+                                maxProfit > 0
+                            ) {
+
+                                const remainingProfit =
+                                    Math.max(
+                                        0,
+                                        maxProfit -
+                                        totalEarned
+                                    );
+
+                                claimAmount =
+                                    Math.min(
+                                        claimAmount,
+                                        remainingProfit
+                                    );
+
+                            }
+
+
+                            if (
+                                claimAmount <= 0
+                            ) {
+
+                                updatedPlans[id] = {
+
+                                    ...plan,
+
+                                    status:
+                                        "completed",
+
+                                    active:
+                                        false
+
+                                };
+
+                                changed = true;
 
                                 return;
 
                             }
 
 
-                            // ==========================
-                            // PAY DAILY INCOME ONCE
-                            // ==========================
-
-                            balance +=
-                                daily;
+                            const newTotalEarned =
+                                totalEarned +
+                                claimAmount;
 
 
-                            claimedTotal +=
-                                daily;
+                            const newClaimCount =
+                                numberValue(
+                                    plan.claimCount
+                                ) + 1;
 
 
-                            plan.lastClaim =
-                                now;
+                            updatedPlans[id] = {
+
+                                ...plan,
+
+                                lastClaim:
+                                    now,
+
+                                lastClaimTime:
+                                    now,
+
+                                lastProfitTime:
+                                    now,
+
+                                totalEarned:
+                                    newTotalEarned,
+
+                                earned:
+                                    newTotalEarned,
+
+                                claimedAmount:
+                                    newTotalEarned,
+
+                                claimCount:
+                                    newClaimCount,
+
+                                active:
+                                    true,
+
+                                status:
+                                    "active"
+
+                            };
 
 
-                            const oldEarned =
-                                Number(
-                                    plan.totalEarned ??
-                                    plan.earned ??
-                                    0
-                                );
+                            totalClaim +=
+                                claimAmount;
+
+                            changed = true;
+
+                        });
 
 
-                            plan.totalEarned =
-                                oldEarned +
-                                daily;
-
-
-                            plan.earned =
-                                plan.totalEarned;
-
-
-                            plan.claimedAmount =
-                                Number(
-                                    plan.claimedAmount ||
-                                    0
-                                ) +
-                                daily;
-
-
-                            plan.claimCount =
-                                Number(
-                                    plan.claimCount ||
-                                    0
-                                ) +
-                                1;
-
-
-                            plans[id] =
-                                plan;
-
-                        }
-                    );
-
-
-                    if (
-                        claimedTotal <= 0
-                    ) {
-
+                    if (!changed) {
                         return;
-
                     }
 
 
-                    user.balance =
-                        balance;
+                    const oldBalance =
+                        numberValue(
+                            currentData.balance
+                        );
 
 
-                    user.vipPlans =
-                        plans;
+                    return {
 
+                        ...currentData,
 
-                    return user;
+                        balance:
+                            oldBalance +
+                            totalClaim,
+
+                        vipPlans:
+                            updatedPlans
+
+                    };
 
                 }
             );
 
 
-        if (
-            !result.committed
-        ) {
+        if (!result.committed) {
 
-            throw new Error(
-                "No VIP income is available yet. Please wait until the 24-hour timer finishes."
+            alert(
+                "No daily income is available yet."
             );
 
+            return;
+
         }
 
 
-        const updated =
-            result.snapshot.val() ||
-            {};
-
-
-        userData =
-            updated;
-
+        await loadUserData();
 
         userVipPlans =
-            updated.vipPlans ||
-            {};
+            (
+                await get(
+                    ref(
+                        db,
+                        `users/${currentUser.uid}/vipPlans`
+                    )
+                )
+            ).val() || {};
 
 
-        updateBalance(
-            Number(
-                updated.balance ||
-                0
-            )
-        );
+        renderOwnedVipPlans();
 
+        updateVipSummary();
 
-        if (claimButton) {
+        updateBalanceUI();
 
-            claimButton.disabled =
-                true;
-
-            claimButton.innerHTML = `
-                <i class="fas fa-check-circle"></i>
-                Claimed
-            `;
-
-        }
-
-
-        console.log(
-            "VIP CLAIM SUCCESS"
-        );
+        updateClaimTimer();
 
 
         alert(
-            "Daily VIP income claimed successfully!"
+            "Daily income claimed successfully."
         );
-
-
-        startClaimTimer();
 
 
     } catch (error) {
 
         console.error(
-            "CLAIM ERROR:",
+            "CLAIM DAILY INCOME ERROR:",
             error
         );
 
+        alert(
+            "Failed to claim daily income.\n\n" +
+            (error?.message || "")
+        );
+
+    } finally {
+
+        claimInProgress = false;
 
         if (claimButton) {
 
-            claimButton.disabled =
-                false;
+            claimButton.disabled = false;
 
             claimButton.innerHTML = `
-                <i class="fas fa-coins"></i>
+                <i class="fas fa-hand-holding-dollar"></i>
                 Claim Daily Income
             `;
 
         }
 
-
-        alert(
-            "Claim failed:\n\n" +
-            (
-                error.message ||
-                error
-            )
-        );
-
-
-    } finally {
-
-        claimInProgress =
-            false;
+        updateClaimTimer();
 
     }
 
 }
 
 
-// ======================================
+// ============================================================
 // CLAIM BUTTON
-// ======================================
+// ============================================================
 
-claimButton?.addEventListener(
-    "click",
-    claimDailyIncome
-);
+if (claimButton) {
 
-
-// ======================================
-// REFRESH
-// ======================================
-
-function refreshVipSystem() {
-
-    if (!currentUser) {
-        return;
-    }
-
-
-    updateVipButtons();
-
-    checkVipExpiration();
-
-    startClaimTimer();
+    claimButton.addEventListener(
+        "click",
+        claimDailyIncome
+    );
 
 }
 
 
-// ======================================
-// PAGE VISIBILITY
-// ======================================
+// ============================================================
+// VISIBILITY REFRESH
+// ============================================================
 
 document.addEventListener(
     "visibilitychange",
-    () => {
+    async () => {
 
         if (
             document.visibilityState ===
             "visible"
         ) {
 
-            refreshVipSystem();
+            if (currentUser) {
+
+                try {
+
+                    await loadUserData();
+
+                    await checkVipExpiration();
+
+                    const plansSnapshot =
+                        await get(
+                            ref(
+                                db,
+                                `users/${currentUser.uid}/vipPlans`
+                            )
+                        );
+
+                    userVipPlans =
+                        plansSnapshot.exists()
+                            ? (
+                                plansSnapshot.val() ||
+                                {}
+                            )
+                            : {};
+
+                    renderOwnedVipPlans();
+
+                    updateVipSummary();
+
+                    updateBalanceUI();
+
+                    await updateVipButtons();
+
+                    updateClaimTimer();
+
+                } catch (error) {
+
+                    console.error(
+                        "VIP VISIBILITY REFRESH ERROR:",
+                        error
+                    );
+
+                }
+
+            }
 
         }
 
@@ -2889,22 +2467,52 @@ document.addEventListener(
 );
 
 
-// ======================================
-// FINAL
-// ======================================
+// ============================================================
+// WINDOW HELPERS
+// ============================================================
+
+window.buyVip = buyVip;
+
+window.claimDailyIncome =
+    claimDailyIncome;
+
+window.updateVipButtons =
+    updateVipButtons;
+
+window.loadVipPackages =
+    loadVipPackages;
+
+window.loadUserVipPlans =
+    loadUserVipPlans;
+
+window.checkVipExpiration =
+    checkVipExpiration;
+
+
+// ============================================================
+// START
+// ============================================================
+
+startAuthentication();
+
+
+// ============================================================
+// USER REALTIME DATA
+// ============================================================
+
+onAuthStateChanged(auth, user => {
+
+    if (!user) {
+        return;
+    }
+
+    currentUser = user;
+
+    listenToUserData();
+
+});
+
 
 console.log(
-    "================================"
-);
-
-console.log(
-    "MONEY VAULT VIP.JS LOADED"
-);
-
-console.log(
-    "BUY + CLAIM SYSTEM READY"
-);
-
-console.log(
-    "================================"
+    "Money Vault VIP.js loaded successfully - RWF version"
 );
