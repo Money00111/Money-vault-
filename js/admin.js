@@ -824,6 +824,66 @@ function escapeHTML(value) {
 
 }
 
+function showToast(message, type = "info") {
+
+    const container = document.getElementById("toastContainer");
+
+    if (!container) {
+        console.log(`[${type}] ${message}`);
+        return;
+    }
+
+    const toast = document.createElement("div");
+
+    toast.className = `toast toast-${String(type).toLowerCase()}`;
+
+    const icon =
+        type === "success"
+            ? "fa-circle-check"
+            : type === "error"
+                ? "fa-circle-xmark"
+                : type === "warning"
+                    ? "fa-triangle-exclamation"
+                    : "fa-circle-info";
+
+    toast.innerHTML = `
+        <div class="toast-icon">
+            <i class="fa-solid ${icon}"></i>
+        </div>
+
+        <div class="toast-message">
+            ${escapeHTML(message)}
+        </div>
+
+        <button type="button" class="toast-close">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+    `;
+
+    container.appendChild(toast);
+
+    requestAnimationFrame(() => {
+        toast.classList.add("show");
+    });
+
+    const close = () => {
+
+        toast.classList.remove("show");
+
+        setTimeout(() => {
+            toast.remove();
+        }, 300);
+    };
+
+    toast
+        .querySelector(".toast-close")
+        ?.addEventListener("click", close);
+
+    setTimeout(close, 4000);
+}
+
+window.showToast = showToast;
+
 
 // ==========================================
 // DASHBOARD CACHE
