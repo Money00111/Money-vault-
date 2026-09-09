@@ -9250,4 +9250,1941 @@ window.refreshWithdrawAfterAction =
 console.log(
     "Money Vault: Part 6 — Approve / Reject Withdraw loaded."
 );
-   
+   /* =========================================================
+   MONEY VAULT - ADMIN.JS
+   PART 7
+   VIP PURCHASE REQUESTS
+   CURRENCY: RWF / FRW
+========================================================= */
+
+let allVipRequests = [];
+
+let vipRequestUsers = {};
+
+let vipRequestListenersStarted = false;
+
+let vipRequestSearchInitialized = false;
+
+
+/* =========================================================
+   VIP HELPERS
+========================================================= */
+
+function vipRequestValue(value) {
+
+    const number = Number(value);
+
+    return Number.isFinite(number)
+        ? number
+        : 0;
+}
+
+
+function vipRequestStatus(status) {
+
+    return String(status ?? "pending")
+        .trim()
+        .toLowerCase();
+}
+
+
+function vipRequestMoney(value) {
+
+    if (typeof formatMoney === "function") {
+
+        return formatMoney(
+            vipRequestValue(value)
+        );
+
+    }
+
+    return `${vipRequestValue(value).toLocaleString("en-US")} RWF`;
+}
+
+
+function vipRequestDate(value) {
+
+    const timestamp =
+        vipRequestValue(value);
+
+    if (!timestamp) {
+        return "N/A";
+    }
+
+    if (typeof formatDate === "function") {
+
+        return formatDate(timestamp);
+
+    }
+
+    try {
+
+        return new Date(timestamp)
+            .toLocaleString("en-GB");
+
+    } catch {
+
+        return "N/A";
+
+    }
+}
+
+
+function getVipRequestUid(request) {
+
+    return (
+        request?.uid ||
+        request?.userId ||
+        request?.userUID ||
+        ""
+    );
+}
+
+
+function getVipRequestName(request) {
+
+    return (
+        request?.vipName ||
+        request?.name ||
+        request?.planName ||
+        request?.vipPlan ||
+        "VIP Plan"
+    );
+}
+
+
+function getVipRequestPrice(request) {
+
+    return vipRequestValue(
+
+        request?.price ??
+        request?.vipPrice ??
+        request?.amount
+
+    );
+}
+
+
+function getVipRequestDaily(request) {
+
+    return vipRequestValue(
+
+        request?.dailyIncome ??
+        request?.daily ??
+        request?.dailyProfit
+
+    );
+}
+
+
+function getVipRequestTotal(request) {
+
+    return vipRequestValue(
+
+        request?.totalProfit ??
+        request?.profit ??
+        request?.totalEarning
+
+    );
+}
+
+
+function getVipRequestDuration(request) {
+
+    const direct =
+        vipRequestValue(
+
+            request?.duration ??
+            request?.days ??
+            request?.durationDays
+
+        );
+
+
+    if (direct > 0) {
+
+        return Math.ceil(direct);
+
+    }
+
+
+    const daily =
+        getVipRequestDaily(request);
+
+
+    const total =
+        getVipRequestTotal(request);
+
+
+    if (
+        daily > 0 &&
+        total > 0
+    ) {
+
+        return Math.ceil(
+            total / daily
+        );
+
+    }
+
+
+    return 0;
+}
+
+
+function getVipRequestUser(request) {
+
+    const uid =
+        getVipRequestUid(request);
+
+    return (
+        vipRequestUsers[uid] ||
+        {}
+    );
+}
+
+
+function getVipRequestUserName(
+    request,
+    user
+) {
+
+    return (
+        user?.name ||
+        user?.fullName ||
+        user?.displayName ||
+        user?.username ||
+        request?.userName ||
+        "Unknown User"
+    );
+}
+
+
+function getVipRequestUserEmail(
+    request,
+    user
+) {
+
+    return (
+        user?.email ||
+        request?.email ||
+        "No email"
+    );
+}
+
+
+function getVipRequestUserPhone(
+    request,
+    user
+) {
+
+    return (
+        user?.phone ||
+        user?.phoneNumber ||
+        request?.phone ||
+        request?.phoneNumber ||
+        "N/A"
+    );
+}
+
+
+function getVipRequestUserPhoto(
+    request,
+    user
+) {
+
+    return (
+        user?.photoURL ||
+        user?.photo ||
+        user?.profilePhoto ||
+        user?.avatar ||
+        request?.photoURL ||
+        ""
+    );
+}
+
+
+function getVipRequestPaymentMethod(request) {
+
+    return (
+        request?.paymentMethod ||
+        request?.method ||
+        "N/A"
+    );
+}
+
+
+/* =========================================================
+   STATUS HELPERS
+========================================================= */
+
+function getVipRequestStatusLabel(status) {
+
+    const normalized =
+        vipRequestStatus(status);
+
+
+    const labels = {
+
+        pending: "Pending",
+
+        processing: "Processing",
+
+        approved: "Approved",
+
+        rejected: "Rejected",
+
+        processing_error:
+            "Processing Error"
+
+    };
+
+
+    return (
+        labels[normalized] ||
+        normalized.replaceAll("_", " ")
+    );
+}
+
+
+function getVipRequestStatusIcon(status) {
+
+    const normalized =
+        vipRequestStatus(status);
+
+
+    if (normalized === "approved") {
+
+        return "fa-circle-check";
+
+    }
+
+
+    if (normalized === "rejected") {
+
+        return "fa-circle-xmark";
+
+    }
+
+
+    if (normalized === "processing") {
+
+        return "fa-spinner fa-spin";
+
+    }
+
+
+    if (normalized === "processing_error") {
+
+        return "fa-triangle-exclamation";
+
+    }
+
+
+    return "fa-clock";
+
+}
+
+
+function getVipRequestStatusClass(status) {
+
+    const normalized =
+        vipRequestStatus(status);
+
+
+    return [
+        "pending",
+        "processing",
+        "approved",
+        "rejected",
+        "processing_error"
+    ].includes(normalized)
+
+        ? normalized
+
+        : "pending";
+}
+
+
+/* =========================================================
+   LOAD VIP REQUESTS
+========================================================= */
+
+async function loadVipRequests() {
+
+    await window.waitForAdmin();
+
+
+    if (
+        !window.currentAdmin &&
+        typeof window.getCurrentAdmin === "function"
+    ) {
+
+        if (!window.getCurrentAdmin()) {
+
+            throw new Error(
+                "Administrator session not ready."
+            );
+
+        }
+
+    }
+
+
+    if (vipRequestListenersStarted) {
+
+        renderVipRequests();
+
+        setupVipRequestSearch();
+
+        return;
+
+    }
+
+
+    vipRequestListenersStarted = true;
+
+
+    /* =====================================================
+       USERS LISTENER
+    ===================================================== */
+
+    if (!listeners.vipRequestUsers) {
+
+        listeners.vipRequestUsers = onValue(
+
+            ref(db, "users"),
+
+            snapshot => {
+
+                vipRequestUsers =
+                    snapshot.exists()
+                        ? snapshot.val() || {}
+                        : {};
+
+
+                renderVipRequests();
+
+            },
+
+            error => {
+
+                console.error(
+                    "VIP users listener error:",
+                    error
+                );
+
+
+                showToast(
+                    "Failed to load VIP users.",
+                    "error"
+                );
+
+            }
+
+        );
+
+    }
+
+
+    /* =====================================================
+       VIP REQUESTS LISTENER
+    ===================================================== */
+
+    if (!listeners.vipPurchaseRequests) {
+
+        listeners.vipPurchaseRequests = onValue(
+
+            ref(
+                db,
+                "vipPurchaseRequests"
+            ),
+
+            snapshot => {
+
+                const data =
+                    snapshot.exists()
+                        ? snapshot.val() || {}
+                        : {};
+
+
+                allVipRequests =
+                    Object.entries(data)
+
+                        .map(
+                            ([id, request]) => ({
+
+                                id,
+
+                                ...(request || {})
+
+                            })
+                        );
+
+
+                allVipRequests.sort(
+
+                    (a, b) => {
+
+                        const dateA =
+                            vipRequestValue(
+
+                                a.createdAt ??
+                                a.timestamp ??
+                                a.requestedAt ??
+                                a.date
+
+                            );
+
+
+                        const dateB =
+                            vipRequestValue(
+
+                                b.createdAt ??
+                                b.timestamp ??
+                                b.requestedAt ??
+                                b.date
+
+                            );
+
+
+                        return dateB - dateA;
+
+                    }
+
+                );
+
+
+                renderVipRequests();
+
+            },
+
+            error => {
+
+                console.error(
+                    "VIP request listener error:",
+                    error
+                );
+
+
+                showToast(
+                    "Failed to load VIP requests.",
+                    "error"
+                );
+
+            }
+
+        );
+
+    }
+
+
+    setupVipRequestSearch();
+
+    renderVipRequests();
+
+}
+
+
+/* =========================================================
+   RENDER VIP REQUEST LIST
+========================================================= */
+
+function renderVipRequests() {
+
+    const list =
+        document.getElementById(
+            "vipRequestList"
+        );
+
+
+    const empty =
+        document.getElementById(
+            "emptyVipRequest"
+        );
+
+
+    if (!list) {
+
+        console.warn(
+            "vipRequestList element not found."
+        );
+
+        return;
+
+    }
+
+
+    const searchInput =
+        document.getElementById(
+            "vipSearch"
+        );
+
+
+    const filterInput =
+        document.getElementById(
+            "vipFilter"
+        );
+
+
+    const search =
+        String(
+            searchInput?.value || ""
+        )
+        .trim()
+        .toLowerCase();
+
+
+    const filter =
+        String(
+            filterInput?.value || "all"
+        )
+        .trim()
+        .toLowerCase();
+
+
+    /* =====================================================
+       COUNTERS
+    ===================================================== */
+
+    let total = 0;
+
+    let pending = 0;
+
+    let approved = 0;
+
+    let rejected = 0;
+
+
+    allVipRequests.forEach(
+        request => {
+
+            total++;
+
+
+            const status =
+                vipRequestStatus(
+                    request.status
+                );
+
+
+            if (status === "pending") {
+
+                pending++;
+
+            }
+
+
+            if (status === "approved") {
+
+                approved++;
+
+            }
+
+
+            if (status === "rejected") {
+
+                rejected++;
+
+            }
+
+        }
+    );
+
+
+    updateText(
+        "vipTotalCount",
+        total.toLocaleString("en-US")
+    );
+
+
+    updateText(
+        "vipPendingCount",
+        pending.toLocaleString("en-US")
+    );
+
+
+    updateText(
+        "vipApprovedCount",
+        approved.toLocaleString("en-US")
+    );
+
+
+    updateText(
+        "vipRejectedCount",
+        rejected.toLocaleString("en-US")
+    );
+
+
+    /* =====================================================
+       FILTER LIST
+    ===================================================== */
+
+    const filtered =
+        allVipRequests.filter(
+            request => {
+
+                const status =
+                    vipRequestStatus(
+                        request.status
+                    );
+
+
+                if (
+                    filter !== "all" &&
+                    status !== filter
+                ) {
+
+                    return false;
+
+                }
+
+
+                const uid =
+                    getVipRequestUid(
+                        request
+                    );
+
+
+                const user =
+                    vipRequestUsers[uid] ||
+                    {};
+
+
+                const searchable = [
+
+                    request.id,
+
+                    uid,
+
+                    getVipRequestName(
+                        request
+                    ),
+
+                    user.name,
+
+                    user.fullName,
+
+                    user.displayName,
+
+                    user.username,
+
+                    user.email,
+
+                    user.phone,
+
+                    user.phoneNumber,
+
+                    request.email,
+
+                    request.phone,
+
+                    request.phoneNumber,
+
+                    request.paymentMethod,
+
+                    request.transactionId,
+
+                    request.reference,
+
+                    getVipRequestPrice(
+                        request
+                    ),
+
+                    getVipRequestDaily(
+                        request
+                    ),
+
+                    getVipRequestTotal(
+                        request
+                    ),
+
+                    status
+
+                ]
+                .join(" ")
+                .toLowerCase();
+
+
+                return (
+                    !search ||
+                    searchable.includes(search)
+                );
+
+            }
+        );
+
+
+    /* =====================================================
+       EMPTY LIST
+    ===================================================== */
+
+    if (!filtered.length) {
+
+        list.innerHTML = "";
+
+
+        if (empty) {
+
+            empty.style.display =
+                "block";
+
+
+            empty.innerHTML = `
+
+                <div class="empty-state">
+
+                    <i class="
+                        fa-solid
+                        fa-crown
+                    "></i>
+
+                    <h3>
+                        No VIP Purchase Requests
+                    </h3>
+
+                    <p>
+                        No VIP requests match
+                        your search or filter.
+                    </p>
+
+                </div>
+
+            `;
+
+        }
+
+
+        return;
+
+    }
+
+
+    if (empty) {
+
+        empty.style.display =
+            "none";
+
+    }
+
+
+    /* =====================================================
+       LIST
+    ===================================================== */
+
+    list.innerHTML =
+        filtered
+
+            .map(
+                request => {
+
+                    const uid =
+                        getVipRequestUid(
+                            request
+                        );
+
+
+                    const user =
+                        vipRequestUsers[
+                            uid
+                        ] || {};
+
+
+                    return renderVipRequestCard(
+                        request,
+                        user
+                    );
+
+                }
+            )
+
+            .join("");
+
+
+    activateVipRequestButtons();
+
+}
+
+
+/* =========================================================
+   VIP REQUEST CARD / LIST ITEM
+========================================================= */
+
+function renderVipRequestCard(
+    request,
+    user
+) {
+
+    const status =
+        vipRequestStatus(
+            request.status
+        );
+
+
+    const statusClass =
+        getVipRequestStatusClass(
+            status
+        );
+
+
+    const vipName =
+        getVipRequestName(
+            request
+        );
+
+
+    const price =
+        getVipRequestPrice(
+            request
+        );
+
+
+    const daily =
+        getVipRequestDaily(
+            request
+        );
+
+
+    const totalProfit =
+        getVipRequestTotal(
+            request
+        );
+
+
+    const duration =
+        getVipRequestDuration(
+            request
+        );
+
+
+    const uid =
+        getVipRequestUid(
+            request
+        );
+
+
+    const userName =
+        getVipRequestUserName(
+            request,
+            user
+        );
+
+
+    const email =
+        getVipRequestUserEmail(
+            request,
+            user
+        );
+
+
+    const phone =
+        getVipRequestUserPhone(
+            request,
+            user
+        );
+
+
+    const photo =
+        getVipRequestUserPhoto(
+            request,
+            user
+        );
+
+
+    const paymentMethod =
+        getVipRequestPaymentMethod(
+            request
+        );
+
+
+    const requestedAt =
+        vipRequestDate(
+
+            request.createdAt ??
+            request.timestamp ??
+            request.requestedAt ??
+            request.date
+
+        );
+
+
+    /* =====================================================
+       AVATAR
+    ===================================================== */
+
+    const avatar =
+        photo
+
+            ? `
+                <img
+                    src="${escapeHTML(photo)}"
+                    alt="${escapeHTML(userName)}"
+                    class="vip-user-photo"
+                    onerror="
+                        this.style.display='none';
+                        this.nextElementSibling.style.display='flex';
+                    "
+                >
+
+                <div
+                    class="vip-user-avatar"
+                    style="display:none;"
+                >
+                    <i class="fa-solid fa-user"></i>
+                </div>
+              `
+
+            : `
+                <div class="vip-user-avatar">
+
+                    <i class="
+                        fa-solid
+                        fa-user
+                    "></i>
+
+                </div>
+              `;
+
+
+    /* =====================================================
+       ACTIONS
+    ===================================================== */
+
+    let actions = "";
+
+
+    if (status === "pending") {
+
+        actions = `
+
+            <div class="vip-request-actions">
+
+                <button
+                    type="button"
+                    class="
+                        vip-action-btn
+                        vip-approve-btn
+                    "
+                    data-id="${escapeHTML(request.id)}"
+                    title="Approve VIP request"
+                >
+
+                    <i class="
+                        fa-solid
+                        fa-check
+                    "></i>
+
+                    Approve
+
+                </button>
+
+
+                <button
+                    type="button"
+                    class="
+                        vip-action-btn
+                        vip-reject-btn
+                    "
+                    data-id="${escapeHTML(request.id)}"
+                    title="Reject VIP request"
+                >
+
+                    <i class="
+                        fa-solid
+                        fa-xmark
+                    "></i>
+
+                    Reject
+
+                </button>
+
+            </div>
+
+        `;
+
+    } else {
+
+        actions = `
+
+            <div
+                class="
+                    vip-request-processed
+                    status-${escapeHTML(
+                        statusClass
+                    )}
+                "
+            >
+
+                <i class="
+                    fa-solid
+                    ${getVipRequestStatusIcon(status)}
+                "></i>
+
+                ${escapeHTML(
+                    getVipRequestStatusLabel(
+                        status
+                    )
+                )}
+
+            </div>
+
+        `;
+
+    }
+
+
+    /* =====================================================
+       COMPLETE LIST ITEM
+    ===================================================== */
+
+    return `
+
+        <article
+            class="
+                vip-request-card
+                vip-request-list-item
+            "
+            data-id="${escapeHTML(request.id)}"
+            data-uid="${escapeHTML(uid)}"
+        >
+
+            <!-- ================================
+                 USER HEADER
+            ================================= -->
+
+            <div class="vip-request-header">
+
+                <div class="vip-user">
+
+                    ${avatar}
+
+                    <div class="vip-user-info">
+
+                        <h3>
+                            ${escapeHTML(userName)}
+                        </h3>
+
+                        <p>
+                            ${escapeHTML(email)}
+                        </p>
+
+                        <small>
+                            <i class="
+                                fa-solid
+                                fa-phone
+                            "></i>
+
+                            ${escapeHTML(phone)}
+
+                        </small>
+
+                    </div>
+
+                </div>
+
+
+                <div
+                    class="
+                        vip-request-status
+                        status-${escapeHTML(
+                            statusClass
+                        )}
+                    "
+                >
+
+                    <i class="
+                        fa-solid
+                        ${getVipRequestStatusIcon(status)}
+                    "></i>
+
+                    ${escapeHTML(
+                        getVipRequestStatusLabel(
+                            status
+                        )
+                    )}
+
+                </div>
+
+            </div>
+
+
+            <!-- ================================
+                 VIP PLAN
+            ================================= -->
+
+            <div class="vip-plan-title">
+
+                <i class="
+                    fa-solid
+                    fa-crown
+                "></i>
+
+                <strong>
+
+                    ${escapeHTML(vipName)}
+
+                </strong>
+
+            </div>
+
+
+            <!-- ================================
+                 PRICE
+            ================================= -->
+
+            <div class="vip-request-amount">
+
+                <span>
+                    VIP Price
+                </span>
+
+                <strong>
+
+                    ${escapeHTML(
+                        vipRequestMoney(price)
+                    )}
+
+                </strong>
+
+            </div>
+
+
+            <!-- ================================
+                 DETAILS LIST
+            ================================= -->
+
+            <div class="vip-request-details">
+
+
+                <div class="vip-detail-item">
+
+                    <span>
+
+                        <i class="
+                            fa-solid
+                            fa-coins
+                        "></i>
+
+                        Daily Income
+
+                    </span>
+
+                    <strong>
+
+                        ${escapeHTML(
+                            vipRequestMoney(
+                                daily
+                            )
+                        )}
+
+                    </strong>
+
+                </div>
+
+
+                <div class="vip-detail-item">
+
+                    <span>
+
+                        <i class="
+                            fa-solid
+                            fa-chart-line
+                        "></i>
+
+                        Total Profit
+
+                    </span>
+
+                    <strong>
+
+                        ${escapeHTML(
+                            vipRequestMoney(
+                                totalProfit
+                            )
+                        )}
+
+                    </strong>
+
+                </div>
+
+
+                <div class="vip-detail-item">
+
+                    <span>
+
+                        <i class="
+                            fa-solid
+                            fa-calendar-days
+                        "></i>
+
+                        Duration
+
+                    </span>
+
+                    <strong>
+
+                        ${
+                            duration > 0
+                                ? `${duration} Days`
+                                : "N/A"
+                        }
+
+                    </strong>
+
+                </div>
+
+
+                <div class="vip-detail-item">
+
+                    <span>
+
+                        <i class="
+                            fa-solid
+                            fa-wallet
+                        "></i>
+
+                        Payment
+
+                    </span>
+
+                    <strong>
+
+                        ${escapeHTML(
+                            paymentMethod
+                        )}
+
+                    </strong>
+
+                </div>
+
+
+                <div class="vip-detail-item">
+
+                    <span>
+
+                        <i class="
+                            fa-solid
+                            fa-phone
+                        "></i>
+
+                        Phone
+
+                    </span>
+
+                    <strong>
+
+                        ${escapeHTML(phone)}
+
+                    </strong>
+
+                </div>
+
+
+            </div>
+
+
+            <!-- ================================
+                 META
+            ================================= -->
+
+            <div class="vip-request-meta">
+
+                <span>
+
+                    <i class="
+                        fa-solid
+                        fa-clock
+                    "></i>
+
+                    Requested:
+                    ${escapeHTML(requestedAt)}
+
+                </span>
+
+
+                <span>
+
+                    <i class="
+                        fa-solid
+                        fa-fingerprint
+                    "></i>
+
+                    Request ID:
+                    ${escapeHTML(request.id)}
+
+                </span>
+
+            </div>
+
+
+            ${
+                uid
+                    ? `
+                        <div class="vip-request-user-id">
+
+                            <i class="
+                                fa-solid
+                                fa-user-shield
+                            "></i>
+
+                            UID:
+                            ${escapeHTML(uid)}
+
+                        </div>
+                      `
+                    : ""
+            }
+
+
+            <!-- ================================
+                 ACTIONS
+            ================================= -->
+
+            ${actions}
+
+        </article>
+
+    `;
+
+}
+
+
+/* =========================================================
+   APPROVE / REJECT BUTTONS
+========================================================= */
+
+function activateVipRequestButtons() {
+
+
+    document
+        .querySelectorAll(
+            ".vip-approve-btn"
+        )
+        .forEach(button => {
+
+
+            if (
+                button.dataset.bound ===
+                "true"
+            ) {
+
+                return;
+
+            }
+
+
+            button.dataset.bound =
+                "true";
+
+
+            button.addEventListener(
+                "click",
+                async () => {
+
+
+                    const id =
+                        button.dataset.id;
+
+
+                    if (!id) {
+
+                        return;
+
+                    }
+
+
+                    const card =
+                        button.closest(
+                            ".vip-request-card"
+                        );
+
+
+                    if (
+                        card?.dataset.processing ===
+                        "true"
+                    ) {
+
+                        return;
+
+                    }
+
+
+                    if (card) {
+
+                        card.dataset.processing =
+                            "true";
+
+                    }
+
+
+                    button.disabled =
+                        true;
+
+
+                    const rejectButton =
+                        card?.querySelector(
+                            ".vip-reject-btn"
+                        );
+
+
+                    if (rejectButton) {
+
+                        rejectButton.disabled =
+                            true;
+
+                    }
+
+
+                    button.innerHTML = `
+
+                        <i class="
+                            fa-solid
+                            fa-spinner
+                            fa-spin
+                        "></i>
+
+                        Processing...
+
+                    `;
+
+
+                    try {
+
+                        await approveVipRequest(
+                            id
+                        );
+
+
+                    } catch (error) {
+
+                        console.error(
+                            "Approve VIP error:",
+                            error
+                        );
+
+
+                        button.disabled =
+                            false;
+
+
+                        if (rejectButton) {
+
+                            rejectButton.disabled =
+                                false;
+
+                        }
+
+
+                        button.innerHTML = `
+
+                            <i class="
+                                fa-solid
+                                fa-check
+                            "></i>
+
+                            Approve
+
+                        `;
+
+
+                        if (card) {
+
+                            card.dataset.processing =
+                                "false";
+
+                        }
+
+                    }
+
+                }
+            );
+
+        });
+
+
+    document
+        .querySelectorAll(
+            ".vip-reject-btn"
+        )
+        .forEach(button => {
+
+
+            if (
+                button.dataset.bound ===
+                "true"
+            ) {
+
+                return;
+
+            }
+
+
+            button.dataset.bound =
+                "true";
+
+
+            button.addEventListener(
+                "click",
+                async () => {
+
+
+                    const id =
+                        button.dataset.id;
+
+
+                    if (!id) {
+
+                        return;
+
+                    }
+
+
+                    const card =
+                        button.closest(
+                            ".vip-request-card"
+                        );
+
+
+                    if (
+                        card?.dataset.processing ===
+                        "true"
+                    ) {
+
+                        return;
+
+                    }
+
+
+                    if (card) {
+
+                        card.dataset.processing =
+                            "true";
+
+                    }
+
+
+                    button.disabled =
+                        true;
+
+
+                    const approveButton =
+                        card?.querySelector(
+                            ".vip-approve-btn"
+                        );
+
+
+                    if (approveButton) {
+
+                        approveButton.disabled =
+                            true;
+
+                    }
+
+
+                    button.innerHTML = `
+
+                        <i class="
+                            fa-solid
+                            fa-spinner
+                            fa-spin
+                        "></i>
+
+                        Processing...
+
+                    `;
+
+
+                    try {
+
+                        await rejectVipRequest(
+                            id
+                        );
+
+
+                    } catch (error) {
+
+                        console.error(
+                            "Reject VIP error:",
+                            error
+                        );
+
+
+                        button.disabled =
+                            false;
+
+
+                        if (approveButton) {
+
+                            approveButton.disabled =
+                                false;
+
+                        }
+
+
+                        button.innerHTML = `
+
+                            <i class="
+                                fa-solid
+                                fa-xmark
+                            "></i>
+
+                            Reject
+
+                        `;
+
+
+                        if (card) {
+
+                            card.dataset.processing =
+                                "false";
+
+                        }
+
+                    }
+
+                }
+            );
+
+        });
+
+}
+
+
+/* =========================================================
+   SEARCH / FILTER
+========================================================= */
+
+function setupVipRequestSearch() {
+
+    const search =
+        document.getElementById(
+            "vipSearch"
+        );
+
+
+    const filter =
+        document.getElementById(
+            "vipFilter"
+        );
+
+
+    if (
+        search &&
+        !vipRequestSearchInitialized
+    ) {
+
+        search.addEventListener(
+            "input",
+            () => {
+
+                renderVipRequests();
+
+            }
+        );
+
+    }
+
+
+    if (
+        filter &&
+        !filter.dataset.vipBound
+    ) {
+
+        filter.dataset.vipBound =
+            "true";
+
+
+        filter.addEventListener(
+            "change",
+            () => {
+
+                renderVipRequests();
+
+            }
+        );
+
+    }
+
+
+    if (search) {
+
+        search.dataset.bound =
+            "true";
+
+    }
+
+
+    vipRequestSearchInitialized =
+        true;
+
+}
+
+
+/* =========================================================
+   REFRESH
+========================================================= */
+
+function refreshVipRequests() {
+
+    renderVipRequests();
+
+    setupVipRequestSearch();
+
+}
+
+
+/* =========================================================
+   QUICK ACTION
+   VIP REQUESTS -> OPEN PAGE + SHOW LIST
+========================================================= */
+
+function setupVipRequestQuickAction() {
+
+    const button =
+        document.getElementById(
+            "openVipRequests"
+        );
+
+
+    if (
+        !button ||
+        button.dataset.vipQuickBound ===
+        "true"
+    ) {
+
+        return;
+
+    }
+
+
+    button.dataset.vipQuickBound =
+        "true";
+
+
+    button.addEventListener(
+        "click",
+        async () => {
+
+            try {
+
+                if (
+                    typeof openPage ===
+                    "function"
+                ) {
+
+                    openPage(
+                        "vipRequests"
+                    );
+
+                }
+
+
+                await loadVipRequests();
+
+
+                renderVipRequests();
+
+
+                setupVipRequestSearch();
+
+
+            } catch (error) {
+
+                console.error(
+                    "VIP Quick Action error:",
+                    error
+                );
+
+
+                showToast(
+                    "Failed to load VIP requests.",
+                    "error"
+                );
+
+            }
+
+        }
+    );
+
+}
+
+
+/* =========================================================
+   GET CACHE
+========================================================= */
+
+function getVipRequestCache() {
+
+    return {
+
+        requests: allVipRequests,
+
+        users: vipRequestUsers
+
+    };
+
+}
+
+
+/* =========================================================
+   EXPORT
+========================================================= */
+
+window.loadVipRequests =
+    loadVipRequests;
+
+
+window.renderVipRequests =
+    renderVipRequests;
+
+
+window.setupVipRequestSearch =
+    setupVipRequestSearch;
+
+
+window.refreshVipRequests =
+    refreshVipRequests;
+
+
+window.setupVipRequestQuickAction =
+    setupVipRequestQuickAction;
+
+
+window.getVipRequestCache =
+    getVipRequestCache;
+
+
+/* =========================================================
+   DOM READY
+========================================================= */
+
+if (
+    document.readyState ===
+    "loading"
+) {
+
+    document.addEventListener(
+        "DOMContentLoaded",
+        () => {
+
+            setupVipRequestSearch();
+
+            setupVipRequestQuickAction();
+
+        }
+    );
+
+} else {
+
+    setupVipRequestSearch();
+
+    setupVipRequestQuickAction();
+
+}
+
+
+console.log(
+    "Money Vault Admin Part 7 loaded — VIP Request List ready."
+);
+
+
