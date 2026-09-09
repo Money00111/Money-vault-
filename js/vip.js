@@ -248,11 +248,31 @@ function normalizePlanId(value) {
 }
 
 
+
 // =========================================================
-// GET PLAN ID FROM OWNED VIP
+// PART — VIP PLAN ID + DUPLICATE CHECK + BUY BUTTONS
 // =========================================================
 
-function getOwnedPlanId(id, plan) {
+// =========================================================
+// NORMALIZE VIP PLAN ID
+// =========================================================
+
+function normalizePlanId(value) {
+    return String(value || "")
+        .trim()
+        .toLowerCase();
+}
+
+
+// =========================================================
+// GET EXPLICIT PLAN ID FROM OWNED VIP
+// =========================================================
+// IMPORTANT:
+// Do NOT use the Firebase child key as the VIP ID here.
+// Old VIP records may have random Firebase keys.
+// In that case we use the VIP name as fallback.
+
+function getOwnedPlanId(plan) {
 
     if (!plan) {
         return "";
@@ -262,8 +282,7 @@ function getOwnedPlanId(id, plan) {
         plan.vipPlanId ||
         plan.planId ||
         plan.vipId ||
-        plan.id ||
-        id
+        ""
     );
 }
 
@@ -288,7 +307,7 @@ function getRequestPlanId(request) {
 
 
 // =========================================================
-// GET PLAN NAME
+// GET VIP NAME
 // =========================================================
 
 function getVipName(plan) {
@@ -303,492 +322,18 @@ function getVipName(plan) {
 
 
 // =========================================================
-// SIDEBAR
+// CHECK WHETHER USER ALREADY OWNS THIS VIP
 // =========================================================
-
-menuBtn?.addEventListener(
-    "click",
-    () => {
-
-        sidebar?.classList.toggle(
-            "active"
-        );
-
-    }
-);
-
-
-// Close sidebar when link is clicked
-
-document
-    .querySelectorAll(".sidebar a")
-    .forEach(link => {
-
-        link.addEventListener(
-            "click",
-            () => {
-
-                sidebar?.classList.remove(
-                    "active"
-                );
-
-            }
-        );
-
-    });
-
-
-// =========================================================
-// LOGOUT
-// =========================================================
-
-logoutBtn?.addEventListener(
-    "click",
-    async () => {
-
-        const ok =
-            confirm(
-                "Are you sure you want to logout?"
-            );
-
-        if (!ok) return;
-
-        try {
-
-            await signOut(auth);
-
-            location.href =
-                "login.html";
-
-        } catch (error) {
-
-            console.error(
-                "Logout error:",
-                error
-            );
-
-            showMessage(
-                "Logout failed. Please try again."
-            );
-
-        }
-
-    }
-);
-
-
-// =========================================================
-// AUTH
-// =========================================================
-
-onAuthStateChanged(
-    auth,
-    async user => {
-
-        if (!user) {
-
-            location.href =
-                "login.html";
-
-            return;
-        }
-
-        currentUser =
-            user;
-
-        await initializeVipPage();
-
-    }
-);
-
-
-// =========================================================
-// INITIALIZE VIP PAGE
-// =========================================================
-
-async function initializeVipPage() {
-
-    try {
-
-        await loadUserData();
-
-        loadVipPackages();
-
-        loadUserVipRequests();
-
-        startClaimTimer();
-
-        if (loadingScreen) {
-
-            loadingScreen.style.display =
-                "none";
-
-        }
-
-    } catch (error) {
-
-        console.error(
-            "VIP initialization error:",
-            error
-        );
-
-        if (loadingScreen) {
-
-            loadingScreen.style.display =
-                "none";
-
-        }
-
-        showMessage(
-            "Unable to load VIP page."
-        );
-
-    }
-}
-
-
-// =========================================================
-// LOAD USER DATA
-// =========================================================
-
-function loadUserData() {
-
-    return new Promise(resolve => {
-
-        if (!currentUser) {
-
-            resolve();
-
-            return;
-        }
-
-        if (userListenerStarted) {
-
-            resolve();
-
-            return;
-        }
-
-        userListenerStarted =
-            true;
-
-        const userRef =
-            ref(
-                db,
-                "users/" +
-                currentUser.uid
-            );
-
-        onValue(
-            userRef,
-            snapshot => {
-
-                if (!snapshot.exists()) {
-
-                    userData = {};
-
-                    userVipPlans = {};
-
-                    updateBalanceUI();
-
-                    calculateVipTotals();
-
-                    renderOwnedVipPlans();
-
-                    updateVipButtons();
-
-                    resolve();
-
-                    return;
-                }
-
-                userData =
-                    snapshot.val() || {};
-
-                userVipPlans =
-                    userData.vipPlans || {};
-
-                updateBalanceUI();
-
-                checkLocalVipExpiration();
-
-                calculateVipTotals();
-
-                renderOwnedVipPlans();
-
-                updateVipButtons();
-
-                resolve();
-
-            },
-
-            error => {
-
-                console.error(
-                    "User listener error:",
-                    error
-                );
-
-                resolve();
-
-            }
-        );
-
-    });
-}
-
-
-// =========================================================
-// UPDATE BALANCE UI
-// =========================================================
-
-function updateBalanceUI() {
-
-    if (!balanceEl) return;
-
-    balanceEl.textContent =
-        money(
-            userData.balance
-        );
-}
-
-
-// =========================================================
-// LOAD VIP PACKAGES
-// =========================================================
-
-function loadVipPackages() {
-
-    if (!vipGrid) return;
-
-    if (vipPlansListenerStarted) {
-        return;
-    }
-
-    vipPlansListenerStarted =
-        true;
-
-    const plansRef =
-        ref(
-            db,
-            "vipPlans"
-        );
-
-    onValue(
-        plansRef,
-        snapshot => {
-
-            availableVipPlans = {};
-
-            if (!snapshot.exists()) {
-
-                vipGrid.innerHTML = `
-                    <div class="emptyVip">
-                        <i class="fas fa-gem"></i>
-                        <h3>No VIP Plans Available</h3>
-                        <p>Please check again later.</p>
-                    </div>
-                `;
-
-                return;
-            }
-
-            let html = "";
-
-            snapshot.forEach(child => {
-
-                const plan =
-                    child.val() || {};
-
-                const active =
-                    plan.status === true ||
-                    plan.status === "active" ||
-                    plan.active === true;
-
-                if (!active) {
-                    return;
-                }
-
-                const planId =
-                    String(child.key);
-
-                availableVipPlans[
-                    planId
-                ] = plan;
-
-                const name =
-                    getVipName(plan) ||
-                    "VIP Plan";
-
-                const price =
-                    numberValue(
-                        plan.price
-                    );
-
-                const daily =
-                    getPlanDailyIncome(
-                        plan
-                    );
-
-                const duration =
-                    getDurationDays(
-                        plan
-                    );
-
-                const profit =
-                    getPlanTotalProfit(
-                        plan
-                    );
-
-                html += `
-
-                    <div
-                        class="vip-card"
-                        data-plan-id="${escapeHTML(planId)}"
-                    >
-
-                        <div class="vip-badge">
-                            ${escapeHTML(name)}
-                        </div>
-
-                        <h2>
-                            ${money(price)}
-                        </h2>
-
-                        <ul>
-
-                            <li>
-                                <i class="fas fa-check"></i>
-
-                                Daily Income:
-
-                                <b>
-                                    ${money(daily)}
-                                </b>
-                            </li>
-
-                            <li>
-                                <i class="fas fa-check"></i>
-
-                                Duration:
-
-                                <b>
-                                    ${duration} Days
-                                </b>
-                            </li>
-
-                            <li>
-                                <i class="fas fa-check"></i>
-
-                                Total Profit:
-
-                                <b>
-                                    ${money(profit)}
-                                </b>
-                            </li>
-
-                        </ul>
-
-                        <button
-                            type="button"
-                            class="buyVipBtn"
-                            data-plan-id="${escapeHTML(planId)}"
-                            data-vip="${escapeHTML(name)}"
-                            data-price="${price}"
-                            data-daily="${daily}"
-                            data-profit="${profit}"
-                            data-days="${duration}"
-                        >
-
-                            <i class="fas fa-crown"></i>
-
-                            Buy Now
-
-                        </button>
-
-                    </div>
-
-                `;
-
-            });
-
-            if (!html) {
-
-                vipGrid.innerHTML = `
-                    <div class="emptyVip">
-                        <i class="fas fa-gem"></i>
-                        <h3>No Active VIP Plans</h3>
-                    </div>
-                `;
-
-                return;
-            }
-
-            vipGrid.innerHTML =
-                html;
-
-            registerVipButtons();
-
-            updateVipButtons();
-
-        },
-
-        error => {
-
-            console.error(
-                "VIP plans error:",
-                error
-            );
-
-            vipGrid.innerHTML = `
-                <div class="emptyVip">
-                    <h3>Unable to load VIP Plans</h3>
-                    <p>Please refresh the page.</p>
-                </div>
-            `;
-
-        }
-    );
-}
-
-
-// =========================================================
-// REGISTER BUY BUTTONS
-// =========================================================
-
-function registerVipButtons() {
-
-    document
-        .querySelectorAll(".buyVipBtn")
-        .forEach(button => {
-
-            button.onclick = () => {
-
-                buyVip(button);
-
-            };
-
-        });
-}
-
-
-// =========================================================
-// CHECK SAME VIP BY PLAN ID
-// =========================================================
+// RULE:
+// Starter != Bronze != Silver != Gold
 //
-// THIS IS THE IMPORTANT FIX.
+// Same ID = blocked
+// Different ID = allowed
 //
-// We first compare:
-// vipPlanId / planId / vipId
-//
-// Only when an old record has no ID,
-// we use the name as fallback.
-//
+// If an old VIP record has NO plan ID,
+// name is used as fallback.
 
-function hasActiveVipByPlan(
-    planId,
-    vipName
-) {
+function hasActiveVipByPlan(planId, vipName) {
 
     const targetId =
         normalizePlanId(planId);
@@ -799,7 +344,7 @@ function hasActiveVipByPlan(
     return Object.entries(
         userVipPlans || {}
     ).some(
-        ([id, plan]) => {
+        ([firebaseKey, plan]) => {
 
             if (!plan) {
                 return false;
@@ -810,12 +355,11 @@ function hasActiveVipByPlan(
                     plan.status
                 );
 
-            if (
-                status !== "active"
-            ) {
+            if (status !== "active") {
                 return false;
             }
 
+            // Check expiration
             const endDate =
                 numberValue(
                     plan.endDate
@@ -828,30 +372,37 @@ function hasActiveVipByPlan(
                 return false;
             }
 
-            const ownedId =
-                getOwnedPlanId(
-                    id,
-                    plan
-                );
+            // -----------------------------------------
+            // FIRST: CHECK REAL VIP PLAN ID
+            // -----------------------------------------
 
-            // Primary check: PLAN ID
+            const ownedId =
+                getOwnedPlanId(plan);
 
             if (
                 targetId &&
                 ownedId
             ) {
 
+                // SAME PLAN
                 if (
-                    targetId ===
-                    ownedId
+                    targetId === ownedId
                 ) {
                     return true;
                 }
 
+                // DIFFERENT PLAN
+                // Example:
+                // starter !== bronze
+                // bronze !== silver
+                // silver !== gold
+                return false;
             }
 
-            // Fallback for old records
-            // which don't have a plan ID.
+            // -----------------------------------------
+            // OLD RECORD WITHOUT PLAN ID
+            // -----------------------------------------
+            // Only then use name fallback.
 
             if (
                 !ownedId &&
@@ -863,33 +414,32 @@ function hasActiveVipByPlan(
                         getVipName(plan)
                     );
 
-                return (
-                    ownedName ===
-                    targetName
-                );
-
+                if (
+                    ownedName &&
+                    ownedName === targetName
+                ) {
+                    return true;
+                }
             }
 
             return false;
-
         }
     );
 }
 
 
 // =========================================================
-// CHECK PENDING / PROCESSING SAME VIP
+// CHECK PENDING / PROCESSING REQUEST
 // =========================================================
+// Same VIP pending = blocked
+// Different VIP pending = allowed
 //
-// Same VIP request is blocked only if:
+// Example:
 //
-// pending
-// OR
-// processing
-//
-// rejected and processing_error
-// are allowed again.
-//
+// Starter pending
+// Bronze = BUY NOW
+// Silver = BUY NOW
+// Gold = BUY NOW
 
 function hasPendingVipRequest(
     planId,
@@ -916,13 +466,12 @@ function hasPendingVipRequest(
                     request.status
                 );
 
+            // Only these statuses block purchase
             if (
                 status !== "pending" &&
                 status !== "processing"
             ) {
-
                 return false;
-
             }
 
             const requestId =
@@ -930,7 +479,9 @@ function hasPendingVipRequest(
                     request
                 );
 
-            // Primary check: PLAN ID
+            // -----------------------------------------
+            // FIRST: CHECK PLAN ID
+            // -----------------------------------------
 
             if (
                 targetId &&
@@ -941,10 +492,11 @@ function hasPendingVipRequest(
                     targetId ===
                     requestId
                 );
-
             }
 
-            // Fallback for old requests
+            // -----------------------------------------
+            // OLD REQUEST WITHOUT PLAN ID
+            // -----------------------------------------
 
             if (
                 !requestId &&
@@ -955,21 +507,127 @@ function hasPendingVipRequest(
                     normalizeName(
                         request.vipName ||
                         request.name ||
-                        request.planName
+                        request.planName ||
+                        ""
                     );
 
                 return (
+                    requestName &&
                     requestName ===
                     targetName
                 );
-
             }
 
             return false;
-
         }
     );
 }
+
+
+// =========================================================
+// UPDATE ALL VIP BUY BUTTONS
+// =========================================================
+// IMPORTANT:
+// Each button is checked against ITS OWN plan ID.
+//
+// Purchased Starter:
+// Starter  -> Purchased
+// Bronze   -> Buy Now
+// Silver   -> Buy Now
+// Gold     -> Buy Now
+
+function updateVipButtons() {
+
+    document
+        .querySelectorAll(".buyVipBtn")
+        .forEach(button => {
+
+            const planId =
+                String(
+                    button.dataset.planId || ""
+                ).trim();
+
+            const vipName =
+                String(
+                    button.dataset.vip || ""
+                ).trim();
+
+            const purchased =
+                hasActiveVipByPlan(
+                    planId,
+                    vipName
+                );
+
+            const pending =
+                hasPendingVipRequest(
+                    planId,
+                    vipName
+                );
+
+            // Reset button first
+            button.disabled = false;
+
+            button.classList.remove(
+                "activeVip"
+            );
+
+            button.classList.remove(
+                "pendingVip"
+            );
+
+            // -----------------------------------------
+            // SAME VIP ALREADY ACTIVE
+            // -----------------------------------------
+
+            if (purchased) {
+
+                button.disabled = true;
+
+                button.classList.add(
+                    "activeVip"
+                );
+
+                button.innerHTML = `
+                    <i class="fas fa-check-circle"></i>
+                    Purchased
+                `;
+
+                return;
+            }
+
+            // -----------------------------------------
+            // SAME VIP REQUEST ALREADY PENDING
+            // -----------------------------------------
+
+            if (pending) {
+
+                button.disabled = true;
+
+                button.classList.add(
+                    "pendingVip"
+                );
+
+                button.innerHTML = `
+                    <i class="fas fa-clock"></i>
+                    Request Pending
+                `;
+
+                return;
+            }
+
+            // -----------------------------------------
+            // DIFFERENT VIP = ALLOWED
+            // -----------------------------------------
+
+            button.disabled = false;
+
+            button.innerHTML = `
+                <i class="fas fa-crown"></i>
+                Buy Now
+            `;
+        });
+}
+    
 
 
 // =========================================================
