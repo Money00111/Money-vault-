@@ -2025,7 +2025,59 @@ async function loadDashboard() {
 
         dashboardListenersStarted =
             true;
+/* =========================================================
+   QUICK ACTION — WITHDRAWS
+========================================================= */
 
+const openWithdrawsBtn = document.getElementById("openWithdraws");
+
+if (openWithdrawsBtn && !openWithdrawsBtn.dataset.bound) {
+
+    openWithdrawsBtn.dataset.bound = "true";
+
+    openWithdrawsBtn.addEventListener("click", async () => {
+
+        /* -----------------------------------------
+           OPEN WITHDRAW PAGE
+        ----------------------------------------- */
+
+        openPage("withdraws");
+
+        /* -----------------------------------------
+           LOAD WITHDRAW LIST
+        ----------------------------------------- */
+
+        try {
+
+            await loadWithdraws();
+
+            /* Ensure list is rendered immediately */
+            if (typeof renderWithdrawRequests === "function") {
+                renderWithdrawRequests();
+            }
+
+            /* Ensure search/filter are active */
+            if (typeof setupWithdrawSearch === "function") {
+                setupWithdrawSearch();
+            }
+
+        } catch (error) {
+
+            console.error(
+                "Quick Action Withdraw error:",
+                error
+            );
+
+            showToast(
+                "Unable to load withdraw requests.",
+                "error"
+            );
+
+        }
+
+    });
+
+}
 
         /* =================================================
            USERS LISTENER
