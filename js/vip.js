@@ -846,11 +846,11 @@ button.innerHTML = `
     Pending
 `;
 
-button.classList.add("purchased");
-
 button.disabled = true;
 
 button.dataset.buying = "false";
+
+button.classList.add("purchased");
 
 button.style.display = "";
 
