@@ -1177,12 +1177,10 @@ async function updateVipButtons() {
                 )
             );
 
-        const owned =
-            ownedSnapshot.exists()
-                ? ownedSnapshot.val() || {}
-                : {};
-
-
+        const owned = ownedSnapshot.exists()
+    ? (ownedSnapshot.val() || {})
+    : {};
+        
         const requestsQuery =
             query(
                 ref(db, "vipPurchaseRequests"),
@@ -1193,10 +1191,9 @@ async function updateVipButtons() {
         const requestSnapshot =
             await get(requestsQuery);
 
-        const requests =
-            requestSnapshot.exists()
-                ? requestSnapshot.val() || {}
-                : {};
+        const requests = requestSnapshot.exists()
+    ? (requestSnapshot.val() || {})
+    : {};
 
 
         buttons.forEach(button => {
