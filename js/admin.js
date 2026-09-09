@@ -15633,3 +15633,1588 @@ console.log(
     "Money Vault Admin Part 10 loaded — Users List Ready."
 );
 
+/* =========================================================
+   MONEY VAULT - ADMIN.JS
+   PART 11
+   TRANSACTIONS MANAGEMENT
+   CURRENCY: RWF / FRW
+========================================================= */
+
+let allTransactions = [];
+let transactionUsers = {};
+let transactionListenersStarted = false;
+
+
+/* =========================================================
+   SAFE HELPERS
+========================================================= */
+
+function transactionValue(value) {
+
+    const number = Number(value);
+
+    return Number.isFinite(number)
+        ? number
+        : 0;
+}
+
+
+function transactionMoney(value) {
+
+    return formatMoney(
+        transactionValue(value)
+    );
+}
+
+
+function transactionDate(value) {
+
+    const timestamp =
+        transactionValue(value);
+
+    if (!timestamp) {
+        return "N/A";
+    }
+
+    return formatDate(timestamp);
+}
+
+
+function transactionStatus(transaction) {
+
+    return String(
+        transaction?.status ||
+        "unknown"
+    )
+        .trim()
+        .toLowerCase();
+}
+
+
+function transactionType(transaction) {
+
+    return String(
+        transaction?.type ||
+        transaction?.transactionType ||
+        "Transaction"
+    )
+        .trim();
+}
+
+
+/* =========================================================
+   USER HELPERS
+========================================================= */
+
+function getTransactionUserName(user) {
+
+    return (
+        user?.name ||
+        user?.fullName ||
+        user?.displayName ||
+        user?.username ||
+        "Unknown User"
+    );
+}
+
+
+function getTransactionUserEmail(user) {
+
+    return (
+        user?.email ||
+        "No email"
+    );
+}
+
+
+function getTransactionUserPhone(user) {
+
+    return (
+        user?.phone ||
+        user?.phoneNumber ||
+        "N/A"
+    );
+}
+
+
+function getTransactionUserPhoto(user) {
+
+    return (
+        user?.photoURL ||
+        user?.photoUrl ||
+        user?.profilePhoto ||
+        user?.photo ||
+        ""
+    );
+}
+
+
+/* =========================================================
+   TRANSACTION ICON
+========================================================= */
+
+function getTransactionIcon(type) {
+
+    const value =
+        String(type || "")
+            .toLowerCase();
+
+
+    if (
+        value.includes("deposit")
+    ) {
+        return "fa-arrow-down";
+    }
+
+
+    if (
+        value.includes("withdraw")
+    ) {
+        return "fa-arrow-up";
+    }
+
+
+    if (
+        value.includes("vip")
+    ) {
+        return "fa-crown";
+    }
+
+
+    if (
+        value.includes("profit")
+    ) {
+        return "fa-chart-line";
+    }
+
+
+    if (
+        value.includes("referral")
+    ) {
+        return "fa-user-group";
+    }
+
+
+    if (
+        value.includes("bonus")
+    ) {
+        return "fa-gift";
+    }
+
+
+    return "fa-money-bill-transfer";
+}
+
+
+/* =========================================================
+   TRANSACTION TYPE CLASS
+========================================================= */
+
+function getTransactionTypeClass(type) {
+
+    const value =
+        String(type || "")
+            .toLowerCase();
+
+
+    if (
+        value.includes("deposit")
+    ) {
+        return "deposit";
+    }
+
+
+    if (
+        value.includes("withdraw")
+    ) {
+        return "withdraw";
+    }
+
+
+    if (
+        value.includes("vip")
+    ) {
+        return "vip";
+    }
+
+
+    if (
+        value.includes("profit")
+    ) {
+        return "profit";
+    }
+
+
+    if (
+        value.includes("referral")
+    ) {
+        return "referral";
+    }
+
+
+    if (
+        value.includes("bonus")
+    ) {
+        return "bonus";
+    }
+
+
+    return "default";
+}
+
+
+/* =========================================================
+   STATUS CLASS
+========================================================= */
+
+function getTransactionStatusClass(status) {
+
+    const value =
+        String(status || "")
+            .toLowerCase();
+
+
+    if (
+        value === "approved" ||
+        value === "completed" ||
+        value === "success" ||
+        value === "successful"
+    ) {
+        return "approved";
+    }
+
+
+    if (
+        value === "pending" ||
+        value === "processing"
+    ) {
+        return "pending";
+    }
+
+
+    if (
+        value === "rejected" ||
+        value === "failed" ||
+        value === "cancelled" ||
+        value === "canceled"
+    ) {
+        return "rejected";
+    }
+
+
+    if (
+        value === "processing_error"
+    ) {
+        return "error";
+    }
+
+
+    return "unknown";
+}
+
+
+/* =========================================================
+   FRIENDLY STATUS
+========================================================= */
+
+function getTransactionStatusLabel(status) {
+
+    const value =
+        String(status || "")
+            .trim()
+            .toLowerCase();
+
+
+    if (
+        value === "approved" ||
+        value === "completed" ||
+        value === "success" ||
+        value === "successful"
+    ) {
+        return "Approved";
+    }
+
+
+    if (
+        value === "pending"
+    ) {
+        return "Pending";
+    }
+
+
+    if (
+        value === "processing"
+    ) {
+        return "Processing";
+    }
+
+
+    if (
+        value === "rejected"
+    ) {
+        return "Rejected";
+    }
+
+
+    if (
+        value === "failed"
+    ) {
+        return "Failed";
+    }
+
+
+    if (
+        value === "processing_error"
+    ) {
+        return "Processing Error";
+    }
+
+
+    if (
+        value === "cancelled" ||
+        value === "canceled"
+    ) {
+        return "Cancelled";
+    }
+
+
+    return "Unknown";
+}
+
+
+/* =========================================================
+   TRANSACTION AMOUNT
+========================================================= */
+
+function getTransactionAmount(transaction) {
+
+    return transactionValue(
+
+        transaction?.amount ??
+        transaction?.value ??
+        transaction?.money
+
+    );
+}
+
+
+/* =========================================================
+   TRANSACTION TIMESTAMP
+========================================================= */
+
+function getTransactionTimestamp(transaction) {
+
+    return transactionValue(
+
+        transaction?.createdAt ??
+        transaction?.timestamp ??
+        transaction?.date ??
+        transaction?.approvedAt ??
+        transaction?.requestedAt ??
+        transaction?.rejectedAt
+
+    );
+}
+
+
+/* =========================================================
+   TRANSACTION SEARCH TEXT
+========================================================= */
+
+function getTransactionSearchText(
+    transaction,
+    user
+) {
+
+    return [
+
+        transaction?.id,
+
+        transaction?.uid,
+
+        transaction?.type,
+
+        transaction?.transactionType,
+
+        transaction?.status,
+
+        transaction?.amount,
+
+        transaction?.vipName,
+
+        transaction?.requestId,
+
+        transaction?.transactionId,
+
+        transaction?.paymentMethod,
+
+        transaction?.phone,
+
+        transaction?.account,
+
+        transaction?.accountNumber,
+
+        transaction?.method,
+
+        transaction?.adminId,
+
+        transaction?.approvedBy,
+
+        getTransactionUserName(user),
+
+        getTransactionUserEmail(user),
+
+        getTransactionUserPhone(user)
+
+    ]
+        .filter(
+            value =>
+                value !== undefined &&
+                value !== null
+        )
+        .join(" ")
+        .toLowerCase();
+}
+
+
+/* =========================================================
+   LOAD TRANSACTIONS
+========================================================= */
+
+async function loadTransactions() {
+
+    await window.waitForAdmin();
+
+
+    if (
+        transactionListenersStarted
+    ) {
+
+        setupTransactionSearch();
+
+        renderTransactions();
+
+        return;
+    }
+
+
+    transactionListenersStarted =
+        true;
+
+
+    /* =====================================================
+       USERS
+    ===================================================== */
+
+    if (
+        !listeners.transactionUsers
+    ) {
+
+        listeners.transactionUsers =
+            onValue(
+
+                ref(
+                    db,
+                    "users"
+                ),
+
+                snapshot => {
+
+                    transactionUsers =
+                        snapshot.exists()
+                            ? snapshot.val() || {}
+                            : {};
+
+
+                    renderTransactions();
+
+                },
+
+                error => {
+
+                    console.error(
+                        "Transaction users listener error:",
+                        error
+                    );
+
+                    showToast(
+                        "Failed to load transaction users.",
+                        "error"
+                    );
+
+                }
+
+            );
+
+    }
+
+
+    /* =====================================================
+       TRANSACTIONS
+    ===================================================== */
+
+    if (
+        !listeners.transactionsManagement
+    ) {
+
+        listeners.transactionsManagement =
+            onValue(
+
+                ref(
+                    db,
+                    "transactions"
+                ),
+
+                snapshot => {
+
+                    const data =
+                        snapshot.exists()
+                            ? snapshot.val() || {}
+                            : {};
+
+
+                    allTransactions =
+                        Object.entries(
+                            data
+                        ).map(
+                            ([id, transaction]) => ({
+
+                                id,
+
+                                ...(transaction || {})
+
+                            })
+                        );
+
+
+                    /* -------------------------------------
+                       NEWEST FIRST
+                    -------------------------------------- */
+
+                    allTransactions.sort(
+                        (a, b) => {
+
+                            return (
+                                getTransactionTimestamp(b) -
+                                getTransactionTimestamp(a)
+                            );
+
+                        }
+                    );
+
+
+                    renderTransactions();
+
+                },
+
+                error => {
+
+                    console.error(
+                        "Transactions listener error:",
+                        error
+                    );
+
+                    showToast(
+                        "Failed to load transactions.",
+                        "error"
+                    );
+
+                }
+
+            );
+
+    }
+
+
+    setupTransactionSearch();
+
+    renderTransactions();
+
+}
+
+
+/* =========================================================
+   RENDER TRANSACTIONS
+========================================================= */
+
+function renderTransactions() {
+
+    const list =
+        document.getElementById(
+            "transactionList"
+        );
+
+
+    const empty =
+        document.getElementById(
+            "emptyTransaction"
+        );
+
+
+    if (!list) {
+        return;
+    }
+
+
+    /* =====================================================
+       SEARCH
+    ===================================================== */
+
+    const searchInput =
+        document.getElementById(
+            "transactionSearch"
+        );
+
+
+    const search =
+        String(
+            searchInput?.value || ""
+        )
+            .trim()
+            .toLowerCase();
+
+
+    /* =====================================================
+       FILTER
+    ===================================================== */
+
+    const filterElement =
+        document.getElementById(
+            "transactionFilter"
+        );
+
+
+    const filter =
+        String(
+            filterElement?.value || "all"
+        )
+            .trim()
+            .toLowerCase();
+
+
+    /* =====================================================
+       FILTER DATA
+    ===================================================== */
+
+    const filtered =
+        allTransactions.filter(
+            transaction => {
+
+                const type =
+                    transactionType(
+                        transaction
+                    ).toLowerCase();
+
+
+                const status =
+                    transactionStatus(
+                        transaction
+                    );
+
+
+                /* -----------------------------------------
+                   FILTER
+                ----------------------------------------- */
+
+                if (
+                    filter !== "all"
+                ) {
+
+                    const matchesType =
+                        type === filter ||
+                        type.includes(
+                            filter
+                        );
+
+
+                    const matchesStatus =
+                        status === filter;
+
+
+                    if (
+                        !matchesType &&
+                        !matchesStatus
+                    ) {
+
+                        return false;
+
+                    }
+
+                }
+
+
+                /* -----------------------------------------
+                   USER
+                ----------------------------------------- */
+
+                const user =
+                    transactionUsers[
+                        transaction.uid
+                    ] || {};
+
+
+                /* -----------------------------------------
+                   SEARCH
+                ----------------------------------------- */
+
+                const searchable =
+                    getTransactionSearchText(
+                        transaction,
+                        user
+                    );
+
+
+                return (
+                    !search ||
+                    searchable.includes(
+                        search
+                    )
+                );
+
+            }
+        );
+
+
+    /* =====================================================
+       LIST COUNT
+    ===================================================== */
+
+    const listCount =
+        document.getElementById(
+            "transactionListCount"
+        );
+
+
+    if (listCount) {
+
+        listCount.textContent =
+            `${filtered.length} transaction${
+                filtered.length === 1
+                    ? ""
+                    : "s"
+            }`;
+
+    }
+
+
+    /* =====================================================
+       EMPTY STATE
+    ===================================================== */
+
+    if (
+        !filtered.length
+    ) {
+
+        list.innerHTML =
+            "";
+
+
+        if (empty) {
+
+            empty.style.display =
+                "block";
+
+
+            empty.innerHTML = `
+
+                <div class="empty-state">
+
+                    <i class="fa-solid fa-receipt"></i>
+
+                    <h3>
+
+                        ${
+                            allTransactions.length
+                                ? "No Transactions Found"
+                                : "No Transactions Yet"
+                        }
+
+                    </h3>
+
+                    <p>
+
+                        ${
+                            allTransactions.length
+                                ? "No transactions match your search or filter."
+                                : "There are currently no transactions."
+                        }
+
+                    </p>
+
+                </div>
+
+            `;
+
+        }
+
+
+        return;
+    }
+
+
+    if (empty) {
+
+        empty.style.display =
+            "none";
+
+    }
+
+
+    /* =====================================================
+       RENDER LIST
+    ===================================================== */
+
+    list.innerHTML =
+        filtered
+            .map(
+                transaction => {
+
+                    const user =
+                        transactionUsers[
+                            transaction.uid
+                        ] || {};
+
+
+                    return renderTransactionCard(
+                        transaction,
+                        user
+                    );
+
+                }
+            )
+            .join("");
+
+}
+
+
+/* =========================================================
+   TRANSACTION CARD
+========================================================= */
+
+function renderTransactionCard(
+    transaction,
+    user
+) {
+
+    const type =
+        transactionType(
+            transaction
+        );
+
+
+    const status =
+        transactionStatus(
+            transaction
+        );
+
+
+    const amount =
+        getTransactionAmount(
+            transaction
+        );
+
+
+    const timestamp =
+        getTransactionTimestamp(
+            transaction
+        );
+
+
+    const userName =
+        getTransactionUserName(
+            user
+        );
+
+
+    const email =
+        getTransactionUserEmail(
+            user
+        );
+
+
+    const phone =
+        getTransactionUserPhone(
+            user
+        );
+
+
+    const photo =
+        getTransactionUserPhoto(
+            user
+        );
+
+
+    const icon =
+        getTransactionIcon(
+            type
+        );
+
+
+    const typeClass =
+        getTransactionTypeClass(
+            type
+        );
+
+
+    const statusClass =
+        getTransactionStatusClass(
+            status
+        );
+
+
+    const statusLabel =
+        getTransactionStatusLabel(
+            status
+        );
+
+
+    /* =====================================================
+       AMOUNT DIRECTION
+    ===================================================== */
+
+    const typeLower =
+        type.toLowerCase();
+
+
+    const isOutgoing =
+        typeLower.includes(
+            "withdraw"
+        );
+
+
+    const isIncoming =
+        typeLower.includes(
+            "deposit"
+        ) ||
+        typeLower.includes(
+            "profit"
+        ) ||
+        typeLower.includes(
+            "bonus"
+        ) ||
+        typeLower.includes(
+            "referral"
+        );
+
+
+    const amountPrefix =
+        isOutgoing
+            ? "-"
+            : isIncoming
+                ? "+"
+                : "";
+
+
+    /* =====================================================
+       USER AVATAR
+    ===================================================== */
+
+    let avatar = `
+
+        <div class="transaction-user-avatar">
+
+            <i class="fa-solid fa-user"></i>
+
+        </div>
+
+    `;
+
+
+    if (photo) {
+
+        avatar = `
+
+            <div class="transaction-user-avatar">
+
+                <img
+                    src="${escapeHTML(photo)}"
+                    alt="${escapeHTML(userName)}"
+                    loading="lazy"
+                    onerror="
+                        this.style.display='none';
+                        this.parentElement.classList.add('avatar-error');
+                    "
+                >
+
+            </div>
+
+        `;
+
+    }
+
+
+    /* =====================================================
+       EXTRA INFORMATION
+    ===================================================== */
+
+    let extraInfo = "";
+
+
+    if (
+        transaction.vipName
+    ) {
+
+        extraInfo += `
+
+            <span>
+
+                <i class="fa-solid fa-crown"></i>
+
+                ${escapeHTML(
+                    transaction.vipName
+                )}
+
+            </span>
+
+        `;
+
+    }
+
+
+    if (
+        transaction.paymentMethod
+    ) {
+
+        extraInfo += `
+
+            <span>
+
+                <i class="fa-solid fa-credit-card"></i>
+
+                ${escapeHTML(
+                    transaction.paymentMethod
+                )}
+
+            </span>
+
+        `;
+
+    }
+
+
+    if (
+        transaction.method &&
+        !transaction.paymentMethod
+    ) {
+
+        extraInfo += `
+
+            <span>
+
+                <i class="fa-solid fa-credit-card"></i>
+
+                ${escapeHTML(
+                    transaction.method
+                )}
+
+            </span>
+
+        `;
+
+    }
+
+
+    if (
+        transaction.requestId
+    ) {
+
+        extraInfo += `
+
+            <span>
+
+                <i class="fa-solid fa-link"></i>
+
+                Request:
+                ${escapeHTML(
+                    transaction.requestId
+                )}
+
+            </span>
+
+        `;
+
+    }
+
+
+    if (
+        transaction.transactionId
+    ) {
+
+        extraInfo += `
+
+            <span>
+
+                <i class="fa-solid fa-hashtag"></i>
+
+                Ref:
+                ${escapeHTML(
+                    transaction.transactionId
+                )}
+
+            </span>
+
+        `;
+
+    }
+
+
+    /* =====================================================
+       REJECTION REASON
+    ===================================================== */
+
+    let rejectionInfo = "";
+
+
+    if (
+        transaction.rejectionReason
+    ) {
+
+        rejectionInfo = `
+
+            <div class="transaction-reason">
+
+                <i class="fa-solid fa-circle-exclamation"></i>
+
+                <span>
+
+                    ${escapeHTML(
+                        transaction.rejectionReason
+                    )}
+
+                </span>
+
+            </div>
+
+        `;
+
+    }
+
+
+    /* =====================================================
+       CARD
+    ===================================================== */
+
+    return `
+
+        <article
+            class="transaction-card"
+            data-id="${escapeHTML(
+                transaction.id
+            )}"
+        >
+
+            <!-- =========================================
+                 TOP
+            ========================================== -->
+
+            <div class="transaction-card-header">
+
+
+                <div class="transaction-main">
+
+
+                    <div
+                        class="
+                            transaction-icon
+                            type-${escapeHTML(
+                                typeClass
+                            )}
+                        "
+                    >
+
+                        <i
+                            class="
+                                fa-solid
+                                ${escapeHTML(icon)}
+                            "
+                        ></i>
+
+                    </div>
+
+
+                    <div class="transaction-title-area">
+
+                        <h3>
+
+                            ${escapeHTML(
+                                type
+                            )}
+
+                        </h3>
+
+
+                        <p>
+
+                            <i class="fa-solid fa-user"></i>
+
+                            ${escapeHTML(
+                                userName
+                            )}
+
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+                <div
+                    class="
+                        transaction-status
+                        status-${escapeHTML(
+                            statusClass
+                        )}
+                    "
+                >
+
+                    <i
+                        class="
+                            fa-solid
+                            ${
+                                statusClass === "approved"
+                                    ? "fa-circle-check"
+                                    : statusClass === "pending"
+                                        ? "fa-clock"
+                                        : statusClass === "rejected"
+                                            ? "fa-circle-xmark"
+                                            : "fa-circle-exclamation"
+                            }
+                        "
+                    ></i>
+
+                    ${escapeHTML(
+                        statusLabel
+                    )}
+
+                </div>
+
+            </div>
+
+
+            <!-- =========================================
+                 AMOUNT
+            ========================================== -->
+
+            <div
+                class="
+                    transaction-amount-box
+                    ${
+                        isOutgoing
+                            ? "outgoing"
+                            : isIncoming
+                                ? "incoming"
+                                : ""
+                    }
+                "
+            >
+
+                <div>
+
+                    <span>
+
+                        <i class="fa-solid fa-wallet"></i>
+
+                        Amount
+
+                    </span>
+
+                </div>
+
+
+                <strong
+                    class="
+                        transaction-amount
+                        ${
+                            isOutgoing
+                                ? "amount-out"
+                                : isIncoming
+                                    ? "amount-in"
+                                    : ""
+                        }
+                    "
+                >
+
+                    ${amountPrefix}
+
+                    ${escapeHTML(
+                        transactionMoney(
+                            amount
+                        )
+                    )}
+
+                </strong>
+
+            </div>
+
+
+            <!-- =========================================
+                 USER INFORMATION
+            ========================================== -->
+
+            <div class="transaction-user-info">
+
+
+                <div>
+
+                    <span>
+
+                        <i class="fa-solid fa-envelope"></i>
+
+                        Email
+
+                    </span>
+
+
+                    <strong>
+
+                        ${escapeHTML(
+                            email
+                        )}
+
+                    </strong>
+
+                </div>
+
+
+                <div>
+
+                    <span>
+
+                        <i class="fa-solid fa-phone"></i>
+
+                        Phone
+
+                    </span>
+
+
+                    <strong>
+
+                        ${escapeHTML(
+                            phone
+                        )}
+
+                    </strong>
+
+                </div>
+
+            </div>
+
+
+            <!-- =========================================
+                 EXTRA
+            ========================================== -->
+
+            ${
+                extraInfo
+
+                    ? `
+
+                        <div
+                            class="
+                                transaction-extra
+                            "
+                        >
+
+                            ${extraInfo}
+
+                        </div>
+
+                    `
+
+                    : ""
+            }
+
+
+            <!-- =========================================
+                 REJECTION REASON
+            ========================================== -->
+
+            ${rejectionInfo}
+
+
+            <!-- =========================================
+                 DATE
+            ========================================== -->
+
+            <div class="transaction-meta">
+
+
+                <span>
+
+                    <i
+                        class="
+                            fa-solid
+                            fa-calendar
+                        "
+                    ></i>
+
+                    ${escapeHTML(
+                        transactionDate(
+                            timestamp
+                        )
+                    )}
+
+                </span>
+
+
+                <span
+                    title="${escapeHTML(
+                        transaction.id
+                    )}"
+                >
+
+                    <i
+                        class="
+                            fa-solid
+                            fa-receipt
+                        "
+                    ></i>
+
+                    ID:
+                    ${escapeHTML(
+                        transaction.id
+                    )}
+
+                </span>
+
+            </div>
+
+
+            <!-- =========================================
+                 UID
+            ========================================== -->
+
+            <div
+                class="transaction-uid"
+                title="${escapeHTML(
+                    transaction.uid ||
+                    "N/A"
+                )}"
+            >
+
+                <i
+                    class="
+                        fa-solid
+                        fa-fingerprint
+                    "
+                ></i>
+
+                UID:
+
+                ${escapeHTML(
+                    transaction.uid ||
+                    "N/A"
+                )}
+
+            </div>
+
+        </article>
+
+    `;
+}
+
+
+/* =========================================================
+   SEARCH + FILTER
+========================================================= */
+
+function setupTransactionSearch() {
+
+    const search =
+        document.getElementById(
+            "transactionSearch"
+        );
+
+
+    const filter =
+        document.getElementById(
+            "transactionFilter"
+        );
+
+
+    /* =====================================================
+       SEARCH
+    ===================================================== */
+
+    if (
+        search &&
+        search.dataset.bound !== "true"
+    ) {
+
+        search.dataset.bound =
+            "true";
+
+
+        search.addEventListener(
+            "input",
+            () => {
+
+                renderTransactions();
+
+            }
+        );
+
+    }
+
+
+    /* =====================================================
+       FILTER
+    ===================================================== */
+
+    if (
+        filter &&
+        filter.dataset.bound !== "true"
+    ) {
+
+        filter.dataset.bound =
+            "true";
+
+
+        filter.addEventListener(
+            "change",
+            () => {
+
+                renderTransactions();
+
+            }
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   REFRESH TRANSACTIONS
+========================================================= */
+
+function refreshTransactions() {
+
+    renderTransactions();
+
+}
+
+
+/* =========================================================
+   GLOBAL EXPORTS
+========================================================= */
+
+window.loadTransactions =
+    loadTransactions;
+
+
+window.renderTransactions =
+    renderTransactions;
+
+
+window.setupTransactionSearch =
+    setupTransactionSearch;
+
+
+window.refreshTransactions =
+    refreshTransactions;
+
+
+console.log(
+    "Money Vault Admin Part 11 loaded — Transactions List Ready."
+);
