@@ -13944,3 +13944,1692 @@ console.log(
     "Money Vault Admin Part 9 loaded."
 );
 
+/* =========================================================
+   MONEY VAULT - ADMIN.JS
+   PART 10
+   USERS MANAGEMENT
+   CURRENCY: RWF / FRW
+========================================================= */
+
+let allUsers = [];
+let usersListenersStarted = false;
+let usersSearchInitialized = false;
+
+
+/* =========================================================
+   SAFE USER HELPERS
+========================================================= */
+
+function userNumber(value) {
+    const number = Number(value);
+    return Number.isFinite(number) ? number : 0;
+}
+
+
+function userMoney(value) {
+    return formatMoney(userNumber(value));
+}
+
+
+function userDate(value) {
+
+    const timestamp = userNumber(value);
+
+    if (!timestamp) {
+        return "N/A";
+    }
+
+    return formatDate(timestamp);
+}
+
+
+function userStatus(user) {
+
+    const status = String(
+        user?.status ?? ""
+    ).trim().toLowerCase();
+
+    if (
+        status === "blocked" ||
+        status === "suspended" ||
+        status === "disabled"
+    ) {
+        return "blocked";
+    }
+
+    if (
+        user?.active === false ||
+        user?.disabled === true
+    ) {
+        return "blocked";
+    }
+
+    return "active";
+}
+
+
+/* =========================================================
+   USER NAME
+========================================================= */
+
+function getUserDisplayName(user) {
+
+    return (
+        user?.name ||
+        user?.fullName ||
+        user?.displayName ||
+        user?.username ||
+        "Unknown User"
+    );
+}
+
+
+/* =========================================================
+   USER EMAIL
+========================================================= */
+
+function getUserDisplayEmail(user) {
+
+    return (
+        user?.email ||
+        "No email"
+    );
+}
+
+
+/* =========================================================
+   USER PHONE
+========================================================= */
+
+function getUserDisplayPhone(user) {
+
+    return (
+        user?.phone ||
+        user?.phoneNumber ||
+        "N/A"
+    );
+}
+
+
+/* =========================================================
+   USER PHOTO
+========================================================= */
+
+function getUserDisplayPhoto(user) {
+
+    return (
+        user?.photoURL ||
+        user?.photoUrl ||
+        user?.profilePhoto ||
+        user?.photo ||
+        ""
+    );
+}
+
+
+/* =========================================================
+   USER BALANCE
+========================================================= */
+
+function getUserBalance(user) {
+
+    return userNumber(
+        user?.balance
+    );
+}
+
+
+/* =========================================================
+   TOTAL DEPOSITS
+========================================================= */
+
+function getUserTotalDeposits(user) {
+
+    return userNumber(
+        user?.totalDeposits
+    );
+}
+
+
+/* =========================================================
+   TOTAL WITHDRAWALS
+========================================================= */
+
+function getUserTotalWithdrawals(user) {
+
+    return userNumber(
+        user?.totalWithdrawals
+    );
+}
+
+
+/* =========================================================
+   REFERRAL EARNINGS
+========================================================= */
+
+function getUserReferralEarnings(user) {
+
+    return userNumber(
+        user?.referralEarnings
+    );
+}
+
+
+/* =========================================================
+   TOTAL PROFITS
+========================================================= */
+
+function getUserTotalProfits(user) {
+
+    return userNumber(
+        user?.totalProfits ??
+        user?.totalProfit ??
+        user?.profits
+    );
+}
+
+
+/* =========================================================
+   TRANSACTION COUNT
+========================================================= */
+
+function getUserTransactionCount(user) {
+
+    return userNumber(
+        user?.totalTransactions
+    );
+}
+
+
+/* =========================================================
+   VIP COUNT
+========================================================= */
+
+function getUserVipCount(user) {
+
+    if (
+        user?.vipPlans &&
+        typeof user.vipPlans === "object"
+    ) {
+
+        return Object.keys(
+            user.vipPlans
+        ).length;
+    }
+
+    if (
+        user?.vipPurchases &&
+        typeof user.vipPurchases === "object"
+    ) {
+
+        return Object.keys(
+            user.vipPurchases
+        ).length;
+    }
+
+    return userNumber(
+        user?.vipCount
+    );
+}
+
+
+/* =========================================================
+   USER SEARCH VALUE
+========================================================= */
+
+function getUserSearchText(user) {
+
+    return [
+
+        user?.uid,
+
+        getUserDisplayName(user),
+
+        getUserDisplayEmail(user),
+
+        getUserDisplayPhone(user),
+
+        user?.username,
+
+        user?.referralCode,
+
+        user?.referredBy,
+
+        user?.status
+
+    ]
+        .filter(
+            value =>
+                value !== undefined &&
+                value !== null
+        )
+        .join(" ")
+        .toLowerCase();
+}
+
+
+/* =========================================================
+   LOAD USERS
+========================================================= */
+
+async function loadUsers() {
+
+    await window.waitForAdmin();
+
+    if (usersListenersStarted) {
+
+        setupUserSearch();
+
+        renderUsers();
+
+        return;
+    }
+
+    usersListenersStarted = true;
+
+
+    /* =====================================================
+       USERS LISTENER
+    ===================================================== */
+
+    if (!listeners.usersManagement) {
+
+        listeners.usersManagement = onValue(
+
+            ref(db, "users"),
+
+            snapshot => {
+
+                const data =
+                    snapshot.exists()
+                        ? snapshot.val() || {}
+                        : {};
+
+
+                allUsers =
+                    Object.entries(data).map(
+                        ([uid, user]) => ({
+
+                            uid,
+
+                            ...(user || {})
+
+                        })
+                    );
+
+
+                /* -----------------------------------------
+                   NEWEST USERS FIRST
+                ----------------------------------------- */
+
+                allUsers.sort(
+                    (a, b) => {
+
+                        const dateA =
+                            userNumber(
+                                a.createdAt ??
+                                a.registeredAt ??
+                                a.timestamp
+                            );
+
+                        const dateB =
+                            userNumber(
+                                b.createdAt ??
+                                b.registeredAt ??
+                                b.timestamp
+                            );
+
+                        return dateB - dateA;
+                    }
+                );
+
+
+                renderUsers();
+            },
+
+            error => {
+
+                console.error(
+                    "Users listener error:",
+                    error
+                );
+
+                showToast(
+                    "Failed to load users.",
+                    "error"
+                );
+            }
+        );
+    }
+
+
+    setupUserSearch();
+
+    renderUsers();
+}
+
+
+/* =========================================================
+   RENDER USERS
+========================================================= */
+
+function renderUsers() {
+
+    const list =
+        document.getElementById(
+            "usersList"
+        );
+
+    const empty =
+        document.getElementById(
+            "emptyUsers"
+        );
+
+
+    if (!list) {
+        return;
+    }
+
+
+    /* =====================================================
+       SEARCH
+    ===================================================== */
+
+    const searchInput =
+        document.getElementById(
+            "userSearch"
+        );
+
+    const search =
+        String(
+            searchInput?.value || ""
+        )
+            .trim()
+            .toLowerCase();
+
+
+    /* =====================================================
+       FILTER
+    ===================================================== */
+
+    const filteredUsers =
+        allUsers.filter(
+            user =>
+                !search ||
+                getUserSearchText(
+                    user
+                ).includes(search)
+        );
+
+
+    /* =====================================================
+       EMPTY STATE
+    ===================================================== */
+
+    if (!filteredUsers.length) {
+
+        list.innerHTML = "";
+
+        if (empty) {
+
+            empty.style.display =
+                "block";
+
+            empty.innerHTML = `
+
+                <div class="empty-state">
+
+                    <i class="fa-solid fa-users"></i>
+
+                    <h3>
+                        ${
+                            allUsers.length
+                                ? "No Users Found"
+                                : "No Users Yet"
+                        }
+                    </h3>
+
+                    <p>
+                        ${
+                            allUsers.length
+                                ? "No users match your search."
+                                : "There are currently no users registered."
+                        }
+                    </p>
+
+                </div>
+
+            `;
+        }
+
+        return;
+    }
+
+
+    if (empty) {
+
+        empty.style.display =
+            "none";
+    }
+
+
+    /* =====================================================
+       LIST HEADER
+    ===================================================== */
+
+    const listCount =
+        document.getElementById(
+            "usersListCount"
+        );
+
+    if (listCount) {
+
+        listCount.textContent =
+            `${filteredUsers.length} user${
+                filteredUsers.length === 1
+                    ? ""
+                    : "s"
+            }`;
+    }
+
+
+    /* =====================================================
+       USER LIST
+    ===================================================== */
+
+    list.innerHTML =
+        filteredUsers
+            .map(
+                user =>
+                    renderUserCard(
+                        user
+                    )
+            )
+            .join("");
+
+
+    activateUserViewButtons();
+}
+
+
+/* =========================================================
+   USER CARD
+========================================================= */
+
+function renderUserCard(user) {
+
+    const uid =
+        user.uid;
+
+
+    const name =
+        getUserDisplayName(user);
+
+    const email =
+        getUserDisplayEmail(user);
+
+    const phone =
+        getUserDisplayPhone(user);
+
+    const photo =
+        getUserDisplayPhoto(user);
+
+
+    const balance =
+        getUserBalance(user);
+
+    const deposits =
+        getUserTotalDeposits(user);
+
+    const withdrawals =
+        getUserTotalWithdrawals(user);
+
+    const referral =
+        getUserReferralEarnings(user);
+
+    const profits =
+        getUserTotalProfits(user);
+
+    const transactions =
+        getUserTransactionCount(user);
+
+    const vipCount =
+        getUserVipCount(user);
+
+
+    const status =
+        userStatus(user);
+
+
+    const createdAt =
+        userDate(
+            user.createdAt ??
+            user.registeredAt ??
+            user.timestamp
+        );
+
+
+    /* =====================================================
+       AVATAR
+    ===================================================== */
+
+    let avatar = `
+
+        <div class="user-avatar avatar-default">
+
+            <i class="fa-solid fa-user"></i>
+
+        </div>
+
+    `;
+
+
+    if (photo) {
+
+        avatar = `
+
+            <div class="user-avatar">
+
+                <img
+                    src="${escapeHTML(photo)}"
+                    alt="${escapeHTML(name)}"
+                    loading="lazy"
+                    onerror="
+                        this.style.display='none';
+                        this.parentElement.classList.add('avatar-error');
+                    "
+                >
+
+            </div>
+
+        `;
+    }
+
+
+    /* =====================================================
+       STATUS
+    ===================================================== */
+
+    const statusIcon =
+        status === "active"
+            ? "fa-circle-check"
+            : "fa-circle-xmark";
+
+
+    /* =====================================================
+       CARD
+    ===================================================== */
+
+    return `
+
+        <article
+            class="user-card"
+            data-uid="${escapeHTML(uid)}"
+        >
+
+            <!-- =========================================
+                 USER HEADER
+            ========================================== -->
+
+            <div class="user-card-header">
+
+                <div class="user-main-info">
+
+                    ${avatar}
+
+                    <div class="user-name-area">
+
+                        <h3>
+                            ${escapeHTML(name)}
+                        </h3>
+
+                        <p>
+                            ${escapeHTML(email)}
+                        </p>
+
+                        <small>
+                            <i class="fa-solid fa-phone"></i>
+                            ${escapeHTML(phone)}
+                        </small>
+
+                    </div>
+
+                </div>
+
+
+                <div
+                    class="
+                        user-status
+                        status-${escapeHTML(status)}
+                    "
+                >
+
+                    <i
+                        class="
+                            fa-solid
+                            ${statusIcon}
+                        "
+                    ></i>
+
+                    ${escapeHTML(status)}
+
+                </div>
+
+            </div>
+
+
+            <!-- =========================================
+                 BALANCE
+            ========================================== -->
+
+            <div class="user-balance-box">
+
+                <span>
+
+                    <i class="fa-solid fa-wallet"></i>
+
+                    Current Balance
+
+                </span>
+
+
+                <strong>
+
+                    ${escapeHTML(
+                        userMoney(balance)
+                    )}
+
+                </strong>
+
+            </div>
+
+
+            <!-- =========================================
+                 FINANCIAL INFORMATION
+            ========================================== -->
+
+            <div class="user-financial-grid">
+
+                <div class="user-stat">
+
+                    <span>
+
+                        <i class="fa-solid fa-arrow-down"></i>
+
+                        Deposits
+
+                    </span>
+
+                    <strong>
+
+                        ${escapeHTML(
+                            userMoney(deposits)
+                        )}
+
+                    </strong>
+
+                </div>
+
+
+                <div class="user-stat">
+
+                    <span>
+
+                        <i class="fa-solid fa-arrow-up"></i>
+
+                        Withdrawals
+
+                    </span>
+
+                    <strong>
+
+                        ${escapeHTML(
+                            userMoney(withdrawals)
+                        )}
+
+                    </strong>
+
+                </div>
+
+
+                <div class="user-stat">
+
+                    <span>
+
+                        <i class="fa-solid fa-user-group"></i>
+
+                        Referral Earnings
+
+                    </span>
+
+                    <strong>
+
+                        ${escapeHTML(
+                            userMoney(referral)
+                        )}
+
+                    </strong>
+
+                </div>
+
+
+                <div class="user-stat">
+
+                    <span>
+
+                        <i class="fa-solid fa-chart-line"></i>
+
+                        Total Profits
+
+                    </span>
+
+                    <strong>
+
+                        ${escapeHTML(
+                            userMoney(profits)
+                        )}
+
+                    </strong>
+
+                </div>
+
+            </div>
+
+
+            <!-- =========================================
+                 ACCOUNT INFORMATION
+            ========================================== -->
+
+            <div class="user-account-grid">
+
+                <div>
+
+                    <span>
+
+                        <i class="fa-solid fa-receipt"></i>
+
+                        Transactions
+
+                    </span>
+
+                    <strong>
+
+                        ${transactions.toLocaleString(
+                            "en-US"
+                        )}
+
+                    </strong>
+
+                </div>
+
+
+                <div>
+
+                    <span>
+
+                        <i class="fa-solid fa-crown"></i>
+
+                        VIP Plans
+
+                    </span>
+
+                    <strong>
+
+                        ${vipCount.toLocaleString(
+                            "en-US"
+                        )}
+
+                    </strong>
+
+                </div>
+
+
+                <div>
+
+                    <span>
+
+                        <i class="fa-solid fa-ticket"></i>
+
+                        Referral Code
+
+                    </span>
+
+                    <strong
+                        title="${escapeHTML(
+                            user.referralCode ||
+                            "N/A"
+                        )}"
+                    >
+
+                        ${escapeHTML(
+                            user.referralCode ||
+                            "N/A"
+                        )}
+
+                    </strong>
+
+                </div>
+
+
+                <div>
+
+                    <span>
+
+                        <i class="fa-solid fa-user-plus"></i>
+
+                        Referred By
+
+                    </span>
+
+                    <strong
+                        title="${escapeHTML(
+                            user.referredBy ||
+                            "None"
+                        )}"
+                    >
+
+                        ${escapeHTML(
+                            user.referredBy ||
+                            "None"
+                        )}
+
+                    </strong>
+
+                </div>
+
+            </div>
+
+
+            <!-- =========================================
+                 ACCOUNT META
+            ========================================== -->
+
+            <div class="user-card-meta">
+
+                <span>
+
+                    <i class="fa-solid fa-calendar"></i>
+
+                    Joined:
+                    ${escapeHTML(createdAt)}
+
+                </span>
+
+
+                <span
+                    class="user-uid"
+                    title="${escapeHTML(uid)}"
+                >
+
+                    <i class="fa-solid fa-fingerprint"></i>
+
+                    UID:
+                    ${escapeHTML(uid)}
+
+                </span>
+
+            </div>
+
+
+            <!-- =========================================
+                 ACTION
+            ========================================== -->
+
+            <div class="user-card-actions">
+
+                <button
+                    type="button"
+                    class="user-view-btn"
+                    data-uid="${escapeHTML(uid)}"
+                >
+
+                    <i class="fa-solid fa-eye"></i>
+
+                    View Details
+
+                </button>
+
+            </div>
+
+        </article>
+
+    `;
+}
+
+
+/* =========================================================
+   USER SEARCH
+========================================================= */
+
+function setupUserSearch() {
+
+    const search =
+        document.getElementById(
+            "userSearch"
+        );
+
+
+    if (!search) {
+        return;
+    }
+
+
+    if (
+        search.dataset.bound === "true"
+    ) {
+        return;
+    }
+
+
+    search.dataset.bound = "true";
+
+
+    search.addEventListener(
+        "input",
+        () => {
+
+            renderUsers();
+
+        }
+    );
+}
+
+
+/* =========================================================
+   VIEW USER DETAILS BUTTONS
+========================================================= */
+
+function activateUserViewButtons() {
+
+    document
+        .querySelectorAll(
+            ".user-view-btn"
+        )
+        .forEach(button => {
+
+            if (
+                button.dataset.bound === "true"
+            ) {
+                return;
+            }
+
+
+            button.dataset.bound = "true";
+
+
+            button.addEventListener(
+                "click",
+                () => {
+
+                    const uid =
+                        button.dataset.uid;
+
+
+                    if (!uid) {
+
+                        showToast(
+                            "User ID is missing.",
+                            "error"
+                        );
+
+                        return;
+                    }
+
+
+                    openUserDetails(
+                        uid
+                    );
+
+                }
+            );
+
+        });
+}
+
+
+/* =========================================================
+   VIEW USER DETAILS
+========================================================= */
+
+function openUserDetails(uid) {
+
+    const user =
+        allUsers.find(
+            item =>
+                item.uid === uid
+        );
+
+
+    if (!user) {
+
+        showToast(
+            "User information not found.",
+            "error"
+        );
+
+        return;
+    }
+
+
+    const name =
+        getUserDisplayName(user);
+
+    const email =
+        getUserDisplayEmail(user);
+
+    const phone =
+        getUserDisplayPhone(user);
+
+    const balance =
+        getUserBalance(user);
+
+    const deposits =
+        getUserTotalDeposits(user);
+
+    const withdrawals =
+        getUserTotalWithdrawals(user);
+
+    const referral =
+        getUserReferralEarnings(user);
+
+    const profits =
+        getUserTotalProfits(user);
+
+    const transactions =
+        getUserTransactionCount(user);
+
+    const vipCount =
+        getUserVipCount(user);
+
+    const status =
+        userStatus(user);
+
+    const photo =
+        getUserDisplayPhoto(user);
+
+
+    /* =====================================================
+       REMOVE OLD MODAL
+    ===================================================== */
+
+    document
+        .getElementById(
+            "userDetailsModal"
+        )
+        ?.remove();
+
+
+    /* =====================================================
+       CREATE MODAL
+    ===================================================== */
+
+    const modal =
+        document.createElement(
+            "div"
+        );
+
+
+    modal.id =
+        "userDetailsModal";
+
+    modal.className =
+        "admin-modal-overlay";
+
+
+    /* =====================================================
+       MODAL AVATAR
+    ===================================================== */
+
+    const modalAvatar =
+        photo
+
+            ? `
+
+                <img
+                    src="${escapeHTML(photo)}"
+                    alt="${escapeHTML(name)}"
+                    onerror="
+                        this.style.display='none';
+                        this.parentElement.classList.add('avatar-error');
+                    "
+                >
+
+            `
+
+            : `
+
+                <i class="fa-solid fa-user"></i>
+
+            `;
+
+
+    modal.innerHTML = `
+
+        <div class="admin-modal user-details-modal">
+
+            <!-- =========================================
+                 HEADER
+            ========================================== -->
+
+            <div class="admin-modal-header">
+
+                <div>
+
+                    <h2>
+
+                        <i class="fa-solid fa-user"></i>
+
+                        User Details
+
+                    </h2>
+
+                    <p>
+                        Complete account information
+                    </p>
+
+                </div>
+
+
+                <button
+                    type="button"
+                    class="admin-modal-close"
+                    id="closeUserDetailsModal"
+                >
+
+                    <i class="fa-solid fa-xmark"></i>
+
+                </button>
+
+            </div>
+
+
+            <!-- =========================================
+                 BODY
+            ========================================== -->
+
+            <div class="admin-modal-body">
+
+
+                <!-- PROFILE -->
+
+                <div class="user-details-profile">
+
+                    <div class="user-details-avatar">
+
+                        ${modalAvatar}
+
+                    </div>
+
+
+                    <div class="user-details-profile-info">
+
+                        <h3>
+                            ${escapeHTML(name)}
+                        </h3>
+
+                        <p>
+                            ${escapeHTML(email)}
+                        </p>
+
+                        <p>
+                            <i class="fa-solid fa-phone"></i>
+                            ${escapeHTML(phone)}
+                        </p>
+
+                        <span
+                            class="
+                                user-status
+                                status-${escapeHTML(status)}
+                            "
+                        >
+
+                            <i
+                                class="
+                                    fa-solid
+                                    ${
+                                        status === "active"
+                                            ? "fa-circle-check"
+                                            : "fa-circle-xmark"
+                                    }
+                                "
+                            ></i>
+
+                            ${escapeHTML(status)}
+
+                        </span>
+
+                    </div>
+
+                </div>
+
+
+                <!-- =====================================
+                     PERSONAL INFORMATION
+                ====================================== -->
+
+                <div class="user-details-section">
+
+                    <h4>
+
+                        <i class="fa-solid fa-address-card"></i>
+
+                        Personal Information
+
+                    </h4>
+
+
+                    <div class="user-details-grid">
+
+                        <div>
+
+                            <span>Name</span>
+
+                            <strong>
+                                ${escapeHTML(name)}
+                            </strong>
+
+                        </div>
+
+
+                        <div>
+
+                            <span>Email</span>
+
+                            <strong>
+                                ${escapeHTML(email)}
+                            </strong>
+
+                        </div>
+
+
+                        <div>
+
+                            <span>Phone</span>
+
+                            <strong>
+                                ${escapeHTML(phone)}
+                            </strong>
+
+                        </div>
+
+
+                        <div>
+
+                            <span>UID</span>
+
+                            <strong
+                                title="${escapeHTML(uid)}"
+                            >
+                                ${escapeHTML(uid)}
+                            </strong>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <!-- =====================================
+                     FINANCIAL SUMMARY
+                ====================================== -->
+
+                <div class="user-details-section">
+
+                    <h4>
+
+                        <i class="fa-solid fa-wallet"></i>
+
+                        Financial Summary
+
+                    </h4>
+
+
+                    <div class="user-details-grid">
+
+                        <div>
+
+                            <span>Balance</span>
+
+                            <strong>
+                                ${escapeHTML(
+                                    userMoney(balance)
+                                )}
+                            </strong>
+
+                        </div>
+
+
+                        <div>
+
+                            <span>Total Deposits</span>
+
+                            <strong>
+                                ${escapeHTML(
+                                    userMoney(deposits)
+                                )}
+                            </strong>
+
+                        </div>
+
+
+                        <div>
+
+                            <span>Total Withdrawals</span>
+
+                            <strong>
+                                ${escapeHTML(
+                                    userMoney(withdrawals)
+                                )}
+                            </strong>
+
+                        </div>
+
+
+                        <div>
+
+                            <span>Referral Earnings</span>
+
+                            <strong>
+                                ${escapeHTML(
+                                    userMoney(referral)
+                                )}
+                            </strong>
+
+                        </div>
+
+
+                        <div>
+
+                            <span>Total Profits</span>
+
+                            <strong>
+                                ${escapeHTML(
+                                    userMoney(profits)
+                                )}
+                            </strong>
+
+                        </div>
+
+
+                        <div>
+
+                            <span>Transactions</span>
+
+                            <strong>
+                                ${transactions.toLocaleString(
+                                    "en-US"
+                                )}
+                            </strong>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <!-- =====================================
+                     VIP INFORMATION
+                ====================================== -->
+
+                <div class="user-details-section">
+
+                    <h4>
+
+                        <i class="fa-solid fa-crown"></i>
+
+                        VIP Information
+
+                    </h4>
+
+
+                    <div class="user-details-grid">
+
+                        <div>
+
+                            <span>VIP Plans</span>
+
+                            <strong>
+                                ${vipCount.toLocaleString(
+                                    "en-US"
+                                )}
+                            </strong>
+
+                        </div>
+
+
+                        <div>
+
+                            <span>Referral Code</span>
+
+                            <strong>
+                                ${escapeHTML(
+                                    user.referralCode ||
+                                    "N/A"
+                                )}
+                            </strong>
+
+                        </div>
+
+
+                        <div>
+
+                            <span>Referred By</span>
+
+                            <strong>
+                                ${escapeHTML(
+                                    user.referredBy ||
+                                    "None"
+                                )}
+                            </strong>
+
+                        </div>
+
+
+                        <div>
+
+                            <span>Account Status</span>
+
+                            <strong>
+                                ${escapeHTML(status)}
+                            </strong>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <!-- =====================================
+                     ACCOUNT DATA
+                ====================================== -->
+
+                <div class="user-details-section">
+
+                    <h4>
+
+                        <i class="fa-solid fa-database"></i>
+
+                        Account Data
+
+                    </h4>
+
+
+                    <div class="user-details-json">
+
+                        <pre>${escapeHTML(
+                            JSON.stringify(
+                                user,
+                                null,
+                                2
+                            )
+                        )}</pre>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- =========================================
+                 FOOTER
+            ========================================== -->
+
+            <div class="admin-modal-footer">
+
+                <button
+                    type="button"
+                    class="admin-modal-secondary"
+                    id="closeUserDetailsFooter"
+                >
+
+                    <i class="fa-solid fa-xmark"></i>
+
+                    Close
+
+                </button>
+
+            </div>
+
+        </div>
+
+    `;
+
+
+    document.body.appendChild(
+        modal
+    );
+
+
+    /* =====================================================
+       CLOSE MODAL
+    ===================================================== */
+
+    const closeModal = () => {
+
+        modal.remove();
+
+        document.removeEventListener(
+            "keydown",
+            escapeHandler
+        );
+
+    };
+
+
+    /* =====================================================
+       ESCAPE HANDLER
+    ===================================================== */
+
+    const escapeHandler =
+        event => {
+
+            if (
+                event.key === "Escape"
+            ) {
+
+                closeModal();
+
+            }
+
+        };
+
+
+    /* =====================================================
+       CLOSE BUTTON
+    ===================================================== */
+
+    document
+        .getElementById(
+            "closeUserDetailsModal"
+        )
+        ?.addEventListener(
+            "click",
+            closeModal
+        );
+
+
+    document
+        .getElementById(
+            "closeUserDetailsFooter"
+        )
+        ?.addEventListener(
+            "click",
+            closeModal
+        );
+
+
+    /* =====================================================
+       CLICK OUTSIDE
+    ===================================================== */
+
+    modal.addEventListener(
+        "click",
+        event => {
+
+            if (
+                event.target === modal
+            ) {
+
+                closeModal();
+
+            }
+
+        }
+    );
+
+
+    /* =====================================================
+       ESCAPE
+    ===================================================== */
+
+    document.addEventListener(
+        "keydown",
+        escapeHandler
+    );
+
+}
+
+
+/* =========================================================
+   REFRESH USERS
+========================================================= */
+
+function refreshUsers() {
+
+    renderUsers();
+
+    showToast(
+        "Users list refreshed.",
+        "success"
+    );
+}
+
+
+/* =========================================================
+   GLOBAL EXPORTS
+========================================================= */
+
+window.loadUsers =
+    loadUsers;
+
+window.renderUsers =
+    renderUsers;
+
+window.setupUserSearch =
+    setupUserSearch;
+
+window.openUserDetails =
+    openUserDetails;
+
+window.refreshUsers =
+    refreshUsers;
+
+
+console.log(
+    "Money Vault Admin Part 10 loaded — Users List Ready."
+);
+
