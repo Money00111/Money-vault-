@@ -12868,3 +12868,1079 @@ console.log(
 console.log(
     "VIP approval/rejection is protected against duplicate processing."
 );
+
+
+/* =========================================================
+   MONEY VAULT - ADMIN.JS
+   PART 9
+   VIP BUYERS MANAGEMENT
+   CURRENCY: RWF / FRW
+========================================================= */
+
+let allVipBuyers = [];
+let vipBuyerUsers = {};
+let vipBuyerListenersStarted = false;
+
+
+/* =========================================================
+   SAFE HELPERS
+========================================================= */
+
+function vipBuyerValue(value) {
+    const number = Number(value);
+    return Number.isFinite(number) ? number : 0;
+}
+
+function vipBuyerMoney(value) {
+    return formatMoney(vipBuyerValue(value));
+}
+
+function vipBuyerDate(value) {
+    const timestamp = vipBuyerValue(value);
+
+    if (!timestamp) {
+        return "N/A";
+    }
+
+    return formatDate(timestamp);
+}
+
+function vipBuyerStatus(buyer) {
+
+    const storedStatus = String(
+        buyer?.status ||
+        ""
+    ).trim().toLowerCase();
+
+    const activeField = buyer?.active;
+
+    if (
+        storedStatus === "expired" ||
+        activeField === false
+    ) {
+        return "expired";
+    }
+
+    if (
+        storedStatus === "active" ||
+        activeField === true
+    ) {
+        const endDate = vipBuyerValue(
+            buyer?.endDate
+        );
+
+        if (
+            endDate > 0 &&
+            Date.now() >= endDate
+        ) {
+            return "expired";
+        }
+
+        return "active";
+    }
+
+    const endDate = vipBuyerValue(
+        buyer?.endDate
+    );
+
+    if (
+        endDate > 0 &&
+        Date.now() >= endDate
+    ) {
+        return "expired";
+    }
+
+    return "active";
+}
+
+
+/* =========================================================
+   VIP FIELD HELPERS
+========================================================= */
+
+function getVipBuyerName(buyer) {
+
+    return (
+        buyer?.vipName ||
+        buyer?.name ||
+        buyer?.planName ||
+        buyer?.vipPlan ||
+        "VIP Plan"
+    );
+}
+
+function getVipBuyerPrice(buyer) {
+
+    return vipBuyerValue(
+        buyer?.price ??
+        buyer?.vipPrice ??
+        buyer?.amount
+    );
+}
+
+function getVipBuyerDailyIncome(buyer) {
+
+    return vipBuyerValue(
+        buyer?.dailyIncome ??
+        buyer?.daily ??
+        buyer?.dailyProfit
+    );
+}
+
+function getVipBuyerTotalProfit(buyer) {
+
+    return vipBuyerValue(
+        buyer?.totalProfit ??
+        buyer?.profit ??
+        buyer?.totalEarning
+    );
+}
+
+function getVipBuyerDuration(buyer) {
+
+    const directDuration = vipBuyerValue(
+        buyer?.duration ??
+        buyer?.days ??
+        buyer?.durationDays
+    );
+
+    if (directDuration > 0) {
+        return Math.ceil(directDuration);
+    }
+
+    const dailyIncome = getVipBuyerDailyIncome(buyer);
+    const totalProfit = getVipBuyerTotalProfit(buyer);
+
+    if (
+        dailyIncome > 0 &&
+        totalProfit > 0
+    ) {
+        return Math.ceil(
+            totalProfit / dailyIncome
+        );
+    }
+
+    return 0;
+}
+
+function getVipBuyerStartDate(buyer) {
+
+    return vipBuyerValue(
+        buyer?.startDate ??
+        buyer?.approvedAt ??
+        buyer?.createdAt ??
+        buyer?.timestamp
+    );
+}
+
+function getVipBuyerEndDate(buyer) {
+
+    const storedEndDate = vipBuyerValue(
+        buyer?.endDate
+    );
+
+    if (storedEndDate > 0) {
+        return storedEndDate;
+    }
+
+    const startDate = getVipBuyerStartDate(buyer);
+    const duration = getVipBuyerDuration(buyer);
+
+    if (
+        startDate > 0 &&
+        duration > 0
+    ) {
+        return (
+            startDate +
+            duration * 24 * 60 * 60 * 1000
+        );
+    }
+
+    return 0;
+}
+
+
+/* =========================================================
+   USER HELPERS
+========================================================= */
+
+function getVipBuyerUserName(user) {
+
+    return (
+        user?.name ||
+        user?.fullName ||
+        user?.displayName ||
+        user?.username ||
+        "Unknown User"
+    );
+}
+
+function getVipBuyerEmail(user) {
+
+    return (
+        user?.email ||
+        "No email"
+    );
+}
+
+function getVipBuyerPhone(user) {
+
+    return (
+        user?.phone ||
+        user?.phoneNumber ||
+        "N/A"
+    );
+}
+
+function getVipBuyerPhoto(user) {
+
+    return (
+        user?.photoURL ||
+        user?.photoUrl ||
+        user?.profilePhoto ||
+        user?.photo ||
+        ""
+    );
+}
+
+
+/* =========================================================
+   LOAD VIP BUYERS
+========================================================= */
+
+async function loadVipBuyers() {
+
+    await window.waitForAdmin();
+
+    if (vipBuyerListenersStarted) {
+
+        renderVipBuyers();
+
+        return;
+    }
+
+    vipBuyerListenersStarted = true;
+
+
+    /* -----------------------------------------
+       USERS LISTENER
+    ----------------------------------------- */
+
+    if (!listeners.vipBuyerUsers) {
+
+        listeners.vipBuyerUsers = onValue(
+            ref(db, "users"),
+
+            snapshot => {
+
+                vipBuyerUsers =
+                    snapshot.exists()
+                        ? snapshot.val() || {}
+                        : {};
+
+                renderVipBuyers();
+            },
+
+            error => {
+
+                console.error(
+                    "VIP buyer users listener error:",
+                    error
+                );
+
+                showToast(
+                    "Failed to load VIP users.",
+                    "error"
+                );
+            }
+        );
+    }
+
+
+    /* -----------------------------------------
+       VIP BUYERS LISTENER
+    ----------------------------------------- */
+
+    if (!listeners.vipBuyers) {
+
+        listeners.vipBuyers = onValue(
+            ref(db, "vipBuyers"),
+
+            snapshot => {
+
+                const data =
+                    snapshot.exists()
+                        ? snapshot.val() || {}
+                        : {};
+
+                allVipBuyers =
+                    Object.entries(data).map(
+                        ([id, buyer]) => ({
+                            id,
+                            ...(buyer || {})
+                        })
+                    );
+
+
+                /* ---------------------------------
+                   SORT NEWEST FIRST
+                --------------------------------- */
+
+                allVipBuyers.sort(
+                    (a, b) => {
+
+                        const dateA =
+                            getVipBuyerStartDate(a);
+
+                        const dateB =
+                            getVipBuyerStartDate(b);
+
+                        return dateB - dateA;
+                    }
+                );
+
+                renderVipBuyers();
+            },
+
+            error => {
+
+                console.error(
+                    "VIP buyers listener error:",
+                    error
+                );
+
+                showToast(
+                    "Failed to load VIP buyers.",
+                    "error"
+                );
+            }
+        );
+    }
+
+
+    setupVipBuyerSearch();
+
+    renderVipBuyers();
+}
+
+
+/* =========================================================
+   RENDER VIP BUYERS
+========================================================= */
+
+function renderVipBuyers() {
+
+    const list =
+        document.getElementById(
+            "vipBuyerList"
+        );
+
+    const empty =
+        document.getElementById(
+            "emptyVipBuyer"
+        );
+
+    if (!list) {
+        return;
+    }
+
+
+    /* -----------------------------------------
+       COUNTERS
+    ----------------------------------------- */
+
+    let total = 0;
+    let active = 0;
+    let expired = 0;
+
+    allVipBuyers.forEach(
+        buyer => {
+
+            total++;
+
+            const status =
+                vipBuyerStatus(buyer);
+
+            if (status === "active") {
+                active++;
+            }
+
+            if (status === "expired") {
+                expired++;
+            }
+        }
+    );
+
+
+    updateText(
+        "vipBuyerTotalCount",
+        total.toLocaleString("en-US")
+    );
+
+    updateText(
+        "vipBuyerActiveCount",
+        active.toLocaleString("en-US")
+    );
+
+    updateText(
+        "vipBuyerExpiredCount",
+        expired.toLocaleString("en-US")
+    );
+
+
+    /* -----------------------------------------
+       SEARCH
+    ----------------------------------------- */
+
+    const searchInput =
+        document.getElementById(
+            "vipBuyerSearch"
+        );
+
+    const search =
+        String(
+            searchInput?.value || ""
+        )
+            .trim()
+            .toLowerCase();
+
+
+    /* -----------------------------------------
+       FILTER
+    ----------------------------------------- */
+
+    const filterElement =
+        document.getElementById(
+            "vipBuyerFilter"
+        );
+
+    const filter =
+        String(
+            filterElement?.value || "all"
+        )
+            .trim()
+            .toLowerCase();
+
+
+    /* -----------------------------------------
+       FILTER DATA
+    ----------------------------------------- */
+
+    const filtered =
+        allVipBuyers.filter(
+            buyer => {
+
+                const status =
+                    vipBuyerStatus(buyer);
+
+                if (
+                    filter !== "all" &&
+                    status !== filter
+                ) {
+                    return false;
+                }
+
+
+                const user =
+                    vipBuyerUsers[
+                        buyer.uid
+                    ] || {};
+
+
+                const searchable = [
+
+                    buyer.id,
+
+                    buyer.uid,
+
+                    getVipBuyerName(buyer),
+
+                    user.name,
+
+                    user.fullName,
+
+                    user.displayName,
+
+                    user.username,
+
+                    user.email,
+
+                    user.phone,
+
+                    user.phoneNumber,
+
+                    buyer.price,
+
+                    buyer.dailyIncome,
+
+                    buyer.totalProfit,
+
+                    buyer.status
+
+                ]
+                    .filter(Boolean)
+                    .join(" ")
+                    .toLowerCase();
+
+
+                return (
+                    !search ||
+                    searchable.includes(search)
+                );
+            }
+        );
+
+
+    /* -----------------------------------------
+       EMPTY STATE
+    ----------------------------------------- */
+
+    if (!filtered.length) {
+
+        list.innerHTML = "";
+
+        if (empty) {
+
+            empty.style.display =
+                "block";
+
+            empty.innerHTML = `
+                <div class="empty-state">
+
+                    <i class="fa-solid fa-crown"></i>
+
+                    <h3>
+                        No VIP Buyers
+                    </h3>
+
+                    <p>
+                        No VIP buyers match
+                        your search or filter.
+                    </p>
+
+                </div>
+            `;
+        }
+
+        return;
+    }
+
+
+    if (empty) {
+        empty.style.display = "none";
+    }
+
+
+    /* -----------------------------------------
+       CARDS
+    ----------------------------------------- */
+
+    list.innerHTML =
+        filtered
+            .map(
+                buyer =>
+                    renderVipBuyerCard(
+                        buyer,
+                        vipBuyerUsers[
+                            buyer.uid
+                        ] || {}
+                    )
+            )
+            .join("");
+}
+
+
+/* =========================================================
+   VIP BUYER CARD
+========================================================= */
+
+function renderVipBuyerCard(
+    buyer,
+    user
+) {
+
+    const status =
+        vipBuyerStatus(buyer);
+
+
+    const statusClass =
+        status === "active"
+            ? "active"
+            : "expired";
+
+
+    const vipName =
+        getVipBuyerName(buyer);
+
+    const price =
+        getVipBuyerPrice(buyer);
+
+    const dailyIncome =
+        getVipBuyerDailyIncome(buyer);
+
+    const totalProfit =
+        getVipBuyerTotalProfit(buyer);
+
+    const duration =
+        getVipBuyerDuration(buyer);
+
+    const startDate =
+        getVipBuyerStartDate(buyer);
+
+    const endDate =
+        getVipBuyerEndDate(buyer);
+
+
+    const claimedAmount =
+        vipBuyerValue(
+            buyer?.claimedAmount
+        );
+
+    const totalEarned =
+        vipBuyerValue(
+            buyer?.totalEarned
+        );
+
+    const claimCount =
+        vipBuyerValue(
+            buyer?.claimCount
+        );
+
+    const lastClaim =
+        vipBuyerValue(
+            buyer?.lastClaim
+        );
+
+
+    const userName =
+        getVipBuyerUserName(user);
+
+    const email =
+        getVipBuyerEmail(user);
+
+    const phone =
+        getVipBuyerPhone(user);
+
+    const photo =
+        getVipBuyerPhoto(user);
+
+
+    /* -----------------------------------------
+       AVATAR
+    ----------------------------------------- */
+
+    let avatarHTML = `
+        <div class="vip-buyer-avatar">
+            <i class="fa-solid fa-user"></i>
+        </div>
+    `;
+
+
+    if (photo) {
+
+        avatarHTML = `
+            <div class="vip-buyer-avatar">
+                <img
+                    src="${escapeHTML(photo)}"
+                    alt="User"
+                    onerror="
+                        this.style.display='none';
+                        this.parentElement
+                            .classList.add('avatar-error');
+                    "
+                >
+            </div>
+        `;
+    }
+
+
+    /* -----------------------------------------
+       STATUS ICON
+    ----------------------------------------- */
+
+    const statusIcon =
+        status === "active"
+            ? "fa-circle-check"
+            : "fa-circle-xmark";
+
+
+    return `
+        <article
+            class="vip-buyer-card"
+            data-id="${escapeHTML(buyer.id)}"
+        >
+
+            <!-- HEADER -->
+
+            <div class="vip-buyer-header">
+
+                <div class="vip-buyer-user">
+
+                    ${avatarHTML}
+
+                    <div>
+
+                        <h3>
+                            ${escapeHTML(userName)}
+                        </h3>
+
+                        <p>
+                            ${escapeHTML(email)}
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+                <div
+                    class="
+                        vip-buyer-status
+                        status-${escapeHTML(statusClass)}
+                    "
+                >
+
+                    <i
+                        class="
+                            fa-solid
+                            ${statusIcon}
+                        "
+                    ></i>
+
+                    ${escapeHTML(
+                        status
+                    )}
+
+                </div>
+
+            </div>
+
+
+            <!-- VIP NAME -->
+
+            <div class="vip-buyer-plan">
+
+                <i class="fa-solid fa-crown"></i>
+
+                <strong>
+                    ${escapeHTML(vipName)}
+                </strong>
+
+            </div>
+
+
+            <!-- PRICE -->
+
+            <div class="vip-buyer-price">
+
+                <span>
+                    VIP Price
+                </span>
+
+                <strong>
+                    ${escapeHTML(
+                        vipBuyerMoney(price)
+                    )}
+                </strong>
+
+            </div>
+
+
+            <!-- MAIN DETAILS -->
+
+            <div class="vip-buyer-details">
+
+                <div>
+
+                    <span>
+                        <i class="fa-solid fa-coins"></i>
+                        Daily Income
+                    </span>
+
+                    <strong>
+                        ${escapeHTML(
+                            vipBuyerMoney(
+                                dailyIncome
+                            )
+                        )}
+                    </strong>
+
+                </div>
+
+
+                <div>
+
+                    <span>
+                        <i class="fa-solid fa-chart-line"></i>
+                        Total Profit
+                    </span>
+
+                    <strong>
+                        ${escapeHTML(
+                            vipBuyerMoney(
+                                totalProfit
+                            )
+                        )}
+                    </strong>
+
+                </div>
+
+
+                <div>
+
+                    <span>
+                        <i class="fa-solid fa-calendar-days"></i>
+                        Duration
+                    </span>
+
+                    <strong>
+                        ${
+                            duration > 0
+                                ? `${duration} Days`
+                                : "N/A"
+                        }
+                    </strong>
+
+                </div>
+
+
+                <div>
+
+                    <span>
+                        <i class="fa-solid fa-phone"></i>
+                        Phone
+                    </span>
+
+                    <strong>
+                        ${escapeHTML(phone)}
+                    </strong>
+
+                </div>
+
+            </div>
+
+
+            <!-- EARNINGS -->
+
+            <div class="vip-buyer-earnings">
+
+                <div>
+
+                    <span>
+                        Claimed Amount
+                    </span>
+
+                    <strong>
+                        ${escapeHTML(
+                            vipBuyerMoney(
+                                claimedAmount
+                            )
+                        )}
+                    </strong>
+
+                </div>
+
+
+                <div>
+
+                    <span>
+                        Total Earned
+                    </span>
+
+                    <strong>
+                        ${escapeHTML(
+                            vipBuyerMoney(
+                                totalEarned
+                            )
+                        )}
+                    </strong>
+
+                </div>
+
+
+                <div>
+
+                    <span>
+                        Claim Count
+                    </span>
+
+                    <strong>
+                        ${claimCount.toLocaleString(
+                            "en-US"
+                        )}
+                    </strong>
+
+                </div>
+
+            </div>
+
+
+            <!-- DATES -->
+
+            <div class="vip-buyer-dates">
+
+                <div>
+
+                    <span>
+                        <i class="fa-solid fa-play"></i>
+                        Started
+                    </span>
+
+                    <strong>
+                        ${escapeHTML(
+                            vipBuyerDate(
+                                startDate
+                            )
+                        )}
+                    </strong>
+
+                </div>
+
+
+                <div>
+
+                    <span>
+                        <i class="fa-solid fa-flag-checkered"></i>
+                        Ends
+                    </span>
+
+                    <strong>
+                        ${escapeHTML(
+                            vipBuyerDate(
+                                endDate
+                            )
+                        )}
+                    </strong>
+
+                </div>
+
+
+                <div>
+
+                    <span>
+                        <i class="fa-solid fa-clock"></i>
+                        Last Claim
+                    </span>
+
+                    <strong>
+                        ${escapeHTML(
+                            vipBuyerDate(
+                                lastClaim
+                            )
+                        )}
+                    </strong>
+
+                </div>
+
+            </div>
+
+
+            <!-- META -->
+
+            <div class="vip-buyer-meta">
+
+                <span>
+                    UID:
+                    ${escapeHTML(
+                        buyer.uid || "N/A"
+                    )}
+                </span>
+
+                <span>
+                    Buyer ID:
+                    ${escapeHTML(
+                        buyer.id
+                    )}
+                </span>
+
+            </div>
+
+        </article>
+    `;
+}
+
+
+/* =========================================================
+   SEARCH + FILTER
+========================================================= */
+
+function setupVipBuyerSearch() {
+
+    const search =
+        document.getElementById(
+            "vipBuyerSearch"
+        );
+
+    const filter =
+        document.getElementById(
+            "vipBuyerFilter"
+        );
+
+
+    if (
+        search &&
+        search.dataset.bound !== "true"
+    ) {
+
+        search.dataset.bound = "true";
+
+        search.addEventListener(
+            "input",
+            renderVipBuyers
+        );
+    }
+
+
+    if (
+        filter &&
+        filter.dataset.bound !== "true"
+    ) {
+
+        filter.dataset.bound = "true";
+
+        filter.addEventListener(
+            "change",
+            renderVipBuyers
+        );
+    }
+}
+
+
+/* =========================================================
+   AUTO CHECK EXPIRATION
+========================================================= */
+
+function refreshVipBuyerStatuses() {
+
+    if (
+        !allVipBuyers ||
+        !allVipBuyers.length
+    ) {
+        return;
+    }
+
+    renderVipBuyers();
+}
+
+
+/* =========================================================
+   GLOBAL EXPORTS
+========================================================= */
+
+window.loadVipBuyers =
+    loadVipBuyers;
+
+window.renderVipBuyers =
+    renderVipBuyers;
+
+window.setupVipBuyerSearch =
+    setupVipBuyerSearch;
+
+window.refreshVipBuyerStatuses =
+    refreshVipBuyerStatuses;
+
+
+console.log(
+    "Money Vault Admin Part 9 loaded."
+);
+
