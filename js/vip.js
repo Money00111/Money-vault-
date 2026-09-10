@@ -354,60 +354,57 @@ function getVipName(plan) {
    CHECK IF USER ALREADY OWNS THIS EXACT PLAN
 --------------------------------------------------------- */
 
-function hasActiveVipByPlan(planId, vipName = "") {
+            
+            function hasActiveVipByPlan(planId, vipName = "") {
 
-    const targetId = normalizePlanId(planId);
-    const targetName = normalizeName(vipName);
-
-    if (!targetId && !targetName) {
-        return false;
-    }
+    const targetId = String(planId || "").trim().toLowerCase();
+    const targetName = String(vipName || "").trim().toLowerCase();
 
     const ownedPlans = userVipPlans || {};
 
-    return Object.entries(ownedPlans).some(
-        ([firebaseKey, vip]) => {
+    return Object.entries(ownedPlans).some(([key, vip]) => {
 
-            if (!vip || typeof vip !== "object") {
-                return false;
-            }
-
-            const status = normalizeStatus(vip.status);
-
-            if (
-                status !== "active" &&
-                status !== "approved" &&
-                status !== "completed"
-            ) {
-                return false;
-            }
-
-            const ownedId = getOwnedPlanId(
-                vip,
-                firebaseKey
-            );
-
-            /*
-               IMPORTANT:
-               Different Plan IDs are ALWAYS allowed.
-            */
-            if (targetId && ownedId) {
-                return ownedId === targetId;
-            }
-
-            /*
-               Fallback for old data without plan ID.
-            */
-            if (targetName) {
-                return (
-                    normalizeName(getVipName(vip)) ===
-                    targetName
-                );
-            }
-
+        if (!vip || typeof vip !== "object") {
             return false;
         }
-    );
+
+        const status = String(vip.status || "").trim().toLowerCase();
+
+        if (status !== "active" && status !== "approved") {
+            return false;
+        }
+
+        const ownedId = String(
+            vip.vipPlanId ||
+            vip.planId ||
+            vip.vipId ||
+            key ||
+            ""
+        ).trim().toLowerCase();
+
+        const ownedName = String(
+            vip.vipName ||
+            vip.name ||
+            ""
+        ).trim().toLowerCase();
+
+        /*
+         * ID exists:
+         * compare ONLY the plan ID.
+         */
+        if (targetId && ownedId) {
+            return targetId === ownedId;
+        }
+
+        /*
+         * Fallback for old VIP records.
+         */
+        if (targetName && ownedName) {
+            return targetName === ownedName;
+        }
+
+        return false;
+    });
 }
 
 
