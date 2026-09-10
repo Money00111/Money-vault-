@@ -3,7 +3,7 @@
 // COMPLETE CLEAN VERSION
 // CURRENCY: RWF / FRW
 //
-// RULES
+// VIP RULES
 // ---------------------------------------------------------
 // 1. User can own MANY DIFFERENT VIP plans.
 // 2. Same VIP PLAN ID cannot be purchased twice.
@@ -12,13 +12,17 @@
 // 5. Purchase creates a REQUEST.
 // 6. Admin approves the request.
 // 7. VIP becomes ACTIVE only after Admin approval.
-// 8. Daily income can be claimed once every 24 hours.
-// 9. VIP plans are loaded from: vipPlans
-// 10. User VIP ownership is loaded from:
+// 8. APPROVAL DOES NOT GIVE PROFIT.
+// 9. FIRST CLAIM IS AVAILABLE 24 HOURS AFTER APPROVAL.
+// 10. Every VIP has its OWN 24-HOUR CLAIM TIMER.
+// 11. After claiming, that VIP starts another 24-hour timer.
+// 12. VIP plans are loaded from: vipPlans
+// 13. User VIP ownership is loaded from:
 //       users/{uid}/vipPlans
-// 11. Purchase requests are loaded from:
+// 14. Purchase requests are loaded from:
 //       vipPurchaseRequests
 // =========================================================
+
 
 import { auth, db } from "./firebase.js";
 
@@ -74,8 +78,6 @@ const totalProfitEl =
 const ownedVipList =
     document.getElementById("ownedVipList");
 
-// IMPORTANT:
-// HTML uses id="claimDailyIncome"
 const claimBtn =
     document.getElementById("claimDailyIncome");
 
@@ -196,7 +198,10 @@ function formatDate(timestamp) {
 
 function getVipName(plan) {
 
-    if (!plan || typeof plan !== "object") {
+    if (
+        !plan ||
+        typeof plan !== "object"
+    ) {
         return "";
     }
 
@@ -249,6 +254,7 @@ function getPlanTotalProfit(plan) {
         );
 
     if (explicit > 0) {
+
         return explicit;
     }
 
@@ -266,6 +272,178 @@ function showMessage(message) {
 
 
 // =========================================================
+// GET VIP APPROVAL / CLAIM START TIME
+// =========================================================
+//
+// IMPORTANT:
+//
+// The most important value is:
+//
+// plan.lastClaim
+//
+// When Admin approves a VIP, Admin should set:
+//
+// lastClaim = Date.now()
+//
+// That means the first claim becomes available exactly
+// 24 hours after Admin approval.
+//
+// For older VIP records, we also support:
+// approvedAt
+// startDate
+// purchasedAt
+// =========================================================
+
+function getVipClaimStartTime(plan) {
+
+    if (
+        !plan ||
+        typeof plan !== "object"
+    ) {
+        return 0;
+    }
+
+    const lastClaim =
+        numberValue(
+            plan.lastClaim
+        );
+
+    if (lastClaim > 0) {
+        return lastClaim;
+    }
+
+    const approvedAt =
+        numberValue(
+            plan.approvedAt
+        );
+
+    if (approvedAt > 0) {
+        return approvedAt;
+    }
+
+    const startDate =
+        numberValue(
+            plan.startDate
+        );
+
+    if (startDate > 0) {
+        return startDate;
+    }
+
+    const purchasedAt =
+        numberValue(
+            plan.purchasedAt
+        );
+
+    if (purchasedAt > 0) {
+        return purchasedAt;
+    }
+
+    return 0;
+}
+
+
+// =========================================================
+// CHECK IF VIP IS ACTIVE
+// =========================================================
+
+function isVipActive(plan) {
+
+    if (
+        !plan ||
+        typeof plan !== "object"
+    ) {
+        return false;
+    }
+
+    const status =
+        normalizeStatus(
+            plan.status
+        );
+
+    if (status !== "active") {
+        return false;
+    }
+
+    const endDate =
+        numberValue(
+            plan.endDate
+        );
+
+    if (
+        endDate > 0 &&
+        Date.now() >= endDate
+    ) {
+        return false;
+    }
+
+    return true;
+}
+
+
+// =========================================================
+// CHECK IF VIP CAN CLAIM
+// =========================================================
+
+function canVipClaim(plan) {
+
+    if (!isVipActive(plan)) {
+        return false;
+    }
+
+    const now =
+        Date.now();
+
+    const claimStart =
+        getVipClaimStartTime(plan);
+
+    // No approval/claim timestamp
+    // means NOT ready.
+    if (claimStart <= 0) {
+        return false;
+    }
+
+    return (
+        now - claimStart >=
+        ONE_DAY
+    );
+}
+
+
+// =========================================================
+// TIME REMAINING FOR VIP
+// =========================================================
+
+function getVipRemainingClaimTime(plan) {
+
+    if (!isVipActive(plan)) {
+
+        return null;
+    }
+
+    const claimStart =
+        getVipClaimStartTime(plan);
+
+    if (claimStart <= 0) {
+
+        return null;
+    }
+
+    const remaining =
+        ONE_DAY -
+        (
+            Date.now() -
+            claimStart
+        );
+
+    return Math.max(
+        0,
+        remaining
+    );
+}
+
+
+// =========================================================
 // MOBILE MENU
 // =========================================================
 
@@ -276,12 +454,10 @@ menuBtn?.addEventListener(
         sidebar?.classList.toggle(
             "active"
         );
-
     }
 );
 
 
-// Close sidebar after clicking a link
 document
     .querySelectorAll(".sidebar a")
     .forEach(link => {
@@ -297,12 +473,9 @@ document
                     sidebar?.classList.remove(
                         "active"
                     );
-
                 }
-
             }
         );
-
     });
 
 
@@ -333,9 +506,7 @@ logoutBtn?.addEventListener(
             showMessage(
                 "Unable to logout."
             );
-
         }
-
     }
 );
 
@@ -354,7 +525,6 @@ function updateBalanceUI() {
         money(
             userData.balance
         );
-
 }
 
 
@@ -375,7 +545,6 @@ function getOwnedPlanId(
         return normalizePlanId(
             fallbackKey
         );
-
     }
 
     const explicitId =
@@ -391,7 +560,6 @@ function getOwnedPlanId(
         return normalizePlanId(
             explicitId
         );
-
     }
 
     return normalizePlanId(
@@ -412,7 +580,6 @@ function getRequestPlanId(request) {
     ) {
 
         return "";
-
     }
 
     return normalizePlanId(
@@ -452,7 +619,6 @@ function hasActiveVipByPlan(
             ) {
 
                 return false;
-
             }
 
             const status =
@@ -466,7 +632,6 @@ function hasActiveVipByPlan(
             ) {
 
                 return false;
-
             }
 
             const ownedId =
@@ -484,7 +649,6 @@ function hasActiveVipByPlan(
                     .trim()
                     .toLowerCase();
 
-            // ID is primary identity
             if (
                 targetId &&
                 ownedId
@@ -494,10 +658,8 @@ function hasActiveVipByPlan(
                     targetId ===
                     ownedId
                 );
-
             }
 
-            // Legacy fallback
             if (
                 targetName &&
                 ownedName
@@ -507,14 +669,11 @@ function hasActiveVipByPlan(
                     targetName ===
                     ownedName
                 );
-
             }
 
             return false;
-
         }
     );
-
 }
 
 
@@ -546,7 +705,6 @@ function hasPendingVipRequest(
             ) {
 
                 return false;
-
             }
 
             const status =
@@ -559,7 +717,6 @@ function hasPendingVipRequest(
             ) {
 
                 return false;
-
             }
 
             const requestId =
@@ -585,7 +742,6 @@ function hasPendingVipRequest(
                     targetId ===
                     requestId
                 );
-
             }
 
             if (
@@ -597,14 +753,11 @@ function hasPendingVipRequest(
                     targetName ===
                     requestName
                 );
-
             }
 
             return false;
-
         }
     );
-
 }
 
 
@@ -648,7 +801,6 @@ function renderVipPlans() {
         `;
 
         return;
-
     }
 
 
@@ -661,12 +813,8 @@ function renderVipPlans() {
             ) {
 
                 return;
-
             }
 
-            // ---------------------------------------------
-            // PLAN ID
-            // ---------------------------------------------
 
             const planId =
                 normalizePlanId(
@@ -705,18 +853,6 @@ function renderVipPlans() {
             const rawStatus =
                 plan.status;
 
-
-            /*
-             * Support both:
-             *
-             * status: true
-             * status: "active"
-             *
-             * and:
-             *
-             * active: true
-             */
-
             const status =
                 normalizeStatus(
                     rawStatus
@@ -729,11 +865,8 @@ function renderVipPlans() {
                 plan.active === true ||
                 plan.enabled === true;
 
-
             if (!isAvailable) {
-
                 return;
-
             }
 
 
@@ -746,7 +879,6 @@ function renderVipPlans() {
                     planId,
                     vipName
                 );
-
 
             const pending =
                 hasPendingVipRequest(
@@ -891,7 +1023,7 @@ function renderVipPlans() {
 
 
 // =========================================================
-// LOAD VIP PLANS FROM FIREBASE
+// LOAD VIP PLANS
 // =========================================================
 
 function loadVipPackages() {
@@ -901,7 +1033,6 @@ function loadVipPackages() {
     ) {
 
         return;
-
     }
 
     vipPlansListenerStarted =
@@ -922,6 +1053,7 @@ function loadVipPackages() {
         snapshot => {
 
             availableVipPlans = {};
+
 
             if (
                 snapshot.exists()
@@ -978,13 +1110,9 @@ function loadVipPackages() {
                     </div>
 
                 `;
-
             }
-
         }
-
     );
-
 }
 
 
@@ -1000,8 +1128,8 @@ function startUserListener() {
     ) {
 
         return;
-
     }
+
 
     userListenerStarted =
         true;
@@ -1041,8 +1169,9 @@ function startUserListener() {
 
                 updateVipButtons();
 
-                return;
+                updateClaimTimer();
 
+                return;
             }
 
 
@@ -1056,13 +1185,18 @@ function startUserListener() {
 
             updateBalanceUI();
 
+
             checkLocalVipExpiration();
+
 
             calculateVipTotals();
 
+
             renderOwnedVipPlans();
 
+
             updateVipButtons();
+
 
             updateClaimTimer();
 
@@ -1076,9 +1210,7 @@ function startUserListener() {
             );
 
         }
-
     );
-
 }
 
 
@@ -1094,8 +1226,8 @@ function loadUserVipRequests() {
     ) {
 
         return;
-
     }
+
 
     requestListenerStarted =
         true;
@@ -1161,9 +1293,7 @@ function loadUserVipRequests() {
             );
 
         }
-
     );
-
 }
 
 
@@ -1216,7 +1346,6 @@ async function loadUserVipRequestsOnce() {
         );
 
     }
-
 }
 
 
@@ -1254,7 +1383,6 @@ function updateVipButtons() {
                     "Unavailable";
 
                 return;
-
             }
 
 
@@ -1296,7 +1424,6 @@ function updateVipButtons() {
                 `;
 
                 return;
-
             }
 
 
@@ -1317,7 +1444,6 @@ function updateVipButtons() {
                 `;
 
                 return;
-
             }
 
 
@@ -1333,7 +1459,6 @@ function updateVipButtons() {
             `;
 
         });
-
 }
 
 
@@ -1350,7 +1475,6 @@ async function buyVip(button) {
         );
 
         return;
-
     }
 
 
@@ -1360,7 +1484,6 @@ async function buyVip(button) {
     ) {
 
         return;
-
     }
 
 
@@ -1407,7 +1530,6 @@ async function buyVip(button) {
         );
 
         return;
-
     }
 
 
@@ -1418,7 +1540,6 @@ async function buyVip(button) {
         );
 
         return;
-
     }
 
 
@@ -1433,7 +1554,6 @@ async function buyVip(button) {
         );
 
         return;
-
     }
 
 
@@ -1455,7 +1575,6 @@ async function buyVip(button) {
         );
 
         return;
-
     }
 
 
@@ -1477,7 +1596,6 @@ async function buyVip(button) {
         );
 
         return;
-
     }
 
 
@@ -1508,7 +1626,6 @@ async function buyVip(button) {
         );
 
         return;
-
     }
 
 
@@ -1533,7 +1650,11 @@ async function buyVip(button) {
             duration +
             " Days\n\n" +
 
-            "The VIP will become active after Admin approval."
+            "The VIP will become active after Admin approval.\n\n" +
+
+            "No profit will be credited at approval.\n" +
+
+            "First claim becomes available 24 hours after approval."
 
         );
 
@@ -1582,7 +1703,6 @@ async function buyVip(button) {
             throw new Error(
                 "User account not found."
             );
-
         }
 
 
@@ -1611,7 +1731,6 @@ async function buyVip(button) {
             throw new Error(
                 "You already have this VIP active."
             );
-
         }
 
 
@@ -1625,7 +1744,6 @@ async function buyVip(button) {
             throw new Error(
                 "You already have a pending request for this VIP."
             );
-
         }
 
 
@@ -1646,7 +1764,6 @@ async function buyVip(button) {
             throw new Error(
                 "Insufficient Balance."
             );
-
         }
 
 
@@ -1725,7 +1842,6 @@ async function buyVip(button) {
 
             requestId:
                 requestId
-
         };
 
 
@@ -1753,7 +1869,11 @@ async function buyVip(button) {
 
             "Status: Pending\n\n" +
 
-            "Your VIP will activate after Admin approval."
+            "The VIP will become ACTIVE only after Admin approval.\n\n" +
+
+            "No profit will be credited at approval.\n\n" +
+
+            "First claim: 24 hours after Admin approval."
 
         );
 
@@ -1780,10 +1900,7 @@ async function buyVip(button) {
             "Unable to submit VIP request."
 
         );
-
-
     }
-
 }
 
 
@@ -1793,12 +1910,8 @@ async function buyVip(button) {
 
 function checkLocalVipExpiration() {
 
-    if (
-        !userVipPlans
-    ) {
-
+    if (!userVipPlans) {
         return;
-
     }
 
 
@@ -1821,7 +1934,6 @@ function checkLocalVipExpiration() {
             ) {
 
                 return;
-
             }
 
 
@@ -1836,7 +1948,6 @@ function checkLocalVipExpiration() {
             ) {
 
                 return;
-
             }
 
 
@@ -1862,7 +1973,6 @@ function checkLocalVipExpiration() {
 
                 changed =
                     true;
-
             }
 
         }
@@ -1878,7 +1988,6 @@ function checkLocalVipExpiration() {
         updateVipButtons();
 
     }
-
 }
 
 
@@ -1891,8 +2000,10 @@ function calculateVipTotals() {
     let totalDaily =
         0;
 
+
     let totalRemainingProfit =
         0;
+
 
     let activeCount =
         0;
@@ -1907,12 +2018,8 @@ function calculateVipTotals() {
     ).forEach(
         plan => {
 
-            if (
-                !plan
-            ) {
-
+            if (!plan) {
                 return;
-
             }
 
 
@@ -1927,7 +2034,6 @@ function calculateVipTotals() {
             ) {
 
                 return;
-
             }
 
 
@@ -1943,7 +2049,6 @@ function calculateVipTotals() {
             ) {
 
                 return;
-
             }
 
 
@@ -1976,8 +2081,10 @@ function calculateVipTotals() {
 
             activeCount++;
 
+
             totalDaily +=
                 daily;
+
 
             totalRemainingProfit +=
                 remaining;
@@ -1991,7 +2098,6 @@ function calculateVipTotals() {
         currentVipEl.textContent =
             activeCount +
             " Active VIP Plan(s)";
-
     }
 
 
@@ -2001,7 +2107,6 @@ function calculateVipTotals() {
             money(
                 totalDaily
             );
-
     }
 
 
@@ -2011,9 +2116,7 @@ function calculateVipTotals() {
             money(
                 totalRemainingProfit
             );
-
     }
-
 }
 
 
@@ -2061,7 +2164,6 @@ function renderOwnedVipPlans() {
         `;
 
         return;
-
     }
 
 
@@ -2081,7 +2183,6 @@ function renderOwnedVipPlans() {
                 a.startDate ||
                 a.purchasedAt
             )
-
     );
 
 
@@ -2154,7 +2255,6 @@ function renderOwnedVipPlans() {
                             ONE_DAY
                         )
                     );
-
             }
 
 
@@ -2191,6 +2291,49 @@ function renderOwnedVipPlans() {
                         ).toUpperCase();
 
 
+            // -------------------------------------------------
+            // CLAIM STATUS
+            // -------------------------------------------------
+
+            let claimStatus =
+                "Waiting for approval";
+
+
+            let claimStatusClass =
+                "waiting";
+
+
+            if (isActive) {
+
+                const remainingTime =
+                    getVipRemainingClaimTime(
+                        plan
+                    );
+
+
+                if (
+                    canVipClaim(plan)
+                ) {
+
+                    claimStatus =
+                        "READY TO CLAIM";
+
+                    claimStatusClass =
+                        "ready";
+
+                } else if (
+                    remainingTime !== null
+                ) {
+
+                    claimStatus =
+                        "24h timer running";
+
+                    claimStatusClass =
+                        "waiting";
+                }
+            }
+
+
             const card =
                 document.createElement(
                     "div"
@@ -2212,6 +2355,7 @@ function renderOwnedVipPlans() {
                         ${name}
 
                     </h3>
+
 
                     <span
                         class="vip-status ${
@@ -2283,6 +2427,17 @@ function renderOwnedVipPlans() {
 
                     </p>
 
+
+                    <p class="vip-claim-status ${claimStatusClass}">
+
+                        <strong>
+                            Claim:
+                        </strong>
+
+                        ${claimStatus}
+
+                    </p>
+
                 </div>
 
             `;
@@ -2294,12 +2449,33 @@ function renderOwnedVipPlans() {
 
         }
     );
-
 }
 
 
 // =========================================================
 // CLAIM DAILY INCOME
+// =========================================================
+//
+// IMPORTANT:
+//
+// We DO NOT use user.lastClaim as the main 24h lock.
+//
+// Each VIP has its OWN:
+//
+// vipPlans/{planId}/lastClaim
+//
+// Admin approval:
+//
+// lastClaim = approval timestamp
+//
+// First claim:
+//
+// approval timestamp + 24 hours
+//
+// After claim:
+//
+// lastClaim = claim timestamp
+//
 // =========================================================
 
 claimBtn?.addEventListener(
@@ -2317,7 +2493,6 @@ async function claimDailyIncome() {
         );
 
         return;
-
     }
 
 
@@ -2326,7 +2501,6 @@ async function claimDailyIncome() {
     ) {
 
         return;
-
     }
 
 
@@ -2357,7 +2531,6 @@ async function claimDailyIncome() {
             throw new Error(
                 "User account not found."
             );
-
         }
 
 
@@ -2373,78 +2546,31 @@ async function claimDailyIncome() {
             Date.now();
 
 
-        const lastClaim =
-            numberValue(
-                user.lastClaim
-            );
-
-
-        // -------------------------------------------------
-        // GLOBAL 24 HOUR LOCK
-        // -------------------------------------------------
-
-        if (
-            lastClaim > 0 &&
-            now - lastClaim < ONE_DAY
-        ) {
-
-            const remaining =
-                ONE_DAY -
-                (
-                    now -
-                    lastClaim
-                );
-
-
-            const hours =
-                Math.floor(
-                    remaining /
-                    3600000
-                );
-
-
-            const minutes =
-                Math.floor(
-                    (
-                        remaining %
-                        3600000
-                    ) /
-                    60000
-                );
-
-
-            throw new Error(
-
-                "Daily income already claimed.\n\n" +
-
-                "Try again after " +
-                hours +
-                "h " +
-                minutes +
-                "m."
-
-            );
-
-        }
-
-
         let totalIncome =
             0;
 
 
-        let activeCount =
+        let claimableCount =
             0;
 
 
         const updates = {};
 
 
+        // =================================================
+        // CHECK EVERY VIP SEPARATELY
+        // =================================================
+
         Object.entries(
             plans
         ).forEach(
             ([id, plan]) => {
 
-                if (!plan) {
+                if (
+                    !plan ||
+                    typeof plan !== "object"
+                ) {
+
                     return;
                 }
 
@@ -2455,14 +2581,21 @@ async function claimDailyIncome() {
                     );
 
 
+                // -------------------------------------------------
+                // ONLY ACTIVE VIP
+                // -------------------------------------------------
+
                 if (
                     status !== "active"
                 ) {
 
                     return;
-
                 }
 
+
+                // -------------------------------------------------
+                // CHECK EXPIRATION
+                // -------------------------------------------------
 
                 const endDate =
                     numberValue(
@@ -2500,9 +2633,49 @@ async function claimDailyIncome() {
 
 
                     return;
-
                 }
 
+
+                // -------------------------------------------------
+                // CHECK 24 HOURS FROM APPROVAL / LAST CLAIM
+                // -------------------------------------------------
+
+                const claimStart =
+                    getVipClaimStartTime(
+                        plan
+                    );
+
+
+                // No approval timestamp
+                // = NOT eligible
+                if (
+                    claimStart <= 0
+                ) {
+
+                    return;
+                }
+
+
+                const elapsed =
+                    now -
+                    claimStart;
+
+
+                // -------------------------------------------------
+                // NOT YET 24 HOURS
+                // -------------------------------------------------
+
+                if (
+                    elapsed < ONE_DAY
+                ) {
+
+                    return;
+                }
+
+
+                // -------------------------------------------------
+                // GET VIP INCOME
+                // -------------------------------------------------
 
                 const daily =
                     getPlanDailyIncome(
@@ -2531,6 +2704,10 @@ async function claimDailyIncome() {
                     );
 
 
+                // -------------------------------------------------
+                // NOTHING LEFT
+                // -------------------------------------------------
+
                 if (
                     remaining <= 0
                 ) {
@@ -2552,9 +2729,12 @@ async function claimDailyIncome() {
 
 
                     return;
-
                 }
 
+
+                // -------------------------------------------------
+                // CALCULATE REWARD
+                // -------------------------------------------------
 
                 const reward =
                     Math.min(
@@ -2568,7 +2748,6 @@ async function claimDailyIncome() {
                 ) {
 
                     return;
-
                 }
 
 
@@ -2576,13 +2755,17 @@ async function claimDailyIncome() {
                     reward;
 
 
-                activeCount++;
+                claimableCount++;
 
 
                 const newClaimed =
                     claimed +
                     reward;
 
+
+                // -------------------------------------------------
+                // UPDATE VIP CLAIM DATA
+                // -------------------------------------------------
 
                 updates[
                     "vipPlans/" +
@@ -2614,6 +2797,11 @@ async function claimDailyIncome() {
                     ) + 1;
 
 
+                // -------------------------------------------------
+                // VERY IMPORTANT
+                // START NEW 24H TIMER
+                // -------------------------------------------------
+
                 updates[
                     "vipPlans/" +
                     id +
@@ -2621,6 +2809,10 @@ async function claimDailyIncome() {
                 ] =
                     now;
 
+
+                // -------------------------------------------------
+                // VIP COMPLETED
+                // -------------------------------------------------
 
                 if (
                     totalProfit > 0 &&
@@ -2641,28 +2833,30 @@ async function claimDailyIncome() {
                         "/active"
                     ] =
                         false;
-
                 }
 
             }
         );
 
 
+        // =================================================
+        // NOTHING READY
+        // =================================================
+
         if (
             totalIncome <= 0 ||
-            activeCount <= 0
+            claimableCount <= 0
         ) {
 
             throw new Error(
-                "No active VIP income is available to claim."
+                "No VIP income is ready yet. Every active VIP must complete 24 hours after approval or its previous claim."
             );
-
         }
 
 
-        // -------------------------------------------------
-        // UPDATE USER BALANCE
-        // -------------------------------------------------
+        // =================================================
+        // UPDATE BALANCE
+        // =================================================
 
         const oldBalance =
             numberValue(
@@ -2696,12 +2890,20 @@ async function claimDailyIncome() {
                     ).toFixed(2)
                 ),
 
-            lastClaim:
-                now,
-
             ...updates
-
         };
+
+
+        // -------------------------------------------------
+        // DO NOT USE GLOBAL lastClaim FOR THE LOCK
+        // -------------------------------------------------
+        //
+        // We can keep it only as a general record.
+        // The real timers are per VIP.
+        //
+
+        updateData.lastClaim =
+            now;
 
 
         await update(
@@ -2710,9 +2912,9 @@ async function claimDailyIncome() {
         );
 
 
-        // -------------------------------------------------
+        // =================================================
         // TRANSACTION HISTORY
-        // -------------------------------------------------
+        // =================================================
 
         try {
 
@@ -2755,11 +2957,11 @@ async function claimDailyIncome() {
                         now,
 
                     description:
-                        "Daily income from multiple active VIP plans."
+                        "Daily income claimed after 24 hours from active VIP plans."
 
                 }
-
             );
+
 
         } catch (transactionError) {
 
@@ -2767,13 +2969,12 @@ async function claimDailyIncome() {
                 "Transaction history write failed:",
                 transactionError
             );
-
         }
 
 
-        // -------------------------------------------------
+        // =================================================
         // LOCAL UPDATE
-        // -------------------------------------------------
+        // =================================================
 
         userData =
             {
@@ -2802,7 +3003,16 @@ async function claimDailyIncome() {
             "Daily Income Claimed Successfully!\n\n" +
 
             "+" +
-            money(totalIncome)
+            money(totalIncome) +
+
+            "\n\n" +
+
+            "VIPs claimed: " +
+            claimableCount +
+
+            "\n\n" +
+
+            "Next claim for each VIP: 24 hours from this claim."
 
         );
 
@@ -2820,18 +3030,22 @@ async function claimDailyIncome() {
             "Unable to claim daily income."
         );
 
-
     } finally {
 
         updateClaimTimer();
 
     }
-
 }
 
 
 // =========================================================
 // CLAIM TIMER
+// =========================================================
+//
+// The button becomes ready if AT LEAST ONE VIP
+// has completed 24 hours.
+//
+// Different VIPs can have different timers.
 // =========================================================
 
 function updateClaimTimer() {
@@ -2841,103 +3055,122 @@ function updateClaimTimer() {
     }
 
 
-    const lastClaim =
-        numberValue(
-            userData.lastClaim
-        );
-
-
-    // No claim yet
-    if (!lastClaim) {
-
-        const hasActive =
-            Object.values(
-                userVipPlans || {}
-            ).some(
-                plan =>
-                    normalizeStatus(
-                        plan?.status
-                    ) === "active"
-            );
-
-
-        if (hasActive) {
-
-            claimTimer.textContent =
-                "Ready to Claim";
-
-
-            if (claimBtn) {
-
-                claimBtn.disabled =
-                    false;
-
-            }
-
-        } else {
-
-            claimTimer.textContent =
-                "No Active VIP";
-
-
-            if (claimBtn) {
-
-                claimBtn.disabled =
-                    true;
-
-            }
-
-        }
-
-        return;
-
-    }
-
-
-    const remaining =
-        ONE_DAY -
-        (
-            Date.now() -
-            lastClaim
+    const activePlans =
+        Object.values(
+            userVipPlans || {}
+        ).filter(
+            plan =>
+                isVipActive(plan)
         );
 
 
     if (
-        remaining <= 0
+        activePlans.length === 0
     ) {
 
-        const hasActive =
-            Object.values(
-                userVipPlans || {}
-            ).some(
-                plan =>
-                    normalizeStatus(
-                        plan?.status
-                    ) === "active"
-            );
-
-
         claimTimer.textContent =
-            hasActive
-                ? "Ready to Claim"
-                : "No Active VIP";
+            "No Active VIP";
 
 
         if (claimBtn) {
 
             claimBtn.disabled =
-                !hasActive;
-
+                true;
         }
 
         return;
+    }
 
+
+    const readyPlans =
+        activePlans.filter(
+            plan =>
+                canVipClaim(plan)
+        );
+
+
+    // =====================================================
+    // ONE OR MORE VIP READY
+    // =====================================================
+
+    if (
+        readyPlans.length > 0
+    ) {
+
+        claimTimer.textContent =
+            "Ready to Claim";
+
+
+        if (claimBtn) {
+
+            claimBtn.disabled =
+                false;
+        }
+
+        return;
+    }
+
+
+    // =====================================================
+    // NONE READY
+    // FIND SHORTEST REMAINING TIMER
+    // =====================================================
+
+    let shortest =
+        null;
+
+
+    activePlans.forEach(
+        plan => {
+
+            const remaining =
+                getVipRemainingClaimTime(
+                    plan
+                );
+
+
+            if (
+                remaining === null
+            ) {
+
+                return;
+            }
+
+
+            if (
+                shortest === null ||
+                remaining < shortest
+            ) {
+
+                shortest =
+                    remaining;
+            }
+
+        }
+    );
+
+
+    if (
+        shortest === null
+    ) {
+
+        claimTimer.textContent =
+            "Waiting for Admin Approval";
+
+
+        if (claimBtn) {
+
+            claimBtn.disabled =
+                true;
+        }
+
+        return;
     }
 
 
     const hours =
         Math.floor(
-            remaining /
+            shortest /
             3600000
         );
 
@@ -2945,7 +3178,7 @@ function updateClaimTimer() {
     const minutes =
         Math.floor(
             (
-                remaining %
+                shortest %
                 3600000
             ) /
             60000
@@ -2955,7 +3188,7 @@ function updateClaimTimer() {
     const seconds =
         Math.floor(
             (
-                remaining %
+                shortest %
                 60000
             ) /
             1000
@@ -2982,9 +3215,7 @@ function updateClaimTimer() {
 
         claimBtn.disabled =
             true;
-
     }
-
 }
 
 
@@ -3001,7 +3232,6 @@ function startClaimTimer() {
         clearInterval(
             claimTimerInterval
         );
-
     }
 
 
@@ -3013,7 +3243,6 @@ function startClaimTimer() {
             updateClaimTimer,
             1000
         );
-
 }
 
 
@@ -3042,7 +3271,6 @@ document.addEventListener(
             updateClaimTimer();
 
         }
-
     }
 );
 
@@ -3060,18 +3288,19 @@ onAuthStateChanged(
             currentUser =
                 null;
 
+
             if (loadingScreen) {
 
                 loadingScreen.style.display =
                     "none";
-
             }
+
 
             window.location.href =
                 "login.html";
 
-            return;
 
+            return;
         }
 
 
@@ -3088,7 +3317,7 @@ onAuthStateChanged(
         try {
 
             // ---------------------------------------------
-            // Start all listeners
+            // START ALL LISTENERS
             // ---------------------------------------------
 
             loadVipPackages();
@@ -3101,15 +3330,15 @@ onAuthStateChanged(
 
 
             // ---------------------------------------------
-            // Hide loading
+            // HIDE LOADING
             // ---------------------------------------------
 
             if (loadingScreen) {
 
                 loadingScreen.style.display =
                     "none";
-
             }
+
 
         } catch (error) {
 
@@ -3123,11 +3352,8 @@ onAuthStateChanged(
 
                 loadingScreen.style.display =
                     "none";
-
             }
-
         }
-
     }
 );
 
@@ -3147,9 +3373,7 @@ window.addEventListener(
             clearInterval(
                 claimTimerInterval
             );
-
         }
-
     }
 );
 
@@ -3179,6 +3403,9 @@ window.loadVipPackages =
 window.renderVipPlans =
     renderVipPlans;
 
+window.updateClaimTimer =
+    updateClaimTimer;
+
 
 // =========================================================
 // READY
@@ -3198,6 +3425,18 @@ console.log(
 
 console.log(
     "VIP rule: different plans allowed; same plan blocked."
+);
+
+console.log(
+    "VIP rule: NO profit at approval."
+);
+
+console.log(
+    "VIP rule: FIRST CLAIM = 24 HOURS AFTER ADMIN APPROVAL."
+);
+
+console.log(
+    "VIP rule: EVERY VIP HAS ITS OWN 24-HOUR TIMER."
 );
 
 console.log(
