@@ -264,256 +264,143 @@ function normalizePlanId(value) {
 }
 
 
-// =========================================================
-// GET EXPLICIT PLAN ID FROM OWNED VIP
-// =========================================================
-// IMPORTANT:
-// Do NOT use the Firebase child key as the VIP ID here.
-// Old VIP records may have random Firebase keys.
-// In that case we use the VIP name as fallback.
 
-function getOwnedPlanId(plan) {
 
-    if (!plan) {
-        return "";
-    }
 
-    return normalizePlanId(
-        plan.vipPlanId ||
-        plan.planId ||
-        plan.vipId ||
-        ""
-    );
+/* =========================================================
+   VIP PLAN OWNERSHIP / REQUEST CHECK
+   USER CAN BUY MANY DIFFERENT VIP PLANS
+   SAME PLAN = BLOCKED
+   DIFFERENT PLAN = ENABLED
+========================================================= */
+
+function normalizePlanId(value) {
+    if (value === null || value === undefined) return "";
+
+    return String(value)
+        .trim()
+        .toLowerCase()
+        .replace(/\s+/g, "-");
 }
 
 
-// =========================================================
-// GET REQUEST PLAN ID
-// =========================================================
+/* ---------------------------------------------------------
+   GET THE REAL PLAN ID FROM AN OWNED VIP
+--------------------------------------------------------- */
+
+function getOwnedPlanId(plan, fallbackKey = "") {
+
+    if (!plan || typeof plan !== "object") {
+        return normalizePlanId(fallbackKey);
+    }
+
+    const explicitId =
+        plan.vipPlanId ??
+        plan.planId ??
+        plan.vipId ??
+        "";
+
+    if (String(explicitId).trim() !== "") {
+        return normalizePlanId(explicitId);
+    }
+
+    /*
+       Old records may not contain vipPlanId.
+       In that case use the Firebase child key.
+    */
+    return normalizePlanId(fallbackKey);
+}
+
+
+/* ---------------------------------------------------------
+   GET PLAN ID FROM PURCHASE REQUEST
+--------------------------------------------------------- */
 
 function getRequestPlanId(request) {
 
-    if (!request) {
+    if (!request || typeof request !== "object") {
         return "";
     }
 
     return normalizePlanId(
-        request.vipPlanId ||
-        request.planId ||
-        request.vipId ||
+        request.vipPlanId ??
+        request.planId ??
+        request.vipId ??
         ""
     );
 }
 
 
-// =========================================================
-// GET VIP NAME
-// =========================================================
+/* ---------------------------------------------------------
+   GET VIP NAME
+--------------------------------------------------------- */
 
 function getVipName(plan) {
 
+    if (!plan || typeof plan !== "object") {
+        return "";
+    }
+
     return String(
-        plan?.vipName ||
-        plan?.name ||
-        plan?.planName ||
+        plan.vipName ??
+        plan.name ??
+        plan.title ??
         ""
     ).trim();
 }
 
 
-// =========================================================
-// CHECK WHETHER USER ALREADY OWNS THIS VIP
-// =========================================================
-// RULE:
-// Starter != Bronze != Silver != Gold
-//
-// Same ID = blocked
-// Different ID = allowed
-//
-// If an old VIP record has NO plan ID,
-// name is used as fallback.
+/* ---------------------------------------------------------
+   CHECK IF USER ALREADY OWNS THIS EXACT PLAN
+--------------------------------------------------------- */
 
-function hasActiveVipByPlan(planId, vipName) {
+function hasActiveVipByPlan(planId, vipName = "") {
 
-    const targetId =
-        normalizePlanId(planId);
+    const targetId = normalizePlanId(planId);
+    const targetName = normalizeName(vipName);
 
-    const targetName =
-        normalizeName(vipName);
+    if (!targetId && !targetName) {
+        return false;
+    }
 
-    return Object.entries(
-        userVipPlans || {}
-    ).some(
-        ([firebaseKey, plan]) => {
+    const ownedPlans = userVipPlans || {};
 
-            if (!plan) {
+    return Object.entries(ownedPlans).some(
+        ([firebaseKey, vip]) => {
+
+            if (!vip || typeof vip !== "object") {
                 return false;
             }
 
-            const status =
-                normalizeStatus(
-                    plan.status
-                );
-
-            if (status !== "active") {
-                return false;
-            }
-
-            // Check expiration
-            const endDate =
-                numberValue(
-                    plan.endDate
-                );
+            const status = normalizeStatus(vip.status);
 
             if (
-                endDate > 0 &&
-                Date.now() >= endDate
+                status !== "active" &&
+                status !== "approved" &&
+                status !== "completed"
             ) {
                 return false;
             }
 
-            // -----------------------------------------
-            // FIRST: CHECK REAL VIP PLAN ID
-            // -----------------------------------------
+            const ownedId = getOwnedPlanId(
+                vip,
+                firebaseKey
+            );
 
-            const ownedId =
-                getOwnedPlanId(plan);
-
-            if (
-                targetId &&
-                ownedId
-            ) {
-
-                // SAME PLAN
-                if (
-                    targetId === ownedId
-                ) {
-                    return true;
-                }
-
-                // DIFFERENT PLAN
-                // Example:
-                // starter !== bronze
-                // bronze !== silver
-                // silver !== gold
-                return false;
+            /*
+               IMPORTANT:
+               Different Plan IDs are ALWAYS allowed.
+            */
+            if (targetId && ownedId) {
+                return ownedId === targetId;
             }
 
-            // -----------------------------------------
-            // OLD RECORD WITHOUT PLAN ID
-            // -----------------------------------------
-            // Only then use name fallback.
-
-            if (
-                !ownedId &&
-                targetName
-            ) {
-
-                const ownedName =
-                    normalizeName(
-                        getVipName(plan)
-                    );
-
-                if (
-                    ownedName &&
-                    ownedName === targetName
-                ) {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-    );
-}
-
-
-// =========================================================
-// CHECK PENDING / PROCESSING REQUEST
-// =========================================================
-// Same VIP pending = blocked
-// Different VIP pending = allowed
-//
-// Example:
-//
-// Starter pending
-// Bronze = BUY NOW
-// Silver = BUY NOW
-// Gold = BUY NOW
-
-function hasPendingVipRequest(
-    planId,
-    vipName
-) {
-
-    const targetId =
-        normalizePlanId(planId);
-
-    const targetName =
-        normalizeName(vipName);
-
-    return Object.values(
-        vipRequests || {}
-    ).some(
-        request => {
-
-            if (!request) {
-                return false;
-            }
-
-            const status =
-                normalizeStatus(
-                    request.status
-                );
-
-            // Only these statuses block purchase
-            if (
-                status !== "pending" &&
-                status !== "processing"
-            ) {
-                return false;
-            }
-
-            const requestId =
-                getRequestPlanId(
-                    request
-                );
-
-            // -----------------------------------------
-            // FIRST: CHECK PLAN ID
-            // -----------------------------------------
-
-            if (
-                targetId &&
-                requestId
-            ) {
-
+            /*
+               Fallback for old data without plan ID.
+            */
+            if (targetName) {
                 return (
-                    targetId ===
-                    requestId
-                );
-            }
-
-            // -----------------------------------------
-            // OLD REQUEST WITHOUT PLAN ID
-            // -----------------------------------------
-
-            if (
-                !requestId &&
-                targetName
-            ) {
-
-                const requestName =
-                    normalizeName(
-                        request.vipName ||
-                        request.name ||
-                        request.planName ||
-                        ""
-                    );
-
-                return (
-                    requestName &&
-                    requestName ===
+                    normalizeName(getVipName(vip)) ===
                     targetName
                 );
             }
@@ -522,6 +409,156 @@ function hasPendingVipRequest(
         }
     );
 }
+
+
+/* ---------------------------------------------------------
+   CHECK IF THIS EXACT PLAN HAS A PENDING REQUEST
+--------------------------------------------------------- */
+
+function hasPendingVipRequest(planId, vipName = "") {
+
+    const targetId = normalizePlanId(planId);
+    const targetName = normalizeName(vipName);
+
+    if (!targetId && !targetName) {
+        return false;
+    }
+
+    const requests = vipRequests || {};
+
+    return Object.values(requests).some(
+        request => {
+
+            if (!request || typeof request !== "object") {
+                return false;
+            }
+
+            const status = normalizeStatus(request.status);
+
+            if (
+                status !== "pending" &&
+                status !== "processing"
+            ) {
+                return false;
+            }
+
+            const requestId = getRequestPlanId(request);
+
+            /*
+               If request has an ID, compare ONLY the ID.
+               This allows Bronze while Starter is pending.
+            */
+            if (targetId && requestId) {
+                return requestId === targetId;
+            }
+
+            /*
+               Fallback for old requests.
+            */
+            if (targetName) {
+                return (
+                    normalizeName(
+                        request.vipName ||
+                        request.name ||
+                        ""
+                    ) === targetName
+                );
+            }
+
+            return false;
+        }
+    );
+}
+
+
+/* =========================================================
+   UPDATE BUY BUTTONS
+   EACH VIP PLAN IS CHECKED INDEPENDENTLY
+========================================================= */
+
+function updateVipButtons() {
+
+    document
+        .querySelectorAll(".buyVipBtn")
+        .forEach(button => {
+
+            const planId = normalizePlanId(
+                button.dataset.planId || ""
+            );
+
+            const vipName = String(
+                button.dataset.vip || ""
+            ).trim();
+
+            if (!planId && !vipName) {
+                button.disabled = true;
+                button.textContent = "Unavailable";
+                return;
+            }
+
+            const alreadyOwned =
+                hasActiveVipByPlan(
+                    planId,
+                    vipName
+                );
+
+            const hasPending =
+                hasPendingVipRequest(
+                    planId,
+                    vipName
+                );
+
+            /*
+               ONLY THE SAME PLAN IS DISABLED.
+
+               Example:
+               Starter pending  → Starter disabled
+               Bronze            → ENABLED
+               Silver            → ENABLED
+               Gold              → ENABLED
+            */
+
+            if (alreadyOwned) {
+
+                button.disabled = true;
+
+                button.innerHTML =
+                    '<i class="fas fa-check-circle"></i> ' +
+                    'Already Active';
+
+                button.classList.add("disabled");
+
+                return;
+            }
+
+            if (hasPending) {
+
+                button.disabled = true;
+
+                button.innerHTML =
+                    '<i class="fas fa-clock"></i> ' +
+                    'Pending Approval';
+
+                button.classList.add("disabled");
+
+                return;
+            }
+
+            /*
+               DIFFERENT PLAN:
+               ALWAYS ENABLE BUY NOW
+            */
+
+            button.disabled = false;
+
+            button.innerHTML =
+                '<i class="fas fa-crown"></i> ' +
+                'Buy Now';
+
+            button.classList.remove("disabled");
+        });
+}
+
 
 
 // =========================================================
