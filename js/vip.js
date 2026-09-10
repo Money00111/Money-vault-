@@ -412,61 +412,59 @@ function getVipName(plan) {
    CHECK IF THIS EXACT PLAN HAS A PENDING REQUEST
 --------------------------------------------------------- */
 
+
 function hasPendingVipRequest(planId, vipName = "") {
 
-    const targetId = normalizePlanId(planId);
-    const targetName = normalizeName(vipName);
-
-    if (!targetId && !targetName) {
-        return false;
-    }
+    const targetId = String(planId || "").trim().toLowerCase();
+    const targetName = String(vipName || "").trim().toLowerCase();
 
     const requests = vipRequests || {};
 
-    return Object.values(requests).some(
-        request => {
+    return Object.values(requests).some(request => {
 
-            if (!request || typeof request !== "object") {
-                return false;
-            }
-
-            const status = normalizeStatus(request.status);
-
-            if (
-                status !== "pending" &&
-                status !== "processing"
-            ) {
-                return false;
-            }
-
-            const requestId = getRequestPlanId(request);
-
-            /*
-               If request has an ID, compare ONLY the ID.
-               This allows Bronze while Starter is pending.
-            */
-            if (targetId && requestId) {
-                return requestId === targetId;
-            }
-
-            /*
-               Fallback for old requests.
-            */
-            if (targetName) {
-                return (
-                    normalizeName(
-                        request.vipName ||
-                        request.name ||
-                        ""
-                    ) === targetName
-                );
-            }
-
+        if (!request || typeof request !== "object") {
             return false;
         }
-    );
-}
 
+        const status = String(
+            request.status || ""
+        ).trim().toLowerCase();
+
+        if (status !== "pending") {
+            return false;
+        }
+
+        const requestId = String(
+            request.vipPlanId ||
+            request.planId ||
+            request.vipId ||
+            ""
+        ).trim().toLowerCase();
+
+        const requestName = String(
+            request.vipName ||
+            request.name ||
+            ""
+        ).trim().toLowerCase();
+
+        /*
+         * If the request has a plan ID,
+         * ONLY that exact plan is blocked.
+         */
+        if (targetId && requestId) {
+            return targetId === requestId;
+        }
+
+        /*
+         * Old requests without ID.
+         */
+        if (targetName && requestName) {
+            return targetName === requestName;
+        }
+
+        return false;
+    });
+}
 
 /* =========================================================
    UPDATE BUY BUTTONS
