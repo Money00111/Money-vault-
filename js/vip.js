@@ -568,98 +568,71 @@ function updateVipButtons() {
 // Silver   -> Buy Now
 // Gold     -> Buy Now
 
-function updateVipButtons() {
 
-    document
-        .querySelectorAll(".buyVipBtn")
-        .forEach(button => {
+            function updateVipButtons() {
 
-            const planId =
-                String(
-                    button.dataset.planId || ""
-                ).trim();
+    document.querySelectorAll(".buyVipBtn").forEach(button => {
 
-            const vipName =
-                String(
-                    button.dataset.vip || ""
-                ).trim();
+        const planId = String(
+            button.dataset.planId || ""
+        ).trim().toLowerCase();
 
-            const purchased =
-                hasActiveVipByPlan(
-                    planId,
-                    vipName
-                );
+        const vipName = String(
+            button.dataset.vip || ""
+        ).trim();
 
-            const pending =
-                hasPendingVipRequest(
-                    planId,
-                    vipName
-                );
+        if (!planId && !vipName) {
+            button.disabled = true;
+            return;
+        }
 
-            // Reset button first
-            button.disabled = false;
-
-            button.classList.remove(
-                "activeVip"
+        const alreadyOwned =
+            hasActiveVipByPlan(
+                planId,
+                vipName
             );
 
-            button.classList.remove(
-                "pendingVip"
+        const pending =
+            hasPendingVipRequest(
+                planId,
+                vipName
             );
 
-            // -----------------------------------------
-            // SAME VIP ALREADY ACTIVE
-            // -----------------------------------------
+        /*
+         * SAME PLAN ONLY
+         */
 
-            if (purchased) {
+        if (alreadyOwned) {
 
-                button.disabled = true;
+            button.disabled = true;
 
-                button.classList.add(
-                    "activeVip"
-                );
+            button.innerHTML =
+                '<i class="fas fa-check-circle"></i> Already Active';
 
-                button.innerHTML = `
-                    <i class="fas fa-check-circle"></i>
-                    Purchased
-                `;
+            return;
+        }
 
-                return;
-            }
+        if (pending) {
 
-            // -----------------------------------------
-            // SAME VIP REQUEST ALREADY PENDING
-            // -----------------------------------------
+            button.disabled = true;
 
-            if (pending) {
+            button.innerHTML =
+                '<i class="fas fa-clock"></i> Pending Approval';
 
-                button.disabled = true;
+            return;
+        }
 
-                button.classList.add(
-                    "pendingVip"
-                );
+        /*
+         * DIFFERENT PLAN = BUY NOW ENABLED
+         */
 
-                button.innerHTML = `
-                    <i class="fas fa-clock"></i>
-                    Request Pending
-                `;
+        button.disabled = false;
 
-                return;
-            }
-
-            // -----------------------------------------
-            // DIFFERENT VIP = ALLOWED
-            // -----------------------------------------
-
-            button.disabled = false;
-
-            button.innerHTML = `
-                <i class="fas fa-crown"></i>
-                Buy Now
-            `;
-        });
+        button.innerHTML =
+            '<i class="fas fa-crown"></i> Buy Now';
+    });
 }
-    
+            
 
 
 // =========================================================
