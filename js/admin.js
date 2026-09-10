@@ -11681,12 +11681,11 @@ console.log(
 
 
 
+        /* =================================================
+           
+                ----------------- */
 
-
-
-
-
-/* =========================================================
+                    /* =========================================================
    MONEY VAULT - ADMIN.JS
    PART 8
    VIP APPROVE / REJECT
@@ -11698,10 +11697,11 @@ console.log(
    - No daily income at approval
    - First claim after 24 hours
    - Referral bonus = 1,000 RWF
-   - Referral bonus added to balance
+   - Referral bonus added to referrer balance
    - referralBonus + referralEarnings updated
+   - referralCount updated
    - Referral bonus only ONCE per referred user
-   - referredBy can be UID OR referral code
+   - referredBy = REFERRER UID
 ========================================================= */
 
 const REFERRAL_BONUS_AMOUNT = 1000;
@@ -11734,140 +11734,12 @@ function vipAdminStatus(value) {
 
 
 /* =========================================================
-   FIND REFERRER UID
-=========================================================
-
-   referredBy can contain:
-
-   1. Referrer UID
-   2. Referrer referralCode
-
-========================================================= */
-
-async function findReferrerUid(referredBy) {
-
-    if (!referredBy) {
-        return null;
-    }
-
-    const value =
-        String(referredBy).trim();
-
-    if (!value) {
-        return null;
-    }
-
-
-    /* -----------------------------------------------------
-       FIRST: CHECK IF IT IS A UID
-    ----------------------------------------------------- */
-
-    try {
-
-        const directUserRef =
-            ref(
-                db,
-                `users/${value}`
-            );
-
-        const directSnapshot =
-            await get(directUserRef);
-
-        if (
-            directSnapshot.exists()
-        ) {
-
-            return value;
-        }
-
-    } catch (error) {
-
-        console.warn(
-            "Direct referrer UID lookup failed:",
-            error
-        );
-
-    }
-
-
-    /* -----------------------------------------------------
-       SECOND: SEARCH USERS BY REFERRAL CODE
-    ----------------------------------------------------- */
-
-    try {
-
-        const usersSnapshot =
-            await get(
-                ref(
-                    db,
-                    "users"
-                )
-            );
-
-        if (
-            !usersSnapshot.exists()
-        ) {
-            return null;
-        }
-
-
-        let foundUid = null;
-
-
-        usersSnapshot.forEach(
-            childSnapshot => {
-
-                if (foundUid) {
-                    return;
-                }
-
-                const user =
-                    childSnapshot.val() || {};
-
-                const referralCode =
-                    String(
-                        user.referralCode || ""
-                    )
-                    .trim()
-                    .toLowerCase();
-
-
-                if (
-                    referralCode &&
-                    referralCode ===
-                    value.toLowerCase()
-                ) {
-
-                    foundUid =
-                        childSnapshot.key;
-                }
-
-            }
-        );
-
-
-        return foundUid;
-
-    } catch (error) {
-
-        console.warn(
-            "Referral code lookup failed:",
-            error
-        );
-
-        return null;
-    }
-}
-
-
-/* =========================================================
    APPROVE VIP REQUEST
 ========================================================= */
 
 async function approveVipRequest(id) {
 
     await window.waitForAdmin();
-
 
     if (!id) {
 
@@ -11881,6 +11753,10 @@ async function approveVipRequest(id) {
 
 
     try {
+
+        /* =================================================
+           REQUEST REF
+        ================================================= */
 
         const requestRef =
             ref(
@@ -11897,9 +11773,7 @@ async function approveVipRequest(id) {
             await get(requestRef);
 
 
-        if (
-            !requestSnapshot.exists()
-        ) {
+        if (!requestSnapshot.exists()) {
 
             showToast(
                 "VIP request not found.",
@@ -11924,9 +11798,7 @@ async function approveVipRequest(id) {
            PREVENT DOUBLE APPROVAL
         ================================================= */
 
-        if (
-            status !== "pending"
-        ) {
+        if (status !== "pending") {
 
             showToast(
                 `This request is already ${status}.`,
@@ -11942,7 +11814,7 @@ async function approveVipRequest(id) {
         ================================================= */
 
         const uid =
-            request.uid;
+            String(request.uid || "").trim();
 
 
         const vipName =
@@ -12079,14 +11951,17 @@ async function approveVipRequest(id) {
 
 
         if (!confirmed) {
+
             return false;
         }
 
 
         /* =================================================
            LOCK REQUEST
-
            pending -> processing
+
+           This prevents two admins from approving
+           the same VIP request at the same time.
         ================================================= */
 
         const lockResult =
@@ -12110,6 +11985,7 @@ async function approveVipRequest(id) {
                         currentStatus !==
                         "pending"
                     ) {
+
                         return;
                     }
 
@@ -12132,9 +12008,7 @@ async function approveVipRequest(id) {
             );
 
 
-        if (
-            !lockResult.committed
-        ) {
+        if (!lockResult.committed) {
 
             showToast(
                 "This VIP request is already being processed.",
@@ -12160,9 +12034,7 @@ async function approveVipRequest(id) {
             await get(userRef);
 
 
-        if (
-            !userSnapshot.exists()
-        ) {
+        if (!userSnapshot.exists()) {
 
             await update(
                 requestRef,
@@ -12198,7 +12070,7 @@ async function approveVipRequest(id) {
 
 
         /* =================================================
-           BALANCE
+           BALANCE CHECK
         ================================================= */
 
         const balance =
@@ -12207,9 +12079,7 @@ async function approveVipRequest(id) {
             );
 
 
-        if (
-            balance < price
-        ) {
+        if (balance < price) {
 
             await update(
                 requestRef,
@@ -12269,7 +12139,7 @@ async function approveVipRequest(id) {
 
         /* =================================================
            DEDUCT VIP PRICE
-           
+
            IMPORTANT:
            NO DAILY INCOME HERE.
         ================================================= */
@@ -12294,6 +12164,7 @@ async function approveVipRequest(id) {
                         currentBalance <
                         price
                     ) {
+
                         return;
                     }
 
@@ -12316,9 +12187,7 @@ async function approveVipRequest(id) {
             );
 
 
-        if (
-            !balanceResult.committed
-        ) {
+        if (!balanceResult.committed) {
 
             await update(
                 requestRef,
@@ -12526,73 +12395,88 @@ async function approveVipRequest(id) {
 
         /* =================================================
            REFERRAL BONUS
-           
-           1,000 RWF
 
-           GIVEN ONLY ONCE FOR THIS REFERRED USER.
+           AUTH.JS STORES:
 
-           The referrer receives:
-           - balance + 1,000
-           - referralBonus + 1,000
-           - referralEarnings + 1,000
+           users/{newUserUid}/referredBy
+                =
+           REFERRER_UID
 
-           referredBy can be:
-           - UID
-           - referral code
+           Therefore we use referredBy DIRECTLY.
+
+           BONUS:
+           - balance +1000
+           - referralBonus +1000
+           - referralEarnings +1000
+           - referralCount +1
+
+           BONUS ONLY ONCE PER REFERRED USER.
         ================================================= */
 
-        const referredBy =
-            user.referredBy ||
-            user.referralCodeUsed ||
-            null;
+        const referrerUid =
+            String(
+                user.referredBy || ""
+            ).trim();
 
 
-        if (referredBy) {
+        if (referrerUid) {
 
-            try {
+            /* =============================================
+               PREVENT SELF REFERRAL
+            ============================================= */
 
-                /* -----------------------------------------
-                   FIND ACTUAL REFERRER UID
-                ----------------------------------------- */
+            if (
+                referrerUid === uid
+            ) {
 
-                const referrerUid =
-                    await findReferrerUid(
-                        referredBy
-                    );
+                console.warn(
+                    "Self-referral detected:",
+                    uid
+                );
+
+            } else {
+
+                try {
+
+                    /* =========================================
+                       CHECK USER-LEVEL BONUS FLAG
+
+                       auth.js initializes:
+
+                       referralBonusGiven: false
+
+                       Once the first approved VIP pays
+                       the referral bonus, this becomes true.
+
+                       Therefore later VIP purchases cannot
+                       generate another 1000 RWF.
+                    ========================================= */
+
+                    const latestUserSnapshot =
+                        await get(
+                            userRef
+                        );
 
 
-                if (!referrerUid) {
+                    const latestUser =
+                        latestUserSnapshot.exists()
+                            ? (
+                                latestUserSnapshot.val() ||
+                                {}
+                            )
+                            : {};
 
-                    console.warn(
-                        "Referrer not found:",
-                        referredBy
-                    );
 
-                } else if (
-                    referrerUid === uid
-                ) {
+                    const alreadyGiven =
+                        latestUser.referralBonusGiven === true;
 
-                    console.warn(
-                        "Self-referral detected:",
-                        uid
-                    );
 
-                } else {
+                    /* =========================================
+                       BONUS MARKER
 
-                    /* -------------------------------------
-                       BONUS RECORD PER REFERRED USER
-
-                       NOT PER VIP REQUEST.
-
-                       This prevents:
-                       VIP #1 = +1000
-                       VIP #2 = +1000
-                       VIP #3 = +1000
-
-                       Instead:
-                       First approved VIP = +1000
-                       Later VIPs = no additional bonus
-                    ------------------------------------- */
+                       Extra protection against duplicate
+                       referral payments.
+                    ========================================= */
 
                     const bonusRef =
                         ref(
@@ -12607,13 +12491,18 @@ async function approveVipRequest(id) {
                         );
 
 
-                    if (
-                        !bonusSnapshot.exists()
-                    ) {
+                    const markerExists =
+                        bonusSnapshot.exists();
 
-                        /* ---------------------------------
-                           GET REFERRER
-                        --------------------------------- */
+
+                    /* =========================================
+                       PAY ONLY IF NOT ALREADY GIVEN
+                    ========================================= */
+
+                    if (
+                        !alreadyGiven &&
+                        !markerExists
+                    ) {
 
                         const referrerRef =
                             ref(
@@ -12629,12 +12518,19 @@ async function approveVipRequest(id) {
 
 
                         if (
-                            referrerSnapshot.exists()
+                            !referrerSnapshot.exists()
                         ) {
 
-                            /* -----------------------------
-                               ADD BONUS TO REFERRER
-                            ----------------------------- */
+                            console.warn(
+                                "Referrer account does not exist:",
+                                referrerUid
+                            );
+
+                        } else {
+
+                            /* =================================
+                               ADD REFERRAL BONUS
+                            ================================= */
 
                             const bonusResult =
                                 await runTransaction(
@@ -12664,6 +12560,12 @@ async function approveVipRequest(id) {
                                             );
 
 
+                                        const oldReferralCount =
+                                            vipAdminNumber(
+                                                referrer.referralCount
+                                            );
+
+
                                         return {
 
                                             ...referrer,
@@ -12678,19 +12580,27 @@ async function approveVipRequest(id) {
 
                                             referralEarnings:
                                                 oldReferralEarnings +
-                                                REFERRAL_BONUS_AMOUNT
+                                                REFERRAL_BONUS_AMOUNT,
+
+                                            referralCount:
+                                                oldReferralCount +
+                                                1
                                         };
                                     }
                                 );
 
 
-                            /* -----------------------------
-                               SAVE BONUS RECORD
-                            ----------------------------- */
+                            /* =================================
+                               CONFIRM TRANSACTION SUCCESS
+                            ================================= */
 
                             if (
                                 bonusResult.committed
                             ) {
+
+                                /* =============================
+                                   SAVE BONUS MARKER
+                                ============================= */
 
                                 await set(
                                     bonusRef,
@@ -12724,9 +12634,23 @@ async function approveVipRequest(id) {
                                 );
 
 
-                                /* -------------------------
-                                   TRANSACTION
-                                ------------------------- */
+                                /* =============================
+                                   MARK USER BONUS AS GIVEN
+                                ============================= */
+
+                                await update(
+                                    userRef,
+                                    {
+
+                                        referralBonusGiven:
+                                            true
+                                    }
+                                );
+
+
+                                /* =============================
+                                   REFERRAL TRANSACTION
+                                ============================= */
 
                                 const referralTransactionRef =
                                     push(
@@ -12778,75 +12702,54 @@ async function approveVipRequest(id) {
                                 );
 
 
-                                /* -------------------------
-                                   MARK REFERRED USER
-
-                                   This is useful for UI
-                                   and additional protection.
-                                ------------------------- */
-
-                                await update(
-                                    userRef,
-                                    {
-                                        referralBonusGiven:
-                                            true
-                                    }
-                                );
-
-
                                 console.log(
-                                    "Referral bonus paid:",
+                                    "Referral bonus paid successfully:",
                                     {
-                                        referrerUid,
+
+                                        referrerUid:
+                                            referrerUid,
+
                                         referredUserUid:
                                             uid,
+
                                         amount:
-                                            REFERRAL_BONUS_AMOUNT
+                                            REFERRAL_BONUS_AMOUNT,
+
+                                        referralCount:
+                                            "incremented"
                                     }
                                 );
 
                             } else {
 
-                                console.warn(
-                                    "Could not update referrer balance."
+                                console.error(
+                                    "Referral bonus transaction was not committed."
                                 );
                             }
-
-                        } else {
-
-                            console.warn(
-                                "Referrer user account does not exist:",
-                                referrerUid
-                            );
                         }
 
                     } else {
 
                         console.log(
-                            "Referral bonus already paid for user:",
+                            "Referral bonus already given for referred user:",
                             uid
                         );
                     }
+
+                } catch (referralError) {
+
+                    console.error(
+                        "Referral bonus error:",
+                        referralError
+                    );
                 }
-
-            } catch (referralError) {
-
-                /* -----------------------------------------
-                   Referral error must NOT cancel
-                   the main VIP approval.
-                ----------------------------------------- */
-
-                console.error(
-                    "Referral bonus error:",
-                    referralError
-                );
             }
         }
 
 
         /* =================================================
            FINALIZE REQUEST
-           
+
            processing -> approved
         ================================================= */
 
@@ -13050,9 +12953,7 @@ async function rejectVipRequest(id) {
             await get(requestRef);
 
 
-        if (
-            !snapshot.exists()
-        ) {
+        if (!snapshot.exists()) {
 
             showToast(
                 "VIP request not found.",
@@ -13074,9 +12975,7 @@ async function rejectVipRequest(id) {
             );
 
 
-        if (
-            status !== "pending"
-        ) {
+        if (status !== "pending") {
 
             showToast(
                 `This request is already ${status}.`,
@@ -13101,13 +13000,14 @@ async function rejectVipRequest(id) {
 
 
         if (!confirmed) {
+
             return false;
         }
 
 
         /* =================================================
            ATOMIC REJECT
-           
+
            pending -> rejected
         ================================================= */
 
@@ -13132,6 +13032,7 @@ async function rejectVipRequest(id) {
                         currentStatus !==
                         "pending"
                     ) {
+
                         return;
                     }
 
@@ -13157,9 +13058,7 @@ async function rejectVipRequest(id) {
             );
 
 
-        if (
-            !result.committed
-        ) {
+        if (!result.committed) {
 
             showToast(
                 "This request was already processed.",
@@ -13215,6 +13114,7 @@ async function rejectVipRequest(id) {
 window.approveVipRequest =
     approveVipRequest;
 
+
 window.rejectVipRequest =
     rejectVipRequest;
 
@@ -13227,21 +13127,29 @@ console.log(
     "Money Vault Admin Part 8 loaded."
 );
 
+
 console.log(
     "Currency: RWF / FRW"
 );
 
+
 console.log(
     "VIP daily income is NOT added during approval."
 );
+
 
 console.log(
     "Referral bonus: 1,000 RWF, once per referred user."
 );
 
 
+console.log(
+    "Referral bonus updates: balance + referralBonus + referralEarnings + referralCount."
+);
 
-       
+                                
+               
+
 
 /* =========================================================
    MONEY VAULT - ADMIN.JS
