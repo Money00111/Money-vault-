@@ -1,7 +1,6 @@
 /* =========================================================
    MONEY VAULT - ADMIN.JS
-   PART 1 — AUTH + ADMIN SECURITY + NAVIGATION
-
+   PART 1 — AUTH + ADMIN SECURITY + NAVIGATION 
    CURRENCY: RWF / FRW
 
    RULES:
