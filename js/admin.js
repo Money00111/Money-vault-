@@ -6952,4 +6952,5296 @@ window.createDatabaseBackup =
 
 window.refreshAdminData =
     refreshAdminData;
+/* =========================================================
+   MONEY VAULT - ADMIN.JS
+   PART 7
+   VIP PURCHASE REQUESTS
+   CURRENCY: RWF / FRW
+
+   FEATURES:
+   - Load VIP purchase requests
+   - Live Firebase listener
+   - Search requests
+   - Filter by status
+   - Counters
+   - User information
+   - VIP plan information
+   - Approve button
+   - Reject button
+   - Safe status normalization
+
+   IMPORTANT:
+   - VIP approval logic will be handled in the next VIP Part.
+   - DO NOT add another VIP request listener elsewhere.
+========================================================= */
+
+
+/* =========================================================
+   PART 7 STATE
+========================================================= */
+
+let allVipRequestsData = [];
+
+let vipRequestsListenerStarted = false;
+
+
+/* =========================================================
+   PART 7 ELEMENTS
+========================================================= */
+
+const vipRequestsContainer =
+    document.getElementById("vipRequests") ||
+    document.getElementById("vipPurchaseRequests") ||
+    document.getElementById("vipRequestsContainer");
+
+const vipRequestSearch =
+    document.getElementById("vipRequestSearch") ||
+    document.getElementById("vipSearch");
+
+const vipRequestFilter =
+    document.getElementById("vipRequestFilter") ||
+    document.getElementById("vipFilter");
+
+const vipRequestTotal =
+    document.getElementById("vipRequestTotal") ||
+    document.getElementById("vipTotal");
+
+const vipRequestPending =
+    document.getElementById("vipRequestPending") ||
+    document.getElementById("vipPending");
+
+const vipRequestApproved =
+    document.getElementById("vipRequestApproved") ||
+    document.getElementById("vipApproved");
+
+const vipRequestRejected =
+    document.getElementById("vipRequestRejected") ||
+    document.getElementById("vipRejected");
+
+const emptyVipRequests =
+    document.getElementById("emptyVipRequests") ||
+    document.getElementById("emptyVipRequest");
+
+
+/* =========================================================
+   STATUS NORMALIZER
+========================================================= */
+
+function normalizeVipRequestStatus(status) {
+
+    const value =
+        String(status || "pending")
+            .trim()
+            .toLowerCase();
+
+    if (value === "approved") {
+        return "approved";
+    }
+
+    if (value === "rejected") {
+        return "rejected";
+    }
+
+    return "pending";
+}
+
+
+/* =========================================================
+   SAFE HTML
+========================================================= */
+
+function escapeVipHTML(value) {
+
+    return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
+
+/* =========================================================
+   VIP MONEY FORMAT
+========================================================= */
+
+function formatVipMoney(amount) {
+
+    const number = Number(amount || 0);
+
+    return number.toLocaleString("en-US") + " RWF";
+}
+
+
+/* =========================================================
+   VIP DATE FORMAT
+========================================================= */
+
+function formatVipDate(timestamp) {
+
+    if (!timestamp) {
+        return "-";
+    }
+
+    const date =
+        new Date(Number(timestamp));
+
+    if (Number.isNaN(date.getTime())) {
+        return "-";
+    }
+
+    return date.toLocaleString();
+}
+
+
+/* =========================================================
+   STATUS CLASS
+========================================================= */
+
+function vipRequestStatusClass(status) {
+
+    const normalized =
+        normalizeVipRequestStatus(status);
+
+    if (normalized === "approved") {
+        return "approved";
+    }
+
+    if (normalized === "rejected") {
+        return "rejected";
+    }
+
+    return "pending";
+}
+
+
+/* =========================================================
+   LOAD VIP REQUESTS
+========================================================= */
+
+function initializeVipRequestsListener() {
+
+    if (vipRequestsListenerStarted) {
+        return;
+    }
+
+    if (!currentAdmin) {
+        return;
+    }
+
+    if (!vipRequestsContainer) {
+
+        console.warn(
+            "⚠️ VIP Requests container not found."
+        );
+
+        return;
+    }
+
+    vipRequestsListenerStarted = true;
+
+    onValue(
+        ref(db, "vipPurchaseRequests"),
+        (snapshot) => {
+
+            allVipRequestsData = [];
+
+            if (!snapshot.exists()) {
+
+                renderVipRequests();
+
+                return;
+            }
+
+
+            snapshot.forEach((child) => {
+
+                const data =
+                    child.val() || {};
+
+                allVipRequestsData.push({
+
+                    id: child.key,
+
+                    ...data
+
+                });
+
+            });
+
+
+            /* -----------------------------------------
+               NEWEST REQUEST FIRST
+            ----------------------------------------- */
+
+            allVipRequestsData.sort(
+                (a, b) =>
+                    Number(b.createdAt || 0) -
+                    Number(a.createdAt || 0)
+            );
+
+
+            renderVipRequests();
+
+        },
+        (error) => {
+
+            console.error(
+                "VIP Requests listener error:",
+                error
+            );
+
+            if (vipRequestsContainer) {
+
+                vipRequestsContainer.innerHTML = `
+                    <div class="empty-state">
+                        <h3>Unable to load VIP requests</h3>
+                        <p>
+                            ${escapeVipHTML(error.message)}
+                        </p>
+                    </div>
+                `;
+            }
+
+        }
+    );
+
+}
+
+
+/* =========================================================
+   FILTER VIP REQUESTS
+========================================================= */
+
+function getFilteredVipRequests() {
+
+    const search =
+        String(
+            vipRequestSearch?.value || ""
+        )
+        .trim()
+        .toLowerCase();
+
+
+    const filter =
+        String(
+            vipRequestFilter?.value || "All"
+        )
+        .trim()
+        .toLowerCase();
+
+
+    return allVipRequestsData.filter(
+        (request) => {
+
+            const status =
+                normalizeVipRequestStatus(
+                    request.status
+                );
+
+
+            /* -----------------------------------------
+               STATUS FILTER
+            ----------------------------------------- */
+
+            if (
+                filter !== "all" &&
+                status !== filter
+            ) {
+                return false;
+            }
+
+
+            /* -----------------------------------------
+               SEARCH
+            ----------------------------------------- */
+
+            if (!search) {
+                return true;
+            }
+
+
+            const searchableText = [
+
+                request.uid,
+
+                request.email,
+
+                request.fullName,
+
+                request.phone,
+
+                request.planId,
+
+                request.planName,
+
+                request.vip,
+
+                request.paymentMethod,
+
+                request.transactionId,
+
+                request.reference,
+
+                request.id
+
+            ]
+            .join(" ")
+            .toLowerCase();
+
+
+            return searchableText.includes(search);
+
+        }
+    );
+
+}
+
+
+/* =========================================================
+   RENDER VIP REQUESTS
+========================================================= */
+
+function renderVipRequests() {
+
+    if (!vipRequestsContainer) {
+        return;
+    }
+
+
+    const total =
+        allVipRequestsData.length;
+
+
+    let pending = 0;
+    let approved = 0;
+    let rejected = 0;
+
+
+    allVipRequestsData.forEach(
+        (request) => {
+
+            const status =
+                normalizeVipRequestStatus(
+                    request.status
+                );
+
+
+            if (status === "pending") {
+                pending++;
+            }
+
+            if (status === "approved") {
+                approved++;
+            }
+
+            if (status === "rejected") {
+                rejected++;
+            }
+
+        }
+    );
+
+
+    /* -----------------------------------------
+       UPDATE COUNTERS
+    ----------------------------------------- */
+
+    if (vipRequestTotal) {
+        vipRequestTotal.textContent =
+            total;
+    }
+
+    if (vipRequestPending) {
+        vipRequestPending.textContent =
+            pending;
+    }
+
+    if (vipRequestApproved) {
+        vipRequestApproved.textContent =
+            approved;
+    }
+
+    if (vipRequestRejected) {
+        vipRequestRejected.textContent =
+            rejected;
+    }
+
+
+    const filteredRequests =
+        getFilteredVipRequests();
+
+
+    /* -----------------------------------------
+       EMPTY STATE
+    ----------------------------------------- */
+
+    if (
+        allVipRequestsData.length === 0 ||
+        filteredRequests.length === 0
+    ) {
+
+        vipRequestsContainer.innerHTML = `
+            <div class="empty-state">
+                <i class="fa-solid fa-crown"></i>
+                <h3>
+                    ${
+                        allVipRequestsData.length === 0
+                            ? "No VIP Requests"
+                            : "No Matching VIP Requests"
+                    }
+                </h3>
+                <p>
+                    VIP purchase requests will appear here.
+                </p>
+            </div>
+        `;
+
+        if (emptyVipRequests) {
+            emptyVipRequests.style.display = "none";
+        }
+
+        return;
+    }
+
+
+    if (emptyVipRequests) {
+        emptyVipRequests.style.display = "none";
+    }
+
+
+    /* -----------------------------------------
+       BUILD HTML
+    ----------------------------------------- */
+
+    vipRequestsContainer.innerHTML =
+        filteredRequests
+            .map((request) => {
+
+                const status =
+                    normalizeVipRequestStatus(
+                        request.status
+                    );
+
+
+                const statusClass =
+                    vipRequestStatusClass(
+                        request.status
+                    );
+
+
+                const planName =
+                    request.planName ||
+                    request.vipPlanName ||
+                    request.vip ||
+                    request.planId ||
+                    "VIP Plan";
+
+
+                const amount =
+                    request.amount ??
+                    request.price ??
+                    request.planPrice ??
+                    0;
+
+
+                const email =
+                    request.email ||
+                    "-";
+
+
+                const uid =
+                    request.uid ||
+                    "-";
+
+
+                const fullName =
+                    request.fullName ||
+                    request.name ||
+                    "-";
+
+
+                const phone =
+                    request.phone ||
+                    request.senderPhone ||
+                    "-";
+
+
+                const paymentMethod =
+                    request.paymentMethod ||
+                    request.method ||
+                    "-";
+
+
+                const transactionId =
+                    request.transactionId ||
+                    request.reference ||
+                    "-";
+
+
+                const createdAt =
+                    formatVipDate(
+                        request.createdAt
+                    );
+
+
+                return `
+
+                    <div
+                        class="request-card vip-request-card"
+                        data-id="${escapeVipHTML(request.id)}"
+                    >
+
+                        <div class="request-card-header">
+
+                            <div>
+
+                                <h3>
+                                    <i
+                                        class="fa-solid fa-crown"
+                                    ></i>
+
+                                    ${escapeVipHTML(planName)}
+                                </h3>
+
+                                <p>
+                                    Request ID:
+                                    <strong>
+                                        ${escapeVipHTML(request.id)}
+                                    </strong>
+                                </p>
+
+                            </div>
+
+
+                            <span
+                                class="status ${statusClass}"
+                            >
+                                ${escapeVipHTML(
+                                    status.charAt(0).toUpperCase() +
+                                    status.slice(1)
+                                )}
+                            </span>
+
+                        </div>
+
+
+                        <div class="request-details">
+
+                            <p>
+                                <strong>
+                                    Name:
+                                </strong>
+
+                                ${escapeVipHTML(fullName)}
+                            </p>
+
+
+                            <p>
+                                <strong>
+                                    Email:
+                                </strong>
+
+                                ${escapeVipHTML(email)}
+                            </p>
+
+
+                            <p>
+                                <strong>
+                                    Phone:
+                                </strong>
+
+                                ${escapeVipHTML(phone)}
+                            </p>
+
+
+                            <p>
+                                <strong>
+                                    User UID:
+                                </strong>
+
+                                ${escapeVipHTML(uid)}
+                            </p>
+
+
+                            <p>
+                                <strong>
+                                    VIP Price:
+                                </strong>
+
+                                ${formatVipMoney(amount)}
+                            </p>
+
+
+                            <p>
+                                <strong>
+                                    Payment Method:
+                                </strong>
+
+                                ${escapeVipHTML(
+                                    paymentMethod
+                                )}
+                            </p>
+
+
+                            <p>
+                                <strong>
+                                    Transaction ID:
+                                </strong>
+
+                                ${escapeVipHTML(
+                                    transactionId
+                                )}
+                            </p>
+
+
+                            <p>
+                                <strong>
+                                    Created:
+                                </strong>
+
+                                ${escapeVipHTML(createdAt)}
+                            </p>
+
+                        </div>
+
+
+                        <div class="action-buttons">
+
+                            ${
+                                status === "pending"
+                                    ? `
+
+                                        <button
+                                            type="button"
+                                            class="approveVipRequestBtn approveBtn"
+                                            data-id="${escapeVipHTML(request.id)}"
+                                        >
+                                            <i
+                                                class="fa-solid fa-check"
+                                            ></i>
+
+                                            Approve
+                                        </button>
+
+
+                                        <button
+                                            type="button"
+                                            class="rejectVipRequestBtn rejectBtn"
+                                            data-id="${escapeVipHTML(request.id)}"
+                                        >
+                                            <i
+                                                class="fa-solid fa-xmark"
+                                            ></i>
+
+                                            Reject
+                                        </button>
+
+                                    `
+                                    : `
+                                        <span
+                                            class="request-completed"
+                                        >
+                                            <i
+                                                class="fa-solid fa-circle-check"
+                                            ></i>
+
+                                            ${
+                                                status === "approved"
+                                                    ? "Approved"
+                                                    : "Rejected"
+                                            }
+                                        </span>
+                                    `
+                            }
+
+                        </div>
+
+                    </div>
+
+                `;
+
+            })
+            .join("");
+
+}
+
+
+/* =========================================================
+   SEARCH EVENT
+========================================================= */
+
+vipRequestSearch?.addEventListener(
+    "input",
+    () => {
+
+        renderVipRequests();
+
+    }
+);
+
+
+/* =========================================================
+   FILTER EVENT
+========================================================= */
+
+vipRequestFilter?.addEventListener(
+    "change",
+    () => {
+
+        renderVipRequests();
+
+    }
+);
+
+
+/* =========================================================
+   BUTTON EVENTS
+========================================================= */
+
+if (!document.__moneyVaultVipRequestEvents) {
+
+    document.__moneyVaultVipRequestEvents = true;
+
+
+    document.addEventListener(
+        "click",
+        (event) => {
+
+
+            /* -----------------------------------------
+               APPROVE
+            ----------------------------------------- */
+
+            const approveButton =
+                event.target.closest(
+                    ".approveVipRequestBtn"
+                );
+
+
+            if (approveButton) {
+
+                const id =
+                    approveButton.dataset.id;
+
+
+                if (
+                    id &&
+                    typeof window.approveVipRequest ===
+                    "function"
+                ) {
+
+                    window.approveVipRequest(id);
+
+                }
+
+                return;
+            }
+
+
+            /* -----------------------------------------
+               REJECT
+            ----------------------------------------- */
+
+            const rejectButton =
+                event.target.closest(
+                    ".rejectVipRequestBtn"
+                );
+
+
+            if (rejectButton) {
+
+                const id =
+                    rejectButton.dataset.id;
+
+
+                if (
+                    id &&
+                    typeof window.rejectVipRequest ===
+                    "function"
+                ) {
+
+                    window.rejectVipRequest(id);
+
+                }
+
+                return;
+            }
+
+        }
+    );
+
+}
+
+
+/* =========================================================
+   START PART 7
+========================================================= */
+
+function startAdminPart7() {
+
+    if (!currentAdmin) {
+        return;
+    }
+
+    initializeVipRequestsListener();
+
+}
+
+
+/* =========================================================
+   WAIT FOR ADMIN
+========================================================= */
+
+if (
+    typeof adminState !== "undefined" &&
+    adminState.readyPromise
+) {
+
+    adminState.readyPromise.then(
+        () => {
+
+            startAdminPart7();
+
+        }
+    );
+
+} else {
+
+    const waitForPart7Admin =
+        setInterval(
+            () => {
+
+                if (currentAdmin) {
+
+                    clearInterval(
+                        waitForPart7Admin
+                    );
+
+                    startAdminPart7();
+
+                }
+
+            },
+            300
+        );
+
+}
+
+
+/* =========================================================
+   GLOBAL HELPERS
+========================================================= */
+
+window.renderVipRequests =
+    renderVipRequests;
+
+window.refreshVipRequests =
+    renderVipRequests;
+
+
+/* =========================================================
+   PART 7 COMPLETE
+========================================================= */
+
+console.log(
+    "✅ Money Vault Admin Part 7 Loaded — VIP Requests"
+);
+/* =========================================================
+   MONEY VAULT - ADMIN.JS
+   PART 8
+   VIP APPROVE / REJECT
+   CURRENCY: RWF / FRW
+
+   RULES:
+   - VIP purchase starts as PENDING
+   - Admin approves manually
+   - Approval activates the VIP
+   - NO daily income is given on approval
+   - First claim is 24 hours after approval
+   - Each VIP has its own timer
+   - Referral bonus = 1,000 RWF
+   - Referral bonus is given ONCE only
+   - Referral bonus is given only after VIP approval
+   - All approval changes use ONE atomic update
+========================================================= */
+
+
+/* =========================================================
+   CONSTANTS
+========================================================= */
+
+const VIP_REFERRAL_BONUS = 1000;
+
+const VIP_DAY_MS =
+    24 * 60 * 60 * 1000;
+
+
+/* =========================================================
+   APPROVAL LOCK
+========================================================= */
+
+const vipApprovalLocks = new Set();
+
+
+/* =========================================================
+   NORMALIZE STATUS
+========================================================= */
+
+function normalizeVipApprovalStatus(status) {
+
+    const value =
+        String(status || "pending")
+            .trim()
+            .toLowerCase();
+
+    if (value === "approved") {
+        return "approved";
+    }
+
+    if (value === "rejected") {
+        return "rejected";
+    }
+
+    return "pending";
+}
+
+
+/* =========================================================
+   GET VIP PLAN FROM MASTER LIST
+========================================================= */
+
+async function getMasterVipPlan(request) {
+
+    try {
+
+        const vipPlansSnap =
+            await get(ref(db, "vipPlans"));
+
+
+        if (!vipPlansSnap.exists()) {
+            return null;
+        }
+
+
+        let selectedPlan = null;
+
+
+        vipPlansSnap.forEach((child) => {
+
+            const plan =
+                child.val() || {};
+
+
+            /* -----------------------------------------
+               FIRST: MATCH PLAN ID
+            ----------------------------------------- */
+
+            if (
+                request.planId &&
+                child.key === request.planId
+            ) {
+
+                selectedPlan = {
+                    id: child.key,
+                    ...plan
+                };
+
+                return;
+            }
+
+
+            /* -----------------------------------------
+               SECOND: MATCH NAME
+            ----------------------------------------- */
+
+            const requestName =
+                String(
+                    request.planName ||
+                    request.vipName ||
+                    ""
+                )
+                .trim()
+                .toLowerCase();
+
+
+            const planName =
+                String(
+                    plan.name ||
+                    plan.vipName ||
+                    ""
+                )
+                .trim()
+                .toLowerCase();
+
+
+            if (
+                !selectedPlan &&
+                requestName &&
+                planName &&
+                requestName === planName
+            ) {
+
+                selectedPlan = {
+                    id: child.key,
+                    ...plan
+                };
+
+            }
+
+        });
+
+
+        return selectedPlan;
+
+    } catch (error) {
+
+        console.error(
+            "GET MASTER VIP PLAN ERROR:",
+            error
+        );
+
+        return null;
+    }
+
+}
+
+
+/* =========================================================
+   FIND REFERRER
+========================================================= */
+
+async function findVipReferrer(request, user) {
+
+    try {
+
+        let refUid =
+            request.referredBy ||
+            user.referredBy ||
+            "";
+
+
+        refUid =
+            String(refUid || "").trim();
+
+
+        /* -----------------------------------------
+           NO REFERRER
+        ----------------------------------------- */
+
+        if (!refUid) {
+            return null;
+        }
+
+
+        /* -----------------------------------------
+           NEVER REFER TO SELF
+        ----------------------------------------- */
+
+        if (refUid === request.uid) {
+            return null;
+        }
+
+
+        /* -----------------------------------------
+           IF referredBy IS A UID
+        ----------------------------------------- */
+
+        const directUserSnap =
+            await get(
+                ref(
+                    db,
+                    "users/" + refUid
+                )
+            );
+
+
+        if (directUserSnap.exists()) {
+
+            return {
+                uid: refUid,
+                data: directUserSnap.val() || {}
+            };
+
+        }
+
+
+        /* -----------------------------------------
+           IF referredBy IS A REFERRAL CODE
+        ----------------------------------------- */
+
+        const referralSnap =
+            await get(
+                ref(
+                    db,
+                    "referralCodes/" + refUid
+                )
+            );
+
+
+        if (
+            referralSnap.exists() &&
+            referralSnap.val()?.uid
+        ) {
+
+            const actualRefUid =
+                String(
+                    referralSnap.val().uid
+                );
+
+
+            if (
+                actualRefUid === request.uid
+            ) {
+                return null;
+            }
+
+
+            const referrerSnap =
+                await get(
+                    ref(
+                        db,
+                        "users/" + actualRefUid
+                    )
+                );
+
+
+            if (referrerSnap.exists()) {
+
+                return {
+                    uid: actualRefUid,
+                    data: referrerSnap.val() || {}
+                };
+
+            }
+
+        }
+
+
+        return null;
+
+    } catch (error) {
+
+        console.error(
+            "FIND VIP REFERRER ERROR:",
+            error
+        );
+
+        return null;
+    }
+
+}
+
+
+/* =========================================================
+   APPROVE VIP REQUEST
+========================================================= */
+
+async function approveVipRequest(id) {
+
+    if (!id) {
+        alert("Invalid VIP request ID.");
+        return;
+    }
+
+
+    /* -----------------------------------------
+       ADMIN CHECK
+    ----------------------------------------- */
+
+    if (!currentAdmin) {
+
+        alert(
+            "Admin session is not ready."
+        );
+
+        return;
+    }
+
+
+    /* -----------------------------------------
+       DOUBLE CLICK PROTECTION
+    ----------------------------------------- */
+
+    if (vipApprovalLocks.has(id)) {
+
+        alert(
+            "This VIP request is already being processed."
+        );
+
+        return;
+    }
+
+
+    if (
+        !confirm(
+            "Approve this VIP purchase request?"
+        )
+    ) {
+        return;
+    }
+
+
+    vipApprovalLocks.add(id);
+
+
+    try {
+
+        /* =========================================
+           1. READ REQUEST
+        ========================================= */
+
+        const requestRef =
+            ref(
+                db,
+                "vipPurchaseRequests/" + id
+            );
+
+
+        const requestSnap =
+            await get(requestRef);
+
+
+        if (!requestSnap.exists()) {
+
+            alert(
+                "VIP request not found."
+            );
+
+            return;
+        }
+
+
+        const request =
+            requestSnap.val() || {};
+
+
+        /* =========================================
+           2. CHECK STATUS
+        ========================================= */
+
+        const currentStatus =
+            normalizeVipApprovalStatus(
+                request.status
+            );
+
+
+        if (currentStatus === "approved") {
+
+            alert(
+                "This VIP request is already approved."
+            );
+
+            return;
+        }
+
+
+        if (currentStatus === "rejected") {
+
+            alert(
+                "This VIP request has already been rejected."
+            );
+
+            return;
+        }
+
+
+        if (currentStatus !== "pending") {
+
+            alert(
+                "This VIP request is not pending."
+            );
+
+            return;
+        }
+
+
+        /* =========================================
+           3. VALIDATE UID
+        ========================================= */
+
+        const uid =
+            String(request.uid || "").trim();
+
+
+        if (!uid) {
+
+            alert(
+                "VIP request has no user UID."
+            );
+
+            return;
+        }
+
+
+        /* =========================================
+           4. READ USER
+        ========================================= */
+
+        const userRef =
+            ref(
+                db,
+                "users/" + uid
+            );
+
+
+        const userSnap =
+            await get(userRef);
+
+
+        if (!userSnap.exists()) {
+
+            alert(
+                "User account not found."
+            );
+
+            return;
+        }
+
+
+        const user =
+            userSnap.val() || {};
+
+
+        /* =========================================
+           5. GET MASTER VIP PLAN
+        ========================================= */
+
+        const masterPlan =
+            await getMasterVipPlan(request);
+
+
+        if (!masterPlan) {
+
+            alert(
+                "VIP plan was not found in vipPlans."
+            );
+
+            return;
+        }
+
+
+        /* =========================================
+           6. VALIDATE MASTER PLAN
+        ========================================= */
+
+        const vipName =
+            String(
+                masterPlan.name ||
+                masterPlan.vipName ||
+                request.planName ||
+                request.vipName ||
+                ""
+            ).trim();
+
+
+        const price =
+            Number(
+                masterPlan.price ??
+                request.price ??
+                request.amount ??
+                0
+            );
+
+
+        const dailyIncome =
+            Number(
+                masterPlan.dailyIncome ??
+                request.dailyIncome ??
+                0
+            );
+
+
+        const duration =
+            Number(
+                masterPlan.duration ??
+                request.duration ??
+                request.days ??
+                request.durationDays ??
+                0
+            );
+
+
+        const totalProfit =
+            Number(
+                masterPlan.totalProfit ??
+                request.totalProfit ??
+                0
+            );
+
+
+        if (!vipName) {
+
+            alert(
+                "VIP plan name is missing."
+            );
+
+            return;
+        }
+
+
+        if (
+            !Number.isFinite(price) ||
+            price < 0
+        ) {
+
+            alert(
+                "Invalid VIP price."
+            );
+
+            return;
+        }
+
+
+        if (
+            !Number.isFinite(dailyIncome) ||
+            dailyIncome < 0
+        ) {
+
+            alert(
+                "Invalid VIP daily income."
+            );
+
+            return;
+        }
+
+
+        if (
+            !Number.isFinite(duration) ||
+            duration <= 0
+        ) {
+
+            alert(
+                "Invalid VIP duration."
+            );
+
+            return;
+        }
+
+
+        if (
+            !Number.isFinite(totalProfit) ||
+            totalProfit < 0
+        ) {
+
+            alert(
+                "Invalid VIP total profit."
+            );
+
+            return;
+        }
+
+
+        /* =========================================
+           7. APPROVAL TIME
+        ========================================= */
+
+        const approvedAt =
+            Date.now();
+
+
+        const startDate =
+            approvedAt;
+
+
+        const endDate =
+            approvedAt +
+            (duration * VIP_DAY_MS);
+
+
+        /* =========================================
+           8. CREATE UNIQUE VIP OWNER ID
+        ========================================= */
+
+        const vipOwnerRef =
+            push(
+                ref(
+                    db,
+                    "users/" +
+                    uid +
+                    "/vipPlans"
+                )
+            );
+
+
+        const vipBuyerRef =
+            push(
+                ref(db, "vipBuyers")
+            );
+
+
+        /* =========================================
+           9. PREPARE VIP DATA
+        ========================================= */
+
+        const vipData = {
+
+            planId:
+                masterPlan.id,
+
+            vipName:
+                vipName,
+
+            name:
+                vipName,
+
+            price:
+                price,
+
+            dailyIncome:
+                dailyIncome,
+
+            totalProfit:
+                totalProfit,
+
+            duration:
+                duration,
+
+            totalDays:
+                duration,
+
+            remainingDays:
+                duration,
+
+            status:
+                "active",
+
+            purchasedAt:
+                Number(
+                    request.createdAt ||
+                    approvedAt
+                ),
+
+            approvedAt:
+                approvedAt,
+
+            startDate:
+                startDate,
+
+            endDate:
+                endDate,
+
+            /*
+             * IMPORTANT:
+             * No income at approval.
+             *
+             * lastClaim = approval time
+             * therefore first claim becomes available
+             * after 24 hours.
+             */
+
+            lastClaim:
+                approvedAt,
+
+            lastClaimTime:
+                approvedAt,
+
+            lastProfitTime:
+                approvedAt,
+
+            totalEarned:
+                0,
+
+            earned:
+                0,
+
+            claimedAmount:
+                0
+
+        };
+
+
+        /* =========================================
+           10. PREPARE VIP BUYER DATA
+        ========================================= */
+
+        const vipBuyerData = {
+
+            uid:
+                uid,
+
+            email:
+                request.email ||
+                user.email ||
+                "",
+
+            fullName:
+                request.fullName ||
+                user.fullName ||
+                "",
+
+            phone:
+                request.phone ||
+                user.phone ||
+                "",
+
+            planId:
+                masterPlan.id,
+
+            vipName:
+                vipName,
+
+            price:
+                price,
+
+            dailyIncome:
+                dailyIncome,
+
+            totalProfit:
+                totalProfit,
+
+            duration:
+                duration,
+
+            totalDays:
+                duration,
+
+            status:
+                "active",
+
+            requestId:
+                id,
+
+            vipPlanId:
+                vipOwnerRef.key,
+
+            purchasedAt:
+                Number(
+                    request.createdAt ||
+                    approvedAt
+                ),
+
+            approvedAt:
+                approvedAt,
+
+            startDate:
+                startDate,
+
+            endDate:
+                endDate,
+
+            lastClaim:
+                approvedAt,
+
+            totalEarned:
+                0,
+
+            claimedAmount:
+                0
+
+        };
+
+
+        /* =========================================
+           11. BUILD ATOMIC UPDATE
+        ========================================= */
+
+        const updates = {};
+
+
+        /* -----------------------------------------
+           SAVE VIP UNDER USER
+        ----------------------------------------- */
+
+        updates[
+            "users/" +
+            uid +
+            "/vipPlans/" +
+            vipOwnerRef.key
+        ] = vipData;
+
+
+        /* -----------------------------------------
+           SAVE VIP BUYER
+        ----------------------------------------- */
+
+        updates[
+            "vipBuyers/" +
+            vipBuyerRef.key
+        ] = vipBuyerData;
+
+
+        /* =========================================
+           12. APPROVE REQUEST
+        ========================================= */
+
+        updates[
+            "vipPurchaseRequests/" +
+            id +
+            "/status"
+        ] = "approved";
+
+
+        updates[
+            "vipPurchaseRequests/" +
+            id +
+            "/approvedAt"
+        ] = approvedAt;
+
+
+        updates[
+            "vipPurchaseRequests/" +
+            id +
+            "/approvedBy"
+        ] = currentAdmin.uid;
+
+
+        updates[
+            "vipPurchaseRequests/" +
+            id +
+            "/vipBuyerId"
+        ] = vipBuyerRef.key;
+
+
+        updates[
+            "vipPurchaseRequests/" +
+            id +
+            "/vipPlanId"
+        ] = vipOwnerRef.key;
+
+
+        updates[
+            "vipPurchaseRequests/" +
+            id +
+            "/duration"
+        ] = duration;
+
+
+        updates[
+            "vipPurchaseRequests/" +
+            id +
+            "/days"
+        ] = duration;
+
+
+        updates[
+            "vipPurchaseRequests/" +
+            id +
+            "/durationDays"
+        ] = duration;
+
+
+        updates[
+            "vipPurchaseRequests/" +
+            id +
+            "/dailyIncome"
+        ] = dailyIncome;
+
+
+        updates[
+            "vipPurchaseRequests/" +
+            id +
+            "/totalProfit"
+        ] = totalProfit;
+
+
+        /* =========================================
+           13. REFERRAL BONUS
+        ========================================= */
+
+        const referrer =
+            await findVipReferrer(
+                request,
+                user
+            );
+
+
+        let referralBonusGiven =
+            false;
+
+
+        if (
+            referrer &&
+            !request.referralBonusGiven
+        ) {
+
+            const refUid =
+                referrer.uid;
+
+
+            const refData =
+                referrer.data || {};
+
+
+            const currentBalance =
+                Number(
+                    refData.balance || 0
+                );
+
+
+            const currentBonus =
+                Number(
+                    refData.referralBonus || 0
+                );
+
+
+            const currentEarnings =
+                Number(
+                    refData.referralEarnings || 0
+                );
+
+
+            const currentReferralCount =
+                Number(
+                    refData.referralCount || 0
+                );
+
+
+            /* -----------------------------------------
+               REFERRER BALANCE
+            ----------------------------------------- */
+
+            updates[
+                "users/" +
+                refUid +
+                "/balance"
+            ] =
+                currentBalance +
+                VIP_REFERRAL_BONUS;
+
+
+            /* -----------------------------------------
+               REFERRAL BONUS TOTAL
+            ----------------------------------------- */
+
+            updates[
+                "users/" +
+                refUid +
+                "/referralBonus"
+            ] =
+                currentBonus +
+                VIP_REFERRAL_BONUS;
+
+
+            /* -----------------------------------------
+               REFERRAL EARNINGS
+            ----------------------------------------- */
+
+            updates[
+                "users/" +
+                refUid +
+                "/referralEarnings"
+            ] =
+                currentEarnings +
+                VIP_REFERRAL_BONUS;
+
+
+            /* -----------------------------------------
+               REFERRAL COUNT
+            ----------------------------------------- */
+
+            updates[
+                "users/" +
+                refUid +
+                "/referralCount"
+            ] =
+                currentReferralCount + 1;
+
+
+            /* -----------------------------------------
+               REFERRAL TRANSACTION
+            ----------------------------------------- */
+
+            const referralTxRef =
+                push(
+                    ref(
+                        db,
+                        "transactions"
+                    )
+                );
+
+
+            updates[
+                "transactions/" +
+                referralTxRef.key
+            ] = {
+
+                uid:
+                    refUid,
+
+                type:
+                    "referralBonus",
+
+                transactionType:
+                    "referralBonus",
+
+                amount:
+                    VIP_REFERRAL_BONUS,
+
+                currency:
+                    "RWF",
+
+                sourceUid:
+                    uid,
+
+                sourceRequestId:
+                    id,
+
+                vipName:
+                    vipName,
+
+                status:
+                    "completed",
+
+                description:
+                    "VIP referral bonus",
+
+                createdAt:
+                    approvedAt,
+
+                timestamp:
+                    approvedAt
+
+            };
+
+
+            /* -----------------------------------------
+               REFERRAL BONUS RECORD
+            ----------------------------------------- */
+
+            const referralRecordRef =
+                push(
+                    ref(
+                        db,
+                        "vipReferralBonuses"
+                    )
+                );
+
+
+            updates[
+                "vipReferralBonuses/" +
+                referralRecordRef.key
+            ] = {
+
+                referrerUid:
+                    refUid,
+
+                referredUserUid:
+                    uid,
+
+                requestId:
+                    id,
+
+                vipName:
+                    vipName,
+
+                amount:
+                    VIP_REFERRAL_BONUS,
+
+                currency:
+                    "RWF",
+
+                status:
+                    "completed",
+
+                createdAt:
+                    approvedAt
+
+            };
+
+
+            /* -----------------------------------------
+               SAVE BONUS INFO ON REQUEST
+            ----------------------------------------- */
+
+            updates[
+                "vipPurchaseRequests/" +
+                id +
+                "/referralBonus"
+            ] =
+                VIP_REFERRAL_BONUS;
+
+
+            updates[
+                "vipPurchaseRequests/" +
+                id +
+                "/referralBonusUid"
+            ] =
+                refUid;
+
+
+            updates[
+                "vipPurchaseRequests/" +
+                id +
+                "/referralBonusGiven"
+            ] =
+                true;
+
+
+            referralBonusGiven =
+                true;
+
+        } else {
+
+            /* -----------------------------------------
+               NO BONUS
+            ----------------------------------------- */
+
+            updates[
+                "vipPurchaseRequests/" +
+                id +
+                "/referralBonus"
+            ] = 0;
+
+
+            updates[
+                "vipPurchaseRequests/" +
+                id +
+                "/referralBonusGiven"
+            ] =
+                Boolean(
+                    request.referralBonusGiven
+                );
+
+        }
+
+
+        /* =========================================
+           14. SAVE EVERYTHING AT ONCE
+        ========================================= */
+
+        await update(
+            ref(db),
+            updates
+        );
+
+
+        /* =========================================
+           15. SUCCESS
+        ========================================= */
+
+        let message =
+            "VIP approved successfully.";
+
+
+        message +=
+            "\n\nVIP: " +
+            vipName;
+
+
+        message +=
+            "\nDuration: " +
+            duration +
+            " days";
+
+
+        message +=
+            "\nDaily Income: " +
+            dailyIncome.toLocaleString() +
+            " RWF";
+
+
+        message +=
+            "\n\nFirst daily claim: after 24 hours.";
+
+
+        message +=
+            "\nNo income was credited at approval.";
+
+
+        if (referralBonusGiven) {
+
+            message +=
+                "\n\nReferral bonus: 1,000 RWF.";
+
+        } else {
+
+            message +=
+                "\n\nNo referral bonus was given.";
+
+        }
+
+
+        alert(message);
+
+
+        /* -----------------------------------------
+           REFRESH DISPLAY
+        ----------------------------------------- */
+
+        if (
+            typeof renderVipRequests ===
+            "function"
+        ) {
+
+            renderVipRequests();
+
+        }
+
+    } catch (error) {
+
+        console.error(
+            "APPROVE VIP ERROR:",
+            error
+        );
+
+
+        /*
+         * IMPORTANT:
+         *
+         * We DO NOT restore the request to pending.
+         *
+         * Because approval uses ONE atomic
+         * Firebase update, either EVERYTHING
+         * is saved or NOTHING is saved.
+         *
+         * This prevents the old problem where
+         * the request remained pending after
+         * part of the operation had succeeded.
+         */
+
+
+        alert(
+            "VIP approval failed:\n\n" +
+            (
+                error?.message ||
+                "Unknown error"
+            )
+        );
+
+    } finally {
+
+        vipApprovalLocks.delete(id);
+
+    }
+
+}
+
+
+/* =========================================================
+   REJECT VIP REQUEST
+========================================================= */
+
+async function rejectVipRequest(id) {
+
+    if (!id) {
+
+        alert(
+            "Invalid VIP request ID."
+        );
+
+        return;
+    }
+
+
+    if (!currentAdmin) {
+
+        alert(
+            "Admin session is not ready."
+        );
+
+        return;
+    }
+
+
+    if (
+        !confirm(
+            "Reject this VIP purchase request?"
+        )
+    ) {
+
+        return;
+    }
+
+
+    try {
+
+        const requestRef =
+            ref(
+                db,
+                "vipPurchaseRequests/" +
+                id
+            );
+
+
+        const requestSnap =
+            await get(requestRef);
+
+
+        if (!requestSnap.exists()) {
+
+            alert(
+                "VIP request not found."
+            );
+
+            return;
+        }
+
+
+        const request =
+            requestSnap.val() || {};
+
+
+        const status =
+            normalizeVipApprovalStatus(
+                request.status
+            );
+
+
+        if (status === "approved") {
+
+            alert(
+                "This VIP request is already approved."
+            );
+
+            return;
+        }
+
+
+        if (status === "rejected") {
+
+            alert(
+                "This VIP request is already rejected."
+            );
+
+            return;
+        }
+
+
+        if (status !== "pending") {
+
+            alert(
+                "This VIP request is not pending."
+            );
+
+            return;
+        }
+
+
+        const now =
+            Date.now();
+
+
+        await update(
+            requestRef,
+            {
+
+                status:
+                    "rejected",
+
+                rejectedAt:
+                    now,
+
+                rejectedBy:
+                    currentAdmin.uid
+
+            }
+        );
+
+
+        alert(
+            "VIP request rejected successfully."
+        );
+
+
+        if (
+            typeof renderVipRequests ===
+            "function"
+        ) {
+
+            renderVipRequests();
+
+        }
+
+    } catch (error) {
+
+        console.error(
+            "REJECT VIP ERROR:",
+            error
+        );
+
+
+        alert(
+            "VIP rejection failed:\n\n" +
+            (
+                error?.message ||
+                "Unknown error"
+            )
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   GLOBAL FUNCTIONS
+========================================================= */
+
+window.approveVipRequest =
+    approveVipRequest;
+
+window.rejectVipRequest =
+    rejectVipRequest;
+
+
+/* =========================================================
+   PART 8 READY
+========================================================= */
+
+console.log(
+    "✅ Money Vault Admin Part 8 Loaded — VIP Approve / Reject"
+);
+/* =========================================================
+   MONEY VAULT - ADMIN.JS
+   PART 9 — VIP BUYERS / ACTIVE VIP MANAGEMENT
+   CURRENCY: RWF / FRW
+
+   FEATURES:
+   - Load approved VIP buyers
+   - Show user information
+   - Show VIP plan information
+   - Show price / daily income / total profit
+   - Show active / expired status
+   - Show start / end dates
+   - Search
+   - Filter
+   - Counters
+   - Real-time Firebase listener
+   - Safe HTML escaping
+========================================================= */
+
+
+/* =========================================================
+   PART 9 STATE
+========================================================= */
+
+let allVipBuyersData = {};
+let vipBuyersListenerStarted = false;
+
+
+/* =========================================================
+   DOM ELEMENTS
+========================================================= */
+
+const vipBuyersContainer =
+    document.getElementById("vipBuyersContainer") ||
+    document.getElementById("vipBuyers") ||
+    document.getElementById("vipBuyerList");
+
+const vipBuyerSearch =
+    document.getElementById("vipBuyerSearch") ||
+    document.getElementById("vipSearch");
+
+const vipBuyerFilter =
+    document.getElementById("vipBuyerFilter") ||
+    document.getElementById("vipFilter");
+
+const vipBuyerTotal =
+    document.getElementById("vipBuyerTotal") ||
+    document.getElementById("vipBuyersTotal") ||
+    document.getElementById("vipTotal");
+
+const vipBuyerActive =
+    document.getElementById("vipBuyerActive") ||
+    document.getElementById("vipBuyersActive") ||
+    document.getElementById("vipActive");
+
+const vipBuyerExpired =
+    document.getElementById("vipBuyerExpired") ||
+    document.getElementById("vipBuyersExpired") ||
+    document.getElementById("vipExpired");
+
+const emptyVipBuyers =
+    document.getElementById("emptyVipBuyers") ||
+    document.getElementById("emptyVipBuyer");
+
+
+/* =========================================================
+   SAFE HTML
+========================================================= */
+
+function escapeVipBuyerHTML(value) {
+
+    return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
+
+/* =========================================================
+   MONEY FORMAT
+========================================================= */
+
+function formatVipBuyerMoney(value) {
+
+    const amount = Number(value || 0);
+
+    return amount.toLocaleString("en-US") + " RWF";
+}
+
+
+/* =========================================================
+   DATE FORMAT
+========================================================= */
+
+function formatVipBuyerDate(value) {
+
+    const timestamp = Number(value || 0);
+
+    if (!timestamp) {
+        return "-";
+    }
+
+    const date = new Date(timestamp);
+
+    if (Number.isNaN(date.getTime())) {
+        return "-";
+    }
+
+    return date.toLocaleString("en-GB", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit"
+    });
+}
+
+
+/* =========================================================
+   NORMALIZE STATUS
+========================================================= */
+
+function normalizeVipBuyerStatus(status) {
+
+    const value =
+        String(status || "")
+            .trim()
+            .toLowerCase();
+
+    if (value === "active") {
+        return "active";
+    }
+
+    if (value === "expired") {
+        return "expired";
+    }
+
+    if (value === "pending") {
+        return "pending";
+    }
+
+    if (value === "rejected") {
+        return "rejected";
+    }
+
+    return value || "unknown";
+}
+
+
+/* =========================================================
+   CALCULATE VIP STATUS
+========================================================= */
+
+function getVipBuyerStatus(vip) {
+
+    const savedStatus =
+        normalizeVipBuyerStatus(vip?.status);
+
+    /*
+       If Firebase already says expired,
+       keep it expired.
+    */
+
+    if (savedStatus === "expired") {
+        return "expired";
+    }
+
+    /*
+       Only active VIPs can automatically
+       become expired.
+    */
+
+    if (savedStatus === "active") {
+
+        const endDate =
+            Number(
+                vip?.endDate ||
+                vip?.expiryDate ||
+                0
+            );
+
+        if (endDate > 0 && Date.now() >= endDate) {
+            return "expired";
+        }
+
+        return "active";
+    }
+
+    return savedStatus;
+}
+
+
+/* =========================================================
+   STATUS CLASS
+========================================================= */
+
+function vipBuyerStatusClass(status) {
+
+    switch (status) {
+
+        case "active":
+            return "status-approved";
+
+        case "expired":
+            return "status-rejected";
+
+        case "pending":
+            return "status-pending";
+
+        default:
+            return "status-pending";
+    }
+}
+
+
+/* =========================================================
+   LOAD VIP BUYERS
+========================================================= */
+
+function initializeVipBuyersListener() {
+
+    if (vipBuyersListenerStarted) {
+        return;
+    }
+
+    if (!currentAdmin) {
+        return;
+    }
+
+    vipBuyersListenerStarted = true;
+
+    const vipBuyersRef =
+        ref(db, "vipBuyers");
+
+    onValue(
+        vipBuyersRef,
+        (snapshot) => {
+
+            allVipBuyersData = {};
+
+            if (!snapshot.exists()) {
+
+                renderVipBuyers();
+
+                return;
+            }
+
+            snapshot.forEach((child) => {
+
+                allVipBuyersData[child.key] =
+                    {
+                        id: child.key,
+                        ...child.val()
+                    };
+            });
+
+            renderVipBuyers();
+
+        },
+        (error) => {
+
+            console.error(
+                "VIP Buyers listener error:",
+                error
+            );
+
+            if (vipBuyersContainer) {
+
+                vipBuyersContainer.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        <h3>Failed to load VIP buyers</h3>
+                        <p>${escapeVipBuyerHTML(error.message)}</p>
+                    </div>
+                `;
+            }
+        }
+    );
+}
+
+
+/* =========================================================
+   FILTER + SEARCH
+========================================================= */
+
+function getFilteredVipBuyers() {
+
+    const search =
+        String(
+            vipBuyerSearch?.value || ""
+        )
+        .trim()
+        .toLowerCase();
+
+    const filter =
+        String(
+            vipBuyerFilter?.value || "All"
+        )
+        .trim()
+        .toLowerCase();
+
+    return Object.values(allVipBuyersData)
+        .filter((vip) => {
+
+            const status =
+                getVipBuyerStatus(vip);
+
+            /*
+               STATUS FILTER
+            */
+
+            if (
+                filter !== "" &&
+                filter !== "all" &&
+                filter !== "all vip buyers" &&
+                filter !== status
+            ) {
+
+                return false;
+            }
+
+
+            /*
+               SEARCH
+            */
+
+            if (!search) {
+                return true;
+            }
+
+            const searchableText = [
+
+                vip.uid,
+
+                vip.userId,
+
+                vip.email,
+
+                vip.fullName,
+
+                vip.phone,
+
+                vip.name,
+
+                vip.vipName,
+
+                vip.planName,
+
+                vip.planId,
+
+                vip.vipPlanId,
+
+                vip.requestId,
+
+                vip.paymentMethod,
+
+                vip.transactionId,
+
+                vip.status
+
+            ]
+            .map(value =>
+                String(value || "")
+                    .toLowerCase()
+            )
+            .join(" ");
+
+            return searchableText.includes(search);
+
+        })
+        .sort((a, b) => {
+
+            const aTime =
+                Number(
+                    a.approvedAt ||
+                    a.purchasedAt ||
+                    a.createdAt ||
+                    0
+                );
+
+            const bTime =
+                Number(
+                    b.approvedAt ||
+                    b.purchasedAt ||
+                    b.createdAt ||
+                    0
+                );
+
+            return bTime - aTime;
+        });
+}
+
+
+/* =========================================================
+   UPDATE VIP BUYER COUNTERS
+========================================================= */
+
+function updateVipBuyerCounters() {
+
+    const all =
+        Object.values(allVipBuyersData);
+
+    let active = 0;
+    let expired = 0;
+
+    all.forEach((vip) => {
+
+        const status =
+            getVipBuyerStatus(vip);
+
+        if (status === "active") {
+            active++;
+        }
+
+        if (status === "expired") {
+            expired++;
+        }
+    });
+
+
+    if (vipBuyerTotal) {
+        vipBuyerTotal.textContent =
+            all.length;
+    }
+
+    if (vipBuyerActive) {
+        vipBuyerActive.textContent =
+            active;
+    }
+
+    if (vipBuyerExpired) {
+        vipBuyerExpired.textContent =
+            expired;
+    }
+}
+
+
+/* =========================================================
+   RENDER VIP BUYERS
+========================================================= */
+
+function renderVipBuyers() {
+
+    updateVipBuyerCounters();
+
+    if (!vipBuyersContainer) {
+        return;
+    }
+
+    const buyers =
+        getFilteredVipBuyers();
+
+    vipBuyersContainer.innerHTML = "";
+
+
+    /*
+       NO DATA AT ALL
+    */
+
+    if (
+        Object.keys(allVipBuyersData).length === 0
+    ) {
+
+        if (emptyVipBuyers) {
+            emptyVipBuyers.style.display = "block";
+        }
+
+        vipBuyersContainer.innerHTML = `
+            <div class="empty-state">
+                <i class="fa-solid fa-crown"></i>
+                <h3>No VIP Buyers Found</h3>
+                <p>Approved VIP purchases will appear here.</p>
+            </div>
+        `;
+
+        return;
+    }
+
+
+    /*
+       FILTER RETURNED NOTHING
+    */
+
+    if (buyers.length === 0) {
+
+        if (emptyVipBuyers) {
+            emptyVipBuyers.style.display = "block";
+        }
+
+        vipBuyersContainer.innerHTML = `
+            <div class="empty-state">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <h3>No Matching VIP Buyer</h3>
+                <p>Try another search or filter.</p>
+            </div>
+        `;
+
+        return;
+    }
+
+
+    if (emptyVipBuyers) {
+        emptyVipBuyers.style.display = "none";
+    }
+
+
+    /*
+       RENDER CARDS
+    */
+
+    buyers.forEach((vip) => {
+
+        const status =
+            getVipBuyerStatus(vip);
+
+        const statusClass =
+            vipBuyerStatusClass(status);
+
+        const statusLabel =
+            status.charAt(0).toUpperCase() +
+            status.slice(1);
+
+
+        const userName =
+            vip.fullName ||
+            vip.userName ||
+            vip.name ||
+            "Unknown User";
+
+        const email =
+            vip.email ||
+            "-";
+
+        const phone =
+            vip.phone ||
+            vip.senderPhone ||
+            "-";
+
+        const uid =
+            vip.uid ||
+            vip.userId ||
+            "-";
+
+        const vipName =
+            vip.vipName ||
+            vip.planName ||
+            vip.name ||
+            "VIP Plan";
+
+        const planId =
+            vip.planId ||
+            vip.vipPlanId ||
+            "-";
+
+        const price =
+            vip.price ||
+            vip.amount ||
+            0;
+
+        const dailyIncome =
+            vip.dailyIncome ||
+            0;
+
+        const totalProfit =
+            vip.totalProfit ||
+            0;
+
+        const duration =
+            vip.duration ||
+            vip.durationDays ||
+            vip.totalDays ||
+            0;
+
+        const startDate =
+            vip.startDate ||
+            vip.approvedAt ||
+            vip.purchasedAt ||
+            0;
+
+        const endDate =
+            vip.endDate ||
+            vip.expiryDate ||
+            0;
+
+        const approvedAt =
+            vip.approvedAt ||
+            vip.purchasedAt ||
+            vip.createdAt ||
+            0;
+
+        const requestId =
+            vip.requestId ||
+            "-";
+
+        const transactionId =
+            vip.transactionId ||
+            vip.paymentTransactionId ||
+            "-";
+
+
+        const card =
+            document.createElement("div");
+
+        card.className =
+            "request-card vip-buyer-card";
+
+
+        card.innerHTML = `
+
+            <div class="request-card-header">
+
+                <div>
+                    <h3>
+                        <i class="fa-solid fa-crown"></i>
+                        ${escapeVipBuyerHTML(vipName)}
+                    </h3>
+
+                    <small>
+                        Buyer ID:
+                        ${escapeVipBuyerHTML(vip.id)}
+                    </small>
+                </div>
+
+                <span
+                    class="status-badge ${statusClass}">
+                    ${escapeVipBuyerHTML(statusLabel)}
+                </span>
+
+            </div>
+
+
+            <div class="request-card-body">
+
+                <div class="request-info">
+
+                    <p>
+                        <strong>
+                            <i class="fa-solid fa-user"></i>
+                            User
+                        </strong>
+
+                        ${escapeVipBuyerHTML(userName)}
+                    </p>
+
+
+                    <p>
+                        <strong>
+                            <i class="fa-solid fa-envelope"></i>
+                            Email
+                        </strong>
+
+                        ${escapeVipBuyerHTML(email)}
+                    </p>
+
+
+                    <p>
+                        <strong>
+                            <i class="fa-solid fa-phone"></i>
+                            Phone
+                        </strong>
+
+                        ${escapeVipBuyerHTML(phone)}
+                    </p>
+
+
+                    <p>
+                        <strong>
+                            <i class="fa-solid fa-fingerprint"></i>
+                            UID
+                        </strong>
+
+                        ${escapeVipBuyerHTML(uid)}
+                    </p>
+
+
+                    <p>
+                        <strong>
+                            <i class="fa-solid fa-layer-group"></i>
+                            Plan ID
+                        </strong>
+
+                        ${escapeVipBuyerHTML(planId)}
+                    </p>
+
+
+                    <p>
+                        <strong>
+                            <i class="fa-solid fa-money-bill-wave"></i>
+                            Price
+                        </strong>
+
+                        ${formatVipBuyerMoney(price)}
+                    </p>
+
+
+                    <p>
+                        <strong>
+                            <i class="fa-solid fa-coins"></i>
+                            Daily Income
+                        </strong>
+
+                        ${formatVipBuyerMoney(dailyIncome)}
+                    </p>
+
+
+                    <p>
+                        <strong>
+                            <i class="fa-solid fa-chart-line"></i>
+                            Total Profit
+                        </strong>
+
+                        ${formatVipBuyerMoney(totalProfit)}
+                    </p>
+
+
+                    <p>
+                        <strong>
+                            <i class="fa-solid fa-calendar-days"></i>
+                            Duration
+                        </strong>
+
+                        ${escapeVipBuyerHTML(duration)}
+                        Days
+                    </p>
+
+
+                    <p>
+                        <strong>
+                            <i class="fa-solid fa-play"></i>
+                            Start Date
+                        </strong>
+
+                        ${formatVipBuyerDate(startDate)}
+                    </p>
+
+
+                    <p>
+                        <strong>
+                            <i class="fa-solid fa-stop"></i>
+                            End Date
+                        </strong>
+
+                        ${formatVipBuyerDate(endDate)}
+                    </p>
+
+
+                    <p>
+                        <strong>
+                            <i class="fa-solid fa-check"></i>
+                            Approved
+                        </strong>
+
+                        ${formatVipBuyerDate(approvedAt)}
+                    </p>
+
+
+                    <p>
+                        <strong>
+                            <i class="fa-solid fa-receipt"></i>
+                            Request ID
+                        </strong>
+
+                        ${escapeVipBuyerHTML(requestId)}
+                    </p>
+
+
+                    <p>
+                        <strong>
+                            <i class="fa-solid fa-hashtag"></i>
+                            Transaction ID
+                        </strong>
+
+                        ${escapeVipBuyerHTML(transactionId)}
+                    </p>
+
+                </div>
+
+            </div>
+
+        `;
+
+
+        vipBuyersContainer.appendChild(card);
+
+    });
+}
+
+
+/* =========================================================
+   SEARCH EVENT
+========================================================= */
+
+vipBuyerSearch?.addEventListener(
+    "input",
+    () => {
+
+        renderVipBuyers();
+
+    }
+);
+
+
+/* =========================================================
+   FILTER EVENT
+========================================================= */
+
+vipBuyerFilter?.addEventListener(
+    "change",
+    () => {
+
+        renderVipBuyers();
+
+    }
+);
+
+
+/* =========================================================
+   MANUAL REFRESH
+========================================================= */
+
+function refreshVipBuyers() {
+
+    renderVipBuyers();
+
+}
+
+
+/* =========================================================
+   AUTO START
+========================================================= */
+
+function startAdminPart9() {
+
+    if (vipBuyersListenerStarted) {
+        return;
+    }
+
+    if (
+        typeof currentAdmin !== "undefined" &&
+        currentAdmin
+    ) {
+
+        initializeVipBuyersListener();
+
+        return;
+    }
+
+
+    /*
+       Wait for Part 1 authentication.
+    */
+
+    if (
+        typeof adminState !== "undefined" &&
+        adminState.readyPromise
+    ) {
+
+        adminState.readyPromise
+            .then(() => {
+
+                initializeVipBuyersListener();
+
+            })
+            .catch((error) => {
+
+                console.error(
+                    "Part 9 admin ready error:",
+                    error
+                );
+
+            });
+
+        return;
+    }
+
+
+    /*
+       Fallback polling.
+    */
+
+    let attempts = 0;
+
+    const waitForAdmin =
+        setInterval(() => {
+
+            attempts++;
+
+            if (
+                typeof currentAdmin !== "undefined" &&
+                currentAdmin
+            ) {
+
+                clearInterval(waitForAdmin);
+
+                initializeVipBuyersListener();
+
+            }
+
+            if (attempts >= 60) {
+
+                clearInterval(waitForAdmin);
+
+                console.warn(
+                    "PART 9: Admin not ready."
+                );
+
+            }
+
+        }, 500);
+
+}
+
+
+/* =========================================================
+   GLOBAL FUNCTIONS
+========================================================= */
+
+window.renderVipBuyers =
+    renderVipBuyers;
+
+window.refreshVipBuyers =
+    refreshVipBuyers;
+
+
+/* =========================================================
+   START
+========================================================= */
+
+startAdminPart9();
+
+
+console.log(
+    "✅ MONEY VAULT ADMIN PART 9 — VIP BUYERS LOADED"
+);
+
+/* =========================================================
+   MONEY VAULT - ADMIN.JS
+   PART 10 — USERS MANAGEMENT
+
+   FEATURES:
+   - Real-time users list
+   - Search users
+   - Active users counter
+   - Blocked users counter
+   - View user details
+   - Block user
+   - Activate user
+   - Safe HTML escaping
+   - RWF / FRW
+   - Admin only
+========================================================= */
+
+
+/* =========================================================
+   PART 10 STATE
+========================================================= */
+
+let allUsersManagementData = {};
+let usersManagementListenerStarted = false;
+let selectedUserIdForModal = null;
+
+
+/* =========================================================
+   DOM ELEMENTS
+========================================================= */
+
+const usersContainer =
+    document.getElementById("usersContainer");
+
+const allUsers =
+    document.getElementById("allUsers");
+
+const activeUsers =
+    document.getElementById("activeUsers");
+
+const blockedUsers =
+    document.getElementById("blockedUsers");
+
+const userSearch =
+    document.getElementById("userSearch");
+
+const emptyUsers =
+    document.getElementById("emptyUsers");
+
+
+/* =========================================================
+   USER MODAL
+========================================================= */
+
+const userModal =
+    document.getElementById("userModal");
+
+const closeUserModal =
+    document.getElementById("closeUserModal");
+
+const userFullName =
+    document.getElementById("userFullName");
+
+const userEmail =
+    document.getElementById("userEmail");
+
+const userPhone =
+    document.getElementById("userPhone");
+
+const userBalance =
+    document.getElementById("userBalance");
+
+const userDeposits =
+    document.getElementById("userDeposits");
+
+const userWithdraws =
+    document.getElementById("userWithdraws");
+
+const userVip =
+    document.getElementById("userVip");
+
+const userJoined =
+    document.getElementById("userJoined");
+
+const blockUserBtn =
+    document.getElementById("blockUserBtn");
+
+const activateUserBtn =
+    document.getElementById("activateUserBtn");
+
+
+/* =========================================================
+   SAFE HTML
+========================================================= */
+
+function escapeUserHTML(value) {
+
+    return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
+
+/* =========================================================
+   MONEY FORMAT
+========================================================= */
+
+function formatUserMoney(value) {
+
+    const amount = Number(value || 0);
+
+    return amount.toLocaleString("en-US") + " RWF";
+}
+
+
+/* =========================================================
+   DATE FORMAT
+========================================================= */
+
+function formatUserDate(value) {
+
+    const timestamp = Number(value || 0);
+
+    if (!timestamp) {
+        return "-";
+    }
+
+    const date = new Date(timestamp);
+
+    if (Number.isNaN(date.getTime())) {
+        return "-";
+    }
+
+    return date.toLocaleString("en-GB", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit"
+    });
+}
+
+
+/* =========================================================
+   NORMALIZE USER STATUS
+========================================================= */
+
+function normalizeUserStatus(status) {
+
+    const value =
+        String(status || "")
+            .trim()
+            .toLowerCase();
+
+    if (
+        value === "blocked" ||
+        value === "block" ||
+        value === "disabled"
+    ) {
+        return "blocked";
+    }
+
+    return "active";
+}
+
+
+/* =========================================================
+   GET USER VIP NAME
+========================================================= */
+
+function getUserVipName(user) {
+
+    if (user.vipPlan) {
+        return user.vipPlan;
+    }
+
+    if (user.vip) {
+        return user.vip;
+    }
+
+    if (user.vipName) {
+        return user.vipName;
+    }
+
+    if (
+        user.vipPlans &&
+        typeof user.vipPlans === "object"
+    ) {
+
+        const activePlans =
+            Object.values(user.vipPlans)
+                .filter(plan => {
+
+                    return (
+                        String(plan?.status || "")
+                            .toLowerCase() === "active"
+                    );
+
+                });
+
+        if (activePlans.length > 0) {
+
+            return activePlans
+                .map(plan =>
+                    plan.vipName ||
+                    plan.name ||
+                    "VIP"
+                )
+                .join(", ");
+        }
+    }
+
+    return "None";
+}
+
+
+/* =========================================================
+   UPDATE USER COUNTERS
+========================================================= */
+
+function updateUserManagementCounters() {
+
+    const users =
+        Object.values(allUsersManagementData);
+
+    let active = 0;
+    let blocked = 0;
+
+    users.forEach(user => {
+
+        const status =
+            normalizeUserStatus(user.status);
+
+        if (status === "blocked") {
+            blocked++;
+        } else {
+            active++;
+        }
+    });
+
+
+    if (allUsers) {
+        allUsers.textContent =
+            users.length;
+    }
+
+    if (activeUsers) {
+        activeUsers.textContent =
+            active;
+    }
+
+    if (blockedUsers) {
+        blockedUsers.textContent =
+            blocked;
+    }
+}
+
+
+/* =========================================================
+   LOAD USERS
+========================================================= */
+
+function initializeUsersManagementListener() {
+
+    if (usersManagementListenerStarted) {
+        return;
+    }
+
+    if (!currentAdmin) {
+        return;
+    }
+
+    usersManagementListenerStarted = true;
+
+    const usersRef =
+        ref(db, "users");
+
+    onValue(
+        usersRef,
+        (snapshot) => {
+
+            allUsersManagementData = {};
+
+            if (snapshot.exists()) {
+
+                snapshot.forEach(child => {
+
+                    allUsersManagementData[child.key] = {
+
+                        uid: child.key,
+
+                        ...child.val()
+
+                    };
+
+                });
+
+            }
+
+            renderUsersManagement();
+
+        },
+        (error) => {
+
+            console.error(
+                "Users listener error:",
+                error
+            );
+
+            if (usersContainer) {
+
+                usersContainer.innerHTML = `
+                    <div class="empty-state">
+
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+
+                        <h3>
+                            Failed to Load Users
+                        </h3>
+
+                        <p>
+                            ${escapeUserHTML(error.message)}
+                        </p>
+
+                    </div>
+                `;
+            }
+        }
+    );
+}
+
+
+/* =========================================================
+   FILTER USERS BY SEARCH
+========================================================= */
+
+function getFilteredUsersManagement() {
+
+    const keyword =
+        String(
+            userSearch?.value || ""
+        )
+        .trim()
+        .toLowerCase();
+
+
+    const users =
+        Object.values(allUsersManagementData);
+
+
+    if (!keyword) {
+        return users;
+    }
+
+
+    return users.filter(user => {
+
+        const searchableText = [
+
+            user.uid,
+
+            user.email,
+
+            user.fullName,
+
+            user.name,
+
+            user.phone,
+
+            user.country,
+
+            user.referralCode,
+
+            user.referredBy,
+
+            user.status,
+
+            user.vip,
+
+            user.vipPlan
+
+        ]
+        .map(value =>
+            String(value || "")
+                .toLowerCase()
+        )
+        .join(" ");
+
+
+        return searchableText.includes(keyword);
+
+    });
+}
+
+
+/* =========================================================
+   RENDER USERS
+========================================================= */
+
+function renderUsersManagement() {
+
+    updateUserManagementCounters();
+
+
+    if (!usersContainer) {
+        return;
+    }
+
+
+    const users =
+        getFilteredUsersManagement();
+
+
+    usersContainer.innerHTML = "";
+
+
+    /*
+       NO USERS
+    */
+
+    if (
+        Object.keys(allUsersManagementData).length === 0
+    ) {
+
+        if (emptyUsers) {
+            emptyUsers.style.display = "block";
+        }
+
+        usersContainer.innerHTML = `
+
+            <div class="empty-state">
+
+                <i class="fa-solid fa-users"></i>
+
+                <h3>
+                    No Users Found
+                </h3>
+
+                <p>
+                    Registered users will appear here.
+                </p>
+
+            </div>
+
+        `;
+
+        return;
+    }
+
+
+    /*
+       SEARCH RETURNED NOTHING
+    */
+
+    if (users.length === 0) {
+
+        if (emptyUsers) {
+            emptyUsers.style.display = "block";
+        }
+
+        usersContainer.innerHTML = `
+
+            <div class="empty-state">
+
+                <i class="fa-solid fa-magnifying-glass"></i>
+
+                <h3>
+                    No Matching User
+                </h3>
+
+                <p>
+                    Try another name, email, phone or UID.
+                </p>
+
+            </div>
+
+        `;
+
+        return;
+    }
+
+
+    if (emptyUsers) {
+        emptyUsers.style.display = "none";
+    }
+
+
+    /*
+       SORT NEWEST USERS FIRST
+    */
+
+    users.sort((a, b) => {
+
+        return Number(
+            b.createdAt || 0
+        ) - Number(
+            a.createdAt || 0
+        );
+
+    });
+
+
+    /*
+       RENDER USER CARDS
+    */
+
+    users.forEach(user => {
+
+        const uid =
+            user.uid;
+
+        const status =
+            normalizeUserStatus(user.status);
+
+        const isBlocked =
+            status === "blocked";
+
+        const userName =
+            user.fullName ||
+            user.name ||
+            "Unknown User";
+
+        const email =
+            user.email ||
+            "-";
+
+        const phone =
+            user.phone ||
+            "-";
+
+        const balance =
+            Number(user.balance || 0);
+
+        const vipName =
+            getUserVipName(user);
+
+
+        const card =
+            document.createElement("div");
+
+        card.className =
+            "user-card";
+
+
+        card.innerHTML = `
+
+            <div class="user-card-header">
+
+                <div>
+
+                    <h3>
+                        <i class="fa-solid fa-user"></i>
+
+                        ${escapeUserHTML(userName)}
+                    </h3>
+
+                    <small>
+                        UID:
+                        ${escapeUserHTML(uid)}
+                    </small>
+
+                </div>
+
+
+                <span
+                    class="status-badge ${
+                        isBlocked
+                            ? "status-rejected"
+                            : "status-approved"
+                    }">
+
+                    ${
+                        isBlocked
+                            ? "Blocked"
+                            : "Active"
+                    }
+
+                </span>
+
+            </div>
+
+
+            <div class="user-card-body">
+
+                <p>
+
+                    <strong>
+                        <i class="fa-solid fa-envelope"></i>
+                        Email:
+                    </strong>
+
+                    ${escapeUserHTML(email)}
+
+                </p>
+
+
+                <p>
+
+                    <strong>
+                        <i class="fa-solid fa-phone"></i>
+                        Phone:
+                    </strong>
+
+                    ${escapeUserHTML(phone)}
+
+                </p>
+
+
+                <p>
+
+                    <strong>
+                        <i class="fa-solid fa-wallet"></i>
+                        Balance:
+                    </strong>
+
+                    ${formatUserMoney(balance)}
+
+                </p>
+
+
+                <p>
+
+                    <strong>
+                        <i class="fa-solid fa-crown"></i>
+                        VIP:
+                    </strong>
+
+                    ${escapeUserHTML(vipName)}
+
+                </p>
+
+
+                <p>
+
+                    <strong>
+                        <i class="fa-solid fa-calendar"></i>
+                        Joined:
+                    </strong>
+
+                    ${formatUserDate(user.createdAt)}
+
+                </p>
+
+            </div>
+
+
+            <div class="action-buttons">
+
+                <button
+                    type="button"
+                    class="viewUserBtn"
+                    data-id="${escapeUserHTML(uid)}">
+
+                    <i class="fa-solid fa-eye"></i>
+
+                    View
+
+                </button>
+
+            </div>
+
+        `;
+
+
+        usersContainer.appendChild(card);
+
+    });
+}
+
+
+/* =========================================================
+   SEARCH USERS
+========================================================= */
+
+userSearch?.addEventListener(
+    "input",
+    () => {
+
+        renderUsersManagement();
+
+    }
+);
+
+
+/* =========================================================
+   OPEN USER DETAILS
+========================================================= */
+
+async function openUserDetails(uid) {
+
+    try {
+
+        if (!currentAdmin) {
+
+            alert("Admin authentication required.");
+
+            return;
+        }
+
+
+        if (!uid) {
+            return;
+        }
+
+
+        const user =
+            allUsersManagementData[uid];
+
+
+        if (!user) {
+
+            const userSnap =
+                await get(
+                    ref(db, "users/" + uid)
+                );
+
+            if (!userSnap.exists()) {
+
+                alert("User not found.");
+
+                return;
+            }
+
+            allUsersManagementData[uid] = {
+
+                uid,
+
+                ...userSnap.val()
+
+            };
+
+        }
+
+
+        const selectedUser =
+            allUsersManagementData[uid];
+
+
+        selectedUserIdForModal =
+            uid;
+
+
+        /*
+           FILL MODAL
+        */
+
+        if (userFullName) {
+
+            userFullName.textContent =
+                selectedUser.fullName ||
+                selectedUser.name ||
+                "Unknown User";
+
+        }
+
+
+        if (userEmail) {
+
+            userEmail.textContent =
+                selectedUser.email ||
+                "-";
+
+        }
+
+
+        if (userPhone) {
+
+            userPhone.textContent =
+                selectedUser.phone ||
+                "-";
+
+        }
+
+
+        if (userBalance) {
+
+            userBalance.textContent =
+                formatUserMoney(
+                    selectedUser.balance
+                );
+
+        }
+
+
+        if (userDeposits) {
+
+            userDeposits.textContent =
+                formatUserMoney(
+                    selectedUser.totalDeposits ??
+                    selectedUser.totalDeposit ??
+                    0
+                );
+
+        }
+
+
+        if (userWithdraws) {
+
+            userWithdraws.textContent =
+                formatUserMoney(
+                    selectedUser.totalWithdraws ??
+                    selectedUser.totalWithdraw ??
+                    0
+                );
+
+        }
+
+
+        if (userVip) {
+
+            userVip.textContent =
+                getUserVipName(
+                    selectedUser
+                );
+
+        }
+
+
+        if (userJoined) {
+
+            userJoined.textContent =
+                formatUserDate(
+                    selectedUser.createdAt
+                );
+
+        }
+
+
+        /*
+           BUTTON VISIBILITY
+        */
+
+        const blocked =
+            normalizeUserStatus(
+                selectedUser.status
+            ) === "blocked";
+
+
+        if (blockUserBtn) {
+
+            blockUserBtn.style.display =
+                blocked
+                    ? "none"
+                    : "inline-flex";
+
+        }
+
+
+        if (activateUserBtn) {
+
+            activateUserBtn.style.display =
+                blocked
+                    ? "inline-flex"
+                    : "none";
+
+        }
+
+
+        /*
+           SHOW MODAL
+        */
+
+        if (userModal) {
+
+            userModal.style.display =
+                "flex";
+
+        }
+
+    } catch (error) {
+
+        console.error(
+            "Open user details error:",
+            error
+        );
+
+        alert(
+            "Failed to load user details: " +
+            error.message
+        );
+
+    }
+}
+
+
+/* =========================================================
+   VIEW USER BUTTON EVENT DELEGATION
+========================================================= */
+
+usersContainer?.addEventListener(
+    "click",
+    (event) => {
+
+        const button =
+            event.target.closest(
+                ".viewUserBtn"
+            );
+
+        if (!button) {
+            return;
+        }
+
+
+        const uid =
+            button.dataset.id;
+
+
+        openUserDetails(uid);
+
+    }
+);
+
+
+/* =========================================================
+   CLOSE USER MODAL
+========================================================= */
+
+function closeUserDetailsModal() {
+
+    selectedUserIdForModal =
+        null;
+
+    if (userModal) {
+
+        userModal.style.display =
+            "none";
+
+    }
+}
+
+
+closeUserModal?.addEventListener(
+    "click",
+    closeUserDetailsModal
+);
+
+
+/*
+   Close when clicking outside modal
+*/
+
+userModal?.addEventListener(
+    "click",
+    (event) => {
+
+        if (
+            event.target === userModal
+        ) {
+
+            closeUserDetailsModal();
+
+        }
+
+    }
+);
+
+
+/* =========================================================
+   BLOCK USER
+========================================================= */
+
+async function blockSelectedUser() {
+
+    try {
+
+        if (!currentAdmin) {
+
+            alert(
+                "Admin authentication required."
+            );
+
+            return;
+        }
+
+
+        const uid =
+            selectedUserIdForModal;
+
+
+        if (!uid) {
+
+            alert(
+                "No user selected."
+            );
+
+            return;
+        }
+
+
+        const user =
+            allUsersManagementData[uid];
+
+
+        if (!user) {
+
+            alert(
+                "User data not found."
+            );
+
+            return;
+        }
+
+
+        if (
+            normalizeUserStatus(
+                user.status
+            ) === "blocked"
+        ) {
+
+            alert(
+                "This user is already blocked."
+            );
+
+            return;
+        }
+
+
+        const confirmed =
+            confirm(
+                "Are you sure you want to BLOCK this user?"
+            );
+
+
+        if (!confirmed) {
+            return;
+        }
+
+
+        /*
+           Only change status.
+           Never touch balance or money fields.
+        */
+
+        await update(
+            ref(db, "users/" + uid),
+            {
+                status: "blocked",
+                blockedAt: Date.now(),
+                blockedBy: currentAdmin.uid
+            }
+        );
+
+
+        /*
+           Listener will refresh UI.
+        */
+
+        alert(
+            "User blocked successfully."
+        );
+
+
+        closeUserDetailsModal();
+
+
+    } catch (error) {
+
+        console.error(
+            "Block user error:",
+            error
+        );
+
+        alert(
+            "Failed to block user: " +
+            error.message
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   ACTIVATE USER
+========================================================= */
+
+async function activateSelectedUser() {
+
+    try {
+
+        if (!currentAdmin) {
+
+            alert(
+                "Admin authentication required."
+            );
+
+            return;
+        }
+
+
+        const uid =
+            selectedUserIdForModal;
+
+
+        if (!uid) {
+
+            alert(
+                "No user selected."
+            );
+
+            return;
+        }
+
+
+        const user =
+            allUsersManagementData[uid];
+
+
+        if (!user) {
+
+            alert(
+                "User data not found."
+            );
+
+            return;
+        }
+
+
+        if (
+            normalizeUserStatus(
+                user.status
+            ) !== "blocked"
+        ) {
+
+            alert(
+                "This user is already active."
+            );
+
+            return;
+        }
+
+
+        const confirmed =
+            confirm(
+                "Are you sure you want to ACTIVATE this user?"
+            );
+
+
+        if (!confirmed) {
+            return;
+        }
+
+
+        /*
+           Only change status.
+        */
+
+        await update(
+            ref(db, "users/" + uid),
+            {
+                status: "active",
+                activatedAt: Date.now(),
+                activatedBy: currentAdmin.uid
+            }
+        );
+
+
+        alert(
+            "User activated successfully."
+        );
+
+
+        closeUserDetailsModal();
+
+
+    } catch (error) {
+
+        console.error(
+            "Activate user error:",
+            error
+        );
+
+        alert(
+            "Failed to activate user: " +
+            error.message
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   BUTTON EVENTS
+========================================================= */
+
+blockUserBtn?.addEventListener(
+    "click",
+    blockSelectedUser
+);
+
+
+activateUserBtn?.addEventListener(
+    "click",
+    activateSelectedUser
+);
+
+
+/* =========================================================
+   MANUAL REFRESH
+========================================================= */
+
+function refreshUsersManagement() {
+
+    renderUsersManagement();
+
+}
+
+
+/* =========================================================
+   START PART 10
+========================================================= */
+
+function startAdminPart10() {
+
+    if (usersManagementListenerStarted) {
+        return;
+    }
+
+
+    if (
+        typeof currentAdmin !== "undefined" &&
+        currentAdmin
+    ) {
+
+        initializeUsersManagementListener();
+
+        return;
+    }
+
+
+    /*
+       Use Part 1 ready promise if available.
+    */
+
+    if (
+        typeof adminState !== "undefined" &&
+        adminState.readyPromise
+    ) {
+
+        adminState.readyPromise
+            .then(() => {
+
+                initializeUsersManagementListener();
+
+            })
+            .catch(error => {
+
+                console.error(
+                    "Part 10 admin ready error:",
+                    error
+                );
+
+            });
+
+        return;
+    }
+
+
+    /*
+       Fallback
+    */
+
+    let attempts = 0;
+
+    const waitForAdmin =
+        setInterval(() => {
+
+            attempts++;
+
+
+            if (
+                typeof currentAdmin !== "undefined" &&
+                currentAdmin
+            ) {
+
+                clearInterval(
+                    waitForAdmin
+                );
+
+                initializeUsersManagementListener();
+
+            }
+
+
+            if (attempts >= 60) {
+
+                clearInterval(
+                    waitForAdmin
+                );
+
+                console.warn(
+                    "PART 10: Admin not ready."
+                );
+
+            }
+
+        }, 500);
+
+}
+
+
+/* =========================================================
+   GLOBAL FUNCTIONS
+========================================================= */
+
+window.openUserDetails =
+    openUserDetails;
+
+window.refreshUsersManagement =
+    refreshUsersManagement;
+
+window.blockSelectedUser =
+    blockSelectedUser;
+
+window.activateSelectedUser =
+    activateSelectedUser;
+
+
+/* =========================================================
+   START
+========================================================= */
+
+startAdminPart10();
+
+
+console.log(
+    "✅ MONEY VAULT ADMIN PART 10 — USERS MANAGEMENT LOADED"
+);
+
+/* =========================================================
+   MONEY VAULT - ADMIN.JS
+   PART 11 — WITHDRAW APPROVE / REJECT
+   CURRENCY: RWF / FRW
+
+   FEATURES:
+   - Approve withdraw
+   - Reject withdraw
+   - One-time approval protection
+   - Balance deduction
+   - totalWithdraws update
+   - totalWithdraw update
+   - totalTransactions update
+   - Transaction history creation
+   - Atomic Firebase update
+   - Prevent double click
+   - Admin audit information
+========================================================= */
+
+
+/* =========================================================
+   PART 11 STATE
+========================================================= */
+
+const withdrawApprovalLocks = new Set();
+
+const WITHDRAW_MIN_AMOUNT = 4000;
+const WITHDRAW_MAX_AMOUNT = 500000;
+
+
+/* =========================================================
+   STATUS NORMALIZER
+========================================================= */
+
+function normalizeWithdrawStatusPart11(status) {
+
+    return String(status || "pending")
+        .trim()
+        .toLowerCase();
+
+}
+
+
+/* =========================================================
+   FORMAT RWF
+========================================================= */
+
+function formatWithdrawMoneyPart11(amount) {
+
+    const value = Number(amount || 0);
+
+    return value.toLocaleString("en-US") + " RWF";
+
+}
+
+
+/* =========================================================
+   APPROVE WITHDRAW
+========================================================= */
+
+async function approveWithdraw(id) {
+
+    if (!currentAdmin) {
+
+        alert("Admin session not ready.");
+
+        return;
+    }
+
+
+    if (!id) {
+
+        alert("Withdraw request ID is missing.");
+
+        return;
+    }
+
+
+    /* -----------------------------------------
+       DOUBLE CLICK PROTECTION
+    ----------------------------------------- */
+
+    if (withdrawApprovalLocks.has(id)) {
+
+        return;
+    }
+
+    withdrawApprovalLocks.add(id);
+
+
+    try {
+
+        /* -----------------------------------------
+           CONFIRM
+        ----------------------------------------- */
+
+        const confirmed = confirm(
+            "Approve this withdraw request?"
+        );
+
+        if (!confirmed) {
+
+            return;
+        }
+
+
+        /* -----------------------------------------
+           GET REQUEST
+        ----------------------------------------- */
+
+        const withdrawRef = ref(
+            db,
+            "withdrawRequests/" + id
+        );
+
+        const withdrawSnap = await get(withdrawRef);
+
+
+        if (!withdrawSnap.exists()) {
+
+            alert("Withdraw request not found.");
+
+            return;
+        }
+
+
+        const withdraw = withdrawSnap.val();
+
+
+        /* -----------------------------------------
+           STATUS CHECK
+        ----------------------------------------- */
+
+        const currentStatus =
+            normalizeWithdrawStatusPart11(
+                withdraw.status
+            );
+
+
+        if (currentStatus === "approved") {
+
+            alert("This withdraw is already approved.");
+
+            return;
+        }
+
+
+        if (currentStatus === "rejected") {
+
+            alert(
+                "This withdraw has already been rejected."
+            );
+
+            return;
+        }
+
+
+        if (currentStatus !== "pending") {
+
+            alert(
+                "This withdraw cannot be approved because its current status is: " +
+                currentStatus
+            );
+
+            return;
+        }
+
+
+        /* -----------------------------------------
+           VALIDATE USER UID
+        ----------------------------------------- */
+
+        const uid = String(withdraw.uid || "").trim();
+
+
+        if (!uid) {
+
+            alert("Withdraw request has no user UID.");
+
+            return;
+        }
+
+
+        /* -----------------------------------------
+           VALIDATE AMOUNT
+        ----------------------------------------- */
+
+        const amount = Number(withdraw.amount || 0);
+
+
+        if (!Number.isFinite(amount)) {
+
+            alert("Invalid withdraw amount.");
+
+            return;
+        }
+
+
+        if (amount < WITHDRAW_MIN_AMOUNT) {
+
+            alert(
+                "Minimum withdraw is " +
+                formatWithdrawMoneyPart11(
+                    WITHDRAW_MIN_AMOUNT
+                )
+            );
+
+            return;
+        }
+
+
+        if (amount > WITHDRAW_MAX_AMOUNT) {
+
+            alert(
+                "Maximum withdraw is " +
+                formatWithdrawMoneyPart11(
+                    WITHDRAW_MAX_AMOUNT
+                )
+            );
+
+            return;
+        }
+
+
+        /* -----------------------------------------
+           GET USER
+        ----------------------------------------- */
+
+        const userRef = ref(
+            db,
+            "users/" + uid
+        );
+
+        const userSnap = await get(userRef);
+
+
+        if (!userSnap.exists()) {
+
+            alert("User account was not found.");
+
+            return;
+        }
+
+
+        const user = userSnap.val();
+
+
+        /* -----------------------------------------
+           CURRENT BALANCE
+        ----------------------------------------- */
+
+        const currentBalance =
+            Number(user.balance || 0);
+
+
+        if (!Number.isFinite(currentBalance)) {
+
+            alert("User balance is invalid.");
+
+            return;
+        }
+
+
+        /* -----------------------------------------
+           SUFFICIENT BALANCE
+        ----------------------------------------- */
+
+        if (currentBalance < amount) {
+
+            alert(
+                "Insufficient user balance.\n\n" +
+                "Available: " +
+                formatWithdrawMoneyPart11(
+                    currentBalance
+                ) +
+                "\nRequested: " +
+                formatWithdrawMoneyPart11(
+                    amount
+                )
+            );
+
+            return;
+        }
+
+
+        /* -----------------------------------------
+           CALCULATE NEW VALUES
+        ----------------------------------------- */
+
+        const newBalance =
+            currentBalance - amount;
+
+
+        const newTotalWithdraws =
+            Number(user.totalWithdraws || 0) +
+            amount;
+
+
+        const newTotalWithdraw =
+            Number(user.totalWithdraw || 0) +
+            amount;
+
+
+        const newTotalTransactions =
+            Number(user.totalTransactions || 0) +
+            1;
+
+
+        const now = Date.now();
+
+
+        /* -----------------------------------------
+           CREATE TRANSACTION ID
+        ----------------------------------------- */
+
+        const transactionKey =
+            push(ref(db, "transactions")).key;
+
+
+        if (!transactionKey) {
+
+            alert(
+                "Could not create transaction reference."
+            );
+
+            return;
+        }
+
+
+        /* -----------------------------------------
+           TRANSACTION DATA
+        ----------------------------------------- */
+
+        const transactionData = {
+
+            uid: uid,
+
+            email:
+                withdraw.email ||
+                user.email ||
+                "",
+
+            phone:
+                withdraw.phone ||
+                user.phone ||
+                "",
+
+            type: "withdraw",
+
+            transactionType: "withdraw",
+
+            amount: amount,
+
+            currency: "RWF",
+
+            status: "approved",
+
+            referenceId: id,
+
+            withdrawRequestId: id,
+
+            transactionId:
+                withdraw.transactionId ||
+                id,
+
+            paymentMethod:
+                withdraw.paymentMethod ||
+                withdraw.method ||
+                "",
+
+            description:
+                "Withdraw approved by admin",
+
+            createdAt: now,
+
+            timestamp: now
+
+        };
+
+
+        /* -----------------------------------------
+           ATOMIC UPDATE
+        ----------------------------------------- */
+
+        const updates = {};
+
+
+        /* USER */
+
+        updates[
+            "users/" +
+            uid +
+            "/balance"
+        ] = newBalance;
+
+
+        updates[
+            "users/" +
+            uid +
+            "/totalWithdraws"
+        ] = newTotalWithdraws;
+
+
+        updates[
+            "users/" +
+            uid +
+            "/totalWithdraw"
+        ] = newTotalWithdraw;
+
+
+        updates[
+            "users/" +
+            uid +
+            "/totalTransactions"
+        ] = newTotalTransactions;
+
+
+        /* WITHDRAW REQUEST */
+
+        updates[
+            "withdrawRequests/" +
+            id +
+            "/status"
+        ] = "approved";
+
+
+        updates[
+            "withdrawRequests/" +
+            id +
+            "/approvedAt"
+        ] = now;
+
+
+        updates[
+            "withdrawRequests/" +
+            id +
+            "/approvedBy"
+        ] =
+            currentAdmin.uid ||
+            currentAdmin.email ||
+            "admin";
+
+
+        /* TRANSACTION */
+
+        updates[
+            "transactions/" +
+            transactionKey
+        ] = transactionData;
+
+
+        /* -----------------------------------------
+           ONE FIREBASE WRITE
+        ----------------------------------------- */
+
+        await update(
+            ref(db),
+            updates
+        );
+
+
+        /* -----------------------------------------
+           SUCCESS
+        ----------------------------------------- */
+
+        alert(
+            "Withdraw approved successfully.\n\n" +
+            "Amount: " +
+            formatWithdrawMoneyPart11(amount) +
+            "\n" +
+            "New Balance: " +
+            formatWithdrawMoneyPart11(newBalance)
+        );
+
+
+        /* -----------------------------------------
+           REFRESH UI
+        ----------------------------------------- */
+
+        if (typeof window.renderWithdrawRequests === "function") {
+
+            window.renderWithdrawRequests();
+
+        }
+
+    }
+    catch (error) {
+
+        console.error(
+            "Withdraw approval error:",
+            error
+        );
+
+        alert(
+            "Withdraw approval failed:\n\n" +
+            error.message
+        );
+
+    }
+    finally {
+
+        withdrawApprovalLocks.delete(id);
+
+    }
+
+}
+
+
+/* =========================================================
+   REJECT WITHDRAW
+========================================================= */
+
+async function rejectWithdraw(id) {
+
+    if (!currentAdmin) {
+
+        alert("Admin session not ready.");
+
+        return;
+    }
+
+
+    if (!id) {
+
+        alert("Withdraw request ID is missing.");
+
+        return;
+    }
+
+
+    try {
+
+        /* -----------------------------------------
+           CONFIRM
+        ----------------------------------------- */
+
+        const confirmed = confirm(
+            "Reject this withdraw request?"
+        );
+
+
+        if (!confirmed) {
+
+            return;
+        }
+
+
+        /* -----------------------------------------
+           GET REQUEST
+        ----------------------------------------- */
+
+        const withdrawRef = ref(
+            db,
+            "withdrawRequests/" + id
+        );
+
+
+        const withdrawSnap =
+            await get(withdrawRef);
+
+
+        if (!withdrawSnap.exists()) {
+
+            alert("Withdraw request not found.");
+
+            return;
+        }
+
+
+        const withdraw =
+            withdrawSnap.val();
+
+
+        /* -----------------------------------------
+           STATUS
+        ----------------------------------------- */
+
+        const currentStatus =
+            normalizeWithdrawStatusPart11(
+                withdraw.status
+            );
+
+
+        if (currentStatus === "approved") {
+
+            alert(
+                "An approved withdraw cannot be rejected."
+            );
+
+            return;
+        }
+
+
+        if (currentStatus === "rejected") {
+
+            alert(
+                "This withdraw is already rejected."
+            );
+
+            return;
+        }
+
+
+        if (currentStatus !== "pending") {
+
+            alert(
+                "This withdraw cannot be rejected."
+            );
+
+            return;
+        }
+
+
+        /* -----------------------------------------
+           UPDATE
+        ----------------------------------------- */
+
+        const now = Date.now();
+
+
+        await update(
+            withdrawRef,
+            {
+
+                status: "rejected",
+
+                rejectedAt: now,
+
+                rejectedBy:
+                    currentAdmin.uid ||
+                    currentAdmin.email ||
+                    "admin"
+
+            }
+        );
+
+
+        alert(
+            "Withdraw rejected successfully."
+        );
+
+
+        /* -----------------------------------------
+           REFRESH
+        ----------------------------------------- */
+
+        if (
+            typeof window.renderWithdrawRequests ===
+            "function"
+        ) {
+
+            window.renderWithdrawRequests();
+
+        }
+
+    }
+    catch (error) {
+
+        console.error(
+            "Withdraw rejection error:",
+            error
+        );
+
+        alert(
+            "Withdraw rejection failed:\n\n" +
+            error.message
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   GLOBAL FUNCTIONS
+========================================================= */
+
+window.approveWithdraw =
+    approveWithdraw;
+
+window.rejectWithdraw =
+    rejectWithdraw;
+
+
+/* =========================================================
+   READY
+========================================================= */
+
+console.log(
+    "✅ Money Vault Admin Part 11 Loaded — Withdraw Approve / Reject"
+);
+
 
