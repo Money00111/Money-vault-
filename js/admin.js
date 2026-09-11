@@ -3408,4 +3408,4036 @@ console.log(
     "======================================"
 );
 
+/* =========================================================
+   MONEY VAULT - ADMIN.JS
+   PART 4 — WITHDRAW REQUESTS
 
+   CURRENCY: RWF / FRW
+
+   FEATURES:
+   - Live withdraw requests
+   - Search
+   - Status filter
+   - Counters
+   - View details
+   - Approve
+   - Reject
+   - Atomic balance update
+   - Atomic status update
+   - Transaction record
+   - ONE-TIME APPROVAL PROTECTION
+   - Insufficient balance protection
+   - Canonical status:
+       pending
+       approved
+       rejected
+========================================================= */
+
+
+/* =========================================================
+   WITHDRAW STATE
+========================================================= */
+
+let withdrawData = {};
+
+
+/* =========================================================
+   DOM ELEMENTS
+========================================================= */
+
+const withdrawList =
+    document.getElementById("withdrawRequests");
+
+
+const withdrawSearch =
+    document.getElementById("withdrawSearch");
+
+
+const withdrawFilter =
+    document.getElementById("withdrawFilter");
+
+
+const withdrawCount =
+    document.getElementById("withdrawCount");
+
+
+const withdrawPending =
+    document.getElementById("withdrawPending");
+
+
+const withdrawApproved =
+    document.getElementById("withdrawApproved");
+
+
+const withdrawRejected =
+    document.getElementById("withdrawRejected");
+
+
+const emptyWithdraw =
+    document.getElementById("emptyWithdraw");
+
+
+/* =========================================================
+   WITHDRAW MODAL
+========================================================= */
+
+const withdrawModal =
+    document.getElementById("withdrawModal");
+
+
+const closeWithdrawModal =
+    document.getElementById("closeWithdrawModal");
+
+
+const modalUser =
+    document.getElementById("modalUser");
+
+
+const modalEmail =
+    document.getElementById("modalEmail");
+
+
+const modalPhone =
+    document.getElementById("modalPhone");
+
+
+const modalAmount =
+    document.getElementById("modalAmount");
+
+
+const modalMethod =
+    document.getElementById("modalMethod");
+
+
+const modalStatus =
+    document.getElementById("modalStatus");
+
+
+/* =========================================================
+   HELPER — STATUS
+========================================================= */
+
+function normalizeWithdrawStatus(status) {
+
+    return String(
+        status || "pending"
+    )
+    .trim()
+    .toLowerCase();
+
+}
+
+
+/* =========================================================
+   HELPER — RWF
+========================================================= */
+
+function formatWithdrawRWF(amount) {
+
+    const value =
+        Number(amount || 0);
+
+
+    return value.toLocaleString(
+        "en-US",
+        {
+            maximumFractionDigits: 2
+        }
+    ) + " RWF";
+
+}
+
+
+/* =========================================================
+   HELPER — SAFE HTML
+========================================================= */
+
+function safeWithdrawHTML(value) {
+
+    if (
+        value === null ||
+        value === undefined
+    ) {
+
+        return "";
+
+    }
+
+
+    return String(value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+
+}
+
+
+/* =========================================================
+   HELPER — DATE
+========================================================= */
+
+function formatWithdrawDate(value) {
+
+    if (!value) {
+
+        return "-";
+
+    }
+
+
+    const numberValue =
+        Number(value);
+
+
+    if (
+        Number.isFinite(
+            numberValue
+        ) &&
+        numberValue > 0
+    ) {
+
+        try {
+
+            return new Date(
+                numberValue
+            ).toLocaleString();
+
+        } catch {
+
+            return String(value);
+
+        }
+
+    }
+
+
+    return String(value);
+
+}
+
+
+/* =========================================================
+   LOAD WITHDRAW REQUESTS
+========================================================= */
+
+function initializeWithdrawListener() {
+
+    if (!withdrawList) {
+
+        console.warn(
+            "Withdraw list element not found."
+        );
+
+        return;
+
+    }
+
+
+    onValue(
+        ref(db, "withdrawRequests"),
+
+        snapshot => {
+
+            withdrawData = {};
+
+
+            if (
+                snapshot.exists()
+            ) {
+
+                snapshot.forEach(
+                    child => {
+
+                        withdrawData[
+                            child.key
+                        ] = {
+
+                            id: child.key,
+
+                            ...(child.val() || {})
+
+                        };
+
+                    }
+                );
+
+            }
+
+
+            updateWithdrawSummary();
+
+            renderWithdrawRequests();
+
+        },
+
+        error => {
+
+            console.error(
+                "Withdraw listener error:",
+                error
+            );
+
+
+            withdrawList.innerHTML = `
+
+                <div class="empty-state">
+
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+
+                    <h3>
+                        Failed to Load Withdraw Requests
+                    </h3>
+
+                    <p>
+                        ${safeWithdrawHTML(
+                            error.message
+                        )}
+                    </p>
+
+                </div>
+
+            `;
+
+        }
+    );
+
+}
+
+
+/* =========================================================
+   UPDATE SUMMARY
+========================================================= */
+
+function updateWithdrawSummary() {
+
+    const requests =
+        Object.values(
+            withdrawData || {}
+        );
+
+
+    let pending = 0;
+
+    let approved = 0;
+
+    let rejected = 0;
+
+
+    requests.forEach(
+        request => {
+
+            const status =
+                normalizeWithdrawStatus(
+                    request.status
+                );
+
+
+            if (
+                status === "pending"
+            ) {
+
+                pending++;
+
+            }
+
+            else if (
+                status === "approved"
+            ) {
+
+                approved++;
+
+            }
+
+            else if (
+                status === "rejected"
+            ) {
+
+                rejected++;
+
+            }
+
+        }
+    );
+
+
+    if (withdrawCount) {
+
+        withdrawCount.textContent =
+            requests.length.toLocaleString();
+
+    }
+
+
+    if (withdrawPending) {
+
+        withdrawPending.textContent =
+            pending.toLocaleString();
+
+    }
+
+
+    if (withdrawApproved) {
+
+        withdrawApproved.textContent =
+            approved.toLocaleString();
+
+    }
+
+
+    if (withdrawRejected) {
+
+        withdrawRejected.textContent =
+            rejected.toLocaleString();
+
+    }
+
+}
+
+
+/* =========================================================
+   SEARCH VALUE
+========================================================= */
+
+function getWithdrawSearch() {
+
+    if (!withdrawSearch) {
+
+        return "";
+
+    }
+
+
+    return String(
+        withdrawSearch.value || ""
+    )
+    .trim()
+    .toLowerCase();
+
+}
+
+
+/* =========================================================
+   FILTER VALUE
+========================================================= */
+
+function getWithdrawFilter() {
+
+    if (!withdrawFilter) {
+
+        return "all";
+
+    }
+
+
+    return String(
+        withdrawFilter.value || "all"
+    )
+    .trim()
+    .toLowerCase();
+
+}
+
+
+/* =========================================================
+   SEARCH MATCH
+========================================================= */
+
+function withdrawMatchesSearch(
+    request
+) {
+
+    const keyword =
+        getWithdrawSearch();
+
+
+    if (!keyword) {
+
+        return true;
+
+    }
+
+
+    const searchable = [
+
+        request.id,
+
+        request.uid,
+
+        request.email,
+
+        request.phone,
+
+        request.senderPhone,
+
+        request.withdrawPhone,
+
+        request.paymentMethod,
+
+        request.method,
+
+        request.transactionId,
+
+        request.note,
+
+        request.amount,
+
+        request.status
+
+    ]
+    .map(
+        value =>
+            String(
+                value || ""
+            ).toLowerCase()
+    )
+    .join(" ");
+
+
+    return searchable.includes(
+        keyword
+    );
+
+}
+
+
+/* =========================================================
+   STATUS FILTER MATCH
+========================================================= */
+
+function withdrawMatchesFilter(
+    request
+) {
+
+    const filter =
+        getWithdrawFilter();
+
+
+    if (
+        !filter ||
+        filter === "all"
+    ) {
+
+        return true;
+
+    }
+
+
+    return (
+        normalizeWithdrawStatus(
+            request.status
+        ) === filter
+    );
+
+}
+
+
+/* =========================================================
+   RENDER WITHDRAW REQUESTS
+========================================================= */
+
+function renderWithdrawRequests() {
+
+    if (!withdrawList) {
+
+        return;
+
+    }
+
+
+    withdrawList.innerHTML = "";
+
+
+    const requests =
+        Object.values(
+            withdrawData || {}
+        );
+
+
+    const filteredRequests =
+        requests
+            .filter(
+                request =>
+                    withdrawMatchesSearch(
+                        request
+                    )
+            )
+            .filter(
+                request =>
+                    withdrawMatchesFilter(
+                        request
+                    )
+            )
+            .sort(
+                (a, b) =>
+                    Number(
+                        b.createdAt || 0
+                    ) -
+                    Number(
+                        a.createdAt || 0
+                    )
+            );
+
+
+    if (emptyWithdraw) {
+
+        emptyWithdraw.style.display =
+            filteredRequests.length === 0
+                ? "block"
+                : "none";
+
+    }
+
+
+    if (
+        filteredRequests.length === 0
+    ) {
+
+        withdrawList.innerHTML = `
+
+            <div class="empty-state">
+
+                <i class="fa-solid fa-money-bill-transfer"></i>
+
+                <h3>
+                    No Withdraw Requests
+                </h3>
+
+                <p>
+                    No withdraw requests match your search.
+                </p>
+
+            </div>
+
+        `;
+
+        return;
+
+    }
+
+
+    filteredRequests.forEach(
+        request => {
+
+            const id =
+                request.id;
+
+
+            const status =
+                normalizeWithdrawStatus(
+                    request.status
+                );
+
+
+            const amount =
+                Number(
+                    request.amount || 0
+                );
+
+
+            const isPending =
+                status === "pending";
+
+
+            const isApproved =
+                status === "approved";
+
+
+            const isRejected =
+                status === "rejected";
+
+
+            let statusLabel =
+                "Pending";
+
+
+            if (isApproved) {
+
+                statusLabel =
+                    "Approved";
+
+            }
+
+            else if (isRejected) {
+
+                statusLabel =
+                    "Rejected";
+
+            }
+
+
+            let statusClass =
+                "pending";
+
+
+            if (isApproved) {
+
+                statusClass =
+                    "approved";
+
+            }
+
+            else if (isRejected) {
+
+                statusClass =
+                    "rejected";
+
+            }
+
+
+            const phone =
+                request.phone ||
+                request.senderPhone ||
+                request.withdrawPhone ||
+                "-";
+
+
+            const method =
+                request.paymentMethod ||
+                request.method ||
+                "-";
+
+
+            withdrawList.innerHTML += `
+
+                <div
+                    class="request-card withdraw-card"
+                    data-id="${safeWithdrawHTML(id)}"
+                >
+
+                    <div class="request-header">
+
+                        <div>
+
+                            <h3>
+                                ${formatWithdrawRWF(
+                                    amount
+                                )}
+                            </h3>
+
+                            <span
+                                class="status ${statusClass}"
+                            >
+                                ${statusLabel}
+                            </span>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="request-details">
+
+
+                        <p>
+
+                            <strong>
+                                User:
+                            </strong>
+
+                            ${safeWithdrawHTML(
+                                request.email || "-"
+                            )}
+
+                        </p>
+
+
+                        <p>
+
+                            <strong>
+                                Phone:
+                            </strong>
+
+                            ${safeWithdrawHTML(
+                                phone
+                            )}
+
+                        </p>
+
+
+                        <p>
+
+                            <strong>
+                                Method:
+                            </strong>
+
+                            ${safeWithdrawHTML(
+                                method
+                            )}
+
+                        </p>
+
+
+                        ${
+                            request.transactionId
+                            ? `
+
+                                <p>
+
+                                    <strong>
+                                        Transaction ID:
+                                    </strong>
+
+                                    ${safeWithdrawHTML(
+                                        request.transactionId
+                                    )}
+
+                                </p>
+
+                            `
+                            : ""
+                        }
+
+
+                        ${
+                            request.createdAt
+                            ? `
+
+                                <p>
+
+                                    <strong>
+                                        Submitted:
+                                    </strong>
+
+                                    ${safeWithdrawHTML(
+                                        formatWithdrawDate(
+                                            request.createdAt
+                                        )
+                                    )}
+
+                                </p>
+
+                            `
+                            : ""
+                        }
+
+
+                        ${
+                            request.note
+                            ? `
+
+                                <p>
+
+                                    <strong>
+                                        Note:
+                                    </strong>
+
+                                    ${safeWithdrawHTML(
+                                        request.note
+                                    )}
+
+                                </p>
+
+                            `
+                            : ""
+                        }
+
+
+                        ${
+                            request.approvedAt
+                            ? `
+
+                                <p>
+
+                                    <strong>
+                                        Approved:
+                                    </strong>
+
+                                    ${safeWithdrawHTML(
+                                        formatWithdrawDate(
+                                            request.approvedAt
+                                        )
+                                    )}
+
+                                </p>
+
+                            `
+                            : ""
+                        }
+
+
+                        ${
+                            request.rejectedAt
+                            ? `
+
+                                <p>
+
+                                    <strong>
+                                        Rejected:
+                                    </strong>
+
+                                    ${safeWithdrawHTML(
+                                        formatWithdrawDate(
+                                            request.rejectedAt
+                                        )
+                                    )}
+
+                                </p>
+
+                            `
+                            : ""
+                        }
+
+                    </div>
+
+
+                    <div class="action-buttons">
+
+
+                        ${
+                            isPending
+                            ? `
+
+                                <button
+                                    type="button"
+                                    class="approveWithdrawBtn"
+                                    data-id="${safeWithdrawHTML(
+                                        id
+                                    )}"
+                                >
+
+                                    <i
+                                        class="fa-solid fa-check"
+                                    ></i>
+
+                                    Approve
+
+                                </button>
+
+
+                                <button
+                                    type="button"
+                                    class="viewWithdrawBtn"
+                                    data-id="${safeWithdrawHTML(
+                                        id
+                                    )}"
+                                >
+
+                                    <i
+                                        class="fa-solid fa-eye"
+                                    ></i>
+
+                                    View
+
+                                </button>
+
+
+                                <button
+                                    type="button"
+                                    class="rejectWithdrawBtn"
+                                    data-id="${safeWithdrawHTML(
+                                        id
+                                    )}"
+                                >
+
+                                    <i
+                                        class="fa-solid fa-xmark"
+                                    ></i>
+
+                                    Reject
+
+                                </button>
+
+                            `
+                            : `
+
+                                <button
+                                    type="button"
+                                    class="viewWithdrawBtn"
+                                    data-id="${safeWithdrawHTML(
+                                        id
+                                    )}"
+                                >
+
+                                    <i
+                                        class="fa-solid fa-eye"
+                                    ></i>
+
+                                    View
+
+                                </button>
+
+                            `
+                        }
+
+                    </div>
+
+                </div>
+
+            `;
+
+        }
+    );
+
+}
+
+
+/* =========================================================
+   OPEN WITHDRAW MODAL
+========================================================= */
+
+function openWithdrawDetails(id) {
+
+    const request =
+        withdrawData[id];
+
+
+    if (!request) {
+
+        alert(
+            "Withdraw request not found."
+        );
+
+        return;
+
+    }
+
+
+    const amount =
+        Number(
+            request.amount || 0
+        );
+
+
+    const phone =
+        request.phone ||
+        request.senderPhone ||
+        request.withdrawPhone ||
+        "-";
+
+
+    const method =
+        request.paymentMethod ||
+        request.method ||
+        "-";
+
+
+    if (modalUser) {
+
+        modalUser.textContent =
+            request.uid || "-";
+
+    }
+
+
+    if (modalEmail) {
+
+        modalEmail.textContent =
+            request.email || "-";
+
+    }
+
+
+    if (modalPhone) {
+
+        modalPhone.textContent =
+            phone;
+
+    }
+
+
+    if (modalAmount) {
+
+        modalAmount.textContent =
+            formatWithdrawRWF(
+                amount
+            );
+
+    }
+
+
+    if (modalMethod) {
+
+        modalMethod.textContent =
+            method;
+
+    }
+
+
+    if (modalStatus) {
+
+        modalStatus.textContent =
+            String(
+                request.status ||
+                "Pending"
+            );
+
+    }
+
+
+    if (withdrawModal) {
+
+        withdrawModal.style.display =
+            "flex";
+
+    }
+
+}
+
+
+/* =========================================================
+   CLOSE MODAL
+========================================================= */
+
+function closeWithdrawDetails() {
+
+    if (withdrawModal) {
+
+        withdrawModal.style.display =
+            "none";
+
+    }
+
+}
+
+
+/* =========================================================
+   MODAL EVENTS
+========================================================= */
+
+closeWithdrawModal?.addEventListener(
+    "click",
+    closeWithdrawDetails
+);
+
+
+withdrawModal?.addEventListener(
+    "click",
+    event => {
+
+        if (
+            event.target ===
+            withdrawModal
+        ) {
+
+            closeWithdrawDetails();
+
+        }
+
+    }
+);
+
+
+/* =========================================================
+   APPROVE WITHDRAW — ATOMIC
+========================================================= */
+
+async function approveWithdraw(id) {
+
+    if (!id) {
+
+        alert(
+            "Withdraw request ID is missing."
+        );
+
+        return;
+
+    }
+
+
+    const confirmed =
+        confirm(
+            "Approve this withdraw request?"
+        );
+
+
+    if (!confirmed) {
+
+        return;
+
+    }
+
+
+    try {
+
+        /* ---------------------------------------------
+           ADMIN CHECK
+        --------------------------------------------- */
+
+        if (!currentAdmin) {
+
+            alert(
+                "Admin session is not ready."
+            );
+
+            return;
+
+        }
+
+
+        /* ---------------------------------------------
+           GET REQUEST
+        --------------------------------------------- */
+
+        const withdrawRef =
+            ref(
+                db,
+                "withdrawRequests/" + id
+            );
+
+
+        const withdrawSnap =
+            await get(
+                withdrawRef
+            );
+
+
+        if (!withdrawSnap.exists()) {
+
+            alert(
+                "Withdraw request not found."
+            );
+
+            return;
+
+        }
+
+
+        const withdraw =
+            withdrawSnap.val() || {};
+
+
+        /* ---------------------------------------------
+           ONE-TIME PROTECTION
+        --------------------------------------------- */
+
+        const currentStatus =
+            normalizeWithdrawStatus(
+                withdraw.status
+            );
+
+
+        if (
+            currentStatus === "approved"
+        ) {
+
+            alert(
+                "This withdraw has already been approved."
+            );
+
+            return;
+
+        }
+
+
+        if (
+            currentStatus !== "pending"
+        ) {
+
+            alert(
+                "This withdraw request is no longer pending."
+            );
+
+            return;
+
+        }
+
+
+        /* ---------------------------------------------
+           UID
+        --------------------------------------------- */
+
+        const uid =
+            String(
+                withdraw.uid || ""
+            ).trim();
+
+
+        if (!uid) {
+
+            alert(
+                "Withdraw request has no user UID."
+            );
+
+            return;
+
+        }
+
+
+        /* ---------------------------------------------
+           AMOUNT
+        --------------------------------------------- */
+
+        const amount =
+            Number(
+                withdraw.amount
+            );
+
+
+        if (
+            !Number.isFinite(amount) ||
+            amount < 4000 ||
+            amount > 500000
+        ) {
+
+            alert(
+                "Invalid withdraw amount.\n\n" +
+                "Minimum: 4,000 RWF\n" +
+                "Maximum: 500,000 RWF"
+            );
+
+            return;
+
+        }
+
+
+        /* ---------------------------------------------
+           GET USER
+        --------------------------------------------- */
+
+        const userRef =
+            ref(
+                db,
+                "users/" + uid
+            );
+
+
+        const userSnap =
+            await get(
+                userRef
+            );
+
+
+        if (!userSnap.exists()) {
+
+            alert(
+                "User account not found."
+            );
+
+            return;
+
+        }
+
+
+        const user =
+            userSnap.val() || {};
+
+
+        /* ---------------------------------------------
+           BALANCE
+        --------------------------------------------- */
+
+        const balance =
+            Number(
+                user.balance || 0
+            );
+
+
+        if (
+            !Number.isFinite(balance)
+        ) {
+
+            alert(
+                "User balance is invalid."
+            );
+
+            return;
+
+        }
+
+
+        /* ---------------------------------------------
+           INSUFFICIENT BALANCE
+        --------------------------------------------- */
+
+        if (
+            balance < amount
+        ) {
+
+            alert(
+                "Insufficient User Balance.\n\n" +
+                "Available: " +
+                formatWithdrawRWF(
+                    balance
+                ) +
+                "\nRequested: " +
+                formatWithdrawRWF(
+                    amount
+                )
+            );
+
+            return;
+
+        }
+
+
+        /* ---------------------------------------------
+           NEW BALANCE
+        --------------------------------------------- */
+
+        const newBalance =
+            balance - amount;
+
+
+        /* ---------------------------------------------
+           TOTAL WITHDRAW
+        --------------------------------------------- */
+
+        const oldTotalWithdraws =
+            Number(
+                user.totalWithdraws ||
+                0
+            );
+
+
+        const oldTotalWithdraw =
+            Number(
+                user.totalWithdraw ||
+                0
+            );
+
+
+        const newTotalWithdraws =
+            oldTotalWithdraws +
+            amount;
+
+
+        const newTotalWithdraw =
+            oldTotalWithdraw +
+            amount;
+
+
+        /* ---------------------------------------------
+           TRANSACTION KEY
+        --------------------------------------------- */
+
+        const transactionRef =
+            push(
+                ref(
+                    db,
+                    "transactions"
+                )
+            );
+
+
+        const transactionKey =
+            transactionRef.key;
+
+
+        if (!transactionKey) {
+
+            alert(
+                "Could not create transaction ID."
+            );
+
+            return;
+
+        }
+
+
+        const now =
+            Date.now();
+
+
+        /* =================================================
+           ATOMIC MULTI-LOCATION UPDATE
+
+           USER BALANCE
+           USER WITHDRAW TOTALS
+           USER TRANSACTION COUNT
+           WITHDRAW STATUS
+           TRANSACTION RECORD
+
+           ALL WRITTEN TOGETHER
+        ================================================= */
+
+        const updates = {};
+
+
+        /* ---------------------------------------------
+           USER BALANCE
+        --------------------------------------------- */
+
+        updates[
+            "users/" +
+            uid +
+            "/balance"
+        ] =
+            newBalance;
+
+
+        /* ---------------------------------------------
+           USER WITHDRAW TOTAL
+        --------------------------------------------- */
+
+        updates[
+            "users/" +
+            uid +
+            "/totalWithdraws"
+        ] =
+            newTotalWithdraws;
+
+
+        updates[
+            "users/" +
+            uid +
+            "/totalWithdraw"
+        ] =
+            newTotalWithdraw;
+
+
+        /* ---------------------------------------------
+           USER TRANSACTION COUNT
+        --------------------------------------------- */
+
+        updates[
+            "users/" +
+            uid +
+            "/totalTransactions"
+        ] =
+            Number(
+                user.totalTransactions ||
+                0
+            ) + 1;
+
+
+        /* ---------------------------------------------
+           WITHDRAW REQUEST
+        --------------------------------------------- */
+
+        updates[
+            "withdrawRequests/" +
+            id +
+            "/status"
+        ] =
+            "approved";
+
+
+        updates[
+            "withdrawRequests/" +
+            id +
+            "/approvedAt"
+        ] =
+            now;
+
+
+        updates[
+            "withdrawRequests/" +
+            id +
+            "/approvedBy"
+        ] =
+            currentAdmin.uid;
+
+
+        /* ---------------------------------------------
+           TRANSACTION RECORD
+        --------------------------------------------- */
+
+        updates[
+            "transactions/" +
+            transactionKey
+        ] = {
+
+            uid: uid,
+
+            type: "withdraw",
+
+            transactionType: "withdraw",
+
+            amount: amount,
+
+            currency: "RWF",
+
+            status: "approved",
+
+            referenceId: id,
+
+            transactionId:
+                withdraw.transactionId ||
+                id,
+
+            paymentMethod:
+                withdraw.paymentMethod ||
+                withdraw.method ||
+                "",
+
+            description:
+                "Withdraw approved",
+
+            createdAt: now,
+
+            timestamp: now
+
+        };
+
+
+        /* ---------------------------------------------
+           WRITE EVERYTHING AT ONCE
+        --------------------------------------------- */
+
+        await update(
+            ref(db),
+            updates
+        );
+
+
+        /* ---------------------------------------------
+           SUCCESS
+        --------------------------------------------- */
+
+        alert(
+            "Withdraw approved successfully."
+        );
+
+
+        console.log(
+            "✅ Withdraw approved:",
+            id
+        );
+
+    }
+
+    catch (error) {
+
+        console.error(
+            "Withdraw approval failed:",
+            error
+        );
+
+
+        alert(
+            "Withdraw approval failed:\n\n" +
+            error.message
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   REJECT WITHDRAW
+========================================================= */
+
+async function rejectWithdraw(id) {
+
+    if (!id) {
+
+        alert(
+            "Withdraw request ID is missing."
+        );
+
+        return;
+
+    }
+
+
+    const confirmed =
+        confirm(
+            "Reject this withdraw request?"
+        );
+
+
+    if (!confirmed) {
+
+        return;
+
+    }
+
+
+    try {
+
+        if (!currentAdmin) {
+
+            alert(
+                "Admin session is not ready."
+            );
+
+            return;
+
+        }
+
+
+        const withdrawRef =
+            ref(
+                db,
+                "withdrawRequests/" + id
+            );
+
+
+        const snap =
+            await get(
+                withdrawRef
+            );
+
+
+        if (!snap.exists()) {
+
+            alert(
+                "Withdraw request not found."
+            );
+
+            return;
+
+        }
+
+
+        const withdraw =
+            snap.val() || {};
+
+
+        const status =
+            normalizeWithdrawStatus(
+                withdraw.status
+            );
+
+
+        if (
+            status === "approved"
+        ) {
+
+            alert(
+                "An approved withdraw cannot be rejected."
+            );
+
+            return;
+
+        }
+
+
+        if (
+            status === "rejected"
+        ) {
+
+            alert(
+                "This withdraw is already rejected."
+            );
+
+            return;
+
+        }
+
+
+        if (
+            status !== "pending"
+        ) {
+
+            alert(
+                "This withdraw request is not pending."
+            );
+
+            return;
+
+        }
+
+
+        const now =
+            Date.now();
+
+
+        await update(
+            withdrawRef,
+            {
+
+                status: "rejected",
+
+                rejectedAt: now,
+
+                rejectedBy:
+                    currentAdmin.uid
+
+            }
+        );
+
+
+        alert(
+            "Withdraw rejected successfully."
+        );
+
+
+        console.log(
+            "✅ Withdraw rejected:",
+            id
+        );
+
+    }
+
+    catch (error) {
+
+        console.error(
+            "Withdraw rejection failed:",
+            error
+        );
+
+
+        alert(
+            "Withdraw rejection failed:\n\n" +
+            error.message
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   EVENT DELEGATION
+========================================================= */
+
+withdrawList?.addEventListener(
+    "click",
+    event => {
+
+
+        /* ---------------------------------------------
+           APPROVE
+        --------------------------------------------- */
+
+        const approveButton =
+            event.target.closest(
+                ".approveWithdrawBtn"
+            );
+
+
+        if (approveButton) {
+
+            const id =
+                approveButton.dataset.id;
+
+
+            approveButton.disabled =
+                true;
+
+
+            approveWithdraw(id)
+                .finally(() => {
+
+                    approveButton.disabled =
+                        false;
+
+                });
+
+
+            return;
+
+        }
+
+
+        /* ---------------------------------------------
+           REJECT
+        --------------------------------------------- */
+
+        const rejectButton =
+            event.target.closest(
+                ".rejectWithdrawBtn"
+            );
+
+
+        if (rejectButton) {
+
+            const id =
+                rejectButton.dataset.id;
+
+
+            rejectButton.disabled =
+                true;
+
+
+            rejectWithdraw(id)
+                .finally(() => {
+
+                    rejectButton.disabled =
+                        false;
+
+                });
+
+
+            return;
+
+        }
+
+
+        /* ---------------------------------------------
+           VIEW
+        --------------------------------------------- */
+
+        const viewButton =
+            event.target.closest(
+                ".viewWithdrawBtn"
+            );
+
+
+        if (viewButton) {
+
+            const id =
+                viewButton.dataset.id;
+
+
+            openWithdrawDetails(
+                id
+            );
+
+
+            return;
+
+        }
+
+    }
+);
+
+
+/* =========================================================
+   SEARCH
+========================================================= */
+
+withdrawSearch?.addEventListener(
+    "input",
+    () => {
+
+        renderWithdrawRequests();
+
+    }
+);
+
+
+/* =========================================================
+   FILTER
+========================================================= */
+
+withdrawFilter?.addEventListener(
+    "change",
+    () => {
+
+        renderWithdrawRequests();
+
+    }
+);
+
+
+/* =========================================================
+   START PART 4
+========================================================= */
+
+let withdrawPartStarted =
+    false;
+
+
+function startWithdrawPart() {
+
+    if (
+        withdrawPartStarted
+    ) {
+
+        return;
+
+    }
+
+
+    if (!currentAdmin) {
+
+        console.warn(
+            "Withdraw Part waiting for admin authentication..."
+        );
+
+        return;
+
+    }
+
+
+    withdrawPartStarted =
+        true;
+
+
+    initializeWithdrawListener();
+
+
+    console.log(
+        "✅ Withdraw Part started"
+    );
+
+}
+
+
+/* =========================================================
+   WAIT FOR ADMIN
+========================================================= */
+
+const withdrawAuthInterval =
+    setInterval(
+        () => {
+
+            if (currentAdmin) {
+
+                clearInterval(
+                    withdrawAuthInterval
+                );
+
+                startWithdrawPart();
+
+            }
+
+        },
+        100
+    );
+
+
+/* =========================================================
+   GLOBAL FUNCTIONS
+========================================================= */
+
+window.approveWithdraw =
+    approveWithdraw;
+
+
+window.rejectWithdraw =
+    rejectWithdraw;
+
+
+/* =========================================================
+   READY
+========================================================= */
+
+console.log(
+    "======================================"
+);
+
+console.log(
+    "Money Vault Admin.js Part 4 Loaded"
+);
+
+console.log(
+    "Withdraw Requests ready"
+);
+
+console.log(
+    "Atomic withdraw approval enabled"
+);
+
+console.log(
+    "======================================"
+);
+
+   /* =========================================================
+   MONEY VAULT - ADMIN.JS
+   PART 5
+   TRANSACTIONS MANAGEMENT
+   CURRENCY: RWF / FRW
+
+   FEATURES:
+   - Live transactions
+   - Deposit + Withdraw transactions
+   - Search
+   - Type filter
+   - Status filter
+   - Counters
+   - Sort newest first
+   - User information
+   - Transaction ID
+   - Reference ID
+   - Amount
+   - Date
+   - Safe HTML rendering
+   - No duplicate listeners
+========================================================= */
+
+
+/* =========================================================
+   PART 5 STATE
+========================================================= */
+
+let allTransactionData = [];
+let transactionsListenerStarted = false;
+
+
+/* =========================================================
+   DOM ELEMENTS
+========================================================= */
+
+const transactionsContainer =
+    document.getElementById("transactionsContainer");
+
+const transactionSearch =
+    document.getElementById("transactionSearch");
+
+const transactionFilter =
+    document.getElementById("transactionFilter");
+
+const transactionTotal =
+    document.getElementById("transactionTotal");
+
+const transactionApproved =
+    document.getElementById("transactionApproved");
+
+const transactionPending =
+    document.getElementById("transactionPending");
+
+const transactionRejected =
+    document.getElementById("transactionRejected");
+
+
+/* =========================================================
+   STATUS NORMALIZER
+========================================================= */
+
+function normalizeTransactionStatus(status) {
+
+    return String(status || "")
+        .trim()
+        .toLowerCase();
+
+}
+
+
+/* =========================================================
+   TRANSACTION TYPE NORMALIZER
+========================================================= */
+
+function normalizeTransactionType(transaction) {
+
+    const type =
+        transaction.type ||
+        transaction.transactionType ||
+        transaction.kind ||
+        "";
+
+    const value =
+        String(type)
+            .trim()
+            .toLowerCase();
+
+    if (
+        value === "deposit" ||
+        value === "deposits"
+    ) {
+        return "Deposit";
+    }
+
+    if (
+        value === "withdraw" ||
+        value === "withdrawal" ||
+        value === "withdraws"
+    ) {
+        return "Withdraw";
+    }
+
+    return "Transaction";
+}
+
+
+/* =========================================================
+   FORMAT RWF
+========================================================= */
+
+function formatTransactionMoney(amount) {
+
+    const value = Number(amount || 0);
+
+    return value.toLocaleString("en-RW") + " RWF";
+
+}
+
+
+/* =========================================================
+   FORMAT DATE
+========================================================= */
+
+function formatTransactionDate(value) {
+
+    if (!value) {
+        return "-";
+    }
+
+    const date =
+        new Date(Number(value));
+
+    if (Number.isNaN(date.getTime())) {
+        return "-";
+    }
+
+    return date.toLocaleString();
+
+}
+
+
+/* =========================================================
+   STATUS LABEL
+========================================================= */
+
+function transactionStatusLabel(status) {
+
+    const normalized =
+        normalizeTransactionStatus(status);
+
+    if (normalized === "approved") {
+        return "Approved";
+    }
+
+    if (normalized === "pending") {
+        return "Pending";
+    }
+
+    if (normalized === "rejected") {
+        return "Rejected";
+    }
+
+    if (!normalized) {
+        return "Unknown";
+    }
+
+    return String(status);
+
+}
+
+
+/* =========================================================
+   STATUS CLASS
+========================================================= */
+
+function transactionStatusClass(status) {
+
+    const normalized =
+        normalizeTransactionStatus(status);
+
+    if (normalized === "approved") {
+        return "approved";
+    }
+
+    if (normalized === "pending") {
+        return "pending";
+    }
+
+    if (normalized === "rejected") {
+        return "rejected";
+    }
+
+    return "pending";
+
+}
+
+
+/* =========================================================
+   TRANSACTION ICON
+========================================================= */
+
+function transactionIcon(type) {
+
+    if (type === "Deposit") {
+
+        return `
+            <i class="fa-solid fa-arrow-down"></i>
+        `;
+
+    }
+
+    if (type === "Withdraw") {
+
+        return `
+            <i class="fa-solid fa-arrow-up"></i>
+        `;
+
+    }
+
+    return `
+        <i class="fa-solid fa-clock-rotate-left"></i>
+    `;
+
+}
+
+
+/* =========================================================
+   LOAD TRANSACTIONS
+========================================================= */
+
+function initializeTransactionsListener() {
+
+    if (transactionsListenerStarted) {
+        return;
+    }
+
+    if (!currentAdmin) {
+        return;
+    }
+
+    if (!transactionsContainer) {
+        console.warn(
+            "Transactions container not found."
+        );
+        return;
+    }
+
+    transactionsListenerStarted = true;
+
+    onValue(
+        ref(db, "transactions"),
+        (snapshot) => {
+
+            allTransactionData = [];
+
+            if (snapshot.exists()) {
+
+                snapshot.forEach((child) => {
+
+                    const data =
+                        child.val() || {};
+
+                    allTransactionData.push({
+
+                        id: child.key,
+
+                        ...data
+
+                    });
+
+                });
+
+            }
+
+            /*
+             * Newest transaction first
+             */
+            allTransactionData.sort(
+                (a, b) => {
+
+                    const dateA =
+                        Number(
+                            a.createdAt ||
+                            a.timestamp ||
+                            a.approvedAt ||
+                            0
+                        );
+
+                    const dateB =
+                        Number(
+                            b.createdAt ||
+                            b.timestamp ||
+                            b.approvedAt ||
+                            0
+                        );
+
+                    return dateB - dateA;
+
+                }
+            );
+
+            renderFilteredTransactions();
+
+        },
+        (error) => {
+
+            console.error(
+                "Transactions listener error:",
+                error
+            );
+
+            if (transactionsContainer) {
+
+                transactionsContainer.innerHTML = `
+
+                    <div class="request-card">
+
+                        <h3>
+                            <i class="fa-solid fa-triangle-exclamation"></i>
+                            Unable to load transactions
+                        </h3>
+
+                        <p>
+                            ${escapeHTML(
+                                error.message ||
+                                "Permission denied."
+                            )}
+                        </p>
+
+                    </div>
+
+                `;
+
+            }
+
+        }
+    );
+
+}
+
+
+/* =========================================================
+   FILTER TRANSACTIONS
+========================================================= */
+
+function getFilteredTransactions() {
+
+    const search =
+        String(
+            transactionSearch?.value || ""
+        )
+        .trim()
+        .toLowerCase();
+
+    const filter =
+        String(
+            transactionFilter?.value || "All"
+        )
+        .trim()
+        .toLowerCase();
+
+
+    return allTransactionData.filter(
+        (transaction) => {
+
+            const type =
+                normalizeTransactionType(
+                    transaction
+                );
+
+            const status =
+                normalizeTransactionStatus(
+                    transaction.status
+                );
+
+            /*
+             * TYPE / STATUS FILTER
+             */
+
+            let filterMatches = true;
+
+            if (filter !== "all") {
+
+                const typeMatches =
+                    filter === type.toLowerCase();
+
+                const statusMatches =
+                    filter === status;
+
+                filterMatches =
+                    typeMatches ||
+                    statusMatches;
+
+            }
+
+            if (!filterMatches) {
+                return false;
+            }
+
+
+            /*
+             * SEARCH
+             */
+
+            if (!search) {
+                return true;
+            }
+
+            const searchableText = [
+
+                transaction.uid,
+
+                transaction.email,
+
+                transaction.phone,
+
+                transaction.senderPhone,
+
+                transaction.transactionId,
+
+                transaction.referenceId,
+
+                transaction.paymentMethod,
+
+                transaction.description,
+
+                transaction.type,
+
+                transaction.transactionType,
+
+                transaction.status,
+
+                transaction.id
+
+            ]
+            .map(value =>
+                String(value || "")
+                    .toLowerCase()
+            )
+            .join(" ");
+
+
+            return searchableText.includes(search);
+
+        }
+    );
+
+}
+
+
+/* =========================================================
+   RENDER FILTERED TRANSACTIONS
+========================================================= */
+
+function renderFilteredTransactions() {
+
+    const filtered =
+        getFilteredTransactions();
+
+    renderTransactions(
+        filtered
+    );
+
+}
+
+
+/* =========================================================
+   RENDER TRANSACTIONS
+========================================================= */
+
+function renderTransactions(list) {
+
+    if (!transactionsContainer) {
+        return;
+    }
+
+
+    /*
+     * CLEAR
+     */
+
+    transactionsContainer.innerHTML = "";
+
+
+    /*
+     * COUNTERS
+     */
+
+    let approved = 0;
+    let pending = 0;
+    let rejected = 0;
+
+
+    allTransactionData.forEach(
+        (transaction) => {
+
+            const status =
+                normalizeTransactionStatus(
+                    transaction.status
+                );
+
+            if (status === "approved") {
+                approved++;
+            }
+
+            if (status === "pending") {
+                pending++;
+            }
+
+            if (status === "rejected") {
+                rejected++;
+            }
+
+        }
+    );
+
+
+    /*
+     * UPDATE SUMMARY
+     */
+
+    if (transactionTotal) {
+
+        transactionTotal.textContent =
+            allTransactionData.length;
+
+    }
+
+    if (transactionApproved) {
+
+        transactionApproved.textContent =
+            approved;
+
+    }
+
+    if (transactionPending) {
+
+        transactionPending.textContent =
+            pending;
+
+    }
+
+    if (transactionRejected) {
+
+        transactionRejected.textContent =
+            rejected;
+
+    }
+
+
+    /*
+     * EMPTY RESULT
+     */
+
+    if (!list.length) {
+
+        transactionsContainer.innerHTML = `
+
+            <div class="request-card">
+
+                <h3>
+                    <i class="fa-solid fa-receipt"></i>
+                    No Transactions Found
+                </h3>
+
+                <p>
+                    There are no transactions matching your search or filter.
+                </p>
+
+            </div>
+
+        `;
+
+        return;
+    }
+
+
+    /*
+     * TRANSACTION CARDS
+     */
+
+    list.forEach(
+        (transaction) => {
+
+            const type =
+                normalizeTransactionType(
+                    transaction
+                );
+
+            const status =
+                transactionStatusLabel(
+                    transaction.status
+                );
+
+            const statusClass =
+                transactionStatusClass(
+                    transaction.status
+                );
+
+            const amount =
+                Number(
+                    transaction.amount || 0
+                );
+
+            const email =
+                transaction.email ||
+                "-";
+
+            const uid =
+                transaction.uid ||
+                "-";
+
+            const transactionId =
+                transaction.transactionId ||
+                transaction.id ||
+                "-";
+
+            const referenceId =
+                transaction.referenceId ||
+                "-";
+
+            const paymentMethod =
+                transaction.paymentMethod ||
+                "-";
+
+            const description =
+                transaction.description ||
+                `${type} transaction`;
+
+            const createdAt =
+                transaction.createdAt ||
+                transaction.timestamp ||
+                transaction.approvedAt ||
+                transaction.rejectedAt ||
+                0;
+
+
+            /*
+             * SAFE VALUES
+             */
+
+            const safeType =
+                escapeHTML(type);
+
+            const safeEmail =
+                escapeHTML(email);
+
+            const safeUid =
+                escapeHTML(uid);
+
+            const safeTransactionId =
+                escapeHTML(transactionId);
+
+            const safeReferenceId =
+                escapeHTML(referenceId);
+
+            const safePaymentMethod =
+                escapeHTML(paymentMethod);
+
+            const safeDescription =
+                escapeHTML(description);
+
+            const safeStatus =
+                escapeHTML(status);
+
+
+            /*
+             * CARD
+             */
+
+            transactionsContainer.innerHTML += `
+
+                <div
+                    class="request-card transaction-card"
+                    data-transaction-id="${escapeHTML(transaction.id || "")}"
+                >
+
+                    <div class="request-card-header">
+
+                        <div class="request-title">
+
+                            <span class="transaction-icon">
+
+                                ${transactionIcon(type)}
+
+                            </span>
+
+                            <h3>
+                                ${safeType}
+                            </h3>
+
+                        </div>
+
+                        <span
+                            class="status-badge ${statusClass}"
+                        >
+                            ${safeStatus}
+                        </span>
+
+                    </div>
+
+
+                    <div class="request-card-body">
+
+                        <div class="request-info">
+
+                            <p>
+                                <strong>
+                                    Amount:
+                                </strong>
+
+                                ${formatTransactionMoney(amount)}
+
+                            </p>
+
+
+                            <p>
+                                <strong>
+                                    Email:
+                                </strong>
+
+                                ${safeEmail}
+
+                            </p>
+
+
+                            <p>
+                                <strong>
+                                    User UID:
+                                </strong>
+
+                                <span
+                                    class="transaction-uid"
+                                >
+                                    ${safeUid}
+                                </span>
+
+                            </p>
+
+
+                            <p>
+                                <strong>
+                                    Transaction ID:
+                                </strong>
+
+                                <span
+                                    class="transaction-id"
+                                >
+                                    ${safeTransactionId}
+                                </span>
+
+                            </p>
+
+
+                            <p>
+                                <strong>
+                                    Reference:
+                                </strong>
+
+                                ${safeReferenceId}
+
+                            </p>
+
+
+                            <p>
+                                <strong>
+                                    Payment Method:
+                                </strong>
+
+                                ${safePaymentMethod}
+
+                            </p>
+
+
+                            <p>
+                                <strong>
+                                    Description:
+                                </strong>
+
+                                ${safeDescription}
+
+                            </p>
+
+
+                            <p>
+                                <strong>
+                                    Date:
+                                </strong>
+
+                                ${formatTransactionDate(
+                                    createdAt
+                                )}
+
+                            </p>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            `;
+
+        }
+    );
+
+}
+
+
+/* =========================================================
+   SEARCH EVENT
+========================================================= */
+
+if (transactionSearch) {
+
+    transactionSearch.addEventListener(
+        "input",
+        () => {
+
+            renderFilteredTransactions();
+
+        }
+    );
+
+}
+
+
+/* =========================================================
+   FILTER EVENT
+========================================================= */
+
+if (transactionFilter) {
+
+    transactionFilter.addEventListener(
+        "change",
+        () => {
+
+            renderFilteredTransactions();
+
+        }
+    );
+
+}
+
+
+/* =========================================================
+   REFRESH TRANSACTIONS
+========================================================= */
+
+function refreshTransactions() {
+
+    renderFilteredTransactions();
+
+}
+
+
+/* =========================================================
+   START PART 5
+========================================================= */
+
+let part5Started = false;
+
+function startAdminPart5() {
+
+    if (part5Started) {
+        return;
+    }
+
+    if (!currentAdmin) {
+        return;
+    }
+
+    part5Started = true;
+
+    initializeTransactionsListener();
+
+    console.log(
+        "✅ Money Vault Admin Part 5 Loaded"
+    );
+
+}
+
+
+/* =========================================================
+   WAIT FOR ADMIN AUTH
+========================================================= */
+
+if (currentAdmin) {
+
+    startAdminPart5();
+
+} else {
+
+    const part5Interval =
+        setInterval(
+            () => {
+
+                if (currentAdmin) {
+
+                    clearInterval(
+                        part5Interval
+                    );
+
+                    startAdminPart5();
+
+                }
+
+            },
+            300
+        );
+
+}
+
+
+/* =========================================================
+   GLOBAL ACCESS
+========================================================= */
+
+window.refreshTransactions =
+    refreshTransactions;
+
+window.renderFilteredTransactions =
+    renderFilteredTransactions;
+
+/* =========================================================
+   MONEY VAULT - ADMIN.JS
+   PART 6
+   SETTINGS MANAGEMENT
+   CURRENCY: RWF / FRW
+
+   FEATURES:
+   - Admin information
+   - System controls
+   - Registration ON/OFF
+   - Deposit ON/OFF
+   - Withdraw ON/OFF
+   - Change admin password
+   - Database backup
+   - Refresh data
+   - Safe local settings
+   - Does NOT change admins/{uid} = true
+========================================================= */
+
+
+/* =========================================================
+   PART 6 STATE
+========================================================= */
+
+let part6Started = false;
+
+
+/* =========================================================
+   SETTINGS ELEMENTS
+========================================================= */
+
+const adminFullName =
+    document.getElementById("adminFullName");
+
+const adminEmail =
+    document.getElementById("adminEmail");
+
+const saveAdminBtn =
+    document.getElementById("saveAdminBtn");
+
+const allowRegistration =
+    document.getElementById("allowRegistration");
+
+const allowDeposit =
+    document.getElementById("allowDeposit");
+
+const allowWithdraw =
+    document.getElementById("allowWithdraw");
+
+const saveSystemBtn =
+    document.getElementById("saveSystemBtn");
+
+const newAdminPassword =
+    document.getElementById("newAdminPassword");
+
+const confirmAdminPassword =
+    document.getElementById("confirmAdminPassword");
+
+const changePasswordBtn =
+    document.getElementById("changePasswordBtn");
+
+const backupDatabaseBtn =
+    document.getElementById("backupDatabaseBtn");
+
+const refreshDatabaseBtn =
+    document.getElementById("refreshDatabaseBtn");
+
+const appVersion =
+    document.getElementById("appVersion");
+
+const firebaseStatus =
+    document.getElementById("firebaseStatus");
+
+const databaseStatus =
+    document.getElementById("databaseStatus");
+
+const storageStatus =
+    document.getElementById("storageStatus");
+
+
+/* =========================================================
+   DEFAULT SETTINGS
+========================================================= */
+
+const DEFAULT_SYSTEM_SETTINGS = {
+
+    allowRegistration: true,
+
+    allowDeposit: true,
+
+    allowWithdraw: true
+
+};
+
+
+/* =========================================================
+   SETTINGS STORAGE KEY
+========================================================= */
+
+const SYSTEM_SETTINGS_KEY =
+    "moneyVaultSystemSettings";
+
+
+const ADMIN_SETTINGS_KEY =
+    "moneyVaultAdminSettings";
+
+
+/* =========================================================
+   SAFE JSON PARSER
+========================================================= */
+
+function safeParseJSON(value, fallback) {
+
+    try {
+
+        if (!value) {
+            return fallback;
+        }
+
+        const parsed =
+            JSON.parse(value);
+
+        return parsed || fallback;
+
+    } catch (error) {
+
+        console.warn(
+            "Settings JSON parse error:",
+            error
+        );
+
+        return fallback;
+
+    }
+
+}
+
+
+/* =========================================================
+   LOAD SYSTEM SETTINGS
+========================================================= */
+
+function loadSystemSettings() {
+
+    const saved =
+        safeParseJSON(
+            localStorage.getItem(
+                SYSTEM_SETTINGS_KEY
+            ),
+            DEFAULT_SYSTEM_SETTINGS
+        );
+
+
+    if (allowRegistration) {
+
+        allowRegistration.checked =
+            saved.allowRegistration !== false;
+
+    }
+
+
+    if (allowDeposit) {
+
+        allowDeposit.checked =
+            saved.allowDeposit !== false;
+
+    }
+
+
+    if (allowWithdraw) {
+
+        allowWithdraw.checked =
+            saved.allowWithdraw !== false;
+
+    }
+
+}
+
+
+/* =========================================================
+   LOAD ADMIN SETTINGS
+========================================================= */
+
+function loadAdminSettings() {
+
+    const saved =
+        safeParseJSON(
+            localStorage.getItem(
+                ADMIN_SETTINGS_KEY
+            ),
+            {}
+        );
+
+
+    /*
+     * Admin name
+     */
+
+    if (adminFullName) {
+
+        adminFullName.value =
+            saved.name ||
+            currentAdmin?.displayName ||
+            "Administrator";
+
+    }
+
+
+    /*
+     * Admin email
+     */
+
+    if (adminEmail) {
+
+        adminEmail.value =
+            saved.email ||
+            currentAdmin?.email ||
+            "";
+
+    }
+
+}
+
+
+/* =========================================================
+   SAVE ADMIN INFORMATION
+========================================================= */
+
+function saveAdminInformation() {
+
+    if (!currentAdmin) {
+
+        alert(
+            "Administrator authentication is not ready."
+        );
+
+        return;
+
+    }
+
+
+    const name =
+        String(
+            adminFullName?.value || ""
+        ).trim();
+
+    const email =
+        String(
+            adminEmail?.value || ""
+        ).trim();
+
+
+    if (!name) {
+
+        alert(
+            "Please enter administrator name."
+        );
+
+        return;
+
+    }
+
+
+    if (
+        email &&
+        !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+    ) {
+
+        alert(
+            "Please enter a valid email."
+        );
+
+        return;
+
+    }
+
+
+    /*
+     * IMPORTANT:
+     * We do NOT change admins/{uid}.
+     *
+     * admins/{uid} must remain:
+     *
+     * admins
+     *   UID
+     *     true
+     *
+     * because Part 1 uses it for admin verification.
+     */
+
+    localStorage.setItem(
+        ADMIN_SETTINGS_KEY,
+        JSON.stringify({
+
+            name: name,
+
+            email: email,
+
+            updatedAt: Date.now()
+
+        })
+    );
+
+
+    /*
+     * Update visible admin name immediately
+     */
+
+    if (adminName) {
+
+        adminName.textContent =
+            name;
+
+    }
+
+
+    alert(
+        "Admin information saved successfully."
+    );
+
+}
+
+
+/* =========================================================
+   SAVE SYSTEM SETTINGS
+========================================================= */
+
+function saveSystemSettings() {
+
+    const settings = {
+
+        allowRegistration:
+            allowRegistration
+                ? allowRegistration.checked
+                : true,
+
+        allowDeposit:
+            allowDeposit
+                ? allowDeposit.checked
+                : true,
+
+        allowWithdraw:
+            allowWithdraw
+                ? allowWithdraw.checked
+                : true,
+
+        updatedAt:
+            Date.now()
+
+    };
+
+
+    localStorage.setItem(
+        SYSTEM_SETTINGS_KEY,
+        JSON.stringify(settings)
+    );
+
+
+    alert(
+        "System settings saved successfully."
+    );
+
+
+    console.log(
+        "System settings:",
+        settings
+    );
+
+}
+
+
+/* =========================================================
+   CHANGE ADMIN PASSWORD
+========================================================= */
+
+async function changeAdminPassword() {
+
+    if (!currentAdmin) {
+
+        alert(
+            "Administrator authentication is not ready."
+        );
+
+        return;
+
+    }
+
+
+    const password =
+        String(
+            newAdminPassword?.value || ""
+        );
+
+    const confirmPassword =
+        String(
+            confirmAdminPassword?.value || ""
+        );
+
+
+    if (!password) {
+
+        alert(
+            "Please enter a new password."
+        );
+
+        return;
+
+    }
+
+
+    if (password.length < 6) {
+
+        alert(
+            "Password must contain at least 6 characters."
+        );
+
+        return;
+
+    }
+
+
+    if (password !== confirmPassword) {
+
+        alert(
+            "Passwords do not match."
+        );
+
+        return;
+
+    }
+
+
+    const confirmed =
+        confirm(
+            "Are you sure you want to change the administrator password?"
+        );
+
+
+    if (!confirmed) {
+        return;
+    }
+
+
+    try {
+
+        if (changePasswordBtn) {
+
+            changePasswordBtn.disabled = true;
+
+            changePasswordBtn.textContent =
+                "Changing...";
+
+        }
+
+
+        /*
+         * updatePassword must be imported in Part 1.
+         *
+         * If your Part 1 currently has:
+         *
+         * import {
+         *   onAuthStateChanged,
+         *   signOut
+         * } ...
+         *
+         * change it to:
+         *
+         * import {
+         *   onAuthStateChanged,
+         *   signOut,
+         *   updatePassword
+         * } ...
+         */
+
+
+        if (
+            typeof updatePassword !== "function"
+        ) {
+
+            throw new Error(
+                "updatePassword is not imported in Part 1."
+            );
+
+        }
+
+
+        await updatePassword(
+            currentAdmin,
+            password
+        );
+
+
+        if (newAdminPassword) {
+            newAdminPassword.value = "";
+        }
+
+        if (confirmAdminPassword) {
+            confirmAdminPassword.value = "";
+        }
+
+
+        alert(
+            "Administrator password changed successfully."
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "Password change error:",
+            error
+        );
+
+
+        if (
+            error.code ===
+            "auth/requires-recent-login"
+        ) {
+
+            alert(
+                "For security, please logout and login again, then change the password."
+            );
+
+        } else {
+
+            alert(
+                error.message ||
+                "Unable to change password."
+            );
+
+        }
+
+    } finally {
+
+        if (changePasswordBtn) {
+
+            changePasswordBtn.disabled =
+                false;
+
+            changePasswordBtn.textContent =
+                "Change Password";
+
+        }
+
+    }
+
+}
+
+
+/* =========================================================
+   GET DATABASE BACKUP
+========================================================= */
+
+async function createDatabaseBackup() {
+
+    if (!currentAdmin) {
+
+        alert(
+            "Administrator authentication is not ready."
+        );
+
+        return;
+
+    }
+
+
+    const confirmed =
+        confirm(
+            "Create a backup of the Money Vault database data?"
+        );
+
+
+    if (!confirmed) {
+        return;
+    }
+
+
+    try {
+
+        if (backupDatabaseBtn) {
+
+            backupDatabaseBtn.disabled = true;
+
+            backupDatabaseBtn.innerHTML =
+                `<i class="fa-solid fa-spinner fa-spin"></i> Creating Backup...`;
+
+        }
+
+
+        /*
+         * We read the main database sections separately.
+         *
+         * This is intentional because root-level ".read"
+         * is disabled in the Firebase Rules.
+         */
+
+        const backupPaths = [
+
+            "users",
+
+            "depositRequests",
+
+            "withdrawRequests",
+
+            "vipPlans",
+
+            "vipPurchaseRequests",
+
+            "vipBuyers",
+
+            "transactions",
+
+            "referralCodes",
+
+            "notifications",
+
+            "announcements",
+
+            "transactionIds",
+
+            "bonusRequests",
+
+            "vipReferralBonuses",
+
+            "adminLogs"
+
+        ];
+
+
+        const backup = {
+
+            application:
+                "Money Vault",
+
+            currency:
+                "RWF / FRW",
+
+            exportedAt:
+                new Date().toISOString(),
+
+            exportedBy:
+                currentAdmin.uid,
+
+            data: {}
+
+        };
+
+
+        for (
+            const path of backupPaths
+        ) {
+
+            try {
+
+                const snapshot =
+                    await get(
+                        ref(db, path)
+                    );
+
+
+                backup.data[path] =
+                    snapshot.exists()
+                        ? snapshot.val()
+                        : {};
+
+            } catch (pathError) {
+
+                console.warn(
+                    "Backup skipped:",
+                    path,
+                    pathError
+                );
+
+
+                backup.data[path] = {
+
+                    _backupError:
+                        pathError.message ||
+                        "Unable to read this path."
+
+                };
+
+            }
+
+        }
+
+
+        /*
+         * Convert backup to JSON
+         */
+
+        const json =
+            JSON.stringify(
+                backup,
+                null,
+                2
+            );
+
+
+        const blob =
+            new Blob(
+                [json],
+                {
+                    type:
+                        "application/json"
+                }
+            );
+
+
+        const url =
+            URL.createObjectURL(
+                blob
+            );
+
+
+        const link =
+            document.createElement("a");
+
+
+        const date =
+            new Date()
+                .toISOString()
+                .replace(
+                    /[:.]/g,
+                    "-"
+                );
+
+
+        link.href = url;
+
+        link.download =
+            `money-vault-backup-${date}.json`;
+
+
+        document.body.appendChild(
+            link
+        );
+
+
+        link.click();
+
+
+        link.remove();
+
+
+        URL.revokeObjectURL(
+            url
+        );
+
+
+        alert(
+            "Database backup created successfully."
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "Backup error:",
+            error
+        );
+
+
+        alert(
+            error.message ||
+            "Unable to create database backup."
+        );
+
+    } finally {
+
+        if (backupDatabaseBtn) {
+
+            backupDatabaseBtn.disabled =
+                false;
+
+            backupDatabaseBtn.innerHTML =
+                `<i class="fa-solid fa-download"></i> Backup Database`;
+
+        }
+
+    }
+
+}
+
+
+/* =========================================================
+   REFRESH ADMIN DATA
+========================================================= */
+
+function refreshAdminData() {
+
+    try {
+
+        /*
+         * Refresh current page renderers
+         */
+
+        if (
+            typeof renderFilteredTransactions ===
+            "function"
+        ) {
+
+            renderFilteredTransactions();
+
+        }
+
+
+        if (
+            typeof renderUsers ===
+            "function" &&
+            typeof allUsersData !==
+            "undefined"
+        ) {
+
+            renderUsers(
+                allUsersData
+            );
+
+        }
+
+
+        if (
+            typeof renderDeposits ===
+            "function"
+        ) {
+
+            try {
+                renderDeposits();
+            } catch (error) {
+                console.warn(
+                    "Deposit refresh skipped:",
+                    error
+                );
+            }
+
+        }
+
+
+        if (
+            typeof renderWithdraws ===
+            "function"
+        ) {
+
+            try {
+                renderWithdraws();
+            } catch (error) {
+                console.warn(
+                    "Withdraw refresh skipped:",
+                    error
+                );
+            }
+
+        }
+
+
+        /*
+         * Reload settings from local storage
+         */
+
+        loadSystemSettings();
+
+        loadAdminSettings();
+
+
+        alert(
+            "Admin data refreshed."
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "Refresh error:",
+            error
+        );
+
+        alert(
+            "Refresh completed with some warnings."
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   SYSTEM STATUS
+========================================================= */
+
+function updateSystemStatus() {
+
+    /*
+     * APP VERSION
+     */
+
+    if (appVersion) {
+
+        appVersion.textContent =
+            "v1.0.0";
+
+    }
+
+
+    /*
+     * FIREBASE
+     */
+
+    if (firebaseStatus) {
+
+        firebaseStatus.textContent =
+            auth && db
+                ? "Connected"
+                : "Unavailable";
+
+    }
+
+
+    /*
+     * DATABASE
+     */
+
+    if (databaseStatus) {
+
+        databaseStatus.textContent =
+            db
+                ? "Realtime Database"
+                : "Unavailable";
+
+    }
+
+
+    /*
+     * STORAGE
+     *
+     * We do not use Storage for deposits in the
+     * current Money Vault architecture.
+     */
+
+    if (storageStatus) {
+
+        storageStatus.textContent =
+            "Available";
+
+    }
+
+}
+
+
+/* =========================================================
+   BUTTON EVENTS
+========================================================= */
+
+if (saveAdminBtn) {
+
+    saveAdminBtn.addEventListener(
+        "click",
+        saveAdminInformation
+    );
+
+}
+
+
+if (saveSystemBtn) {
+
+    saveSystemBtn.addEventListener(
+        "click",
+        saveSystemSettings
+    );
+
+}
+
+
+if (changePasswordBtn) {
+
+    changePasswordBtn.addEventListener(
+        "click",
+        changeAdminPassword
+    );
+
+}
+
+
+if (backupDatabaseBtn) {
+
+    backupDatabaseBtn.addEventListener(
+        "click",
+        createDatabaseBackup
+    );
+
+}
+
+
+if (refreshDatabaseBtn) {
+
+    refreshDatabaseBtn.addEventListener(
+        "click",
+        refreshAdminData
+    );
+
+}
+
+
+/* =========================================================
+   START PART 6
+========================================================= */
+
+function startAdminPart6() {
+
+    if (part6Started) {
+        return;
+    }
+
+    if (!currentAdmin) {
+        return;
+    }
+
+    part6Started = true;
+
+
+    loadSystemSettings();
+
+    loadAdminSettings();
+
+    updateSystemStatus();
+
+
+    /*
+     * Update visible admin name
+     */
+
+    const savedAdmin =
+        safeParseJSON(
+            localStorage.getItem(
+                ADMIN_SETTINGS_KEY
+            ),
+            {}
+        );
+
+
+    if (
+        adminName &&
+        savedAdmin.name
+    ) {
+
+        adminName.textContent =
+            savedAdmin.name;
+
+    }
+
+
+    console.log(
+        "✅ Money Vault Admin Part 6 Loaded"
+    );
+
+}
+
+
+/* =========================================================
+   WAIT FOR ADMIN
+========================================================= */
+
+if (currentAdmin) {
+
+    startAdminPart6();
+
+} else {
+
+    const part6Interval =
+        setInterval(
+            () => {
+
+                if (currentAdmin) {
+
+                    clearInterval(
+                        part6Interval
+                    );
+
+                    startAdminPart6();
+
+                }
+
+            },
+            300
+        );
+
+}
+
+
+/* =========================================================
+   GLOBAL FUNCTIONS
+========================================================= */
+
+window.saveAdminInformation =
+    saveAdminInformation;
+
+window.saveSystemSettings =
+    saveSystemSettings;
+
+window.changeAdminPassword =
+    changeAdminPassword;
+
+window.createDatabaseBackup =
+    createDatabaseBackup;
+
+window.refreshAdminData =
+    refreshAdminData;
+
+   
