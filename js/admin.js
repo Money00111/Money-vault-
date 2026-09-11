@@ -25,6 +25,17 @@ import {
     get
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
 
+import {
+    ref,
+    get,
+    set,
+    update,
+    push,
+    onValue,
+    query,
+    orderByChild,
+    equalTo
+} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
 
 /* =========================================================
    GLOBAL ADMIN STATE
@@ -1470,15 +1481,6 @@ console.log(
 ========================================================= */
 
 
-/* =========================================================
-   IMPORTANT FIREBASE IMPORTS
-========================================================= */
-
-import {
-    onValue,
-    update,
-    push
-} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
 
 
 /* =========================================================
@@ -4917,4 +4919,2036 @@ console.log(
 console.log(
     "======================================"
 );
+
+/* =========================================================
+   MONEY VAULT - ADMIN.JS
+   PART 5
+   TRANSACTIONS MANAGEMENT
+   CURRENCY: RWF / FRW
+
+   FEATURES:
+   - Live transactions
+   - Deposit + Withdraw transactions
+   - Search
+   - Type filter
+   - Status filter
+   - Counters
+   - Sort newest first
+   - User information
+   - Transaction ID
+   - Reference ID
+   - Amount
+   - Date
+   - Safe HTML rendering
+   - No duplicate listeners
+========================================================= */
+
+
+/* =========================================================
+   PART 5 STATE
+========================================================= */
+
+let allTransactionData = [];
+let transactionsListenerStarted = false;
+
+
+/* =========================================================
+   DOM ELEMENTS
+========================================================= */
+
+const transactionsContainer =
+    document.getElementById("transactionsContainer");
+
+const transactionSearch =
+    document.getElementById("transactionSearch");
+
+const transactionFilter =
+    document.getElementById("transactionFilter");
+
+const transactionTotal =
+    document.getElementById("transactionTotal");
+
+const transactionApproved =
+    document.getElementById("transactionApproved");
+
+const transactionPending =
+    document.getElementById("transactionPending");
+
+const transactionRejected =
+    document.getElementById("transactionRejected");
+
+
+/* =========================================================
+   STATUS NORMALIZER
+========================================================= */
+
+function normalizeTransactionStatus(status) {
+
+    return String(status || "")
+        .trim()
+        .toLowerCase();
+
+}
+
+
+/* =========================================================
+   TRANSACTION TYPE NORMALIZER
+========================================================= */
+
+function normalizeTransactionType(transaction) {
+
+    const type =
+        transaction.type ||
+        transaction.transactionType ||
+        transaction.kind ||
+        "";
+
+    const value =
+        String(type)
+            .trim()
+            .toLowerCase();
+
+    if (
+        value === "deposit" ||
+        value === "deposits"
+    ) {
+        return "Deposit";
+    }
+
+    if (
+        value === "withdraw" ||
+        value === "withdrawal" ||
+        value === "withdraws"
+    ) {
+        return "Withdraw";
+    }
+
+    return "Transaction";
+}
+
+
+/* =========================================================
+   FORMAT RWF
+========================================================= */
+
+function formatTransactionMoney(amount) {
+
+    const value = Number(amount || 0);
+
+    return value.toLocaleString("en-RW") + " RWF";
+
+}
+
+
+/* =========================================================
+   FORMAT DATE
+========================================================= */
+
+function formatTransactionDate(value) {
+
+    if (!value) {
+        return "-";
+    }
+
+    const date =
+        new Date(Number(value));
+
+    if (Number.isNaN(date.getTime())) {
+        return "-";
+    }
+
+    return date.toLocaleString();
+
+}
+
+
+/* =========================================================
+   STATUS LABEL
+========================================================= */
+
+function transactionStatusLabel(status) {
+
+    const normalized =
+        normalizeTransactionStatus(status);
+
+    if (normalized === "approved") {
+        return "Approved";
+    }
+
+    if (normalized === "pending") {
+        return "Pending";
+    }
+
+    if (normalized === "rejected") {
+        return "Rejected";
+    }
+
+    if (!normalized) {
+        return "Unknown";
+    }
+
+    return String(status);
+
+}
+
+
+/* =========================================================
+   STATUS CLASS
+========================================================= */
+
+function transactionStatusClass(status) {
+
+    const normalized =
+        normalizeTransactionStatus(status);
+
+    if (normalized === "approved") {
+        return "approved";
+    }
+
+    if (normalized === "pending") {
+        return "pending";
+    }
+
+    if (normalized === "rejected") {
+        return "rejected";
+    }
+
+    return "pending";
+
+}
+
+
+/* =========================================================
+   TRANSACTION ICON
+========================================================= */
+
+function transactionIcon(type) {
+
+    if (type === "Deposit") {
+
+        return `
+            <i class="fa-solid fa-arrow-down"></i>
+        `;
+
+    }
+
+    if (type === "Withdraw") {
+
+        return `
+            <i class="fa-solid fa-arrow-up"></i>
+        `;
+
+    }
+
+    return `
+        <i class="fa-solid fa-clock-rotate-left"></i>
+    `;
+
+}
+
+
+/* =========================================================
+   LOAD TRANSACTIONS
+========================================================= */
+
+function initializeTransactionsListener() {
+
+    if (transactionsListenerStarted) {
+        return;
+    }
+
+    if (!currentAdmin) {
+        return;
+    }
+
+    if (!transactionsContainer) {
+        console.warn(
+            "Transactions container not found."
+        );
+        return;
+    }
+
+    transactionsListenerStarted = true;
+
+    onValue(
+        ref(db, "transactions"),
+        (snapshot) => {
+
+            allTransactionData = [];
+
+            if (snapshot.exists()) {
+
+                snapshot.forEach((child) => {
+
+                    const data =
+                        child.val() || {};
+
+                    allTransactionData.push({
+
+                        id: child.key,
+
+                        ...data
+
+                    });
+
+                });
+
+            }
+
+            /*
+             * Newest transaction first
+             */
+            allTransactionData.sort(
+                (a, b) => {
+
+                    const dateA =
+                        Number(
+                            a.createdAt ||
+                            a.timestamp ||
+                            a.approvedAt ||
+                            0
+                        );
+
+                    const dateB =
+                        Number(
+                            b.createdAt ||
+                            b.timestamp ||
+                            b.approvedAt ||
+                            0
+                        );
+
+                    return dateB - dateA;
+
+                }
+            );
+
+            renderFilteredTransactions();
+
+        },
+        (error) => {
+
+            console.error(
+                "Transactions listener error:",
+                error
+            );
+
+            if (transactionsContainer) {
+
+                transactionsContainer.innerHTML = `
+
+                    <div class="request-card">
+
+                        <h3>
+                            <i class="fa-solid fa-triangle-exclamation"></i>
+                            Unable to load transactions
+                        </h3>
+
+                        <p>
+                            ${escapeHTML(
+                                error.message ||
+                                "Permission denied."
+                            )}
+                        </p>
+
+                    </div>
+
+                `;
+
+            }
+
+        }
+    );
+
+}
+
+
+/* =========================================================
+   FILTER TRANSACTIONS
+========================================================= */
+
+function getFilteredTransactions() {
+
+    const search =
+        String(
+            transactionSearch?.value || ""
+        )
+        .trim()
+        .toLowerCase();
+
+    const filter =
+        String(
+            transactionFilter?.value || "All"
+        )
+        .trim()
+        .toLowerCase();
+
+
+    return allTransactionData.filter(
+        (transaction) => {
+
+            const type =
+                normalizeTransactionType(
+                    transaction
+                );
+
+            const status =
+                normalizeTransactionStatus(
+                    transaction.status
+                );
+
+            /*
+             * TYPE / STATUS FILTER
+             */
+
+            let filterMatches = true;
+
+            if (filter !== "all") {
+
+                const typeMatches =
+                    filter === type.toLowerCase();
+
+                const statusMatches =
+                    filter === status;
+
+                filterMatches =
+                    typeMatches ||
+                    statusMatches;
+
+            }
+
+            if (!filterMatches) {
+                return false;
+            }
+
+
+            /*
+             * SEARCH
+             */
+
+            if (!search) {
+                return true;
+            }
+
+            const searchableText = [
+
+                transaction.uid,
+
+                transaction.email,
+
+                transaction.phone,
+
+                transaction.senderPhone,
+
+                transaction.transactionId,
+
+                transaction.referenceId,
+
+                transaction.paymentMethod,
+
+                transaction.description,
+
+                transaction.type,
+
+                transaction.transactionType,
+
+                transaction.status,
+
+                transaction.id
+
+            ]
+            .map(value =>
+                String(value || "")
+                    .toLowerCase()
+            )
+            .join(" ");
+
+
+            return searchableText.includes(search);
+
+        }
+    );
+
+}
+
+
+/* =========================================================
+   RENDER FILTERED TRANSACTIONS
+========================================================= */
+
+function renderFilteredTransactions() {
+
+    const filtered =
+        getFilteredTransactions();
+
+    renderTransactions(
+        filtered
+    );
+
+}
+
+
+/* =========================================================
+   RENDER TRANSACTIONS
+========================================================= */
+
+function renderTransactions(list) {
+
+    if (!transactionsContainer) {
+        return;
+    }
+
+
+    /*
+     * CLEAR
+     */
+
+    transactionsContainer.innerHTML = "";
+
+
+    /*
+     * COUNTERS
+     */
+
+    let approved = 0;
+    let pending = 0;
+    let rejected = 0;
+
+
+    allTransactionData.forEach(
+        (transaction) => {
+
+            const status =
+                normalizeTransactionStatus(
+                    transaction.status
+                );
+
+            if (status === "approved") {
+                approved++;
+            }
+
+            if (status === "pending") {
+                pending++;
+            }
+
+            if (status === "rejected") {
+                rejected++;
+            }
+
+        }
+    );
+
+
+    /*
+     * UPDATE SUMMARY
+     */
+
+    if (transactionTotal) {
+
+        transactionTotal.textContent =
+            allTransactionData.length;
+
+    }
+
+    if (transactionApproved) {
+
+        transactionApproved.textContent =
+            approved;
+
+    }
+
+    if (transactionPending) {
+
+        transactionPending.textContent =
+            pending;
+
+    }
+
+    if (transactionRejected) {
+
+        transactionRejected.textContent =
+            rejected;
+
+    }
+
+
+    /*
+     * EMPTY RESULT
+     */
+
+    if (!list.length) {
+
+        transactionsContainer.innerHTML = `
+
+            <div class="request-card">
+
+                <h3>
+                    <i class="fa-solid fa-receipt"></i>
+                    No Transactions Found
+                </h3>
+
+                <p>
+                    There are no transactions matching your search or filter.
+                </p>
+
+            </div>
+
+        `;
+
+        return;
+    }
+
+
+    /*
+     * TRANSACTION CARDS
+     */
+
+    list.forEach(
+        (transaction) => {
+
+            const type =
+                normalizeTransactionType(
+                    transaction
+                );
+
+            const status =
+                transactionStatusLabel(
+                    transaction.status
+                );
+
+            const statusClass =
+                transactionStatusClass(
+                    transaction.status
+                );
+
+            const amount =
+                Number(
+                    transaction.amount || 0
+                );
+
+            const email =
+                transaction.email ||
+                "-";
+
+            const uid =
+                transaction.uid ||
+                "-";
+
+            const transactionId =
+                transaction.transactionId ||
+                transaction.id ||
+                "-";
+
+            const referenceId =
+                transaction.referenceId ||
+                "-";
+
+            const paymentMethod =
+                transaction.paymentMethod ||
+                "-";
+
+            const description =
+                transaction.description ||
+                `${type} transaction`;
+
+            const createdAt =
+                transaction.createdAt ||
+                transaction.timestamp ||
+                transaction.approvedAt ||
+                transaction.rejectedAt ||
+                0;
+
+
+            /*
+             * SAFE VALUES
+             */
+
+            const safeType =
+                escapeHTML(type);
+
+            const safeEmail =
+                escapeHTML(email);
+
+            const safeUid =
+                escapeHTML(uid);
+
+            const safeTransactionId =
+                escapeHTML(transactionId);
+
+            const safeReferenceId =
+                escapeHTML(referenceId);
+
+            const safePaymentMethod =
+                escapeHTML(paymentMethod);
+
+            const safeDescription =
+                escapeHTML(description);
+
+            const safeStatus =
+                escapeHTML(status);
+
+
+            /*
+             * CARD
+             */
+
+            transactionsContainer.innerHTML += `
+
+                <div
+                    class="request-card transaction-card"
+                    data-transaction-id="${escapeHTML(transaction.id || "")}"
+                >
+
+                    <div class="request-card-header">
+
+                        <div class="request-title">
+
+                            <span class="transaction-icon">
+
+                                ${transactionIcon(type)}
+
+                            </span>
+
+                            <h3>
+                                ${safeType}
+                            </h3>
+
+                        </div>
+
+                        <span
+                            class="status-badge ${statusClass}"
+                        >
+                            ${safeStatus}
+                        </span>
+
+                    </div>
+
+
+                    <div class="request-card-body">
+
+                        <div class="request-info">
+
+                            <p>
+                                <strong>
+                                    Amount:
+                                </strong>
+
+                                ${formatTransactionMoney(amount)}
+
+                            </p>
+
+
+                            <p>
+                                <strong>
+                                    Email:
+                                </strong>
+
+                                ${safeEmail}
+
+                            </p>
+
+
+                            <p>
+                                <strong>
+                                    User UID:
+                                </strong>
+
+                                <span
+                                    class="transaction-uid"
+                                >
+                                    ${safeUid}
+                                </span>
+
+                            </p>
+
+
+                            <p>
+                                <strong>
+                                    Transaction ID:
+                                </strong>
+
+                                <span
+                                    class="transaction-id"
+                                >
+                                    ${safeTransactionId}
+                                </span>
+
+                            </p>
+
+
+                            <p>
+                                <strong>
+                                    Reference:
+                                </strong>
+
+                                ${safeReferenceId}
+
+                            </p>
+
+
+                            <p>
+                                <strong>
+                                    Payment Method:
+                                </strong>
+
+                                ${safePaymentMethod}
+
+                            </p>
+
+
+                            <p>
+                                <strong>
+                                    Description:
+                                </strong>
+
+                                ${safeDescription}
+
+                            </p>
+
+
+                            <p>
+                                <strong>
+                                    Date:
+                                </strong>
+
+                                ${formatTransactionDate(
+                                    createdAt
+                                )}
+
+                            </p>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            `;
+
+        }
+    );
+
+}
+
+
+/* =========================================================
+   SEARCH EVENT
+========================================================= */
+
+if (transactionSearch) {
+
+    transactionSearch.addEventListener(
+        "input",
+        () => {
+
+            renderFilteredTransactions();
+
+        }
+    );
+
+}
+
+
+/* =========================================================
+   FILTER EVENT
+========================================================= */
+
+if (transactionFilter) {
+
+    transactionFilter.addEventListener(
+        "change",
+        () => {
+
+            renderFilteredTransactions();
+
+        }
+    );
+
+}
+
+
+/* =========================================================
+   REFRESH TRANSACTIONS
+========================================================= */
+
+function refreshTransactions() {
+
+    renderFilteredTransactions();
+
+}
+
+
+/* =========================================================
+   START PART 5
+========================================================= */
+
+let part5Started = false;
+
+function startAdminPart5() {
+
+    if (part5Started) {
+        return;
+    }
+
+    if (!currentAdmin) {
+        return;
+    }
+
+    part5Started = true;
+
+    initializeTransactionsListener();
+
+    console.log(
+        "✅ Money Vault Admin Part 5 Loaded"
+    );
+
+}
+
+
+/* =========================================================
+   WAIT FOR ADMIN AUTH
+========================================================= */
+
+if (currentAdmin) {
+
+    startAdminPart5();
+
+} else {
+
+    const part5Interval =
+        setInterval(
+            () => {
+
+                if (currentAdmin) {
+
+                    clearInterval(
+                        part5Interval
+                    );
+
+                    startAdminPart5();
+
+                }
+
+            },
+            300
+        );
+
+}
+
+
+/* =========================================================
+   GLOBAL ACCESS
+========================================================= */
+
+window.refreshTransactions =
+    refreshTransactions;
+
+window.renderFilteredTransactions =
+    renderFilteredTransactions;
+
+/* =========================================================
+   MONEY VAULT - ADMIN.JS
+   PART 6
+   SETTINGS MANAGEMENT
+   CURRENCY: RWF / FRW
+
+   FEATURES:
+   - Admin information
+   - System controls
+   - Registration ON/OFF
+   - Deposit ON/OFF
+   - Withdraw ON/OFF
+   - Change admin password
+   - Database backup
+   - Refresh data
+   - Safe local settings
+   - Does NOT change admins/{uid} = true
+========================================================= */
+
+
+/* =========================================================
+   PART 6 STATE
+========================================================= */
+
+let part6Started = false;
+
+
+/* =========================================================
+   SETTINGS ELEMENTS
+========================================================= */
+
+const adminFullName =
+    document.getElementById("adminFullName");
+
+const adminEmail =
+    document.getElementById("adminEmail");
+
+const saveAdminBtn =
+    document.getElementById("saveAdminBtn");
+
+const allowRegistration =
+    document.getElementById("allowRegistration");
+
+const allowDeposit =
+    document.getElementById("allowDeposit");
+
+const allowWithdraw =
+    document.getElementById("allowWithdraw");
+
+const saveSystemBtn =
+    document.getElementById("saveSystemBtn");
+
+const newAdminPassword =
+    document.getElementById("newAdminPassword");
+
+const confirmAdminPassword =
+    document.getElementById("confirmAdminPassword");
+
+const changePasswordBtn =
+    document.getElementById("changePasswordBtn");
+
+const backupDatabaseBtn =
+    document.getElementById("backupDatabaseBtn");
+
+const refreshDatabaseBtn =
+    document.getElementById("refreshDatabaseBtn");
+
+const appVersion =
+    document.getElementById("appVersion");
+
+const firebaseStatus =
+    document.getElementById("firebaseStatus");
+
+const databaseStatus =
+    document.getElementById("databaseStatus");
+
+const storageStatus =
+    document.getElementById("storageStatus");
+
+
+/* =========================================================
+   DEFAULT SETTINGS
+========================================================= */
+
+const DEFAULT_SYSTEM_SETTINGS = {
+
+    allowRegistration: true,
+
+    allowDeposit: true,
+
+    allowWithdraw: true
+
+};
+
+
+/* =========================================================
+   SETTINGS STORAGE KEY
+========================================================= */
+
+const SYSTEM_SETTINGS_KEY =
+    "moneyVaultSystemSettings";
+
+
+const ADMIN_SETTINGS_KEY =
+    "moneyVaultAdminSettings";
+
+
+/* =========================================================
+   SAFE JSON PARSER
+========================================================= */
+
+function safeParseJSON(value, fallback) {
+
+    try {
+
+        if (!value) {
+            return fallback;
+        }
+
+        const parsed =
+            JSON.parse(value);
+
+        return parsed || fallback;
+
+    } catch (error) {
+
+        console.warn(
+            "Settings JSON parse error:",
+            error
+        );
+
+        return fallback;
+
+    }
+
+}
+
+
+/* =========================================================
+   LOAD SYSTEM SETTINGS
+========================================================= */
+
+function loadSystemSettings() {
+
+    const saved =
+        safeParseJSON(
+            localStorage.getItem(
+                SYSTEM_SETTINGS_KEY
+            ),
+            DEFAULT_SYSTEM_SETTINGS
+        );
+
+
+    if (allowRegistration) {
+
+        allowRegistration.checked =
+            saved.allowRegistration !== false;
+
+    }
+
+
+    if (allowDeposit) {
+
+        allowDeposit.checked =
+            saved.allowDeposit !== false;
+
+    }
+
+
+    if (allowWithdraw) {
+
+        allowWithdraw.checked =
+            saved.allowWithdraw !== false;
+
+    }
+
+}
+
+
+/* =========================================================
+   LOAD ADMIN SETTINGS
+========================================================= */
+
+function loadAdminSettings() {
+
+    const saved =
+        safeParseJSON(
+            localStorage.getItem(
+                ADMIN_SETTINGS_KEY
+            ),
+            {}
+        );
+
+
+    /*
+     * Admin name
+     */
+
+    if (adminFullName) {
+
+        adminFullName.value =
+            saved.name ||
+            currentAdmin?.displayName ||
+            "Administrator";
+
+    }
+
+
+    /*
+     * Admin email
+     */
+
+    if (adminEmail) {
+
+        adminEmail.value =
+            saved.email ||
+            currentAdmin?.email ||
+            "";
+
+    }
+
+}
+
+
+/* =========================================================
+   SAVE ADMIN INFORMATION
+========================================================= */
+
+function saveAdminInformation() {
+
+    if (!currentAdmin) {
+
+        alert(
+            "Administrator authentication is not ready."
+        );
+
+        return;
+
+    }
+
+
+    const name =
+        String(
+            adminFullName?.value || ""
+        ).trim();
+
+    const email =
+        String(
+            adminEmail?.value || ""
+        ).trim();
+
+
+    if (!name) {
+
+        alert(
+            "Please enter administrator name."
+        );
+
+        return;
+
+    }
+
+
+    if (
+        email &&
+        !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+    ) {
+
+        alert(
+            "Please enter a valid email."
+        );
+
+        return;
+
+    }
+
+
+    /*
+     * IMPORTANT:
+     * We do NOT change admins/{uid}.
+     *
+     * admins/{uid} must remain:
+     *
+     * admins
+     *   UID
+     *     true
+     *
+     * because Part 1 uses it for admin verification.
+     */
+
+    localStorage.setItem(
+        ADMIN_SETTINGS_KEY,
+        JSON.stringify({
+
+            name: name,
+
+            email: email,
+
+            updatedAt: Date.now()
+
+        })
+    );
+
+
+    /*
+     * Update visible admin name immediately
+     */
+
+    if (adminName) {
+
+        adminName.textContent =
+            name;
+
+    }
+
+
+    alert(
+        "Admin information saved successfully."
+    );
+
+}
+
+
+/* =========================================================
+   SAVE SYSTEM SETTINGS
+========================================================= */
+
+function saveSystemSettings() {
+
+    const settings = {
+
+        allowRegistration:
+            allowRegistration
+                ? allowRegistration.checked
+                : true,
+
+        allowDeposit:
+            allowDeposit
+                ? allowDeposit.checked
+                : true,
+
+        allowWithdraw:
+            allowWithdraw
+                ? allowWithdraw.checked
+                : true,
+
+        updatedAt:
+            Date.now()
+
+    };
+
+
+    localStorage.setItem(
+        SYSTEM_SETTINGS_KEY,
+        JSON.stringify(settings)
+    );
+
+
+    alert(
+        "System settings saved successfully."
+    );
+
+
+    console.log(
+        "System settings:",
+        settings
+    );
+
+}
+
+
+/* =========================================================
+   CHANGE ADMIN PASSWORD
+========================================================= */
+
+async function changeAdminPassword() {
+
+    if (!currentAdmin) {
+
+        alert(
+            "Administrator authentication is not ready."
+        );
+
+        return;
+
+    }
+
+
+    const password =
+        String(
+            newAdminPassword?.value || ""
+        );
+
+    const confirmPassword =
+        String(
+            confirmAdminPassword?.value || ""
+        );
+
+
+    if (!password) {
+
+        alert(
+            "Please enter a new password."
+        );
+
+        return;
+
+    }
+
+
+    if (password.length < 6) {
+
+        alert(
+            "Password must contain at least 6 characters."
+        );
+
+        return;
+
+    }
+
+
+    if (password !== confirmPassword) {
+
+        alert(
+            "Passwords do not match."
+        );
+
+        return;
+
+    }
+
+
+    const confirmed =
+        confirm(
+            "Are you sure you want to change the administrator password?"
+        );
+
+
+    if (!confirmed) {
+        return;
+    }
+
+
+    try {
+
+        if (changePasswordBtn) {
+
+            changePasswordBtn.disabled = true;
+
+            changePasswordBtn.textContent =
+                "Changing...";
+
+        }
+
+
+        /*
+         * updatePassword must be imported in Part 1.
+         *
+         * If your Part 1 currently has:
+         *
+         * import {
+         *   onAuthStateChanged,
+         *   signOut
+         * } ...
+         *
+         * change it to:
+         *
+         * import {
+         *   onAuthStateChanged,
+         *   signOut,
+         *   updatePassword
+         * } ...
+         */
+
+
+        if (
+            typeof updatePassword !== "function"
+        ) {
+
+            throw new Error(
+                "updatePassword is not imported in Part 1."
+            );
+
+        }
+
+
+        await updatePassword(
+            currentAdmin,
+            password
+        );
+
+
+        if (newAdminPassword) {
+            newAdminPassword.value = "";
+        }
+
+        if (confirmAdminPassword) {
+            confirmAdminPassword.value = "";
+        }
+
+
+        alert(
+            "Administrator password changed successfully."
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "Password change error:",
+            error
+        );
+
+
+        if (
+            error.code ===
+            "auth/requires-recent-login"
+        ) {
+
+            alert(
+                "For security, please logout and login again, then change the password."
+            );
+
+        } else {
+
+            alert(
+                error.message ||
+                "Unable to change password."
+            );
+
+        }
+
+    } finally {
+
+        if (changePasswordBtn) {
+
+            changePasswordBtn.disabled =
+                false;
+
+            changePasswordBtn.textContent =
+                "Change Password";
+
+        }
+
+    }
+
+}
+
+
+/* =========================================================
+   GET DATABASE BACKUP
+========================================================= */
+
+async function createDatabaseBackup() {
+
+    if (!currentAdmin) {
+
+        alert(
+            "Administrator authentication is not ready."
+        );
+
+        return;
+
+    }
+
+
+    const confirmed =
+        confirm(
+            "Create a backup of the Money Vault database data?"
+        );
+
+
+    if (!confirmed) {
+        return;
+    }
+
+
+    try {
+
+        if (backupDatabaseBtn) {
+
+            backupDatabaseBtn.disabled = true;
+
+            backupDatabaseBtn.innerHTML =
+                `<i class="fa-solid fa-spinner fa-spin"></i> Creating Backup...`;
+
+        }
+
+
+        /*
+         * We read the main database sections separately.
+         *
+         * This is intentional because root-level ".read"
+         * is disabled in the Firebase Rules.
+         */
+
+        const backupPaths = [
+
+            "users",
+
+            "depositRequests",
+
+            "withdrawRequests",
+
+            "vipPlans",
+
+            "vipPurchaseRequests",
+
+            "vipBuyers",
+
+            "transactions",
+
+            "referralCodes",
+
+            "notifications",
+
+            "announcements",
+
+            "transactionIds",
+
+            "bonusRequests",
+
+            "vipReferralBonuses",
+
+            "adminLogs"
+
+        ];
+
+
+        const backup = {
+
+            application:
+                "Money Vault",
+
+            currency:
+                "RWF / FRW",
+
+            exportedAt:
+                new Date().toISOString(),
+
+            exportedBy:
+                currentAdmin.uid,
+
+            data: {}
+
+        };
+
+
+        for (
+            const path of backupPaths
+        ) {
+
+            try {
+
+                const snapshot =
+                    await get(
+                        ref(db, path)
+                    );
+
+
+                backup.data[path] =
+                    snapshot.exists()
+                        ? snapshot.val()
+                        : {};
+
+            } catch (pathError) {
+
+                console.warn(
+                    "Backup skipped:",
+                    path,
+                    pathError
+                );
+
+
+                backup.data[path] = {
+
+                    _backupError:
+                        pathError.message ||
+                        "Unable to read this path."
+
+                };
+
+            }
+
+        }
+
+
+        /*
+         * Convert backup to JSON
+         */
+
+        const json =
+            JSON.stringify(
+                backup,
+                null,
+                2
+            );
+
+
+        const blob =
+            new Blob(
+                [json],
+                {
+                    type:
+                        "application/json"
+                }
+            );
+
+
+        const url =
+            URL.createObjectURL(
+                blob
+            );
+
+
+        const link =
+            document.createElement("a");
+
+
+        const date =
+            new Date()
+                .toISOString()
+                .replace(
+                    /[:.]/g,
+                    "-"
+                );
+
+
+        link.href = url;
+
+        link.download =
+            `money-vault-backup-${date}.json`;
+
+
+        document.body.appendChild(
+            link
+        );
+
+
+        link.click();
+
+
+        link.remove();
+
+
+        URL.revokeObjectURL(
+            url
+        );
+
+
+        alert(
+            "Database backup created successfully."
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "Backup error:",
+            error
+        );
+
+
+        alert(
+            error.message ||
+            "Unable to create database backup."
+        );
+
+    } finally {
+
+        if (backupDatabaseBtn) {
+
+            backupDatabaseBtn.disabled =
+                false;
+
+            backupDatabaseBtn.innerHTML =
+                `<i class="fa-solid fa-download"></i> Backup Database`;
+
+        }
+
+    }
+
+}
+
+
+/* =========================================================
+   REFRESH ADMIN DATA
+========================================================= */
+
+function refreshAdminData() {
+
+    try {
+
+        /*
+         * Refresh current page renderers
+         */
+
+        if (
+            typeof renderFilteredTransactions ===
+            "function"
+        ) {
+
+            renderFilteredTransactions();
+
+        }
+
+
+        if (
+            typeof renderUsers ===
+            "function" &&
+            typeof allUsersData !==
+            "undefined"
+        ) {
+
+            renderUsers(
+                allUsersData
+            );
+
+        }
+
+
+        if (
+            typeof renderDeposits ===
+            "function"
+        ) {
+
+            try {
+                renderDeposits();
+            } catch (error) {
+                console.warn(
+                    "Deposit refresh skipped:",
+                    error
+                );
+            }
+
+        }
+
+
+        if (
+            typeof renderWithdraws ===
+            "function"
+        ) {
+
+            try {
+                renderWithdraws();
+            } catch (error) {
+                console.warn(
+                    "Withdraw refresh skipped:",
+                    error
+                );
+            }
+
+        }
+
+
+        /*
+         * Reload settings from local storage
+         */
+
+        loadSystemSettings();
+
+        loadAdminSettings();
+
+
+        alert(
+            "Admin data refreshed."
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "Refresh error:",
+            error
+        );
+
+        alert(
+            "Refresh completed with some warnings."
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   SYSTEM STATUS
+========================================================= */
+
+function updateSystemStatus() {
+
+    /*
+     * APP VERSION
+     */
+
+    if (appVersion) {
+
+        appVersion.textContent =
+            "v1.0.0";
+
+    }
+
+
+    /*
+     * FIREBASE
+     */
+
+    if (firebaseStatus) {
+
+        firebaseStatus.textContent =
+            auth && db
+                ? "Connected"
+                : "Unavailable";
+
+    }
+
+
+    /*
+     * DATABASE
+     */
+
+    if (databaseStatus) {
+
+        databaseStatus.textContent =
+            db
+                ? "Realtime Database"
+                : "Unavailable";
+
+    }
+
+
+    /*
+     * STORAGE
+     *
+     * We do not use Storage for deposits in the
+     * current Money Vault architecture.
+     */
+
+    if (storageStatus) {
+
+        storageStatus.textContent =
+            "Available";
+
+    }
+
+}
+
+
+/* =========================================================
+   BUTTON EVENTS
+========================================================= */
+
+if (saveAdminBtn) {
+
+    saveAdminBtn.addEventListener(
+        "click",
+        saveAdminInformation
+    );
+
+}
+
+
+if (saveSystemBtn) {
+
+    saveSystemBtn.addEventListener(
+        "click",
+        saveSystemSettings
+    );
+
+}
+
+
+if (changePasswordBtn) {
+
+    changePasswordBtn.addEventListener(
+        "click",
+        changeAdminPassword
+    );
+
+}
+
+
+if (backupDatabaseBtn) {
+
+    backupDatabaseBtn.addEventListener(
+        "click",
+        createDatabaseBackup
+    );
+
+}
+
+
+if (refreshDatabaseBtn) {
+
+    refreshDatabaseBtn.addEventListener(
+        "click",
+        refreshAdminData
+    );
+
+}
+
+
+/* =========================================================
+   START PART 6
+========================================================= */
+
+function startAdminPart6() {
+
+    if (part6Started) {
+        return;
+    }
+
+    if (!currentAdmin) {
+        return;
+    }
+
+    part6Started = true;
+
+
+    loadSystemSettings();
+
+    loadAdminSettings();
+
+    updateSystemStatus();
+
+
+    /*
+     * Update visible admin name
+     */
+
+    const savedAdmin =
+        safeParseJSON(
+            localStorage.getItem(
+                ADMIN_SETTINGS_KEY
+            ),
+            {}
+        );
+
+
+    if (
+        adminName &&
+        savedAdmin.name
+    ) {
+
+        adminName.textContent =
+            savedAdmin.name;
+
+    }
+
+
+    console.log(
+        "✅ Money Vault Admin Part 6 Loaded"
+    );
+
+}
+
+
+/* =========================================================
+   WAIT FOR ADMIN
+========================================================= */
+
+if (currentAdmin) {
+
+    startAdminPart6();
+
+} else {
+
+    const part6Interval =
+        setInterval(
+            () => {
+
+                if (currentAdmin) {
+
+                    clearInterval(
+                        part6Interval
+                    );
+
+                    startAdminPart6();
+
+                }
+
+            },
+            300
+        );
+
+}
+
+
+/* =========================================================
+   GLOBAL FUNCTIONS
+========================================================= */
+
+window.saveAdminInformation =
+    saveAdminInformation;
+
+window.saveSystemSettings =
+    saveSystemSettings;
+
+window.changeAdminPassword =
+    changeAdminPassword;
+
+window.createDatabaseBackup =
+    createDatabaseBackup;
+
+window.refreshAdminData =
+    refreshAdminData;
 
