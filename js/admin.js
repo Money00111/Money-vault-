@@ -4508,36 +4508,6 @@ withdrawModal?.addEventListener(
 );
 
 
-/* =========================================================
-   APPROVE WITHDRAW — ATOMIC
-========================================================= */
-
-async function approveWithdraw(id) {
-
-    if (!id) {
-
-        alert(
-            "Withdraw request ID is missing."
-        );
-
-        return;
-
-    }
-
-
-    const confirmed =
-        confirm(
-            "Approve this withdraw request?"
-        );
-
-
-    if (!confirmed) {
-
-        return;
-
-    }
-
-
     try {
 
         /* ---------------------------------------------
@@ -4994,35 +4964,6 @@ async function approveWithdraw(id) {
 
 }
 
-
-/* =========================================================
-   REJECT WITHDRAW
-========================================================= */
-
-async function rejectWithdraw(id) {
-
-    if (!id) {
-
-        alert(
-            "Withdraw request ID is missing."
-        );
-
-        return;
-
-    }
-
-
-    const confirmed =
-        confirm(
-            "Reject this withdraw request?"
-        );
-
-
-    if (!confirmed) {
-
-        return;
-
-    }
 
 
     try {
