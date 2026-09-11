@@ -4490,7 +4490,7 @@ withdrawModal?.addEventListener(
 );
 
 
-    try {
+    
 
         /* ---------------------------------------------
            ADMIN CHECK
@@ -4947,140 +4947,7 @@ withdrawModal?.addEventListener(
 }
 
 
-
-    try {
-
-        if (!currentAdmin) {
-
-            alert(
-                "Admin session is not ready."
-            );
-
-            return;
-
-        }
-
-
-        const withdrawRef =
-            ref(
-                db,
-                "withdrawRequests/" + id
-            );
-
-
-        const snap =
-            await get(
-                withdrawRef
-            );
-
-
-        if (!snap.exists()) {
-
-            alert(
-                "Withdraw request not found."
-            );
-
-            return;
-
-        }
-
-
-        const withdraw =
-            snap.val() || {};
-
-
-        const status =
-            normalizeWithdrawStatus(
-                withdraw.status
-            );
-
-
-        if (
-            status === "approved"
-        ) {
-
-            alert(
-                "An approved withdraw cannot be rejected."
-            );
-
-            return;
-
-        }
-
-
-        if (
-            status === "rejected"
-        ) {
-
-            alert(
-                "This withdraw is already rejected."
-            );
-
-            return;
-
-        }
-
-
-        if (
-            status !== "pending"
-        ) {
-
-            alert(
-                "This withdraw request is not pending."
-            );
-
-            return;
-
-        }
-
-
-        const now =
-            Date.now();
-
-
-        await update(
-            withdrawRef,
-            {
-
-                status: "rejected",
-
-                rejectedAt: now,
-
-                rejectedBy:
-                    currentAdmin.uid
-
-            }
-        );
-
-
-        alert(
-            "Withdraw rejected successfully."
-        );
-
-
-        console.log(
-            "✅ Withdraw rejected:",
-            id
-        );
-
-    }
-
-    catch (error) {
-
-        console.error(
-            "Withdraw rejection failed:",
-            error
-        );
-
-
-        alert(
-            "Withdraw rejection failed:\n\n" +
-            error.message
-        );
-
-    }
-
-}
+            
 
 
 /* =========================================================
