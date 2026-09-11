@@ -630,24 +630,6 @@ const totalAmountEl =
     document.getElementById("totalAmount");
 
 
-/* =========================================================
-   USERS ELEMENTS
-========================================================= */
-
-const usersContainer =
-    document.getElementById("usersContainer");
-
-const allUsersEl =
-    document.getElementById("allUsers");
-
-const activeUsersEl =
-    document.getElementById("activeUsers");
-
-const blockedUsersEl =
-    document.getElementById("blockedUsers");
-
-const userSearchEl =
-    document.getElementById("userSearch");
 
 
 /* =========================================================
