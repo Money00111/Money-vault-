@@ -3168,7 +3168,99 @@ function activateVipRequestButtons() {
 
 }
 
+/* =========================================================
+   FIND REFERRER
+   MONEY VAULT - REFERRAL SYSTEM
+   CURRENCY: RWF / FRW
+========================================================= */
 
+async function findReferrer(user) {
+
+    try {
+
+        if (!user || !user.uid) {
+            return null;
+        }
+
+        const referralCode =
+            user.referredBy ||
+            user.referralCodeUsed ||
+            "";
+
+        if (!referralCode) {
+            console.log("No referral code for user:", user.uid);
+            return null;
+        }
+
+        const code = String(referralCode).trim();
+
+        if (!code) {
+            return null;
+        }
+
+        const referralSnap = await get(
+            ref(db, "referralCodes/" + code)
+        );
+
+        if (!referralSnap.exists()) {
+            console.log(
+                "Referral code not found:",
+                code
+            );
+            return null;
+        }
+
+        const referralData =
+            referralSnap.val() || {};
+
+        const referrerUid =
+            referralData.uid ||
+            referralData.userId ||
+            referralData.referrerUid ||
+            "";
+
+        if (!referrerUid) {
+            console.log(
+                "Referrer UID missing for code:",
+                code
+            );
+            return null;
+        }
+
+        if (referrerUid === user.uid) {
+            console.log(
+                "User cannot refer himself."
+            );
+            return null;
+        }
+
+        const referrerSnap = await get(
+            ref(db, "users/" + referrerUid)
+        );
+
+        if (!referrerSnap.exists()) {
+            console.log(
+                "Referrer user not found:",
+                referrerUid
+            );
+            return null;
+        }
+
+        return {
+            uid: referrerUid,
+            data: referrerSnap.val() || {}
+        };
+
+    } catch (error) {
+
+        console.error(
+            "Find referrer error:",
+            error
+        );
+
+        return null;
+    }
+}
 
 
        // ======================================
