@@ -4,15 +4,17 @@
 
    CURRENCY: RWF / FRW
 
-   RULES:
-   - Admin verified by Firebase RTDB admins/{uid}
-   - Required value: admins/{uid}: true
+   FEATURES:
+   - Firebase Admin Authentication
+   - Admin verified through admins/{uid}
    - No hard-coded admin email
-   - Normal users cannot access admin panel
-   - Mobile sidebar supported
-   - Quick Actions supported
-   - Other Parts can wait for admin authentication
-   - No duplicate Firebase imports
+   - Sidebar navigation
+   - Mobile sidebar
+   - Dashboard Quick Actions
+   - Page navigation
+   - Logout
+   - Loading screen
+   - Compatible with admin.html
 ========================================================= */
 
 
@@ -20,55 +22,40 @@
    FIREBASE IMPORTS
 ========================================================= */
 
-import { auth, db } from "./firebase.js";
+import {
+    auth,
+    db
+} from "./firebase.js";
 
 
 import {
     onAuthStateChanged,
-    signOut,
-    updatePassword
+    signOut
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 
 
 import {
     ref,
-    get,
-    set,
-    update,
-    push,
-    onValue,
-    query,
-    orderByChild,
-    equalTo
+    get
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
 
 
 /* =========================================================
-   GLOBAL ADMIN STATE
+   ADMIN STATE
 ========================================================= */
 
 let currentAdmin = null;
 
-let adminData = null;
-
-
-/*
- * Other Parts can use this state.
- */
-
-window.currentAdmin = null;
-
-window.adminData = null;
-
-
-/* =========================================================
-   ADMIN READY PROMISE
-========================================================= */
+let adminReady = false;
 
 let adminReadyResolve;
 
 let adminReadyReject;
 
+
+/* =========================================================
+   CENTRAL ADMIN READY PROMISE
+========================================================= */
 
 const adminReadyPromise =
     new Promise(
@@ -82,49 +69,6 @@ const adminReadyPromise =
 
         }
     );
-
-
-/*
- * Expose the promise so other Parts
- * can wait for authenticated admin.
- */
-
-window.adminState = {
-
-    get currentAdmin() {
-
-        return currentAdmin;
-
-    },
-
-    get adminData() {
-
-        return adminData;
-
-    },
-
-    get readyPromise() {
-
-        return adminReadyPromise;
-
-    }
-
-};
-
-
-/* =========================================================
-   WAIT FOR ADMIN
-========================================================= */
-
-function waitForAdmin() {
-
-    return adminReadyPromise;
-
-}
-
-
-window.waitForAdmin =
-    waitForAdmin;
 
 
 /* =========================================================
@@ -162,14 +106,54 @@ const adminName =
 
 
 /* =========================================================
-   NAVIGATION ELEMENTS
+   PAGE MAP
+   MUST MATCH admin.html
 ========================================================= */
 
-const menuLinks =
-    document.querySelectorAll(
-        ".menu-link"
-    );
+const sectionMap = {
 
+    dashboard:
+        "dashboardSection",
+
+    deposits:
+        "depositSection",
+
+    deposit:
+        "depositSection",
+
+    withdraws:
+        "withdrawSection",
+
+    withdraw:
+        "withdrawSection",
+
+    users:
+        "usersSection",
+
+    transactions:
+        "transactionsSection",
+
+    settings:
+        "settingsSection",
+
+    vipRequests:
+        "vipRequestsSection",
+
+    vipBuyers:
+        "vipBuyersSection",
+
+    bonusRequests:
+        "bonusRequestsSection",
+
+    quickActions:
+        "quickActionsSection"
+
+};
+
+
+/* =========================================================
+   PAGE SECTIONS
+========================================================= */
 
 const pageSections =
     document.querySelectorAll(
@@ -178,422 +162,30 @@ const pageSections =
 
 
 /* =========================================================
-   HELPER — SHOW LOADING
+   SIDEBAR MENU LINKS
 ========================================================= */
 
-function showLoading() {
-
-    if (loadingScreen) {
-
-        loadingScreen.style.display =
-            "flex";
-
-    }
-
-}
-
-
-/* =========================================================
-   HELPER — HIDE LOADING
-========================================================= */
-
-function hideLoading() {
-
-    if (loadingScreen) {
-
-        loadingScreen.style.display =
-            "none";
-
-    }
-
-}
-
-
-/* =========================================================
-   HELPER — ADMIN CHECK
-========================================================= */
-
-function isAdminAuthenticated() {
-
-    return (
-        currentAdmin !== null &&
-        currentAdmin !== undefined
+const menuLinks =
+    document.querySelectorAll(
+        ".menu-link"
     );
 
+
+/* =========================================================
+   WAIT FOR ADMIN
+========================================================= */
+
+async function waitForAdmin() {
+
+    if (adminReady && currentAdmin) {
+
+        return currentAdmin;
+
+    }
+
+    return await adminReadyPromise;
+
 }
-
-
-/* =========================================================
-   ADMIN AUTHENTICATION
-========================================================= */
-
-onAuthStateChanged(
-    auth,
-    async (user) => {
-
-        try {
-
-            showLoading();
-
-
-            /* =========================================
-               NO LOGIN
-            ========================================= */
-
-            if (!user) {
-
-                currentAdmin = null;
-
-                adminData = null;
-
-                window.currentAdmin =
-                    null;
-
-                window.adminData =
-                    null;
-
-
-                /*
-                 * Redirect normal unauthenticated
-                 * visitors to login.
-                 */
-
-                window.location.href =
-                    "login.html";
-
-                return;
-
-            }
-
-
-            /* =========================================
-               CHECK ADMIN RECORD
-               
-               REQUIRED:
-               admins/{REAL_UID}: true
-            ========================================= */
-
-            const adminRef =
-                ref(
-                    db,
-                    "admins/" +
-                    user.uid
-                );
-
-
-            const adminSnap =
-                await get(
-                    adminRef
-                );
-
-
-            /* =========================================
-               USER IS NOT ADMIN
-            ========================================= */
-
-            if (
-                !adminSnap.exists() ||
-                adminSnap.val() !== true
-            ) {
-
-                console.warn(
-                    "Access denied. User is not an admin.",
-                    user.uid
-                );
-
-
-                alert(
-                    "Access Denied"
-                );
-
-
-                /*
-                 * Do not allow the normal user
-                 * to remain inside admin panel.
-                 */
-
-                currentAdmin = null;
-
-                adminData = null;
-
-                window.currentAdmin =
-                    null;
-
-                window.adminData =
-                    null;
-
-
-                try {
-
-                    await signOut(auth);
-
-                }
-
-                catch (signOutError) {
-
-                    console.error(
-                        "Sign out error:",
-                        signOutError
-                    );
-
-                }
-
-
-                window.location.href =
-                    "dashboard.html";
-
-
-                return;
-
-            }
-
-
-            /* =========================================
-               ADMIN VERIFIED
-            ========================================= */
-
-            currentAdmin =
-                user;
-
-
-            adminData =
-                true;
-
-
-            /*
-             * Keep global references synchronized.
-             */
-
-            window.currentAdmin =
-                user;
-
-
-            window.adminData =
-                true;
-
-
-            /* =========================================
-               ADMIN NAME
-            ========================================= */
-
-            if (adminName) {
-
-                adminName.textContent =
-                    user.displayName ||
-                    user.email ||
-                    "Administrator";
-
-            }
-
-
-            /* =========================================
-               RESOLVE ADMIN READY
-            ========================================= */
-
-            adminReadyResolve(
-                user
-            );
-
-
-            /* =========================================
-               HIDE LOADING
-            ========================================= */
-
-            hideLoading();
-
-
-            /* =========================================
-               OPEN DEFAULT PAGE
-            ========================================= */
-
-            openPage(
-                "dashboard"
-            );
-
-
-            /* =========================================
-               CONSOLE
-            ========================================= */
-
-            console.log(
-                "======================================"
-            );
-
-
-            console.log(
-                "✅ ADMIN AUTHENTICATED"
-            );
-
-
-            console.log(
-                "Admin UID:",
-                user.uid
-            );
-
-
-            console.log(
-                "Admin access:",
-                true
-            );
-
-
-            console.log(
-                "======================================"
-            );
-
-        }
-
-        catch (error) {
-
-            console.error(
-                "Admin authentication error:",
-                error
-            );
-
-
-            /*
-             * Make sure other Parts do not
-             * remain waiting forever if auth fails.
-             */
-
-            adminReadyReject(
-                error
-            );
-
-
-            currentAdmin = null;
-
-            adminData = null;
-
-            window.currentAdmin =
-                null;
-
-            window.adminData =
-                null;
-
-
-            hideLoading();
-
-
-            alert(
-                "Admin authentication failed:\n\n" +
-                error.message
-            );
-
-
-            try {
-
-                await signOut(auth);
-
-            }
-
-            catch (signOutError) {
-
-                console.error(
-                    "Sign out after auth error:",
-                    signOutError
-                );
-
-            }
-
-
-            window.location.href =
-                "login.html";
-
-        }
-
-    }
-);
-
-
-/* =========================================================
-   MOBILE SIDEBAR
-========================================================= */
-
-menuBtn?.addEventListener(
-    "click",
-    (event) => {
-
-        event.stopPropagation();
-
-
-        if (!sidebar) {
-
-            return;
-
-        }
-
-
-        sidebar.classList.toggle(
-            "active"
-        );
-
-
-        sidebar.classList.toggle(
-            "show"
-        );
-
-    }
-);
-
-
-/* =========================================================
-   CLOSE SIDEBAR WHEN CLICKING OUTSIDE
-========================================================= */
-
-document.addEventListener(
-    "click",
-    (event) => {
-
-        if (
-            !sidebar ||
-            !menuBtn
-        ) {
-
-            return;
-
-        }
-
-
-        if (
-            window.innerWidth >= 900
-        ) {
-
-            return;
-
-        }
-
-
-        const clickedInsideSidebar =
-            sidebar.contains(
-                event.target
-            );
-
-
-        const clickedMenuButton =
-            menuBtn.contains(
-                event.target
-            );
-
-
-        if (
-            !clickedInsideSidebar &&
-            !clickedMenuButton
-        ) {
-
-            sidebar.classList.remove(
-                "active"
-            );
-
-
-            sidebar.classList.remove(
-                "show"
-            );
-
-        }
-
-    }
-);
 
 
 /* =========================================================
@@ -602,65 +194,50 @@ document.addEventListener(
 
 function openPage(pageName) {
 
-    if (!pageName) {
+    const sectionId =
+        sectionMap[pageName];
+
+
+    if (!sectionId) {
+
+        console.warn(
+            "Unknown admin page:",
+            pageName
+        );
 
         return;
 
     }
 
 
-    /* =========================================
-       SECTION MAP
-    ========================================= */
-
-    const sectionMap = {
-
-        dashboard:
-            "dashboardSection",
-
-        deposits:
-            "depositSection",
-
-        deposit:
-            "depositSection",
-
-        withdraws:
-            "withdrawSection",
-
-        withdraw:
-            "withdrawSection",
-
-        users:
-            "usersSection",
-
-        transactions:
-            "transactionsSection",
-
-        settings:
-            "settingsSection",
-
-        vip:
-            "vipSection",
-
-        vipRequests:
-            "vipRequestsSection",
-
-        vipBuyers:
-            "vipBuyersSection"
-
-    };
+    const targetSection =
+        document.getElementById(
+            sectionId
+        );
 
 
-    const sectionId =
-        sectionMap[pageName];
+    if (!targetSection) {
+
+        console.warn(
+            "Section not found in admin.html:",
+            sectionId
+        );
+
+        return;
+
+    }
 
 
-    /* =========================================
-       HIDE ALL SECTIONS
-    ========================================= */
+    /*
+     * Hide all sections
+     */
 
     pageSections.forEach(
         section => {
+
+            section.classList.remove(
+                "active"
+            );
 
             section.style.display =
                 "none";
@@ -669,9 +246,21 @@ function openPage(pageName) {
     );
 
 
-    /* =========================================
-       REMOVE ACTIVE MENU
-    ========================================= */
+    /*
+     * Show selected section
+     */
+
+    targetSection.classList.add(
+        "active"
+    );
+
+    targetSection.style.display =
+        "block";
+
+
+    /*
+     * Update sidebar active item
+     */
 
     menuLinks.forEach(
         link => {
@@ -680,122 +269,79 @@ function openPage(pageName) {
                 "active"
             );
 
+
+            if (
+                link.dataset.page ===
+                pageName
+            ) {
+
+                link.classList.add(
+                    "active"
+                );
+
+            }
+
         }
     );
 
 
-    /* =========================================
-       SHOW REQUESTED SECTION
-    ========================================= */
+    /*
+     * Close mobile sidebar
+     */
 
-    if (sectionId) {
+    if (sidebar) {
 
-        const section =
-            document.getElementById(
-                sectionId
-            );
-
-
-        if (section) {
-
-            section.style.display =
-                "block";
-
-        }
-
-        else {
-
-            console.warn(
-                "Section not found:",
-                sectionId
-            );
-
-        }
+        sidebar.classList.remove(
+            "active"
+        );
 
     }
-
-
-    /* =========================================
-       ACTIVE MENU LINK
-    ========================================= */
-
-    let activeLink =
-        document.querySelector(
-            `.menu-link[data-page="${pageName}"]`
-        );
 
 
     /*
-     * Support aliases.
-     *
-     * Example:
-     * openPage("deposit")
-     * can still activate
-     * data-page="deposits".
+     * Update URL hash
      */
 
-    if (!activeLink) {
+    try {
 
-        const aliases = {
-
-            deposit:
-                "deposits",
-
-            withdraw:
-                "withdraws"
-
-        };
-
-
-        const aliasPage =
-            aliases[pageName];
-
-
-        if (aliasPage) {
-
-            activeLink =
-                document.querySelector(
-                    `.menu-link[data-page="${aliasPage}"]`
-                );
-
-        }
+        history.replaceState(
+            null,
+            "",
+            "#" + pageName
+        );
 
     }
 
+    catch (error) {
 
-    if (activeLink) {
-
-        activeLink.classList.add(
-            "active"
+        console.warn(
+            "Could not update URL:",
+            error
         );
 
     }
 
 
-    /* =========================================
-       CLOSE MOBILE SIDEBAR
-    ========================================= */
+    /*
+     * Notify other Parts
+     */
 
-    if (
-        window.innerWidth < 900
-    ) {
-
-        sidebar?.classList.remove(
-            "active"
-        );
-
-
-        sidebar?.classList.remove(
-            "show"
-        );
-
-    }
+    document.dispatchEvent(
+        new CustomEvent(
+            "moneyVaultPageChanged",
+            {
+                detail: {
+                    page: pageName
+                }
+            }
+        )
+    );
 
 }
 
 
 /* =========================================================
-   MENU LINKS
+   SIDEBAR NAVIGATION
 ========================================================= */
 
 menuLinks.forEach(
@@ -819,9 +365,7 @@ menuLinks.forEach(
                 }
 
 
-                openPage(
-                    page
-                );
+                openPage(page);
 
             }
         );
@@ -852,25 +396,6 @@ function bindQuickAction(
     }
 
 
-    /*
-     * Prevent duplicate event binding
-     * if this Part is accidentally loaded twice.
-     */
-
-    if (
-        element.dataset.part1Bound ===
-        "true"
-    ) {
-
-        return;
-
-    }
-
-
-    element.dataset.part1Bound =
-        "true";
-
-
     element.addEventListener(
         "click",
         event => {
@@ -888,7 +413,7 @@ function bindQuickAction(
 
 
 /* =========================================================
-   QUICK ACTIONS
+   DASHBOARD QUICK ACTIONS
 ========================================================= */
 
 bindQuickAction(
@@ -921,66 +446,117 @@ bindQuickAction(
 );
 
 
+bindQuickAction(
+    "openVipRequests",
+    "vipRequests"
+);
+
+
 /* =========================================================
-   LOGOUT
+   QUICK ACTIONS PAGE BUTTONS
+   IF THEY EXIST IN HTML
 ========================================================= */
 
-logoutBtn?.addEventListener(
-    "click",
-    async () => {
+bindQuickAction(
+    "openUsersBtn",
+    "users"
+);
 
-        const confirmed =
-            confirm(
-                "Logout from Admin Panel?"
+
+bindQuickAction(
+    "openTransactionsBtn",
+    "transactions"
+);
+
+
+bindQuickAction(
+    "openSettingsBtn",
+    "settings"
+);
+
+
+bindQuickAction(
+    "openDepositsBtn",
+    "deposits"
+);
+
+
+bindQuickAction(
+    "openWithdrawsBtn",
+    "withdraws"
+);
+
+
+bindQuickAction(
+    "openVipRequestsBtn",
+    "vipRequests"
+);
+
+
+/* =========================================================
+   MOBILE SIDEBAR
+========================================================= */
+
+if (menuBtn) {
+
+    menuBtn.addEventListener(
+        "click",
+        event => {
+
+            event.preventDefault();
+
+            sidebar?.classList.toggle(
+                "active"
             );
 
+        }
+    );
 
-        if (!confirmed) {
+}
+
+
+/* =========================================================
+   CLOSE SIDEBAR WHEN CLICKING OUTSIDE
+========================================================= */
+
+document.addEventListener(
+    "click",
+    event => {
+
+        if (!sidebar) {
 
             return;
 
         }
 
 
-        try {
+        if (!sidebar.classList.contains("active")) {
 
-            await signOut(
-                auth
-            );
-
-
-            currentAdmin =
-                null;
-
-
-            adminData =
-                null;
-
-
-            window.currentAdmin =
-                null;
-
-
-            window.adminData =
-                null;
-
-
-            window.location.href =
-                "login.html";
+            return;
 
         }
 
-        catch (error) {
 
-            console.error(
-                "Logout error:",
-                error
+        const clickedInsideSidebar =
+            sidebar.contains(
+                event.target
             );
 
 
-            alert(
-                "Logout failed:\n\n" +
-                error.message
+        const clickedMenuButton =
+            menuBtn &&
+            menuBtn.contains(
+                event.target
+            );
+
+
+        if (
+            !clickedInsideSidebar &&
+            !clickedMenuButton
+        ) {
+
+            sidebar.classList.remove(
+                "active"
             );
 
         }
@@ -990,19 +566,415 @@ logoutBtn?.addEventListener(
 
 
 /* =========================================================
-   EXPORT FUNCTIONS FOR OTHER PARTS
+   ADMIN AUTHENTICATION
 ========================================================= */
+
+onAuthStateChanged(
+    auth,
+    async user => {
+
+        /*
+         * User not logged in
+         */
+
+        if (!user) {
+
+            currentAdmin = null;
+
+            adminReady = false;
+
+
+            if (loadingScreen) {
+
+                loadingScreen.style.display =
+                    "flex";
+
+            }
+
+
+            window.location.href =
+                "login.html";
+
+
+            return;
+
+        }
+
+
+        try {
+
+            /*
+             * Check admins/{uid}
+             */
+
+            const adminRef =
+                ref(
+                    db,
+                    "admins/" + user.uid
+                );
+
+
+            const adminSnapshot =
+                await get(
+                    adminRef
+                );
+
+
+            /*
+             * User is not an admin
+             */
+
+            if (
+                !adminSnapshot.exists()
+            ) {
+
+                console.error(
+                    "Admin access denied:",
+                    user.uid
+                );
+
+
+                alert(
+                    "Access Denied. You are not an administrator."
+                );
+
+
+                await signOut(
+                    auth
+                );
+
+
+                window.location.href =
+                    "dashboard.html";
+
+
+                return;
+
+            }
+
+
+            /*
+             * Save admin
+             */
+
+            currentAdmin =
+                user;
+
+
+            adminReady =
+                true;
+
+
+            /*
+             * Read admin profile
+             */
+
+            const adminData =
+                adminSnapshot.val() || {};
+
+
+            if (adminName) {
+
+                adminName.textContent =
+                    adminData.name ||
+                    user.displayName ||
+                    "Administrator";
+
+            }
+
+
+            /*
+             * Hide loading
+             */
+
+            if (loadingScreen) {
+
+                loadingScreen.style.display =
+                    "none";
+
+            }
+
+
+            /*
+             * Resolve Parts waiting for admin
+             */
+
+            adminReadyResolve(
+                currentAdmin
+            );
+
+
+            console.log(
+                "======================================"
+            );
+
+            console.log(
+                "✅ MONEY VAULT ADMIN AUTHENTICATED"
+            );
+
+            console.log(
+                "UID:",
+                user.uid
+            );
+
+            console.log(
+                "======================================"
+            );
+
+
+            /*
+             * Start Part 2
+             */
+
+            if (
+                typeof window.startAdminPart2 ===
+                "function"
+            ) {
+
+                window.startAdminPart2();
+
+            }
+
+        }
+
+        catch (error) {
+
+            console.error(
+                "Admin authentication error:",
+                error
+            );
+
+
+            adminReady = false;
+
+
+            if (loadingScreen) {
+
+                loadingScreen.style.display =
+                    "none";
+
+            }
+
+
+            alert(
+                "Admin authentication failed."
+            );
+
+
+            try {
+
+                await signOut(
+                    auth
+                );
+
+            }
+
+            catch (signOutError) {
+
+                console.error(
+                    signOutError
+                );
+
+            }
+
+
+            window.location.href =
+                "login.html";
+
+        }
+
+    }
+);
+
+
+/* =========================================================
+   LOGOUT
+========================================================= */
+
+if (logoutBtn) {
+
+    logoutBtn.addEventListener(
+        "click",
+        async event => {
+
+            event.preventDefault();
+
+
+            const confirmed =
+                confirm(
+                    "Logout from Money Vault Admin Panel?"
+                );
+
+
+            if (!confirmed) {
+
+                return;
+
+            }
+
+
+            try {
+
+                await signOut(
+                    auth
+                );
+
+
+                window.location.href =
+                    "login.html";
+
+            }
+
+            catch (error) {
+
+                console.error(
+                    "Logout error:",
+                    error
+                );
+
+
+                alert(
+                    error.message ||
+                    "Logout failed."
+                );
+
+            }
+
+        }
+    );
+
+}
+
+
+/* =========================================================
+   INITIAL PAGE
+========================================================= */
+
+function initializeInitialPage() {
+
+    let page =
+        "dashboard";
+
+
+    const hash =
+        window.location.hash
+            .replace(
+                "#",
+                ""
+            )
+            .trim();
+
+
+    if (
+        hash &&
+        sectionMap[hash]
+    ) {
+
+        page =
+            hash;
+
+    }
+
+
+    openPage(
+        page
+    );
+
+}
+
+
+/* =========================================================
+   PAGE ANIMATION
+========================================================= */
+
+window.addEventListener(
+    "load",
+    () => {
+
+        document.body.style.opacity =
+            "0";
+
+
+        setTimeout(
+            () => {
+
+                document.body.style.transition =
+                    "opacity .4s";
+
+
+                document.body.style.opacity =
+                    "1";
+
+            },
+            100
+        );
+
+    }
+);
+
+
+/* =========================================================
+   GLOBAL EXPORTS
+========================================================= */
+
+window.currentAdmin =
+    currentAdmin;
+
+
+window.waitForAdmin =
+    waitForAdmin;
+
 
 window.openPage =
     openPage;
 
 
-window.isAdminAuthenticated =
-    isAdminAuthenticated;
+window.bindQuickAction =
+    bindQuickAction;
 
 
-window.waitForAdmin =
-    waitForAdmin;
+window.sectionMap =
+    sectionMap;
+
+
+/* =========================================================
+   KEEP GLOBAL ADMIN UPDATED
+========================================================= */
+
+const adminStateInterval =
+    setInterval(
+        () => {
+
+            if (
+                currentAdmin &&
+                window.currentAdmin !==
+                currentAdmin
+            ) {
+
+                window.currentAdmin =
+                    currentAdmin;
+
+            }
+
+
+            if (adminReady) {
+
+                clearInterval(
+                    adminStateInterval
+                );
+
+            }
+
+        },
+        250
+    );
+
+
+/* =========================================================
+   INITIALIZE
+========================================================= */
+
+initializeInitialPage();
 
 
 /* =========================================================
@@ -1022,15 +994,7 @@ console.log(
 );
 
 console.log(
-    "Admin Security: READY"
-);
-
-console.log(
     "Navigation: READY"
-);
-
-console.log(
-    "Mobile Sidebar: READY"
 );
 
 console.log(
@@ -1038,13 +1002,12 @@ console.log(
 );
 
 console.log(
-    "waitForAdmin(): READY"
+    "Mobile Sidebar: READY"
 );
 
 console.log(
     "======================================"
 );
-
 
 /* =========================================================
    MONEY VAULT - ADMIN.JS
@@ -1081,13 +1044,17 @@ let part2AllDepositsData = {};
 
 let part2AllWithdrawsData = {};
 
-let part2UsersListenerStarted = false;
+let part2UsersListenerStarted =
+    false;
 
-let part2DepositsListenerStarted = false;
+let part2DepositsListenerStarted =
+    false;
 
-let part2WithdrawsListenerStarted = false;
+let part2WithdrawsListenerStarted =
+    false;
 
-let part2Started = false;
+let part2Started =
+    false;
 
 
 /* =========================================================
@@ -1095,22 +1062,39 @@ let part2Started = false;
 ========================================================= */
 
 const part2TotalUsersEl =
-    document.getElementById("totalUsers");
+    document.getElementById(
+        "totalUsers"
+    );
+
 
 const part2TotalDepositsEl =
-    document.getElementById("totalDeposits");
+    document.getElementById(
+        "totalDeposits"
+    );
+
 
 const part2TotalPendingEl =
-    document.getElementById("totalPending");
+    document.getElementById(
+        "totalPending"
+    );
+
 
 const part2TotalApprovedEl =
-    document.getElementById("totalApproved");
+    document.getElementById(
+        "totalApproved"
+    );
+
 
 const part2TotalRejectedEl =
-    document.getElementById("totalRejected");
+    document.getElementById(
+        "totalRejected"
+    );
+
 
 const part2TotalAmountEl =
-    document.getElementById("totalAmount");
+    document.getElementById(
+        "totalAmount"
+    );
 
 
 /* =========================================================
@@ -1118,41 +1102,65 @@ const part2TotalAmountEl =
 ========================================================= */
 
 const part2WithdrawCountEl =
-    document.getElementById("withdrawCount");
+    document.getElementById(
+        "withdrawCount"
+    );
+
 
 const part2WithdrawPendingEl =
-    document.getElementById("withdrawPending");
+    document.getElementById(
+        "withdrawPending"
+    );
+
 
 const part2WithdrawApprovedEl =
-    document.getElementById("withdrawApproved");
+    document.getElementById(
+        "withdrawApproved"
+    );
+
 
 const part2WithdrawRejectedEl =
-    document.getElementById("withdrawRejected");
+    document.getElementById(
+        "withdrawRejected"
+    );
 
 
 /* =========================================================
    HELPER — RWF / FRW FORMAT
 ========================================================= */
 
-function moneyRWFPart2(value) {
+function moneyRWFPart2(
+    value
+) {
 
     const amount =
-        Number(value || 0);
+        Number(
+            value || 0
+        );
 
 
-    if (!Number.isFinite(amount)) {
+    if (
+        !Number.isFinite(
+            amount
+        )
+    ) {
 
         return "0 RWF";
 
     }
 
 
-    return amount.toLocaleString(
-        "en-US",
-        {
-            maximumFractionDigits: 2
-        }
-    ) + " RWF";
+    return (
+        amount.toLocaleString(
+            "en-US",
+            {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 2
+            }
+        )
+        +
+        " RWF"
+    );
 
 }
 
@@ -1161,10 +1169,13 @@ function moneyRWFPart2(value) {
    HELPER — STATUS NORMALIZER
 ========================================================= */
 
-function normalizeStatusPart2(status) {
+function normalizeStatusPart2(
+    status
+) {
 
     return String(
-        status || "pending"
+        status ||
+        "pending"
     )
         .trim()
         .toLowerCase();
@@ -1180,7 +1191,8 @@ function updateUserCountPart2() {
 
     const users =
         Object.values(
-            part2AllUsersData || {}
+            part2AllUsersData ||
+            {}
         );
 
 
@@ -1188,7 +1200,9 @@ function updateUserCountPart2() {
         users.length;
 
 
-    if (part2TotalUsersEl) {
+    if (
+        part2TotalUsersEl
+    ) {
 
         part2TotalUsersEl.textContent =
             total.toLocaleString();
@@ -1206,24 +1220,30 @@ function updateDepositStatsPart2() {
 
     const deposits =
         Object.values(
-            part2AllDepositsData || {}
+            part2AllDepositsData ||
+            {}
         );
 
 
-    let pending = 0;
+    let pending =
+        0;
 
-    let approved = 0;
+    let approved =
+        0;
 
-    let rejected = 0;
+    let rejected =
+        0;
 
-    let totalAmount = 0;
+    let totalAmount =
+        0;
 
 
     deposits.forEach(
         deposit => {
 
             deposit =
-                deposit || {};
+                deposit ||
+                {};
 
 
             const status =
@@ -1234,7 +1254,8 @@ function updateDepositStatsPart2() {
 
             const amount =
                 Number(
-                    deposit.amount || 0
+                    deposit.amount ||
+                    0
                 );
 
 
@@ -1243,11 +1264,13 @@ function updateDepositStatsPart2() {
              */
 
             if (
-                Number.isFinite(amount) &&
-                amount > 0
+                Number.isFinite(
+                    amount
+                )
             ) {
 
-                totalAmount += amount;
+                totalAmount +=
+                    amount;
 
             }
 
@@ -1256,27 +1279,29 @@ function updateDepositStatsPart2() {
              * Status counters
              */
 
-            if (
-                status === "pending"
+            switch (
+                status
             ) {
 
-                pending++;
+                case "pending":
 
-            }
+                    pending++;
 
-            else if (
-                status === "approved"
-            ) {
+                    break;
 
-                approved++;
 
-            }
+                case "approved":
 
-            else if (
-                status === "rejected"
-            ) {
+                    approved++;
 
-                rejected++;
+                    break;
+
+
+                case "rejected":
+
+                    rejected++;
+
+                    break;
 
             }
 
@@ -1288,10 +1313,13 @@ function updateDepositStatsPart2() {
      * Total deposit requests
      */
 
-    if (part2TotalDepositsEl) {
+    if (
+        part2TotalDepositsEl
+    ) {
 
         part2TotalDepositsEl.textContent =
-            deposits.length.toLocaleString();
+            deposits.length
+                .toLocaleString();
 
     }
 
@@ -1300,7 +1328,9 @@ function updateDepositStatsPart2() {
      * Pending deposits
      */
 
-    if (part2TotalPendingEl) {
+    if (
+        part2TotalPendingEl
+    ) {
 
         part2TotalPendingEl.textContent =
             pending.toLocaleString();
@@ -1312,7 +1342,9 @@ function updateDepositStatsPart2() {
      * Approved deposits
      */
 
-    if (part2TotalApprovedEl) {
+    if (
+        part2TotalApprovedEl
+    ) {
 
         part2TotalApprovedEl.textContent =
             approved.toLocaleString();
@@ -1324,7 +1356,9 @@ function updateDepositStatsPart2() {
      * Rejected deposits
      */
 
-    if (part2TotalRejectedEl) {
+    if (
+        part2TotalRejectedEl
+    ) {
 
         part2TotalRejectedEl.textContent =
             rejected.toLocaleString();
@@ -1336,7 +1370,9 @@ function updateDepositStatsPart2() {
      * Total deposit amount
      */
 
-    if (part2TotalAmountEl) {
+    if (
+        part2TotalAmountEl
+    ) {
 
         part2TotalAmountEl.textContent =
             moneyRWFPart2(
@@ -1356,22 +1392,27 @@ function updateWithdrawStatsPart2() {
 
     const withdraws =
         Object.values(
-            part2AllWithdrawsData || {}
+            part2AllWithdrawsData ||
+            {}
         );
 
 
-    let pending = 0;
+    let pending =
+        0;
 
-    let approved = 0;
+    let approved =
+        0;
 
-    let rejected = 0;
+    let rejected =
+        0;
 
 
     withdraws.forEach(
         withdraw => {
 
             withdraw =
-                withdraw || {};
+                withdraw ||
+                {};
 
 
             const status =
@@ -1380,27 +1421,29 @@ function updateWithdrawStatsPart2() {
                 );
 
 
-            if (
-                status === "pending"
+            switch (
+                status
             ) {
 
-                pending++;
+                case "pending":
 
-            }
+                    pending++;
 
-            else if (
-                status === "approved"
-            ) {
+                    break;
 
-                approved++;
 
-            }
+                case "approved":
 
-            else if (
-                status === "rejected"
-            ) {
+                    approved++;
 
-                rejected++;
+                    break;
+
+
+                case "rejected":
+
+                    rejected++;
+
+                    break;
 
             }
 
@@ -1412,10 +1455,13 @@ function updateWithdrawStatsPart2() {
      * Total withdraw requests
      */
 
-    if (part2WithdrawCountEl) {
+    if (
+        part2WithdrawCountEl
+    ) {
 
         part2WithdrawCountEl.textContent =
-            withdraws.length.toLocaleString();
+            withdraws.length
+                .toLocaleString();
 
     }
 
@@ -1424,7 +1470,9 @@ function updateWithdrawStatsPart2() {
      * Pending withdraws
      */
 
-    if (part2WithdrawPendingEl) {
+    if (
+        part2WithdrawPendingEl
+    ) {
 
         part2WithdrawPendingEl.textContent =
             pending.toLocaleString();
@@ -1436,7 +1484,9 @@ function updateWithdrawStatsPart2() {
      * Approved withdraws
      */
 
-    if (part2WithdrawApprovedEl) {
+    if (
+        part2WithdrawApprovedEl
+    ) {
 
         part2WithdrawApprovedEl.textContent =
             approved.toLocaleString();
@@ -1448,7 +1498,9 @@ function updateWithdrawStatsPart2() {
      * Rejected withdraws
      */
 
-    if (part2WithdrawRejectedEl) {
+    if (
+        part2WithdrawRejectedEl
+    ) {
 
         part2WithdrawRejectedEl.textContent =
             rejected.toLocaleString();
@@ -1491,7 +1543,8 @@ function initializeUsersDashboardListenerPart2() {
             ) {
 
                 part2AllUsersData =
-                    snapshot.val() || {};
+                    snapshot.val() ||
+                    {};
 
             }
 
@@ -1515,7 +1568,13 @@ function initializeUsersDashboardListenerPart2() {
             );
 
 
-            if (part2TotalUsersEl) {
+            part2AllUsersData =
+                {};
+
+
+            if (
+                part2TotalUsersEl
+            ) {
 
                 part2TotalUsersEl.textContent =
                     "0";
@@ -1567,7 +1626,8 @@ function initializeDepositsDashboardListenerPart2() {
             ) {
 
                 part2AllDepositsData =
-                    snapshot.val() || {};
+                    snapshot.val() ||
+                    {};
 
             }
 
@@ -1589,6 +1649,12 @@ function initializeDepositsDashboardListenerPart2() {
                 "Part 2 deposits dashboard listener error:",
                 error
             );
+
+
+            part2AllDepositsData =
+                {};
+
+            updateDepositStatsPart2();
 
         }
 
@@ -1635,7 +1701,8 @@ function initializeWithdrawDashboardListenerPart2() {
             ) {
 
                 part2AllWithdrawsData =
-                    snapshot.val() || {};
+                    snapshot.val() ||
+                    {};
 
             }
 
@@ -1657,6 +1724,12 @@ function initializeWithdrawDashboardListenerPart2() {
                 "Part 2 withdraw dashboard listener error:",
                 error
             );
+
+
+            part2AllWithdrawsData =
+                {};
+
+            updateWithdrawStatsPart2();
 
         }
 
@@ -1691,23 +1764,30 @@ function refreshAdminDashboardPart2() {
 
 function initializeAdminPart2() {
 
+    if (
+        part2Started
+    ) {
+
+        return;
+
+    }
+
+
     console.log(
         "Starting Money Vault Admin Part 2..."
     );
 
 
     /*
-     * Users:
-     * ONLY count for dashboard.
-     *
-     * Part 10 owns the actual users list.
+     * Users
+     * ONLY dashboard count.
      */
 
     initializeUsersDashboardListenerPart2();
 
 
     /*
-     * Deposits:
+     * Deposits
      * Dashboard statistics only.
      */
 
@@ -1715,15 +1795,39 @@ function initializeAdminPart2() {
 
 
     /*
-     * Withdraws:
+     * Withdraws
      * Dashboard statistics only.
      */
 
     initializeWithdrawDashboardListenerPart2();
 
 
+    part2Started =
+        true;
+
+
     console.log(
-        "✅ Money Vault Admin Part 2 initialized"
+        "======================================"
+    );
+
+    console.log(
+        "✅ MONEY VAULT ADMIN PART 2 READY"
+    );
+
+    console.log(
+        "Users count: LIVE"
+    );
+
+    console.log(
+        "Deposits statistics: LIVE"
+    );
+
+    console.log(
+        "Withdraw statistics: LIVE"
+    );
+
+    console.log(
+        "======================================"
     );
 
 }
@@ -1747,11 +1851,19 @@ async function startAdminPart2() {
     try {
 
         /*
-         * Use central admin authentication
-         * if Part 1 provides it.
+         * Wait for Part 1 authentication
          */
 
         if (
+            typeof waitForAdmin ===
+            "function"
+        ) {
+
+            await waitForAdmin();
+
+        }
+
+        else if (
             typeof window.waitForAdmin ===
             "function"
         ) {
@@ -1762,41 +1874,15 @@ async function startAdminPart2() {
 
 
         /*
-         * Check admin authentication safely.
+         * Check Firebase authentication
          */
 
-        let adminReady = false;
-
-
         if (
-            typeof currentAdmin !==
-            "undefined" &&
-            currentAdmin
+            !auth.currentUser
         ) {
-
-            adminReady = true;
-
-        }
-
-
-        if (
-            window.currentAdmin
-        ) {
-
-            adminReady = true;
-
-        }
-
-
-        /*
-         * If admin is not ready,
-         * do not start listeners.
-         */
-
-        if (!adminReady) {
 
             console.warn(
-                "Part 2: Admin authentication not ready."
+                "Part 2: Firebase user not authenticated."
             );
 
             return;
@@ -1804,9 +1890,9 @@ async function startAdminPart2() {
         }
 
 
-        part2Started =
-            true;
-
+        /*
+         * Start dashboard listeners
+         */
 
         initializeAdminPart2();
 
@@ -1825,70 +1911,28 @@ async function startAdminPart2() {
 
 
 /* =========================================================
-   FALLBACK ADMIN AUTH WAIT
-========================================================= */
-
-const part2AuthInterval =
-    setInterval(
-        () => {
-
-            let adminReady = false;
-
-
-            if (
-                typeof currentAdmin !==
-                "undefined" &&
-                currentAdmin
-            ) {
-
-                adminReady = true;
-
-            }
-
-
-            if (
-                window.currentAdmin
-            ) {
-
-                adminReady = true;
-
-            }
-
-
-            if (adminReady) {
-
-                clearInterval(
-                    part2AuthInterval
-                );
-
-
-                startAdminPart2();
-
-            }
-
-        },
-        250
-    );
-
-
-/* =========================================================
    GLOBAL EXPORTS
 ========================================================= */
+
+window.startAdminPart2 =
+    startAdminPart2;
+
+
+window.initializeAdminPart2 =
+    initializeAdminPart2;
+
 
 window.refreshAdminDashboardPart2 =
     refreshAdminDashboardPart2;
 
 
-/*
- * These are optional dashboard helpers.
- * They do NOT control user management.
- */
-
 window.updateUserCountPart2 =
     updateUserCountPart2;
 
+
 window.updateDepositStatsPart2 =
     updateDepositStatsPart2;
+
 
 window.updateWithdrawStatsPart2 =
     updateWithdrawStatsPart2;
@@ -1919,8 +1963,13 @@ console.log(
 );
 
 console.log(
+    "Deposit Approve/Reject = Deposit Management"
+);
+
+console.log(
     "======================================"
 );
+
 
 /* =========================================================
    MONEY VAULT - ADMIN.JS
