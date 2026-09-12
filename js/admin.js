@@ -1180,26 +1180,23 @@ console.log(
 
 /* =========================================================
    MONEY VAULT - ADMIN.JS
-   PART 2 — DASHBOARD STATISTICS ONLY
+   PART 2 — DASHBOARD STATISTICS
 
    CURRENCY: RWF / FRW
 
-   PART 2 RESPONSIBILITIES:
-   - Total users count
+   RESPONSIBILITIES:
+   - Total users
    - Deposit statistics
    - Withdraw statistics
-   - Dashboard amounts
+   - System balance
    - Live Firebase listeners
 
    IMPORTANT:
-   - USER LIST = PART 10
-   - USER SEARCH = PART 10
-   - USER MODAL = PART 10
-   - BLOCK / ACTIVATE = PART 10
-   - WITHDRAW APPROVE / REJECT = PART 11
-   - DEPOSIT APPROVE / REJECT = DEPOSIT MANAGEMENT PART
-
-   This Part does NOT render user cards.
+   - NO IMPORTS HERE
+   - Part 1 already imports Firebase functions
+   - NO user rendering here
+   - NO deposit approval here
+   - NO withdraw approval here
 ========================================================= */
 
 
@@ -1213,17 +1210,13 @@ let part2AllDepositsData = {};
 
 let part2AllWithdrawsData = {};
 
-let part2UsersListenerStarted =
-    false;
+let part2UsersListenerStarted = false;
 
-let part2DepositsListenerStarted =
-    false;
+let part2DepositsListenerStarted = false;
 
-let part2WithdrawsListenerStarted =
-    false;
+let part2WithdrawsListenerStarted = false;
 
-let part2Started =
-    false;
+let part2Started = false;
 
 
 /* =========================================================
@@ -1238,64 +1231,36 @@ const part2TotalUsersEl =
 
 const part2TotalDepositsEl =
     document.getElementById(
-        "totalDeposits"
+        "dashboardTotalDeposits"
     );
 
 
-const part2TotalPendingEl =
+const part2PendingDepositsEl =
     document.getElementById(
-        "totalPending"
+        "dashboardPendingDeposits"
     );
 
 
-const part2TotalApprovedEl =
+const part2ApprovedDepositsEl =
     document.getElementById(
-        "totalApproved"
+        "dashboardApprovedDeposits"
     );
 
 
-const part2TotalRejectedEl =
+const part2TotalWithdrawsEl =
     document.getElementById(
-        "totalRejected"
+        "dashboardTotalWithdraws"
     );
 
 
-const part2TotalAmountEl =
+const part2SystemBalanceEl =
     document.getElementById(
-        "totalAmount"
+        "systemBalance"
     );
 
 
 /* =========================================================
-   WITHDRAW DASHBOARD ELEMENTS
-========================================================= */
-
-const part2WithdrawCountEl =
-    document.getElementById(
-        "withdrawCount"
-    );
-
-
-const part2WithdrawPendingEl =
-    document.getElementById(
-        "withdrawPending"
-    );
-
-
-const part2WithdrawApprovedEl =
-    document.getElementById(
-        "withdrawApproved"
-    );
-
-
-const part2WithdrawRejectedEl =
-    document.getElementById(
-        "withdrawRejected"
-    );
-
-
-/* =========================================================
-   HELPER — RWF / FRW FORMAT
+   RWF MONEY FORMAT
 ========================================================= */
 
 function moneyRWFPart2(
@@ -1321,7 +1286,7 @@ function moneyRWFPart2(
 
     return (
         amount.toLocaleString(
-            "en-US",
+            "en-RW",
             {
                 minimumFractionDigits: 0,
                 maximumFractionDigits: 2
@@ -1335,7 +1300,7 @@ function moneyRWFPart2(
 
 
 /* =========================================================
-   HELPER — STATUS NORMALIZER
+   STATUS NORMALIZER
 ========================================================= */
 
 function normalizeStatusPart2(
@@ -1353,15 +1318,37 @@ function normalizeStatusPart2(
 
 
 /* =========================================================
-   DASHBOARD — USERS COUNT
+   SAFE OBJECT CONVERTER
+========================================================= */
+
+function safeObjectPart2(
+    value
+) {
+
+    if (
+        !value ||
+        typeof value !== "object"
+    ) {
+
+        return {};
+
+    }
+
+
+    return value;
+
+}
+
+
+/* =========================================================
+   UPDATE TOTAL USERS
 ========================================================= */
 
 function updateUserCountPart2() {
 
     const users =
         Object.values(
-            part2AllUsersData ||
-            {}
+            part2AllUsersData
         );
 
 
@@ -1374,7 +1361,80 @@ function updateUserCountPart2() {
     ) {
 
         part2TotalUsersEl.textContent =
-            total.toLocaleString();
+            total.toLocaleString(
+                "en-RW"
+            );
+
+    }
+
+
+    /*
+     * Also update system balance.
+     */
+
+    updateSystemBalancePart2();
+
+}
+
+
+/* =========================================================
+   UPDATE SYSTEM BALANCE
+========================================================= */
+
+function updateSystemBalancePart2() {
+
+    const users =
+        Object.values(
+            part2AllUsersData
+        );
+
+
+    let balance =
+        0;
+
+
+    users.forEach(
+        user => {
+
+            if (
+                !user ||
+                typeof user !== "object"
+            ) {
+
+                return;
+
+            }
+
+
+            const userBalance =
+                Number(
+                    user.balance || 0
+                );
+
+
+            if (
+                Number.isFinite(
+                    userBalance
+                )
+            ) {
+
+                balance +=
+                    userBalance;
+
+            }
+
+        }
+    );
+
+
+    if (
+        part2SystemBalanceEl
+    ) {
+
+        part2SystemBalanceEl.textContent =
+            moneyRWFPart2(
+                balance
+            );
 
     }
 
@@ -1382,37 +1442,44 @@ function updateUserCountPart2() {
 
 
 /* =========================================================
-   DASHBOARD — DEPOSIT STATISTICS
+   UPDATE DEPOSIT STATISTICS
 ========================================================= */
 
 function updateDepositStatsPart2() {
 
     const deposits =
         Object.values(
-            part2AllDepositsData ||
-            {}
+            part2AllDepositsData
         );
 
 
     let pending =
         0;
 
+
     let approved =
         0;
+
 
     let rejected =
         0;
 
-    let totalAmount =
+
+    let approvedAmount =
         0;
 
 
     deposits.forEach(
         deposit => {
 
-            deposit =
-                deposit ||
-                {};
+            if (
+                !deposit ||
+                typeof deposit !== "object"
+            ) {
+
+                return;
+
+            }
 
 
             const status =
@@ -1423,30 +1490,9 @@ function updateDepositStatsPart2() {
 
             const amount =
                 Number(
-                    deposit.amount ||
-                    0
+                    deposit.amount || 0
                 );
 
-
-            /*
-             * Total deposit amount
-             */
-
-            if (
-                Number.isFinite(
-                    amount
-                )
-            ) {
-
-                totalAmount +=
-                    amount;
-
-            }
-
-
-            /*
-             * Status counters
-             */
 
             switch (
                 status
@@ -1462,6 +1508,17 @@ function updateDepositStatsPart2() {
                 case "approved":
 
                     approved++;
+
+                    if (
+                        Number.isFinite(
+                            amount
+                        )
+                    ) {
+
+                        approvedAmount +=
+                            amount;
+
+                    }
 
                     break;
 
@@ -1487,8 +1544,9 @@ function updateDepositStatsPart2() {
     ) {
 
         part2TotalDepositsEl.textContent =
-            deposits.length
-                .toLocaleString();
+            deposits.length.toLocaleString(
+                "en-RW"
+            );
 
     }
 
@@ -1498,11 +1556,13 @@ function updateDepositStatsPart2() {
      */
 
     if (
-        part2TotalPendingEl
+        part2PendingDepositsEl
     ) {
 
-        part2TotalPendingEl.textContent =
-            pending.toLocaleString();
+        part2PendingDepositsEl.textContent =
+            pending.toLocaleString(
+                "en-RW"
+            );
 
     }
 
@@ -1512,65 +1572,62 @@ function updateDepositStatsPart2() {
      */
 
     if (
-        part2TotalApprovedEl
+        part2ApprovedDepositsEl
     ) {
 
-        part2TotalApprovedEl.textContent =
-            approved.toLocaleString();
-
-    }
-
-
-    /*
-     * Rejected deposits
-     */
-
-    if (
-        part2TotalRejectedEl
-    ) {
-
-        part2TotalRejectedEl.textContent =
-            rejected.toLocaleString();
-
-    }
-
-
-    /*
-     * Total deposit amount
-     */
-
-    if (
-        part2TotalAmountEl
-    ) {
-
-        part2TotalAmountEl.textContent =
-            moneyRWFPart2(
-                totalAmount
+        part2ApprovedDepositsEl.textContent =
+            approved.toLocaleString(
+                "en-RW"
             );
 
     }
+
+
+    console.log(
+        "Money Vault Deposit Stats:",
+        {
+            total: deposits.length,
+            pending: pending,
+            approved: approved,
+            rejected: rejected,
+            approvedAmount: approvedAmount
+        }
+    );
 
 }
 
 
 /* =========================================================
-   DASHBOARD — WITHDRAW STATISTICS
+   UPDATE WITHDRAW STATISTICS
 ========================================================= */
 
 function updateWithdrawStatsPart2() {
 
     const withdraws =
         Object.values(
-            part2AllWithdrawsData ||
-            {}
+            part2AllWithdrawsData
         );
+
+
+    if (
+        part2TotalWithdrawsEl
+    ) {
+
+        part2TotalWithdrawsEl.textContent =
+            withdraws.length.toLocaleString(
+                "en-RW"
+            );
+
+    }
 
 
     let pending =
         0;
 
+
     let approved =
         0;
+
 
     let rejected =
         0;
@@ -1579,9 +1636,14 @@ function updateWithdrawStatsPart2() {
     withdraws.forEach(
         withdraw => {
 
-            withdraw =
-                withdraw ||
-                {};
+            if (
+                !withdraw ||
+                typeof withdraw !== "object"
+            ) {
+
+                return;
+
+            }
 
 
             const status =
@@ -1620,67 +1682,21 @@ function updateWithdrawStatsPart2() {
     );
 
 
-    /*
-     * Total withdraw requests
-     */
-
-    if (
-        part2WithdrawCountEl
-    ) {
-
-        part2WithdrawCountEl.textContent =
-            withdraws.length
-                .toLocaleString();
-
-    }
-
-
-    /*
-     * Pending withdraws
-     */
-
-    if (
-        part2WithdrawPendingEl
-    ) {
-
-        part2WithdrawPendingEl.textContent =
-            pending.toLocaleString();
-
-    }
-
-
-    /*
-     * Approved withdraws
-     */
-
-    if (
-        part2WithdrawApprovedEl
-    ) {
-
-        part2WithdrawApprovedEl.textContent =
-            approved.toLocaleString();
-
-    }
-
-
-    /*
-     * Rejected withdraws
-     */
-
-    if (
-        part2WithdrawRejectedEl
-    ) {
-
-        part2WithdrawRejectedEl.textContent =
-            rejected.toLocaleString();
-
-    }
+    console.log(
+        "Money Vault Withdraw Stats:",
+        {
+            total: withdraws.length,
+            pending: pending,
+            approved: approved,
+            rejected: rejected
+        }
+    );
 
 }
 
 
 /* =========================================================
-   FIREBASE — USERS COUNT LISTENER
+   FIREBASE — USERS LISTENER
 ========================================================= */
 
 function initializeUsersDashboardListenerPart2() {
@@ -1698,66 +1714,71 @@ function initializeUsersDashboardListenerPart2() {
         true;
 
 
-    onValue(
+    try {
 
-        ref(
-            db,
-            "users"
-        ),
+        onValue(
 
-        snapshot => {
+            ref(
+                db,
+                "users"
+            ),
 
-            if (
-                snapshot.exists()
-            ) {
+            snapshot => {
 
-                part2AllUsersData =
-                    snapshot.val() ||
-                    {};
+                if (
+                    snapshot.exists()
+                ) {
+
+                    part2AllUsersData =
+                        safeObjectPart2(
+                            snapshot.val()
+                        );
+
+                }
+
+                else {
+
+                    part2AllUsersData =
+                        {};
+
+                }
+
+
+                updateUserCountPart2();
+
+                updateSystemBalancePart2();
+
+
+                console.log(
+                    "Money Vault Users Listener Updated:",
+                    Object.keys(
+                        part2AllUsersData
+                    ).length
+                );
+
+            },
+
+            error => {
+
+                console.error(
+                    "Users listener error:",
+                    error
+                );
 
             }
 
-            else {
+        );
 
-                part2AllUsersData =
-                    {};
+    }
 
-            }
+    catch (error) {
 
+        console.error(
+            "Failed to start users listener:",
+            error
+        );
 
-            updateUserCountPart2();
-
-        },
-
-        error => {
-
-            console.error(
-                "Part 2 users dashboard listener error:",
-                error
-            );
-
-
-            part2AllUsersData =
-                {};
-
-
-            if (
-                part2TotalUsersEl
-            ) {
-
-                part2TotalUsersEl.textContent =
-                    "0";
-
-            }
-
-        }
-
-    );
-
-
-    console.log(
-        "✅ Part 2 users count listener started"
-    );
+    }
 
 }
 
@@ -1781,58 +1802,69 @@ function initializeDepositsDashboardListenerPart2() {
         true;
 
 
-    onValue(
+    try {
 
-        ref(
-            db,
-            "depositRequests"
-        ),
+        onValue(
 
-        snapshot => {
+            ref(
+                db,
+                "depositRequests"
+            ),
 
-            if (
-                snapshot.exists()
-            ) {
+            snapshot => {
 
-                part2AllDepositsData =
-                    snapshot.val() ||
-                    {};
+                if (
+                    snapshot.exists()
+                ) {
+
+                    part2AllDepositsData =
+                        safeObjectPart2(
+                            snapshot.val()
+                        );
+
+                }
+
+                else {
+
+                    part2AllDepositsData =
+                        {};
+
+                }
+
+
+                updateDepositStatsPart2();
+
+
+                console.log(
+                    "Money Vault Deposits Listener Updated:",
+                    Object.keys(
+                        part2AllDepositsData
+                    ).length
+                );
+
+            },
+
+            error => {
+
+                console.error(
+                    "Deposits listener error:",
+                    error
+                );
 
             }
 
-            else {
+        );
 
-                part2AllDepositsData =
-                    {};
+    }
 
-            }
+    catch (error) {
 
+        console.error(
+            "Failed to start deposits listener:",
+            error
+        );
 
-            updateDepositStatsPart2();
-
-        },
-
-        error => {
-
-            console.error(
-                "Part 2 deposits dashboard listener error:",
-                error
-            );
-
-
-            part2AllDepositsData =
-                {};
-
-            updateDepositStatsPart2();
-
-        }
-
-    );
-
-
-    console.log(
-        "✅ Part 2 deposits listener started"
-    );
+    }
 
 }
 
@@ -1841,7 +1873,7 @@ function initializeDepositsDashboardListenerPart2() {
    FIREBASE — WITHDRAWS LISTENER
 ========================================================= */
 
-function initializeWithdrawDashboardListenerPart2() {
+function initializeWithdrawsDashboardListenerPart2() {
 
     if (
         part2WithdrawsListenerStarted
@@ -1856,119 +1888,90 @@ function initializeWithdrawDashboardListenerPart2() {
         true;
 
 
-    onValue(
+    try {
 
-        ref(
-            db,
-            "withdrawRequests"
-        ),
+        onValue(
 
-        snapshot => {
+            ref(
+                db,
+                "withdrawRequests"
+            ),
 
-            if (
-                snapshot.exists()
-            ) {
+            snapshot => {
 
-                part2AllWithdrawsData =
-                    snapshot.val() ||
-                    {};
+                if (
+                    snapshot.exists()
+                ) {
+
+                    part2AllWithdrawsData =
+                        safeObjectPart2(
+                            snapshot.val()
+                        );
+
+                }
+
+                else {
+
+                    part2AllWithdrawsData =
+                        {};
+
+                }
+
+
+                updateWithdrawStatsPart2();
+
+
+                console.log(
+                    "Money Vault Withdraws Listener Updated:",
+                    Object.keys(
+                        part2AllWithdrawsData
+                    ).length
+                );
+
+            },
+
+            error => {
+
+                console.error(
+                    "Withdraws listener error:",
+                    error
+                );
 
             }
 
-            else {
+        );
 
-                part2AllWithdrawsData =
-                    {};
+    }
 
-            }
+    catch (error) {
 
+        console.error(
+            "Failed to start withdraws listener:",
+            error
+        );
 
-            updateWithdrawStatsPart2();
-
-        },
-
-        error => {
-
-            console.error(
-                "Part 2 withdraw dashboard listener error:",
-                error
-            );
-
-
-            part2AllWithdrawsData =
-                {};
-
-            updateWithdrawStatsPart2();
-
-        }
-
-    );
-
-
-    console.log(
-        "✅ Part 2 withdraw listener started"
-    );
+    }
 
 }
 
 
 /* =========================================================
-   REFRESH DASHBOARD
+   START PART 2
 ========================================================= */
 
-function refreshAdminDashboardPart2() {
-
-    updateUserCountPart2();
-
-    updateDepositStatsPart2();
-
-    updateWithdrawStatsPart2();
-
-}
-
-
-/* =========================================================
-   INITIALIZE PART 2
-========================================================= */
-
-function initializeAdminPart2() {
+function startAdminPart2() {
 
     if (
         part2Started
     ) {
 
+        console.log(
+            "Money Vault Part 2 already started."
+        );
+
         return;
 
     }
-
-
-    console.log(
-        "Starting Money Vault Admin Part 2..."
-    );
-
-
-    /*
-     * Users
-     * ONLY dashboard count.
-     */
-
-    initializeUsersDashboardListenerPart2();
-
-
-    /*
-     * Deposits
-     * Dashboard statistics only.
-     */
-
-    initializeDepositsDashboardListenerPart2();
-
-
-    /*
-     * Withdraws
-     * Dashboard statistics only.
-     */
-
-    initializeWithdrawDashboardListenerPart2();
 
 
     part2Started =
@@ -1979,102 +1982,49 @@ function initializeAdminPart2() {
         "======================================"
     );
 
-    console.log(
-        "✅ MONEY VAULT ADMIN PART 2 READY"
-    );
 
     console.log(
-        "Users count: LIVE"
+        "Money Vault Admin Part 2 Starting..."
     );
 
-    console.log(
-        "Deposits statistics: LIVE"
-    );
 
     console.log(
-        "Withdraw statistics: LIVE"
+        "Dashboard Statistics: READY"
     );
+
 
     console.log(
         "======================================"
     );
 
+
+    initializeUsersDashboardListenerPart2();
+
+    initializeDepositsDashboardListenerPart2();
+
+    initializeWithdrawsDashboardListenerPart2();
+
 }
 
 
 /* =========================================================
-   START PART 2 AFTER ADMIN AUTH
+   REFRESH DASHBOARD
 ========================================================= */
 
-async function startAdminPart2() {
+function refreshAdminDashboardPart2() {
 
-    if (
-        part2Started
-    ) {
-
-        return;
-
-    }
+    console.log(
+        "Refreshing Money Vault Dashboard..."
+    );
 
 
-    try {
+    updateUserCountPart2();
 
-        /*
-         * Wait for Part 1 authentication
-         */
+    updateSystemBalancePart2();
 
-        if (
-            typeof waitForAdmin ===
-            "function"
-        ) {
+    updateDepositStatsPart2();
 
-            await waitForAdmin();
-
-        }
-
-        else if (
-            typeof window.waitForAdmin ===
-            "function"
-        ) {
-
-            await window.waitForAdmin();
-
-        }
-
-
-        /*
-         * Check Firebase authentication
-         */
-
-        if (
-            !auth.currentUser
-        ) {
-
-            console.warn(
-                "Part 2: Firebase user not authenticated."
-            );
-
-            return;
-
-        }
-
-
-        /*
-         * Start dashboard listeners
-         */
-
-        initializeAdminPart2();
-
-    }
-
-    catch (error) {
-
-        console.error(
-            "Part 2 start error:",
-            error
-        );
-
-    }
+    updateWithdrawStatsPart2();
 
 }
 
@@ -2088,7 +2038,7 @@ window.startAdminPart2 =
 
 
 window.initializeAdminPart2 =
-    initializeAdminPart2;
+    startAdminPart2;
 
 
 window.refreshAdminDashboardPart2 =
@@ -2120,19 +2070,19 @@ console.log(
 );
 
 console.log(
-    "Dashboard Statistics ONLY"
+    "Dashboard Statistics: READY"
 );
 
 console.log(
-    "Users list = Part 10"
+    "Users Listener: READY"
 );
 
 console.log(
-    "Withdraw Approve/Reject = Part 11"
+    "Deposits Listener: READY"
 );
 
 console.log(
-    "Deposit Approve/Reject = Deposit Management"
+    "Withdraws Listener: READY"
 );
 
 console.log(
