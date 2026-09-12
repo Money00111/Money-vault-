@@ -27,19 +27,23 @@ import {
     db
 } from "./firebase.js";
 
-
 import {
     onAuthStateChanged,
-    signOut
+    signOut,
+    updatePassword
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
-
 
 import {
     ref,
     get,
-    onValue
-} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
-
+    set,
+    update,
+    push,
+    onValue,
+    query,
+    orderByChild,
+    equalTo
+} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js"; 
 
 /* =========================================================
    ADMIN STATE
