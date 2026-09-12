@@ -33,6 +33,7 @@ import {
     signOut
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 
+
 import {
     ref,
     get,
@@ -49,7 +50,6 @@ let currentAdmin = null;
 let adminReady = false;
 
 let adminReadyResolve;
-
 let adminReadyReject;
 
 
@@ -61,11 +61,8 @@ const adminReadyPromise =
     new Promise(
         (resolve, reject) => {
 
-            adminReadyResolve =
-                resolve;
-
-            adminReadyReject =
-                reject;
+            adminReadyResolve = resolve;
+            adminReadyReject = reject;
 
         }
     );
@@ -76,38 +73,28 @@ const adminReadyPromise =
 ========================================================= */
 
 const loadingScreen =
-    document.getElementById(
-        "loadingScreen"
-    );
-
+    document.getElementById("loadingScreen");
 
 const sidebar =
-    document.getElementById(
-        "sidebar"
-    );
-
+    document.getElementById("sidebar");
 
 const menuBtn =
-    document.getElementById(
-        "menuBtn"
-    );
-
+    document.getElementById("menuBtn");
 
 const logoutBtn =
-    document.getElementById(
-        "logoutBtn"
-    );
-
+    document.getElementById("logoutBtn");
 
 const adminName =
-    document.getElementById(
-        "adminName"
-    );
+    document.getElementById("adminName");
+
+const adminEmail =
+    document.getElementById("adminEmail");
 
 
 /* =========================================================
    PAGE MAP
-   MUST MATCH admin.html
+   IMPORTANT:
+   THESE IDs MUST MATCH admin.html EXACTLY
 ========================================================= */
 
 const sectionMap = {
@@ -116,25 +103,10 @@ const sectionMap = {
         "dashboardSection",
 
     deposits:
-        "depositSection",
-
-    deposit:
-        "depositSection",
+        "depositsSection",
 
     withdraws:
-        "withdrawSection",
-
-    withdraw:
-        "withdrawSection",
-
-    users:
-        "usersSection",
-
-    transactions:
-        "transactionsSection",
-
-    settings:
-        "settingsSection",
+        "withdrawsSection",
 
     vipRequests:
         "vipRequestsSection",
@@ -145,8 +117,17 @@ const sectionMap = {
     bonusRequests:
         "bonusRequestsSection",
 
+    users:
+        "usersSection",
+
+    transactions:
+        "transactionsSection",
+
     quickActions:
-        "quickActionsSection"
+        "quickActionsSection",
+
+    settings:
+        "settingsSection"
 
 };
 
@@ -156,9 +137,7 @@ const sectionMap = {
 ========================================================= */
 
 const pageSections =
-    document.querySelectorAll(
-        ".page-section"
-    );
+    document.querySelectorAll(".page-section");
 
 
 /* =========================================================
@@ -166,9 +145,7 @@ const pageSections =
 ========================================================= */
 
 const menuLinks =
-    document.querySelectorAll(
-        ".menu-link"
-    );
+    document.querySelectorAll(".menu-link");
 
 
 /* =========================================================
@@ -177,7 +154,10 @@ const menuLinks =
 
 async function waitForAdmin() {
 
-    if (adminReady && currentAdmin) {
+    if (
+        adminReady &&
+        currentAdmin
+    ) {
 
         return currentAdmin;
 
@@ -194,6 +174,27 @@ async function waitForAdmin() {
 
 function openPage(pageName) {
 
+    /*
+     * Normalize page name
+     */
+
+    if (
+        typeof pageName !== "string"
+    ) {
+
+        return;
+
+    }
+
+
+    pageName =
+        pageName.trim();
+
+
+    /*
+     * Find section ID
+     */
+
     const sectionId =
         sectionMap[pageName];
 
@@ -201,7 +202,7 @@ function openPage(pageName) {
     if (!sectionId) {
 
         console.warn(
-            "Unknown admin page:",
+            "Money Vault: Unknown admin page:",
             pageName
         );
 
@@ -209,6 +210,10 @@ function openPage(pageName) {
 
     }
 
+
+    /*
+     * Find target section
+     */
 
     const targetSection =
         document.getElementById(
@@ -218,9 +223,11 @@ function openPage(pageName) {
 
     if (!targetSection) {
 
-        console.warn(
-            "Section not found in admin.html:",
-            sectionId
+        console.error(
+            "Money Vault: Section NOT found:",
+            sectionId,
+            "for page:",
+            pageName
         );
 
         return;
@@ -228,9 +235,9 @@ function openPage(pageName) {
     }
 
 
-    /*
-     * Hide all sections
-     */
+    /* -----------------------------------------------------
+       HIDE ALL PAGE SECTIONS
+    ----------------------------------------------------- */
 
     pageSections.forEach(
         section => {
@@ -246,9 +253,9 @@ function openPage(pageName) {
     );
 
 
-    /*
-     * Show selected section
-     */
+    /* -----------------------------------------------------
+       SHOW TARGET SECTION
+    ----------------------------------------------------- */
 
     targetSection.classList.add(
         "active"
@@ -258,9 +265,9 @@ function openPage(pageName) {
         "block";
 
 
-    /*
-     * Update sidebar active item
-     */
+    /* -----------------------------------------------------
+       UPDATE SIDEBAR ACTIVE ITEM
+    ----------------------------------------------------- */
 
     menuLinks.forEach(
         link => {
@@ -270,9 +277,12 @@ function openPage(pageName) {
             );
 
 
+            const linkPage =
+                link.dataset.page;
+
+
             if (
-                link.dataset.page ===
-                pageName
+                linkPage === pageName
             ) {
 
                 link.classList.add(
@@ -285,9 +295,9 @@ function openPage(pageName) {
     );
 
 
-    /*
-     * Close mobile sidebar
-     */
+    /* -----------------------------------------------------
+       CLOSE MOBILE SIDEBAR
+    ----------------------------------------------------- */
 
     if (sidebar) {
 
@@ -298,9 +308,63 @@ function openPage(pageName) {
     }
 
 
-    /*
-     * Update URL hash
-     */
+    /* -----------------------------------------------------
+       UPDATE PAGE TITLE
+    ----------------------------------------------------- */
+
+    const pageTitle =
+        document.getElementById(
+            "pageTitle"
+        );
+
+
+    if (pageTitle) {
+
+        const titles = {
+
+            dashboard:
+                "Dashboard",
+
+            deposits:
+                "Deposit Requests",
+
+            withdraws:
+                "Withdraw Requests",
+
+            vipRequests:
+                "VIP Requests",
+
+            vipBuyers:
+                "VIP Buyers",
+
+            bonusRequests:
+                "Bonus Requests",
+
+            users:
+                "Users",
+
+            transactions:
+                "Transactions",
+
+            quickActions:
+                "Quick Actions",
+
+            settings:
+                "Settings"
+
+        };
+
+
+        pageTitle.textContent =
+            titles[pageName] ||
+            "Money Vault Admin";
+
+    }
+
+
+    /* -----------------------------------------------------
+       UPDATE URL HASH
+    ----------------------------------------------------- */
 
     try {
 
@@ -315,16 +379,16 @@ function openPage(pageName) {
     catch (error) {
 
         console.warn(
-            "Could not update URL:",
+            "Could not update URL hash:",
             error
         );
 
     }
 
 
-    /*
-     * Notify other Parts
-     */
+    /* -----------------------------------------------------
+       NOTIFY OTHER ADMIN PARTS
+    ----------------------------------------------------- */
 
     document.dispatchEvent(
         new CustomEvent(
@@ -335,6 +399,12 @@ function openPage(pageName) {
                 }
             }
         )
+    );
+
+
+    console.log(
+        "Money Vault page opened:",
+        pageName
     );
 
 }
@@ -352,6 +422,7 @@ menuLinks.forEach(
             event => {
 
                 event.preventDefault();
+                event.stopPropagation();
 
 
                 const page =
@@ -359,6 +430,11 @@ menuLinks.forEach(
 
 
                 if (!page) {
+
+                    console.warn(
+                        "Menu link has no data-page:",
+                        link
+                    );
 
                     return;
 
@@ -389,11 +465,40 @@ function bindQuickAction(
         );
 
 
+    /*
+     * Button does not exist.
+     * This is NOT an error because some buttons
+     * are optional.
+     */
+
     if (!element) {
+
+        console.log(
+            "Quick Action not found:",
+            elementId
+        );
 
         return;
 
     }
+
+
+    /*
+     * Prevent duplicate listener
+     */
+
+    if (
+        element.dataset.quickActionBound ===
+        "true"
+    ) {
+
+        return;
+
+    }
+
+
+    element.dataset.quickActionBound =
+        "true";
 
 
     element.addEventListener(
@@ -401,6 +506,16 @@ function bindQuickAction(
         event => {
 
             event.preventDefault();
+            event.stopPropagation();
+
+
+            console.log(
+                "Quick Action clicked:",
+                elementId,
+                "=>",
+                pageName
+            );
+
 
             openPage(
                 pageName
@@ -454,7 +569,6 @@ bindQuickAction(
 
 /* =========================================================
    QUICK ACTIONS PAGE BUTTONS
-   IF THEY EXIST IN HTML
 ========================================================= */
 
 bindQuickAction(
@@ -474,6 +588,11 @@ bindQuickAction(
     "settings"
 );
 
+
+/*
+ * Optional buttons.
+ * If they exist in HTML they will work.
+ */
 
 bindQuickAction(
     "openDepositsBtn",
@@ -504,8 +623,17 @@ if (menuBtn) {
         event => {
 
             event.preventDefault();
+            event.stopPropagation();
 
-            sidebar?.classList.toggle(
+
+            if (!sidebar) {
+
+                return;
+
+            }
+
+
+            sidebar.classList.toggle(
                 "active"
             );
 
@@ -516,7 +644,8 @@ if (menuBtn) {
 
 
 /* =========================================================
-   CLOSE SIDEBAR WHEN CLICKING OUTSIDE
+   CLOSE MOBILE SIDEBAR
+   WHEN CLICKING OUTSIDE
 ========================================================= */
 
 document.addEventListener(
@@ -530,7 +659,11 @@ document.addEventListener(
         }
 
 
-        if (!sidebar.classList.contains("active")) {
+        if (
+            !sidebar.classList.contains(
+                "active"
+            )
+        ) {
 
             return;
 
@@ -574,7 +707,7 @@ onAuthStateChanged(
     async user => {
 
         /*
-         * User not logged in
+         * USER NOT LOGGED IN
          */
 
         if (!user) {
@@ -604,7 +737,7 @@ onAuthStateChanged(
         try {
 
             /*
-             * Check admins/{uid}
+             * CHECK admins/{uid}
              */
 
             const adminRef =
@@ -621,7 +754,7 @@ onAuthStateChanged(
 
 
             /*
-             * User is not an admin
+             * NOT ADMIN
              */
 
             if (
@@ -654,7 +787,7 @@ onAuthStateChanged(
 
 
             /*
-             * Save admin
+             * SAVE ADMIN
              */
 
             currentAdmin =
@@ -666,12 +799,16 @@ onAuthStateChanged(
 
 
             /*
-             * Read admin profile
+             * ADMIN DATA
              */
 
             const adminData =
                 adminSnapshot.val() || {};
 
+
+            /*
+             * ADMIN NAME
+             */
 
             if (adminName) {
 
@@ -684,7 +821,30 @@ onAuthStateChanged(
 
 
             /*
-             * Hide loading
+             * ADMIN EMAIL
+             *
+             * This is only for ADMIN PANEL.
+             */
+
+            if (adminEmail) {
+
+                adminEmail.textContent =
+                    user.email ||
+                    "";
+
+            }
+
+
+            /*
+             * UPDATE GLOBAL ADMIN IMMEDIATELY
+             */
+
+            window.currentAdmin =
+                currentAdmin;
+
+
+            /*
+             * HIDE LOADING
              */
 
             if (loadingScreen) {
@@ -696,7 +856,7 @@ onAuthStateChanged(
 
 
             /*
-             * Resolve Parts waiting for admin
+             * RESOLVE ADMIN READY
              */
 
             adminReadyResolve(
@@ -709,7 +869,7 @@ onAuthStateChanged(
             );
 
             console.log(
-                "✅ MONEY VAULT ADMIN AUTHENTICATED"
+                "MONEY VAULT ADMIN AUTHENTICATED"
             );
 
             console.log(
@@ -723,7 +883,7 @@ onAuthStateChanged(
 
 
             /*
-             * Start Part 2
+             * START PART 2
              */
 
             if (
@@ -735,6 +895,13 @@ onAuthStateChanged(
 
             }
 
+
+            /*
+             * Make sure dashboard is visible
+             */
+
+            initializeInitialPage();
+
         }
 
         catch (error) {
@@ -745,7 +912,8 @@ onAuthStateChanged(
             );
 
 
-            adminReady = false;
+            adminReady =
+                false;
 
 
             if (loadingScreen) {
@@ -772,6 +940,7 @@ onAuthStateChanged(
             catch (signOutError) {
 
                 console.error(
+                    "Sign out error:",
                     signOutError
                 );
 
