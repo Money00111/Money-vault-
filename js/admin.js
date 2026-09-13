@@ -3263,9 +3263,15 @@ async function findReferrer(user) {
 }
 
 
-       // ======================================
+// ======================================
 // APPROVE VIP REQUEST
-// FIX: DO NOT DEDUCT BALANCE AGAIN
+// MONEY VAULT - RWF / FRW
+//
+// IMPORTANT:
+// - DO NOT deduct balance here.
+// - Buy Now already deducted the balance.
+// - VIP income starts after 24 hours.
+// - Referral bonus = 1,000 RWF after approval.
 // ======================================
 
 async function approveVipRequest(id) {
@@ -3281,32 +3287,39 @@ async function approveVipRequest(id) {
 
     try {
 
-        // --------------------------------------
-        // 1. GET REQUEST
-        // --------------------------------------
+        // ======================================
+        // 1. GET VIP REQUEST
+        // ======================================
 
-        const requestRef =
-            ref(db, "vipPurchaseRequests/" + id);
+        const requestRef = ref(
+            db,
+            "vipPurchaseRequests/" + id
+        );
 
-        const requestSnap =
-            await get(requestRef);
+        const requestSnap = await get(requestRef);
 
         if (!requestSnap.exists()) {
             alert("VIP request not found.");
             return;
         }
 
-        const request =
-            requestSnap.val() || {};
+        const request = requestSnap.val() || {};
 
-        // Already approved
-        if (
-            String(request.status || "").toLowerCase()
-            === "approved"
-        ) {
+        const currentStatus =
+            String(request.status || "").toLowerCase();
+
+        // --------------------------------------
+        // ALREADY APPROVED
+        // --------------------------------------
+
+        if (currentStatus === "approved") {
             alert("This VIP request is already approved.");
             return;
         }
+
+        // ======================================
+        // 2. USER ID
+        // ======================================
 
         const uid =
             request.uid ||
@@ -3318,9 +3331,9 @@ async function approveVipRequest(id) {
             throw new Error("Invalid user ID.");
         }
 
-        // --------------------------------------
-        // 2. VIP INFORMATION
-        // --------------------------------------
+        // ======================================
+        // 3. VIP INFORMATION
+        // ======================================
 
         const vipName =
             request.vipName ||
@@ -3328,41 +3341,38 @@ async function approveVipRequest(id) {
             request.name ||
             "VIP Plan";
 
-        const price =
-            Number(
-                request.price ??
-                request.vipPrice ??
-                request.amount ??
-                0
-            );
+        const price = Number(
+            request.price ??
+            request.vipPrice ??
+            request.amount ??
+            0
+        );
 
-        const dailyIncome =
-            Number(
-                request.dailyIncome ??
-                request.daily ??
-                request.dailyProfit ??
-                0
-            );
+        const dailyIncome = Number(
+            request.dailyIncome ??
+            request.daily ??
+            request.dailyProfit ??
+            0
+        );
 
-        let duration =
-            Number(
-                request.duration ??
-                request.durationDays ??
-                request.days ??
-                0
-            );
+        let duration = Number(
+            request.duration ??
+            request.durationDays ??
+            request.days ??
+            0
+        );
 
-        const totalProfit =
-            Number(
-                request.totalProfit ??
-                request.profit ??
-                request.total ??
-                0
-            );
+        const totalProfit = Number(
+            request.totalProfit ??
+            request.profit ??
+            request.total ??
+            0
+        );
 
-        // --------------------------------------
-        // 3. VALIDATION
-        // --------------------------------------
+        const planId =
+            request.vipPlanId ||
+            request.planId ||
+            "";
 
         if (!Number.isFinite(price) || price <= 0) {
             throw new Error("Invalid VIP price.");
@@ -3375,55 +3385,62 @@ async function approveVipRequest(id) {
             throw new Error("Invalid daily income.");
         }
 
-        if (!Number.isFinite(duration) || duration <= 0) {
+        // --------------------------------------
+        // CALCULATE DURATION IF MISSING
+        // --------------------------------------
 
+        if (
+            !Number.isFinite(duration) ||
+            duration <= 0
+        ) {
             if (
                 totalProfit > 0 &&
                 dailyIncome > 0
             ) {
-                duration =
-                    Math.round(
-                        totalProfit / dailyIncome
-                    );
+                duration = Math.round(
+                    totalProfit / dailyIncome
+                );
             }
         }
 
-        if (!Number.isFinite(duration) || duration <= 0) {
+        if (
+            !Number.isFinite(duration) ||
+            duration <= 0
+        ) {
             throw new Error("VIP duration is invalid.");
         }
 
-        // --------------------------------------
+        // ======================================
         // 4. GET USER
-        // --------------------------------------
+        // ======================================
 
-        const userRef =
-            ref(db, "users/" + uid);
+        const userRef = ref(
+            db,
+            "users/" + uid
+        );
 
-        const userSnap =
-            await get(userRef);
+        const userSnap = await get(userRef);
 
         if (!userSnap.exists()) {
             throw new Error("User account not found.");
         }
 
-        const user =
-            userSnap.val() || {};
+        const user = userSnap.val() || {};
 
-        // --------------------------------------
+        // ======================================
         // IMPORTANT
-        // --------------------------------------
-        // DO NOT CHECK BALANCE
-        // DO NOT DEDUCT PRICE HERE
+        //
+        // DO NOT:
+        // balance -= price
         //
         // Buy Now already deducted the balance.
-        // --------------------------------------
+        // ======================================
 
-        // --------------------------------------
+        // ======================================
         // 5. APPROVAL TIME
-        // --------------------------------------
+        // ======================================
 
-        const approvedAt =
-            Date.now();
+        const approvedAt = Date.now();
 
         const endDate =
             approvedAt +
@@ -3435,32 +3452,53 @@ async function approveVipRequest(id) {
                 1000
             );
 
-        // --------------------------------------
-        // 6. CREATE VIP BUYER
-        // --------------------------------------
+        // ======================================
+        // 6. CREATE VIP BUYER ID
+        // ======================================
 
-        const vipBuyerRef =
-            push(ref(db, "vipBuyers"));
+        const vipBuyerRef = push(
+            ref(db, "vipBuyers")
+        );
 
-        const vipBuyerId =
-            vipBuyerRef.key;
+        const vipBuyerId = vipBuyerRef.key;
 
-        // --------------------------------------
-        // 7. CREATE USER VIP PLAN
-        // --------------------------------------
-
-        const userVipRef =
-            push(
-                ref(
-                    db,
-                    "users/" +
-                    uid +
-                    "/vipPlans"
-                )
+        if (!vipBuyerId) {
+            throw new Error(
+                "Could not create VIP buyer ID."
             );
+        }
 
-        const vipPlanId =
-            userVipRef.key;
+        // ======================================
+        // 7. CREATE USER VIP PLAN ID
+        // ======================================
+
+        const userVipRef = push(
+            ref(
+                db,
+                "users/" +
+                uid +
+                "/vipPlans"
+            )
+        );
+
+        const userVipId = userVipRef.key;
+
+        if (!userVipId) {
+            throw new Error(
+                "Could not create user VIP plan ID."
+            );
+        }
+
+        // ======================================
+        // 8. VIP DATA
+        // ======================================
+
+        const calculatedTotalProfit =
+            (
+                totalProfit > 0
+            )
+                ? totalProfit
+                : dailyIncome * duration;
 
         const vipData = {
 
@@ -3470,6 +3508,12 @@ async function approveVipRequest(id) {
 
             vipBuyerId: vipBuyerId,
 
+            vipPlanId:
+                planId || "unknown",
+
+            planId:
+                planId || "unknown",
+
             vipName: vipName,
 
             price: price,
@@ -3477,9 +3521,7 @@ async function approveVipRequest(id) {
             dailyIncome: dailyIncome,
 
             totalProfit:
-                totalProfit > 0
-                    ? totalProfit
-                    : dailyIncome * duration,
+                calculatedTotalProfit,
 
             duration: duration,
 
@@ -3496,14 +3538,18 @@ async function approveVipRequest(id) {
             approvedBy:
                 currentAdmin.uid,
 
-            endDate: endDate,
+            // ==================================
+            // IMPORTANT:
+            // FIRST CLAIM ONLY AFTER 24 HOURS
+            // ==================================
 
-            // First claim ONLY after 24 hours
             lastClaim: approvedAt,
 
             lastClaimTime: approvedAt,
 
             lastProfitTime: approvedAt,
+
+            endDate: endDate,
 
             totalEarned: 0,
 
@@ -3514,187 +3560,364 @@ async function approveVipRequest(id) {
             claimCount: 0
         };
 
+        // ======================================
+        // 9. VIP BUYER DATA
+        // ======================================
+
         const vipBuyerData = {
             ...vipData,
             id: vipBuyerId
         };
 
-        // --------------------------------------
-        // 8. FIND REFERRER
-        // --------------------------------------
-
-        let referrer = null;
-
-        if (typeof findReferrer === "function") {
-            referrer =
-                await findReferrer(user);
-        }
-
-        // --------------------------------------
-        // 9. PREPARE ALL UPDATES
-        // --------------------------------------
+        // ======================================
+        // 10. PREPARE ATOMIC UPDATES
+        // ======================================
 
         const updates = {};
 
-        // IMPORTANT:
-        // NO USER BALANCE UPDATE HERE.
-        // Balance was already deducted by Buy Now.
+        // --------------------------------------
+        // VIP BUYER
+        // --------------------------------------
 
-        // User VIP
+        updates[
+            "vipBuyers/" + vipBuyerId
+        ] = vipBuyerData;
+
+        // --------------------------------------
+        // USER VIP PLAN
+        // --------------------------------------
+
         updates[
             "users/" +
             uid +
             "/vipPlans/" +
-            vipPlanId
+            userVipId
         ] = vipData;
 
-        // VIP Buyers
-        updates[
-            "vipBuyers/" +
-            vipBuyerId
-        ] = vipBuyerData;
-
         // --------------------------------------
-        // 10. VIP PURCHASE TRANSACTION
+        // APPROVE REQUEST
         // --------------------------------------
 
-        const purchaseTxRef =
-            push(ref(db, "transactions"));
-
         updates[
-            "transactions/" +
-            purchaseTxRef.key
+            "vipPurchaseRequests/" + id
         ] = {
-
-            uid: uid,
-
-            email:
-                user.email ||
-                request.email ||
-                "",
-
-            type: "vip_purchase",
-
-            amount: price,
-
-            vipName: vipName,
-
-            dailyIncome: dailyIncome,
-
-            duration: duration,
+            ...request,
 
             status: "approved",
 
-            requestId: id,
-
-            vipBuyerId: vipBuyerId,
+            approvedAt: approvedAt,
 
             approvedBy:
                 currentAdmin.uid,
 
-            createdAt: approvedAt
+            approvedByEmail:
+                currentAdmin.email || "",
+
+            processed: true,
+
+            vipBuyerId: vipBuyerId,
+
+            userVipId: userVipId,
+
+            endDate: endDate,
+
+            // Keep balance untouched.
+            balanceDeducted: true
         };
 
+        // ======================================
+        // 11. REFERRAL BONUS
+        // ======================================
 
+        let referralPaid = false;
+        let referrerUid = null;
+        let referralBonusId = null;
 
-        // --------------------------------------
-        // 12. FINAL STATUS = APPROVED
-        // --------------------------------------
+        const referredBy =
+            user.referredBy ||
+            user.referralCodeUsed ||
+            "";
+
+        if (referredBy) {
+
+            try {
+
+                let referrerCodeSnap =
+                    await get(
+                        ref(
+                            db,
+                            "referralCodes/" +
+                            referredBy
+                        )
+                    );
+
+                if (referrerCodeSnap.exists()) {
+
+                    const referralCodeData =
+                        referrerCodeSnap.val() || {};
+
+                    referrerUid =
+                        referralCodeData.uid ||
+                        null;
+
+                    // Prevent self-referral
+                    if (referrerUid === uid) {
+                        referrerUid = null;
+                    }
+                }
+
+                // ----------------------------------
+                // FIND REFERRER
+                // ----------------------------------
+
+                if (referrerUid) {
+
+                    const referrerSnap =
+                        await get(
+                            ref(
+                                db,
+                                "users/" +
+                                referrerUid
+                            )
+                        );
+
+                    if (referrerSnap.exists()) {
+
+                        const referrer =
+                            referrerSnap.val() || {};
+
+                        // --------------------------------
+                        // CHECK IF THIS REQUEST ALREADY
+                        // RECEIVED REFERRAL BONUS
+                        // --------------------------------
+
+                        const bonusesSnap =
+                            await get(
+                                ref(
+                                    db,
+                                    "vipReferralBonuses"
+                                )
+                            );
+
+                        let alreadyPaid = false;
+
+                        if (bonusesSnap.exists()) {
+
+                            bonusesSnap.forEach(
+                                child => {
+
+                                    const bonus =
+                                        child.val() || {};
+
+                                    if (
+                                        String(
+                                            bonus.requestId ||
+                                            ""
+                                        ) === String(id) &&
+                                        String(
+                                            bonus.status ||
+                                            ""
+                                        ).toLowerCase()
+                                        === "paid"
+                                    ) {
+                                        alreadyPaid = true;
+                                    }
+                                }
+                            );
+                        }
+
+                        if (!alreadyPaid) {
+
+                            referralBonusId =
+                                push(
+                                    ref(
+                                        db,
+                                        "vipReferralBonuses"
+                                    )
+                                ).key;
+
+                            if (referralBonusId) {
+
+                                const oldBalance =
+                                    Number(
+                                        referrer.balance || 0
+                                    );
+
+                                const oldReferralBonus =
+                                    Number(
+                                        referrer.referralBonus || 0
+                                    );
+
+                                const oldReferralEarnings =
+                                    Number(
+                                        referrer.referralEarnings || 0
+                                    );
+
+                                const oldReferralCount =
+                                    Number(
+                                        referrer.referralCount || 0
+                                    );
+
+                                // --------------------------------
+                                // REFERRAL BONUS = 1,000 RWF
+                                // --------------------------------
+
+                                updates[
+                                    "users/" +
+                                    referrerUid +
+                                    "/balance"
+                                ] =
+                                    oldBalance + 1000;
+
+                                updates[
+                                    "users/" +
+                                    referrerUid +
+                                    "/referralBonus"
+                                ] =
+                                    oldReferralBonus + 1000;
+
+                                updates[
+                                    "users/" +
+                                    referrerUid +
+                                    "/referralEarnings"
+                                ] =
+                                    oldReferralEarnings + 1000;
+
+                                updates[
+                                    "users/" +
+                                    referrerUid +
+                                    "/referralCount"
+                                ] =
+                                    oldReferralCount + 1;
+
+                                // --------------------------------
+                                // REFERRAL BONUS RECORD
+                                // --------------------------------
+
+                                updates[
+                                    "vipReferralBonuses/" +
+                                    referralBonusId
+                                ] = {
+
+                                    referrerUid:
+                                        referrerUid,
+
+                                    referredUserUid:
+                                        uid,
+
+                                    requestId:
+                                        id,
+
+                                    amount: 1000,
+
+                                    currency: "RWF",
+
+                                    status: "paid",
+
+                                    createdAt:
+                                        approvedAt
+                                };
+
+                                referralPaid = true;
+                            }
+                        }
+                    }
+                }
+
+            } catch (referralError) {
+
+                console.error(
+                    "Referral bonus check error:",
+                    referralError
+                );
+
+                // Do not stop VIP approval because
+                // referral lookup failed.
+                referrerUid = null;
+                referralPaid = false;
+            }
+        }
+
+        // ======================================
+        // 12. MARK REFERRAL STATUS ON REQUEST
+        // ======================================
 
         updates[
-            "vipPurchaseRequests/" +
-            id +
-            "/status"
-        ] = "approved";
+            "vipPurchaseRequests/" + id +
+            "/referralBonusPaid"
+        ] = referralPaid;
 
-        updates[
-            "vipPurchaseRequests/" +
-            id +
-            "/approvedAt"
-        ] = approvedAt;
+        if (referrerUid) {
 
-        updates[
-            "vipPurchaseRequests/" +
-            id +
-            "/approvedBy"
-        ] =
-            currentAdmin.uid;
+            updates[
+                "vipPurchaseRequests/" + id +
+                "/referrerUid"
+            ] = referrerUid;
+        }
 
-        updates[
-            "vipPurchaseRequests/" +
-            id +
-            "/duration"
-        ] = duration;
+        if (referralBonusId) {
 
-        updates[
-            "vipPurchaseRequests/" +
-            id +
-            "/days"
-        ] = duration;
+            updates[
+                "vipPurchaseRequests/" + id +
+                "/referralBonusId"
+            ] = referralBonusId;
+        }
 
-        updates[
-            "vipPurchaseRequests/" +
-            id +
-            "/durationDays"
-        ] = duration;
-
-        updates[
-            "vipPurchaseRequests/" +
-            id +
-            "/vipBuyerId"
-        ] = vipBuyerId;
-
-        // --------------------------------------
+        // ======================================
         // 13. SAVE EVERYTHING AT ONCE
-        // --------------------------------------
+        // ======================================
 
         await update(
             ref(db),
             updates
         );
 
-        // --------------------------------------
+        // ======================================
         // 14. SUCCESS
-        // --------------------------------------
+        // ======================================
 
-        let message =
-            "VIP approved successfully.";
+        alert(
+            referralPaid
+                ? "VIP approved successfully. Referral bonus of 1,000 RWF was paid."
+                : "VIP approved successfully."
+        );
 
-        if (referrer) {
-            message +=
-                "\n\nReferral bonus: 1,000 RWF";
+        // Reload the VIP request list
+        if (typeof loadVipRequests === "function") {
+            loadVipRequests();
         }
 
-        alert(message);
+        // Reload VIP buyers if function exists
+        if (typeof loadVipBuyers === "function") {
+            loadVipBuyers();
+        }
 
     } catch (error) {
 
         console.error(
-            "APPROVE VIP ERROR:",
+            "VIP approval error:",
             error
         );
 
-        // IMPORTANT:
-        // DO NOT change approved back to pending.
-        // There is no processing status anymore.
+        console.error(
+            "VIP approval error code:",
+            error?.code
+        );
+
+        console.error(
+            "VIP approval error message:",
+            error?.message
+        );
 
         alert(
-            "VIP approval failed: " +
+            "VIP approve failed: " +
             (
-                error.message ||
+                error?.message ||
                 "Unknown error"
             )
         );
     }
 }
-
-
-// ======================================
-// GLOBAL
-// ======================================
-
-window.approveVipRequest =
-    approveVipRequest; 
 
             
             
