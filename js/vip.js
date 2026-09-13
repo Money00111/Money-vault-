@@ -38,7 +38,10 @@ import {
     update,
     onValue,
     runTransaction,
-    push
+    push,
+    query,
+    orderByChild,
+    equalTo
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
 
 
@@ -1233,72 +1236,128 @@ async function processReferralBonus(
 
     try {
 
-        /* -------------------------------------------------
-           GET REFERRER UID
-        ------------------------------------------------- */
 
-        const referrerUid =
-            String(
-                userData.referredBy ||
-                userData.referrerUid ||
-                userData.referrerId ||
-                ""
-            ).trim();
+/* -------------------------------------------------
+   GET REFERRER UID
+   Supports both:
+   - Firebase UID
+   - Referral Code
+------------------------------------------------- */
+
+const referrerValue =
+    String(
+        userData.referredBy ||
+        userData.referrerUid ||
+        userData.referrerId ||
+        userData.referralCodeUsed ||
+        ""
+    ).trim();
+
+if (!referrerValue) {
+
+    console.log(
+        "No referrer found for this user."
+    );
+
+    return;
+
+}
+
+let referrerUid = referrerValue;
 
 
-        /* No referrer */
-        if (!referrerUid) {
+/* -------------------------------------------------
+   FIRST: CHECK IF VALUE IS A REAL USER UID
+------------------------------------------------- */
 
-            console.log(
-                "No referrer found for this user."
-            );
+let referrerRef =
+    ref(
+        db,
+        `${USERS_PATH}/${referrerValue}`
+    );
 
-            return;
+let referrerSnapshot =
+    await get(referrerRef);
+
+
+/* -------------------------------------------------
+   IF NOT UID, SEARCH BY referralCode
+------------------------------------------------- */
+
+if (!referrerSnapshot.exists()) {
+
+    const usersQuery =
+        query(
+            ref(db, USERS_PATH),
+            orderByChild("referralCode"),
+            equalTo(referrerValue)
+        );
+
+    const codeSnapshot =
+        await get(usersQuery);
+
+    if (codeSnapshot.exists()) {
+
+        const matches =
+            codeSnapshot.val();
+
+        const firstMatch =
+            Object.entries(matches)[0];
+
+        if (firstMatch) {
+
+            referrerUid =
+                firstMatch[0];
+
+            referrerRef =
+                ref(
+                    db,
+                    `${USERS_PATH}/${referrerUid}`
+                );
+
+            referrerSnapshot =
+                await get(referrerRef);
 
         }
 
+    }
 
-        /* User cannot refer himself */
-        if (
-            referrerUid ===
-            currentUser.uid
-        ) {
-
-            console.log(
-                "Invalid self-referral."
-            );
-
-            return;
-
-        }
+}
 
 
-        /* -------------------------------------------------
-           CHECK REFERRER EXISTS
-        ------------------------------------------------- */
+/* -------------------------------------------------
+   CHECK REFERRER EXISTS
+------------------------------------------------- */
 
-        const referrerRef =
-            ref(
-                db,
-                `${USERS_PATH}/${referrerUid}`
-            );
+if (!referrerSnapshot.exists()) {
 
-        const referrerSnapshot =
-            await get(referrerRef);
+    console.error(
+        "Referrer user not found:",
+        referrerValue
+    );
 
+    return;
 
-        if (!referrerSnapshot.exists()) {
-
-            console.error(
-                "Referrer user not found:",
-                referrerUid
-            );
-
-            return;
-
-        }
+}
 
 
+/* -------------------------------------------------
+   PREVENT SELF REFERRAL
+------------------------------------------------- */
+
+if (
+    referrerUid ===
+    currentUser.uid
+) {
+
+    console.log(
+        "Invalid self-referral."
+    );
+
+    return;
+
+}
+       
         /* -------------------------------------------------
            CHECK BONUS ALREADY GIVEN
         ------------------------------------------------- */
