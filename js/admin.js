@@ -1312,15 +1312,11 @@ function renderWithdraws() {
                     <div class="action-buttons">
 
                         <button
-class="approveBtn"
-onclick="approveWithdraw('${safeText(item.id)}')">
-
-<i class="fa-solid fa-circle-check"></i>
-Approve
-
+  class="approveBtn"
+  onclick="approveWithdraw('${safeText(item.id)}')">
+  <i class="fa-solid fa-circle-check"></i>
+  Approve
 </button>
-
-                        </button>
 
                         <button
                             class="rejectBtn"
