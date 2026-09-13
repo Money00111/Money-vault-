@@ -1221,6 +1221,8 @@ async function buyVIP(planId) {
 
 /* =========================================================
    REFERRAL BONUS
+   1,000 RWF
+   PAID ONCE AFTER VIP PURCHASE
 ========================================================= */
 
 async function processReferralBonus(
@@ -1229,217 +1231,266 @@ async function processReferralBonus(
     planId
 ) {
 
-    const referrerUid =
-        userData.referredBy ||
-        userData.referrerUid ||
-        userData.referrerId ||
-        "";
-
-    if (!referrerUid)
-        return;
-
-    if (
-        referrerUid ===
-        currentUser.uid
-    ) {
-
-        return;
-
-    }
-
-
-    const referralMarkerRef =
-        ref(
-            db,
-            `users/${currentUser.uid}/referralBonusGiven`
-        );
-
-
-    let markerResult;
-
     try {
 
-        markerResult =
-            await runTransaction(
-                referralMarkerRef,
-                current => {
+        /* -------------------------------------------------
+           GET REFERRER UID
+        ------------------------------------------------- */
 
-                    if (current === true)
+        const referrerUid =
+            String(
+                userData.referredBy ||
+                userData.referrerUid ||
+                userData.referrerId ||
+                ""
+            ).trim();
+
+
+        /* No referrer */
+        if (!referrerUid) {
+
+            console.log(
+                "No referrer found for this user."
+            );
+
+            return;
+
+        }
+
+
+        /* User cannot refer himself */
+        if (
+            referrerUid ===
+            currentUser.uid
+        ) {
+
+            console.log(
+                "Invalid self-referral."
+            );
+
+            return;
+
+        }
+
+
+        /* -------------------------------------------------
+           CHECK REFERRER EXISTS
+        ------------------------------------------------- */
+
+        const referrerRef =
+            ref(
+                db,
+                `${USERS_PATH}/${referrerUid}`
+            );
+
+        const referrerSnapshot =
+            await get(referrerRef);
+
+
+        if (!referrerSnapshot.exists()) {
+
+            console.error(
+                "Referrer user not found:",
+                referrerUid
+            );
+
+            return;
+
+        }
+
+
+        /* -------------------------------------------------
+           CHECK BONUS ALREADY GIVEN
+        ------------------------------------------------- */
+
+        const markerRef =
+            ref(
+                db,
+                `${USERS_PATH}/${currentUser.uid}/referralBonusGiven`
+            );
+
+
+        const markerSnapshot =
+            await get(markerRef);
+
+
+        if (
+            markerSnapshot.exists() &&
+            markerSnapshot.val() === true
+        ) {
+
+            console.log(
+                "Referral bonus already paid."
+            );
+
+            return;
+
+        }
+
+
+        /* -------------------------------------------------
+           PAY REFERRER
+        ------------------------------------------------- */
+
+        const bonusResult =
+            await runTransaction(
+                referrerRef,
+                referrer => {
+
+                    if (!referrer)
                         return;
 
-                    return true;
+                    referrer.balance =
+                        numberValue(
+                            referrer.balance
+                        ) + REFERRAL_BONUS;
+
+                    referrer.referralBonus =
+                        numberValue(
+                            referrer.referralBonus
+                        ) + REFERRAL_BONUS;
+
+                    referrer.referralEarnings =
+                        numberValue(
+                            referrer.referralEarnings
+                        ) + REFERRAL_BONUS;
+
+                    referrer.referralCount =
+                        numberValue(
+                            referrer.referralCount
+                        ) + 1;
+
+                    referrer.totalEarnings =
+                        numberValue(
+                            referrer.totalEarnings
+                        ) + REFERRAL_BONUS;
+
+                    return referrer;
 
                 }
             );
 
+
+        if (!bonusResult.committed) {
+
+            throw new Error(
+                "Referral bonus transaction failed."
+            );
+
+        }
+
+
+        /* -------------------------------------------------
+           MARK BONUS AS PAID
+        ------------------------------------------------- */
+
+        await set(
+            markerRef,
+            true
+        );
+
+
+        /* -------------------------------------------------
+           CREATE REFERRAL TRANSACTION
+        ------------------------------------------------- */
+
+        const transactionId =
+            push(
+                ref(
+                    db,
+                    `${TRANSACTIONS_PATH}/${referrerUid}`
+                )
+            ).key;
+
+
+        if (transactionId) {
+
+            await set(
+                ref(
+                    db,
+                    `${TRANSACTIONS_PATH}/${referrerUid}/${transactionId}`
+                ),
+                {
+
+                    type:
+                        "referral_bonus",
+
+                    category:
+                        "Referral Bonus",
+
+                    uid:
+                        referrerUid,
+
+                    referredUser:
+                        currentUser.uid,
+
+                    amount:
+                        REFERRAL_BONUS,
+
+                    currency:
+                        CURRENCY,
+
+                    vipPlanId:
+                        planId,
+
+                    vipName:
+                        vipName,
+
+                    status:
+                        "completed",
+
+                    description:
+                        "Referral bonus from VIP purchase",
+
+                    createdAt:
+                        purchaseTime
+
+                }
+            );
+
+        }
+
+
+        /* -------------------------------------------------
+           SUCCESS MESSAGE
+        ------------------------------------------------- */
+
+        showToast(
+            `Referral bonus ${money(
+                REFERRAL_BONUS
+            )} paid to your referrer.`
+        );
+
+
+        console.log(
+            "Referral bonus paid:",
+            REFERRAL_BONUS,
+            "RWF to:",
+            referrerUid
+        );
+
+
     } catch (error) {
 
         console.error(
-            "Referral marker error:",
+            "Referral bonus error:",
             error
         );
 
-        return;
-
-    }
-
-
-    if (!markerResult.committed)
-        return;
-
-
-    /* -----------------------------------------------------
-       LOAD REFERRER
-    ----------------------------------------------------- */
-
-    const referrerRef =
-        ref(
-            db,
-            `${USERS_PATH}/${referrerUid}`
-        );
-
-    const snapshot =
-        await get(referrerRef);
-
-    if (!snapshot.exists()) {
-
         /*
-         Roll back marker because
-         referrer does not exist.
+          IMPORTANT:
+          VIP purchase itself should NOT fail
+          because referral bonus failed.
         */
 
-        await set(
-            referralMarkerRef,
+        showToast(
+            "VIP purchased successfully, but referral bonus could not be processed.",
             false
         );
 
-        return;
-
     }
-
-
-    /* -----------------------------------------------------
-       ADD 1,000 RWF
-    ----------------------------------------------------- */
-
-    const bonusResult =
-        await runTransaction(
-            referrerRef,
-            referrer => {
-
-                if (!referrer)
-                    return;
-
-                referrer.balance =
-                    numberValue(
-                        referrer.balance
-                    ) + REFERRAL_BONUS;
-
-                referrer.referralBonus =
-                    numberValue(
-                        referrer.referralBonus
-                    ) + REFERRAL_BONUS;
-
-                referrer.referralEarnings =
-                    numberValue(
-                        referrer.referralEarnings
-                    ) + REFERRAL_BONUS;
-
-                referrer.referralCount =
-                    numberValue(
-                        referrer.referralCount
-                    ) + 1;
-
-                referrer.totalEarnings =
-                    numberValue(
-                        referrer.totalEarnings
-                    ) + REFERRAL_BONUS;
-
-                return referrer;
-
-            }
-        );
-
-
-    if (!bonusResult.committed) {
-
-        await set(
-            referralMarkerRef,
-            false
-        );
-
-        return;
-
-    }
-
-
-    /* -----------------------------------------------------
-       REFERRAL TRANSACTION
-    ----------------------------------------------------- */
-
-    const referralTransactionId =
-        push(
-            ref(
-                db,
-                `${TRANSACTIONS_PATH}/${referrerUid}`
-            )
-        ).key;
-
-
-    if (referralTransactionId) {
-
-        await set(
-            ref(
-                db,
-                `${TRANSACTIONS_PATH}/${referrerUid}/${referralTransactionId}`
-            ),
-            {
-
-                type:
-                    "referral_bonus",
-
-                category:
-                    "Referral Bonus",
-
-                uid:
-                    referrerUid,
-
-                referredUser:
-                    currentUser.uid,
-
-                amount:
-                    REFERRAL_BONUS,
-
-                currency:
-                    CURRENCY,
-
-                vipPlanId:
-                    planId,
-
-                vipName:
-                    vipName,
-
-                status:
-                    "completed",
-
-                description:
-                    "Referral bonus from VIP purchase",
-
-                createdAt:
-                    purchaseTime
-
-            }
-        );
-
-    }
-
-
-    showToast(
-        `Referral bonus ${money(REFERRAL_BONUS)} paid successfully!`
-    );
 
 }
-
 
 /* =========================================================
    RENDER OWNED VIPS
