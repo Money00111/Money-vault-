@@ -6,38 +6,42 @@
 
    FEATURES
    ---------------------------------------------------------
-   1. Loads active VIP plans
-   2. User buys VIP automatically
-   3. Balance deducted immediately
-   4. Multiple different VIP plans allowed
-   5. Same VIP plan cannot be purchased twice
-   6. VIP activated immediately
-   7. Daily income claim after 24 hours
+   1. User buys VIP automatically
+   2. Balance is deducted immediately
+   3. VIP becomes ACTIVE immediately
+   4. No Admin approval required
+   5. Same VIP plan cannot be bought twice
+   6. Different VIP plans can be owned together
+   7. Daily income available after 24 hours
    8. Referral bonus = 1,000 RWF
-   9. Referrer gets bonus immediately after successful VIP buy
-   10. Referral bonus paid only once per referred user
+   9. Referral bonus paid once only
+   10. Referral bonus goes to referrer's balance
    11. Transaction records created
-   12. Mobile sidebar supported
+   12. Realtime Firebase listeners
+   13. Mobile sidebar
 ========================================================= */
 
-import { auth, db } from "./firebase.js";
+import {
+    auth,
+    db
+} from "./firebase.js";
 
 import {
-  onAuthStateChanged,
-  signOut
+    onAuthStateChanged,
+    signOut
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 
 import {
-  ref,
-  get,
-  set,
-  update,
-  onValue,
-  runTransaction,
-  push,
-  query,
-  orderByChild,
-  equalTo
+    ref,
+    get,
+    set,
+    update,
+    onValue,
+    runTransaction,
+    push,
+    query,
+    orderByChild,
+    equalTo
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
 
 
@@ -46,7 +50,9 @@ import {
 ========================================================= */
 
 const CURRENCY = "RWF";
+
 const REFERRAL_BONUS = 1000;
+
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 const VIP_PLANS_PATH = "vipPlans";
@@ -56,157 +62,244 @@ const TRANSACTIONS_PATH = "transactions";
 
 
 /* =========================================================
-   GLOBAL STATE
+   STATE
 ========================================================= */
 
 let currentUser = null;
+
 let userData = {};
+
 let vipPlans = {};
+
 let ownedVIPs = [];
 
-let userListener = null;
-let plansListener = null;
-let buyersListener = null;
-
-let claimTimerInterval = null;
 let selectedClaimVIP = null;
+
+let claimInterval = null;
+
+let userUnsubscribe = null;
+let plansUnsubscribe = null;
+let buyersUnsubscribe = null;
 
 
 /* =========================================================
    DOM
 ========================================================= */
 
-const $ = (id) => document.getElementById(id);
+const balanceEl =
+    document.getElementById("balance");
+
+const vipGrid =
+    document.getElementById("vipGrid");
+
+const ownedVipList =
+    document.getElementById("ownedVipList");
+
+const currentVipEl =
+    document.getElementById("currentVip");
+
+const dailyIncomeEl =
+    document.getElementById("dailyIncome");
+
+const totalProfitEl =
+    document.getElementById("totalProfit");
+
+const claimTimerEl =
+    document.getElementById("claimTimer");
+
+const claimButton =
+    document.getElementById("claimDailyIncome");
+
+const menuBtn =
+    document.getElementById("menuBtn");
+
+const sidebar =
+    document.getElementById("sidebar");
+
+const logoutBtn =
+    document.getElementById("logoutBtn");
 
 
 /* =========================================================
    HELPERS
 ========================================================= */
 
-function number(value) {
-  const n = Number(value);
-  return Number.isFinite(n) ? n : 0;
+function numberValue(value) {
+
+    const n = Number(value);
+
+    return Number.isFinite(n) ? n : 0;
 }
 
 
 function money(value) {
-  return `${number(value).toLocaleString("en-US")} ${CURRENCY}`;
-}
 
+    return `${numberValue(value).toLocaleString()} ${CURRENCY}`;
 
-function now() {
-  return Date.now();
-}
-
-
-function normalizeStatus(value) {
-  return String(value || "")
-    .trim()
-    .toLowerCase();
-}
-
-
-function getPlanName(plan, fallback = "VIP") {
-  return (
-    plan?.name ||
-    plan?.vipName ||
-    fallback
-  );
-}
-
-
-function getPlanPrice(plan) {
-  return number(
-    plan?.price ??
-    plan?.amount ??
-    plan?.cost
-  );
-}
-
-
-function getPlanDailyIncome(plan) {
-  return number(
-    plan?.dailyIncome ??
-    plan?.dailyProfit ??
-    plan?.daily
-  );
-}
-
-
-function getPlanDays(plan) {
-  return number(
-    plan?.duration ??
-    plan?.totalDays ??
-    plan?.days
-  );
-}
-
-
-function getPlanTotalProfit(plan) {
-  const direct = number(
-    plan?.totalProfit ??
-    plan?.profit
-  );
-
-  if (direct > 0) {
-    return direct;
-  }
-
-  return getPlanDailyIncome(plan) * getPlanDays(plan);
 }
 
 
 function escapeHTML(value) {
-  return String(value ?? "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
+
+    return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+
 }
 
 
-function toast(message, type = "info") {
-  let box = document.getElementById("mvToast");
+function normalizeStatus(status) {
 
-  if (!box) {
-    box = document.createElement("div");
-    box.id = "mvToast";
+    return String(status ?? "")
+        .trim()
+        .toLowerCase();
 
-    box.style.position = "fixed";
-    box.style.left = "50%";
-    box.style.bottom = "25px";
-    box.style.transform = "translateX(-50%)";
-    box.style.zIndex = "99999";
-    box.style.padding = "13px 18px";
-    box.style.borderRadius = "10px";
-    box.style.background = "#111";
-    box.style.color = "#fff";
-    box.style.fontSize = "14px";
-    box.style.maxWidth = "90%";
-    box.style.textAlign = "center";
-    box.style.boxShadow = "0 5px 20px rgba(0,0,0,.25)";
+}
 
-    document.body.appendChild(box);
-  }
 
-  box.textContent = message;
+function getPlanName(plan) {
 
-  if (type === "success") {
-    box.style.background = "#16803c";
-  } else if (type === "error") {
-    box.style.background = "#c62828";
-  } else {
-    box.style.background = "#111";
-  }
+    return (
+        plan.vipName ||
+        plan.name ||
+        "VIP"
+    );
 
-  box.style.display = "block";
+}
 
-  clearTimeout(box._timer);
 
-  box._timer = setTimeout(() => {
-    box.style.display = "none";
-  }, 3500);
+function getPlanDays(plan) {
+
+    return numberValue(
+        plan.totalDays ??
+        plan.duration ??
+        plan.days ??
+        30
+    );
+
+}
+
+
+function getPlanPrice(plan) {
+
+    return numberValue(
+        plan.price ??
+        plan.amount ??
+        0
+    );
+
+}
+
+
+function getDailyIncome(plan) {
+
+    return numberValue(
+        plan.dailyIncome ??
+        plan.daily ??
+        0
+    );
+
+}
+
+
+function getTotalProfit(plan) {
+
+    const savedProfit =
+        numberValue(plan.totalProfit);
+
+    if (savedProfit > 0) {
+
+        return savedProfit;
+
+    }
+
+    return (
+        getDailyIncome(plan) *
+        getPlanDays(plan)
+    );
+
+}
+
+
+function getPlanClass(name) {
+
+    const text =
+        String(name ?? "")
+            .toLowerCase();
+
+    if (text.includes("bronze"))
+        return "bronze";
+
+    if (text.includes("starter"))
+        return "starter";
+
+    if (text.includes("silver"))
+        return "silver";
+
+    if (text.includes("gold"))
+        return "gold";
+
+    if (text.includes("platinum"))
+        return "platinum";
+
+    if (text.includes("diamond"))
+        return "diamond";
+
+    if (text.includes("premium"))
+        return "premium";
+
+    if (text.includes("elite"))
+        return "elite";
+
+    if (text.includes("royal"))
+        return "royal";
+
+    if (text.includes("ultimate"))
+        return "ultimate";
+
+    return "starter";
+
+}
+
+
+/* =========================================================
+   TOAST
+========================================================= */
+
+function showToast(message, success = true) {
+
+    let toast =
+        document.querySelector(".toast");
+
+    if (!toast) {
+
+        toast =
+            document.createElement("div");
+
+        toast.className = "toast";
+
+        document.body.appendChild(toast);
+
+    }
+
+    toast.textContent = message;
+
+    toast.style.background =
+        success
+            ? "linear-gradient(135deg,#16a34a,#22c55e)"
+            : "linear-gradient(135deg,#dc2626,#ef4444)";
+
+    toast.classList.add("show");
+
+    setTimeout(() => {
+
+        toast.classList.remove("show");
+
+    }, 3500);
+
 }
 
 
@@ -216,54 +309,58 @@ function toast(message, type = "info") {
 
 onAuthStateChanged(auth, async (user) => {
 
-  if (!user) {
-    window.location.href = "login.html";
-    return;
-  }
+    if (!user) {
 
-  currentUser = user;
+        window.location.href =
+            "login.html";
 
-  await startVIPSystem();
+        return;
+
+    }
+
+    currentUser = user;
+
+    await startVIPSystem();
+
 });
 
 
 /* =========================================================
-   START VIP SYSTEM
+   START SYSTEM
 ========================================================= */
 
 async function startVIPSystem() {
 
-  try {
+    try {
 
-    await loadUser();
+        await loadUserOnce();
 
-    startUserListener();
-    startPlansListener();
-    startBuyersListener();
+        startUserListener();
 
-    setupMenu();
-    setupLogout();
+        startPlansListener();
 
-    updateClaimTimer();
+        startBuyersListener();
 
-    if (claimTimerInterval) {
-      clearInterval(claimTimerInterval);
+        setupMenu();
+
+        setupLogout();
+
+        startClaimTimer();
+
+    } catch (error) {
+
+        console.error(
+            "VIP system error:",
+            error
+        );
+
+        showToast(
+            "Failed to load VIP system.",
+            false
+        );
+
     }
 
-    claimTimerInterval = setInterval(() => {
-      updateClaimTimer();
-    }, 1000);
-
-  } catch (error) {
-
-    console.error("VIP SYSTEM ERROR:", error);
-
-    toast(
-      "VIP system failed to load: " +
-      (error?.message || "Unknown error"),
-      "error"
-    );
-  }
 }
 
 
@@ -271,27 +368,29 @@ async function startVIPSystem() {
    LOAD USER
 ========================================================= */
 
-async function loadUser() {
+async function loadUserOnce() {
 
-  if (!currentUser) {
-    return;
-  }
+    const snapshot =
+        await get(
+            ref(
+                db,
+                `${USERS_PATH}/${currentUser.uid}`
+            )
+        );
 
-  const userRef = ref(
-    db,
-    `${USERS_PATH}/${currentUser.uid}`
-  );
+    if (!snapshot.exists()) {
 
-  const snapshot = await get(userRef);
+        throw new Error(
+            "User account not found."
+        );
 
-  if (!snapshot.exists()) {
-    userData = {};
-    return;
-  }
+    }
 
-  userData = snapshot.val() || {};
+    userData =
+        snapshot.val() || {};
 
-  updateBalanceUI();
+    updateBalanceUI();
+
 }
 
 
@@ -301,151 +400,113 @@ async function loadUser() {
 
 function startUserListener() {
 
-  if (!currentUser) {
-    return;
-  }
+    if (userUnsubscribe)
+        userUnsubscribe();
 
-  if (userListener) {
-    userListener();
-  }
+    const userRef =
+        ref(
+            db,
+            `${USERS_PATH}/${currentUser.uid}`
+        );
 
-  const userRef = ref(
-    db,
-    `${USERS_PATH}/${currentUser.uid}`
-  );
+    userUnsubscribe =
+        onValue(userRef, snapshot => {
 
-  userListener = onValue(
-    userRef,
-    (snapshot) => {
+            userData =
+                snapshot.val() || {};
 
-      userData = snapshot.val() || {};
+            updateBalanceUI();
 
-      updateBalanceUI();
-      updateHeroStats();
-      renderOwnedVIPs();
-      updateClaimVIP();
-    },
-    (error) => {
+            updateHeroStats();
 
-      console.error(
-        "User listener error:",
-        error
-      );
-    }
-  );
+        });
+
 }
 
 
 /* =========================================================
-   BALANCE UI
-========================================================= */
-
-function updateBalanceUI() {
-
-  const balanceElement = $("balance");
-
-  if (!balanceElement) {
-    return;
-  }
-
-  balanceElement.textContent =
-    money(userData?.balance || 0);
-}
-
-
-/* =========================================================
-   VIP PLANS LISTENER
+   PLANS LISTENER
 ========================================================= */
 
 function startPlansListener() {
 
-  if (plansListener) {
-    plansListener();
-  }
+    if (plansUnsubscribe)
+        plansUnsubscribe();
 
-  const plansRef = ref(
-    db,
-    VIP_PLANS_PATH
-  );
+    const plansRef =
+        ref(db, VIP_PLANS_PATH);
 
-  plansListener = onValue(
-    plansRef,
-    (snapshot) => {
+    plansUnsubscribe =
+        onValue(plansRef, snapshot => {
 
-      vipPlans = snapshot.val() || {};
+            vipPlans =
+                snapshot.val() || {};
 
-      renderVIPPlans();
-    },
-    (error) => {
+            renderVIPPlans();
 
-      console.error(
-        "VIP plans listener error:",
-        error
-      );
+            updateHeroStats();
 
-      toast(
-        "VIP Plans failed to load.",
-        "error"
-      );
-    }
-  );
+        });
+
 }
 
 
 /* =========================================================
-   VIP BUYERS LISTENER
+   BUYERS LISTENER
 ========================================================= */
 
 function startBuyersListener() {
 
-  if (!currentUser) {
-    return;
-  }
+    if (buyersUnsubscribe)
+        buyersUnsubscribe();
 
-  if (buyersListener) {
-    buyersListener();
-  }
+    const buyersRef =
+        ref(
+            db,
+            `${VIP_BUYERS_PATH}/${currentUser.uid}`
+        );
 
-  const buyersRef = ref(
-    db,
-    `${VIP_BUYERS_PATH}/${currentUser.uid}`
-  );
+    buyersUnsubscribe =
+        onValue(
+            buyersRef,
+            snapshot => {
 
-  buyersListener = onValue(
-    buyersRef,
-    (snapshot) => {
+                const data =
+                    snapshot.val() || {};
 
-      const data = snapshot.val() || {};
+                ownedVIPs =
+                    Object.entries(data)
+                        .map(([id, value]) => ({
+                            id,
+                            ...(value || {})
+                        }));
 
-      ownedVIPs = [];
+                renderOwnedVIPs();
 
-      Object.entries(data).forEach(
-        ([id, buyer]) => {
+                renderVIPPlans();
 
-          if (!buyer) {
-            return;
-          }
+                updateHeroStats();
 
-          ownedVIPs.push({
-            id,
-            ...buyer
-          });
-        }
-      );
+                updateClaimVIP();
 
-      renderOwnedVIPs();
-      updateHeroStats();
-      updateClaimVIP();
-      renderVIPPlans();
-    },
-    (error) => {
+            }
+        );
 
-      console.error(
-        "VIP buyers listener error:",
-        error
-      );
-    }
-  );
+}
+
+
+/* =========================================================
+   UPDATE BALANCE UI
+========================================================= */
+
+function updateBalanceUI() {
+
+    if (!balanceEl)
+        return;
+
+    balanceEl.textContent =
+        money(userData.balance);
+
 }
 
 
@@ -455,54 +516,48 @@ function startBuyersListener() {
 
 function getActiveVIPs() {
 
-  const currentTime = now();
+    const now =
+        Date.now();
 
-  return ownedVIPs.filter((vip) => {
+    return ownedVIPs.filter(vip => {
 
-    const status =
-      normalizeStatus(vip.status);
+        const status =
+            normalizeStatus(vip.status);
 
-    if (
-      status === "expired" ||
-      status === "inactive" ||
-      status === "rejected"
-    ) {
-      return false;
-    }
+        if (
+            status &&
+            status !== "active"
+        ) {
 
-    if (vip.active === false) {
-      return false;
-    }
+            return false;
 
-    const start =
-      number(
-        vip.startTime ||
-        vip.activatedAt ||
-        vip.approvedAt ||
-        vip.createdAt
-      );
+        }
 
-    const days =
-      number(
-        vip.duration ||
-        vip.totalDays
-      );
+        const start =
+            numberValue(
+                vip.startTime ||
+                vip.approvedAt ||
+                vip.createdAt
+            );
 
-    if (
-      start > 0 &&
-      days > 0
-    ) {
+        const days =
+            numberValue(
+                vip.totalDays ||
+                vip.duration ||
+                30
+            );
 
-      const expiry =
-        start + days * DAY_MS;
+        if (!start)
+            return true;
 
-      if (currentTime >= expiry) {
-        return false;
-      }
-    }
+        const expiry =
+            start +
+            days * DAY_MS;
 
-    return true;
-  });
+        return now < expiry;
+
+    });
+
 }
 
 
@@ -512,1027 +567,1144 @@ function getActiveVIPs() {
 
 function renderVIPPlans() {
 
-  const grid = $("vipGrid");
-
-  if (!grid) {
-    return;
-  }
-
-  const entries =
-    Object.entries(vipPlans || {});
-
-  if (!entries.length) {
-
-    grid.innerHTML = `
-      <div class="empty-state">
-        No VIP plans available.
-      </div>
-    `;
-
-    return;
-  }
-
-  const ownedPlanIds =
-    new Set(
-      ownedVIPs.map(
-        (vip) =>
-          String(
-            vip.planId ||
-            vip.vipPlanId ||
-            ""
-          )
-      )
-    );
-
-  let html = "";
-
-  entries.forEach(
-    ([planId, plan]) => {
-
-      if (!plan) {
+    if (!vipGrid)
         return;
-      }
 
-      const status =
-        normalizeStatus(
-          plan.status
-        );
+    const entries =
+        Object.entries(vipPlans || {});
 
-      if (
-        status &&
-        status !== "active" &&
-        status !== "enabled"
-      ) {
+    if (!entries.length) {
+
+        vipGrid.innerHTML = `
+            <div style="
+                grid-column:1/-1;
+                text-align:center;
+                padding:40px;
+                color:#cbd5e1;
+            ">
+                No VIP plans available.
+            </div>
+        `;
+
         return;
-      }
 
-      const name =
-        getPlanName(
-          plan,
-          `VIP ${planId}`
-        );
-
-      const price =
-        getPlanPrice(plan);
-
-      const daily =
-        getPlanDailyIncome(plan);
-
-      const days =
-        getPlanDays(plan);
-
-      const totalProfit =
-        getPlanTotalProfit(plan);
-
-      const alreadyOwned =
-        ownedPlanIds.has(
-          String(planId)
-        );
-
-      html += `
-        <div class="vip-card">
-
-          <div class="vip-card-header">
-            <h3>${escapeHTML(name)}</h3>
-          </div>
-
-          <div class="vip-card-body">
-
-            <p>
-              Price:
-              <strong>${money(price)}</strong>
-            </p>
-
-            <p>
-              Daily Income:
-              <strong>${money(daily)}</strong>
-            </p>
-
-            <p>
-              Duration:
-              <strong>${days} days</strong>
-            </p>
-
-            <p>
-              Total Profit:
-              <strong>${money(totalProfit)}</strong>
-            </p>
-
-            ${
-              alreadyOwned
-                ? `
-                  <button
-                    class="vip-buy-btn"
-                    disabled
-                  >
-                    Already Purchased
-                  </button>
-                `
-                : `
-                  <button
-                    class="vip-buy-btn"
-                    data-plan-id="${escapeHTML(planId)}"
-                    onclick="buyVIP('${escapeHTML(planId)}')"
-                  >
-                    Buy Now
-                  </button>
-                `
-            }
-
-          </div>
-        </div>
-      `;
     }
-  );
 
-  if (!html) {
+    const ownedIds =
+        new Set(
+            ownedVIPs.map(v =>
+                String(
+                    v.vipPlanId ||
+                    v.planId ||
+                    ""
+                )
+            )
+        );
 
-    grid.innerHTML = `
-      <div class="empty-state">
-        No active VIP plans available.
-      </div>
-    `;
+    vipGrid.innerHTML =
+        entries.map(([planId, rawPlan]) => {
 
-    return;
-  }
+            const plan =
+                rawPlan || {};
 
-  grid.innerHTML = html;
+            const name =
+                getPlanName(plan);
+
+            const price =
+                getPlanPrice(plan);
+
+            const daily =
+                getDailyIncome(plan);
+
+            const days =
+                getPlanDays(plan);
+
+            const profit =
+                getTotalProfit(plan);
+
+            const className =
+                getPlanClass(name);
+
+            const alreadyOwned =
+                ownedIds.has(
+                    String(planId)
+                );
+
+            return `
+
+                <div class="vip-card ${className} ${
+                    alreadyOwned ? "active" : ""
+                }">
+
+                    <div class="vip-badge">
+                        ${
+                            alreadyOwned
+                                ? "ACTIVE"
+                                : "VIP PLAN"
+                        }
+                    </div>
+
+                    <i class="fas fa-crown vip-icon"></i>
+
+                    <h2>
+                        ${escapeHTML(name)}
+                    </h2>
+
+                    <h1>
+                        ${money(price)}
+                    </h1>
+
+                    <ul>
+
+                        <li>
+                            <i class="fas fa-coins"></i>
+                            Daily Income:
+                            <strong>
+                                ${money(daily)}
+                            </strong>
+                        </li>
+
+                        <li>
+                            <i class="fas fa-calendar"></i>
+                            Duration:
+                            <strong>
+                                ${days} Days
+                            </strong>
+                        </li>
+
+                        <li>
+                            <i class="fas fa-chart-line"></i>
+                            Total Profit:
+                            <strong>
+                                ${money(profit)}
+                            </strong>
+                        </li>
+
+                        <li>
+                            <i class="fas fa-bolt"></i>
+                            Automatic Activation
+                        </li>
+
+                        <li>
+                            <i class="fas fa-clock"></i>
+                            First claim after 24 hours
+                        </li>
+
+                    </ul>
+
+                    <button
+                        class="buyVipBtn"
+                        type="button"
+                        data-plan-id="${escapeHTML(planId)}"
+                        ${
+                            alreadyOwned
+                                ? "disabled"
+                                : ""
+                        }
+                    >
+
+                        <i class="fas ${
+                            alreadyOwned
+                                ? "fa-check"
+                                : "fa-cart-shopping"
+                        }"></i>
+
+                        ${
+                            alreadyOwned
+                                ? "Already Active"
+                                : "Buy Now"
+                        }
+
+                    </button>
+
+                </div>
+
+            `;
+
+        }).join("");
+
+    document
+        .querySelectorAll(".buyVipBtn")
+        .forEach(button => {
+
+            button.addEventListener(
+                "click",
+                () => {
+
+                    const planId =
+                        button.dataset.planId;
+
+                    buyVIP(planId);
+
+                }
+            );
+
+        });
+
 }
 
 
 /* =========================================================
-   BUY VIP
+   BUY VIP AUTOMATICALLY
 ========================================================= */
 
 async function buyVIP(planId) {
 
-  if (!currentUser) {
-    toast(
-      "Please login first.",
-      "error"
-    );
-    return;
-  }
+    if (!currentUser)
+        return;
 
-  const plan =
-    vipPlans?.[planId];
+    const plan =
+        vipPlans?.[planId];
 
-  if (!plan) {
-    toast(
-      "VIP plan not found.",
-      "error"
-    );
-    return;
-  }
+    if (!plan) {
 
-  const price =
-    getPlanPrice(plan);
+        showToast(
+            "VIP plan not found.",
+            false
+        );
 
-  const dailyIncome =
-    getPlanDailyIncome(plan);
+        return;
 
-  const days =
-    getPlanDays(plan);
+    }
 
-  const totalProfit =
-    getPlanTotalProfit(plan);
+    const price =
+        getPlanPrice(plan);
 
-  const vipName =
-    getPlanName(
-      plan,
-      `VIP ${planId}`
-    );
+    const dailyIncome =
+        getDailyIncome(plan);
 
-  if (price <= 0) {
-    toast(
-      "Invalid VIP price.",
-      "error"
-    );
-    return;
-  }
+    const totalDays =
+        getPlanDays(plan);
 
-  if (ownedVIPs.some(
-    (vip) =>
-      String(
-        vip.planId ||
-        vip.vipPlanId ||
-        ""
-      ) === String(planId)
-  )) {
+    const totalProfit =
+        getTotalProfit(plan);
 
-    toast(
-      "You already purchased this VIP.",
-      "error"
-    );
+    const vipName =
+        getPlanName(plan);
 
-    return;
-  }
+    if (price <= 0) {
 
-  const balance =
-    number(userData?.balance);
+        showToast(
+            "Invalid VIP price.",
+            false
+        );
 
-  if (balance < price) {
+        return;
 
-    toast(
-      `Insufficient balance. You need ${money(price)}.`,
-      "error"
-    );
-
-    return;
-  }
-
-  const confirmed =
-    confirm(
-      `Buy ${vipName} for ${money(price)}?`
-    );
-
-  if (!confirmed) {
-    return;
-  }
-
-  disableBuyButtons(true);
-
-  const purchaseTime = now();
-
-  const buyerRef =
-    ref(
-      db,
-      `${VIP_BUYERS_PATH}/${currentUser.uid}`
-    );
-
-  const newBuyerRef =
-    push(buyerRef);
-
-  const buyerId =
-    newBuyerRef.key;
-
-  if (!buyerId) {
-
-    disableBuyButtons(false);
-
-    toast(
-      "Could not create VIP purchase.",
-      "error"
-    );
-
-    return;
-  }
-
-  let balanceDeducted = false;
-  let buyerCreated = false;
-  let transactionCreated = false;
-
-  try {
-
-    /* -----------------------------------------------------
-       1. DEDUCT USER BALANCE
-    ----------------------------------------------------- */
-
-    const userRef =
-      ref(
-        db,
-        `${USERS_PATH}/${currentUser.uid}`
-      );
-
-    await runTransaction(
-      userRef,
-      (current) => {
-
-        if (!current) {
-          return current;
-        }
-
-        const currentBalance =
-          number(current.balance);
-
-        if (currentBalance < price) {
-          return;
-        }
-
-        return {
-          ...current,
-
-          balance:
-            currentBalance - price,
-
-          totalTransactions:
-            number(
-              current.totalTransactions
-            ) + 1,
-
-          totalVipPurchases:
-            number(
-              current.totalVipPurchases
-            ) + 1
-        };
-      }
-    );
-
-    balanceDeducted = true;
+    }
 
 
     /* -----------------------------------------------------
-       2. CREATE ACTIVE VIP
+       PREVENT SAME VIP TWICE
     ----------------------------------------------------- */
 
-    const buyerData = {
+    const alreadyOwned =
+        ownedVIPs.some(vip => {
 
-      uid:
-        currentUser.uid,
+            return String(
+                vip.vipPlanId ||
+                vip.planId ||
+                ""
+            ) === String(planId);
 
-      planId:
-        String(planId),
+        });
 
-      vipPlanId:
-        String(planId),
+    if (alreadyOwned) {
 
-      vipName:
-        vipName,
+        showToast(
+            "You already own this VIP plan.",
+            false
+        );
 
-      name:
-        vipName,
+        return;
 
-      price:
-        price,
-
-      dailyIncome:
-        dailyIncome,
-
-      duration:
-        days,
-
-      totalDays:
-        days,
-
-      totalProfit:
-        totalProfit,
-
-      paymentMethod:
-        "Account Balance",
-
-      currency:
-        CURRENCY,
-
-      status:
-        "active",
-
-      active:
-        true,
-
-      createdAt:
-        purchaseTime,
-
-      activatedAt:
-        purchaseTime,
-
-      startTime:
-        purchaseTime,
-
-      lastClaim:
-        purchaseTime,
-
-      claimCount:
-        0,
-
-      totalClaimed:
-        0,
-
-      referralBonusGiven:
-        false
-    };
-
-
-    await set(
-      newBuyerRef,
-      buyerData
-    );
-
-    buyerCreated = true;
+    }
 
 
     /* -----------------------------------------------------
-       3. CREATE PURCHASE TRANSACTION
+       CHECK BALANCE
     ----------------------------------------------------- */
 
-    const transactionRef =
-      push(
-        ref(
-          db,
-          `${TRANSACTIONS_PATH}/${currentUser.uid}`
-        )
-      );
+    const balance =
+        numberValue(
+            userData.balance
+        );
 
-    await set(
-      transactionRef,
-      {
+    if (balance < price) {
 
-        uid:
-          currentUser.uid,
+        showToast(
+            `Insufficient balance. You need ${money(price)}.`,
+            false
+        );
 
-        type:
-          "vip_purchase",
+        return;
 
-        category:
-          "VIP Purchase",
-
-        amount:
-          price,
-
-        currency:
-          CURRENCY,
-
-        planId:
-          String(planId),
-
-        vipPlanId:
-          String(planId),
-
-        vipName:
-          vipName,
-
-        status:
-          "completed",
-
-        paymentMethod:
-          "Account Balance",
-
-        createdAt:
-          purchaseTime
-      }
-    );
-
-    transactionCreated = true;
+    }
 
 
     /* -----------------------------------------------------
-       4. REFERRAL BONUS
-       IMPORTANT:
-       REFERRER GETS 1,000 RWF IMMEDIATELY
+       CONFIRM
     ----------------------------------------------------- */
 
-    await processReferralBonus(
-      purchaseTime,
-      vipName,
-      planId,
-      buyerId
-    );
+    const confirmed =
+        confirm(
+            `Buy ${vipName} for ${money(price)}?\n\n` +
+            `Your balance will be reduced immediately.`
+        );
+
+    if (!confirmed)
+        return;
 
 
     /* -----------------------------------------------------
-       5. SUCCESS
+       DISABLE ALL BUY BUTTONS
     ----------------------------------------------------- */
 
-    toast(
-      `${vipName} purchased successfully. Referral bonus processed.`,
-      "success"
-    );
+    document
+        .querySelectorAll(".buyVipBtn")
+        .forEach(btn => {
 
-    await loadUser();
+            btn.disabled = true;
 
-    renderVIPPlans();
-    renderOwnedVIPs();
-    updateHeroStats();
-    updateClaimVIP();
+        });
 
-  } catch (error) {
-
-    console.error(
-      "BUY VIP ERROR:",
-      error
-    );
-
-
-    /* -----------------------------------------------------
-       ROLLBACK
-    ----------------------------------------------------- */
 
     try {
 
-      if (buyerCreated) {
+        const now =
+            Date.now();
 
-        await set(
-          newBuyerRef,
-          null
-        );
-      }
+        const requestId =
+            push(
+                ref(
+                    db,
+                    `${VIP_BUYERS_PATH}/${currentUser.uid}`
+                )
+            ).key;
 
-      if (transactionCreated) {
 
-        const userTransactionsRef =
-          ref(
-            db,
-            `${TRANSACTIONS_PATH}/${currentUser.uid}`
-          );
+        if (!requestId) {
 
-        const transactionSnapshot =
-          await get(
-            userTransactionsRef
-          );
-
-        if (
-          transactionSnapshot.exists()
-        ) {
-
-          const transactions =
-            transactionSnapshot.val() || {};
-
-          const updates = {};
-
-          Object.entries(
-            transactions
-          ).forEach(
-            ([id, transaction]) => {
-
-              if (
-                transaction &&
-                transaction.type === "vip_purchase" &&
-                transaction.planId === String(planId) &&
-                transaction.createdAt === purchaseTime
-              ) {
-
-                updates[
-                  `${TRANSACTIONS_PATH}/${currentUser.uid}/${id}`
-                ] = null;
-              }
-            }
-          );
-
-          if (
-            Object.keys(updates).length
-          ) {
-
-            await update(
-              ref(db),
-              updates
+            throw new Error(
+                "Could not create VIP ID."
             );
-          }
+
         }
-      }
 
 
-      if (balanceDeducted) {
+        /* =================================================
+           STEP 1
+           ATOMIC BALANCE DEDUCTION
+        ================================================= */
 
         const userRef =
-          ref(
-            db,
-            `${USERS_PATH}/${currentUser.uid}`
-          );
+            ref(
+                db,
+                `${USERS_PATH}/${currentUser.uid}`
+            );
+
+        let deductionSuccess =
+            false;
 
         await runTransaction(
-          userRef,
-          (current) => {
+            userRef,
+            current => {
 
-            if (!current) {
-              return current;
+                if (!current)
+                    return;
+
+                const currentBalance =
+                    numberValue(
+                        current.balance
+                    );
+
+                if (
+                    currentBalance <
+                    price
+                ) {
+
+                    return;
+
+                }
+
+                current.balance =
+                    currentBalance -
+                    price;
+
+                current.totalTransactions =
+                    numberValue(
+                        current.totalTransactions
+                    ) + 1;
+
+                current.totalVipPurchases =
+                    numberValue(
+                        current.totalVipPurchases
+                    ) + 1;
+
+                return current;
+
             }
+        ).then(result => {
 
-            return {
+            deductionSuccess =
+                result.committed;
 
-              ...current,
+        });
 
-              balance:
-                number(current.balance) + price,
 
-              totalTransactions:
-                Math.max(
-                  0,
-                  number(
-                    current.totalTransactions
-                  ) - 1
-                ),
+        if (!deductionSuccess) {
 
-              totalVipPurchases:
-                Math.max(
-                  0,
-                  number(
-                    current.totalVipPurchases
-                  ) - 1
-                )
-            };
-          }
+            throw new Error(
+                "Balance deduction failed."
+            );
+
+        }
+
+
+        /* =================================================
+           STEP 2
+           CREATE ACTIVE VIP
+        ================================================= */
+
+        const buyerData = {
+
+            uid:
+                currentUser.uid,
+
+            userId:
+                currentUser.uid,
+
+            vipBuyerId:
+                requestId,
+
+            vipPlanId:
+                planId,
+
+            planId:
+                planId,
+
+            vipName:
+                vipName,
+
+            price:
+                price,
+
+            dailyIncome:
+                dailyIncome,
+
+            totalProfit:
+                totalProfit,
+
+            duration:
+                totalDays,
+
+            totalDays:
+                totalDays,
+
+            currency:
+                CURRENCY,
+
+            paymentMethod:
+                "Account Balance",
+
+            status:
+                "active",
+
+            active:
+                true,
+
+            createdAt:
+                now,
+
+            activatedAt:
+                now,
+
+            startTime:
+                now,
+
+            lastClaim:
+                now,
+
+            totalClaimed:
+                0,
+
+            claimCount:
+                0,
+
+            userName:
+                userData.fullName ||
+                "",
+
+            phone:
+                userData.phone ||
+                "",
+
+            email:
+                userData.email ||
+                ""
+
+        };
+
+
+        await set(
+            ref(
+                db,
+                `${VIP_BUYERS_PATH}/${currentUser.uid}/${requestId}`
+            ),
+            buyerData
         );
-      }
 
-    } catch (rollbackError) {
 
-      console.error(
-        "ROLLBACK ERROR:",
-        rollbackError
-      );
+        /* =================================================
+           STEP 3
+           TRANSACTION RECORD
+        ================================================= */
+
+        const transactionId =
+            push(
+                ref(
+                    db,
+                    `${TRANSACTIONS_PATH}/${currentUser.uid}`
+                )
+            ).key;
+
+        if (transactionId) {
+
+            await set(
+                ref(
+                    db,
+                    `${TRANSACTIONS_PATH}/${currentUser.uid}/${transactionId}`
+                ),
+                {
+
+                    type:
+                        "vip_purchase",
+
+                    category:
+                        "VIP Purchase",
+
+                    uid:
+                        currentUser.uid,
+
+                    vipPlanId:
+                        planId,
+
+                    vipName:
+                        vipName,
+
+                    amount:
+                        price,
+
+                    currency:
+                        CURRENCY,
+
+                    status:
+                        "completed",
+
+                    description:
+                        `Purchased ${vipName}`,
+
+                    createdAt:
+                        now
+
+                }
+            );
+
+        }
+
+
+        /* =================================================
+           STEP 4
+           REFERRAL BONUS
+        ================================================= */
+
+        await processReferralBonus(
+            now,
+            vipName,
+            planId
+        );
+
+
+        /* =================================================
+           SUCCESS
+        ================================================= */
+
+        showToast(
+            `${vipName} activated successfully!`
+        );
+
+        renderVIPPlans();
+
+        updateHeroStats();
+
+        updateClaimVIP();
+
+
+    } catch (error) {
+
+        console.error(
+            "Automatic VIP purchase error:",
+            error
+        );
+
+        showToast(
+            "VIP purchase failed: " +
+            (error?.message ||
+                "Unknown error"),
+            false
+        );
+
+        /*
+         IMPORTANT:
+         If VIP creation failed AFTER balance deduction,
+         the balance is restored below.
+        */
+
+        try {
+
+            await runTransaction(
+                ref(
+                    db,
+                    `${USERS_PATH}/${currentUser.uid}`
+                ),
+                current => {
+
+                    if (!current)
+                        return;
+
+                    current.balance =
+                        numberValue(
+                            current.balance
+                        ) + price;
+
+                    current.totalTransactions =
+                        Math.max(
+                            0,
+                            numberValue(
+                                current.totalTransactions
+                            ) - 1
+                        );
+
+                    current.totalVipPurchases =
+                        Math.max(
+                            0,
+                            numberValue(
+                                current.totalVipPurchases
+                            ) - 1
+                        );
+
+                    return current;
+
+                }
+            );
+
+        } catch (rollbackError) {
+
+            console.error(
+                "Balance rollback failed:",
+                rollbackError
+            );
+
+        }
+
+    } finally {
+
+        document
+            .querySelectorAll(".buyVipBtn")
+            .forEach(btn => {
+
+                btn.disabled = false;
+
+            });
+
     }
 
-
-    toast(
-      "VIP purchase failed: " +
-      (
-        error?.message ||
-        "Unknown error"
-      ),
-      "error"
-    );
-
-  } finally {
-
-    disableBuyButtons(false);
-  }
 }
 
 
-/* =========================================================
+
+            
+        /* =========================================================
    REFERRAL BONUS
+   1,000 RWF AFTER SUCCESSFUL VIP PURCHASE
 ========================================================= */
 
 async function processReferralBonus(
-  purchaseTime,
-  vipName,
-  planId,
-  buyerId
+    purchaseTime,
+    vipName,
+    planId
 ) {
 
-  if (!currentUser) {
-    return;
-  }
+    try {
 
-  const referredUserUid =
-    currentUser.uid;
+        /* -------------------------------------------------
+           FIND REFERRER VALUE
+        ------------------------------------------------- */
 
+        const possibleReferrer =
+            userData.referredBy ||
+            userData.referrerUid ||
+            userData.referrerId ||
+            userData.referralCodeUsed ||
+            "";
 
-  /* -------------------------------------------------------
-     GET REFERRER VALUE
-     Can be:
-     - UID
-     - referralCode
-     - referredBy
-     - referrerUid
-     - referrerId
-     - referralCodeUsed
-  ------------------------------------------------------- */
-
-  const referrerValue =
-    String(
-      userData?.referredBy ||
-      userData?.referrerUid ||
-      userData?.referrerId ||
-      userData?.referralCodeUsed ||
-      ""
-    ).trim();
+        const referrerValue =
+            String(possibleReferrer).trim();
 
 
-  if (!referrerValue) {
+        if (!referrerValue) {
 
-    console.log(
-      "No referrer found for this user."
-    );
+            console.log(
+                "No referral information found for this user."
+            );
 
-    return;
-  }
+            return false;
 
-
-  /* -------------------------------------------------------
-     FIND REFERRER
-  ------------------------------------------------------- */
-
-  let referrerUid =
-    "";
+        }
 
 
-  /* First assume value is UID */
-  const directReferrerRef =
-    ref(
-      db,
-      `${USERS_PATH}/${referrerValue}`
-    );
+        /* -------------------------------------------------
+           FIND REFERRER USER
+        ------------------------------------------------- */
 
-  const directSnapshot =
-    await get(
-      directReferrerRef
-    );
+        let referrerUid =
+            referrerValue;
 
-  if (
-    directSnapshot.exists()
-  ) {
+        let referrerRef =
+            ref(
+                db,
+                `${USERS_PATH}/${referrerUid}`
+            );
 
-    referrerUid =
-      referrerValue;
 
-  } else {
+        let referrerSnapshot =
+            await get(referrerRef);
 
-    /* -----------------------------------------------------
-       If not UID, search referralCode
-    ----------------------------------------------------- */
 
-    const usersRef =
-      ref(db, USERS_PATH);
+        /* -------------------------------------------------
+           IF NOT UID, SEARCH BY REFERRAL CODE
+        ------------------------------------------------- */
 
-    const referralQuery =
-      query(
-        usersRef,
-        orderByChild("referralCode"),
-        equalTo(referrerValue)
-      );
+        if (!referrerSnapshot.exists()) {
 
-    const referralSnapshot =
-      await get(
-        referralQuery
-      );
+            console.log(
+                "Searching referrer by referral code:",
+                referrerValue
+            );
 
-    if (
-      referralSnapshot.exists()
-    ) {
 
-      const users =
-        referralSnapshot.val() || {};
+            const usersQuery =
+                query(
+                    ref(db, USERS_PATH),
+                    orderByChild("referralCode"),
+                    equalTo(referrerValue)
+                );
 
-      const firstMatch =
-        Object.keys(users)[0];
 
-      if (firstMatch) {
-        referrerUid =
-          firstMatch;
-      }
+            const codeSnapshot =
+                await get(usersQuery);
+
+
+            if (
+                codeSnapshot.exists()
+            ) {
+
+                const users =
+                    codeSnapshot.val() || {};
+
+
+                const matches =
+                    Object.entries(users);
+
+
+                if (matches.length > 0) {
+
+                    referrerUid =
+                        matches[0][0];
+
+
+                    referrerRef =
+                        ref(
+                            db,
+                            `${USERS_PATH}/${referrerUid}`
+                        );
+
+
+                    referrerSnapshot =
+                        await get(referrerRef);
+
+                }
+
+            }
+
+        }
+
+
+        /* -------------------------------------------------
+           REFERRER MUST EXIST
+        ------------------------------------------------- */
+
+        if (!referrerSnapshot.exists()) {
+
+            console.error(
+                "Referrer user not found:",
+                referrerValue
+            );
+
+            return false;
+
+        }
+
+
+        /* -------------------------------------------------
+           PREVENT SELF REFERRAL
+        ------------------------------------------------- */
+
+        if (
+            String(referrerUid) ===
+            String(currentUser.uid)
+        ) {
+
+            console.error(
+                "Self referral blocked."
+            );
+
+            return false;
+
+        }
+
+
+        /* -------------------------------------------------
+           CHECK IF THIS USER ALREADY RECEIVED
+           REFERRAL BONUS
+        ------------------------------------------------- */
+
+        const markerRef =
+            ref(
+                db,
+                `${USERS_PATH}/${currentUser.uid}/referralBonusGiven`
+            );
+
+
+        const markerSnapshot =
+            await get(markerRef);
+
+
+        if (
+            markerSnapshot.exists() &&
+            markerSnapshot.val() === true
+        ) {
+
+            console.log(
+                "Referral bonus already paid for this user."
+            );
+
+            return true;
+
+        }
+
+
+        /* -------------------------------------------------
+           PAY 1,000 RWF TO REFERRER
+        ------------------------------------------------- */
+
+        const bonusResult =
+            await runTransaction(
+                referrerRef,
+                referrer => {
+
+                    if (!referrer) {
+
+                        return;
+
+                    }
+
+
+                    const oldBalance =
+                        numberValue(
+                            referrer.balance
+                        );
+
+
+                    const oldReferralBonus =
+                        numberValue(
+                            referrer.referralBonus
+                        );
+
+
+                    const oldReferralEarnings =
+                        numberValue(
+                            referrer.referralEarnings
+                        );
+
+
+                    const oldReferralCount =
+                        numberValue(
+                            referrer.referralCount
+                        );
+
+
+                    const oldTotalEarnings =
+                        numberValue(
+                            referrer.totalEarnings
+                        );
+
+
+                    /* -------------------------------------
+                       ADD REFERRAL BONUS
+                    ------------------------------------- */
+
+                    referrer.balance =
+                        oldBalance +
+                        REFERRAL_BONUS;
+
+
+                    referrer.referralBonus =
+                        oldReferralBonus +
+                        REFERRAL_BONUS;
+
+
+                    referrer.referralEarnings =
+                        oldReferralEarnings +
+                        REFERRAL_BONUS;
+
+
+                    referrer.referralCount =
+                        oldReferralCount +
+                        1;
+
+
+                    referrer.totalEarnings =
+                        oldTotalEarnings +
+                        REFERRAL_BONUS;
+
+
+                    return referrer;
+
+                }
+            );
+
+
+        /* -------------------------------------------------
+           TRANSACTION MUST COMMIT
+        ------------------------------------------------- */
+
+        if (
+            !bonusResult.committed
+        ) {
+
+            throw new Error(
+                "Referral bonus transaction was not committed."
+            );
+
+        }
+
+
+        /* -------------------------------------------------
+           MARK THIS USER'S REFERRAL BONUS AS PAID
+        ------------------------------------------------- */
+
+        await set(
+            markerRef,
+            true
+        );
+
+
+        /* -------------------------------------------------
+           CREATE REFERRAL TRANSACTION
+        ------------------------------------------------- */
+
+        const transactionId =
+            push(
+                ref(
+                    db,
+                    `${TRANSACTIONS_PATH}/${referrerUid}`
+                )
+            ).key;
+
+
+        if (transactionId) {
+
+            await set(
+                ref(
+                    db,
+                    `${TRANSACTIONS_PATH}/${referrerUid}/${transactionId}`
+                ),
+                {
+
+                    type:
+                        "referral_bonus",
+
+                    category:
+                        "Referral Bonus",
+
+                    uid:
+                        referrerUid,
+
+                    referredUser:
+                        currentUser.uid,
+
+                    referredUserName:
+                        userData.fullName ||
+                        "",
+
+                    referredUserPhone:
+                        userData.phone ||
+                        "",
+
+                    amount:
+                        REFERRAL_BONUS,
+
+                    currency:
+                        CURRENCY,
+
+                    vipPlanId:
+                        planId,
+
+                    vipName:
+                        vipName,
+
+                    status:
+                        "completed",
+
+                    description:
+                        `Referral bonus from ${userData.fullName || "referred user"} VIP purchase`,
+
+                    createdAt:
+                        purchaseTime
+
+                }
+            );
+
+        }
+
+
+        /* -------------------------------------------------
+           CREATE NOTIFICATION FOR REFERRER
+        ------------------------------------------------- */
+
+        const notificationId =
+            push(
+                ref(
+                    db,
+                    `notifications/${referrerUid}`
+                )
+            ).key;
+
+
+        if (notificationId) {
+
+            await set(
+                ref(
+                    db,
+                    `notifications/${referrerUid}/${notificationId}`
+                ),
+                {
+
+                    type:
+                        "referral_bonus",
+
+                    title:
+                        "Referral Bonus Received",
+
+                    message:
+                        `You received ${money(REFERRAL_BONUS)} referral bonus because ${userData.fullName || "your referral"} purchased ${vipName}.`,
+
+                    amount:
+                        REFERRAL_BONUS,
+
+                    currency:
+                        CURRENCY,
+
+                    referredUser:
+                        currentUser.uid,
+
+                    vipPlanId:
+                        planId,
+
+                    vipName:
+                        vipName,
+
+                    read:
+                        false,
+
+                    createdAt:
+                        purchaseTime
+
+                }
+            );
+
+        }
+
+
+        /* -------------------------------------------------
+           SUCCESS LOG
+        ------------------------------------------------- */
+
+        console.log(
+            "===================================="
+        );
+
+        console.log(
+            "REFERRAL BONUS PAID"
+        );
+
+        console.log(
+            "Referrer UID:",
+            referrerUid
+        );
+
+        console.log(
+            "Amount:",
+            REFERRAL_BONUS,
+            CURRENCY
+        );
+
+        console.log(
+            "Referred user:",
+            currentUser.uid
+        );
+
+        console.log(
+            "VIP:",
+            vipName
+        );
+
+        console.log(
+            "===================================="
+        );
+
+
+        /* -------------------------------------------------
+           DO NOT SHOW THIS SUCCESS TO THE BUYER
+           THE REFERRER WILL SEE IT IN HIS ACCOUNT
+        ------------------------------------------------- */
+
+        return true;
+
+
+    } catch (error) {
+
+        console.error(
+            "REFERRAL BONUS ERROR:",
+            error
+        );
+
+
+        /*
+           VIP purchase itself remains successful.
+           Only referral bonus processing failed.
+        */
+
+        return false;
+
     }
-  }
 
-
-  /* -------------------------------------------------------
-     REFERRER NOT FOUND
-  ------------------------------------------------------- */
-
-  if (!referrerUid) {
-
-    console.warn(
-      "Referrer not found:",
-      referrerValue
-    );
-
-    return;
-  }
-
-
-  /* -------------------------------------------------------
-     PREVENT SELF REFERRAL
-  ------------------------------------------------------- */
-
-  if (
-    String(referrerUid) ===
-    String(referredUserUid)
-  ) {
-
-    console.warn(
-      "Self referral blocked."
-    );
-
-    return;
-  }
-
-
-  /* -------------------------------------------------------
-     CHECK IF BONUS ALREADY GIVEN
-  ------------------------------------------------------- */
-
-  const buyerRef =
-    ref(
-      db,
-      `${VIP_BUYERS_PATH}/${referredUserUid}/${buyerId}`
-    );
-
-  const buyerSnapshot =
-    await get(
-      buyerRef
-    );
-
-  if (
-    buyerSnapshot.exists()
-  ) {
-
-    const buyer =
-      buyerSnapshot.val() || {};
-
-    if (
-      buyer.referralBonusGiven === true
-    ) {
-
-      console.log(
-        "Referral bonus already paid for this VIP."
-      );
-
-      return;
-    }
-  }
-
-
-  /* -------------------------------------------------------
-     REFERRER USER
-  ------------------------------------------------------- */
-
-  const referrerRef =
-    ref(
-      db,
-      `${USERS_PATH}/${referrerUid}`
-    );
-
-
-  /* -------------------------------------------------------
-     PAY REFERRER
-     +1,000 RWF
-  ------------------------------------------------------- */
-
-  let bonusPaid = false;
-
-  await runTransaction(
-    referrerRef,
-    (current) => {
-
-      if (!current) {
-        return;
-      }
-
-      const oldBalance =
-        number(current.balance);
-
-      const oldReferralBonus =
-        number(current.referralBonus);
-
-      const oldReferralEarnings =
-        number(current.referralEarnings);
-
-      const oldReferralCount =
-        number(current.referralCount);
-
-      const oldTotalEarnings =
-        number(current.totalEarnings);
-
-
-      bonusPaid = true;
-
-      return {
-
-        ...current,
-
-        balance:
-          oldBalance + REFERRAL_BONUS,
-
-        referralBonus:
-          oldReferralBonus + REFERRAL_BONUS,
-
-        referralEarnings:
-          oldReferralEarnings + REFERRAL_BONUS,
-
-        referralCount:
-          oldReferralCount + 1,
-
-        totalEarnings:
-          oldTotalEarnings + REFERRAL_BONUS
-      };
-    }
-  );
-
-
-  if (!bonusPaid) {
-
-    console.warn(
-      "Could not pay referral bonus."
-    );
-
-    return;
-  }
-
-
-  /* -------------------------------------------------------
-     MARK THIS VIP AS BONUS PAID
-  ------------------------------------------------------- */
-
-  await update(
-    buyerRef,
-    {
-      referralBonusGiven:
-        true,
-
-      referralBonusAmount:
-        REFERRAL_BONUS,
-
-      referralBonusPaidAt:
-        purchaseTime,
-
-      referralBonusTo:
-        referrerUid
-    }
-  );
-
-
-  /* -------------------------------------------------------
-     CREATE REFERRAL TRANSACTION
-  ------------------------------------------------------- */
-
-  const referralTransactionRef =
-    push(
-      ref(
-        db,
-        `${TRANSACTIONS_PATH}/${referrerUid}`
-      )
-    );
-
-  await set(
-    referralTransactionRef,
-    {
-
-      uid:
-        referrerUid,
-
-      type:
-        "referral_bonus",
-
-      category:
-        "Referral Bonus",
-
-      amount:
-        REFERRAL_BONUS,
-
-      currency:
-        CURRENCY,
-
-      referredUser:
-        referredUserUid,
-
-      referredUserName:
-        userData?.fullName ||
-        userData?.name ||
-        "",
-
-      planId:
-        String(planId),
-
-      vipName:
-        vipName,
-
-      status:
-        "completed",
-
-      createdAt:
-        purchaseTime
-    }
-  );
-
-
-  /* -------------------------------------------------------
-     OPTIONAL NOTIFICATION
-  ------------------------------------------------------- */
-
-  try {
-
-    const notificationRef =
-      push(
-        ref(
-          db,
-          `notifications/${referrerUid}`
-        )
-      );
-
-    await set(
-      notificationRef,
-      {
-
-        type:
-          "referral_bonus",
-
-        title:
-          "Referral Bonus Received",
-
-        message:
-          `You received ${money(REFERRAL_BONUS)} referral bonus.`,
-
-        amount:
-          REFERRAL_BONUS,
-
-        currency:
-          CURRENCY,
-
-        referredUser:
-          referredUserUid,
-
-        createdAt:
-          purchaseTime,
-
-        read:
-          false
-      }
-    );
-
-  } catch (notificationError) {
-
-    console.warn(
-      "Notification failed:",
-      notificationError
-    );
-  }
-
-
-  toast(
-    `Referral bonus ${money(REFERRAL_BONUS)} sent successfully.`,
-    "success"
-  );
 }
 
+
+
+        
 
 /* =========================================================
    RENDER OWNED VIPS
@@ -1540,123 +1712,159 @@ async function processReferralBonus(
 
 function renderOwnedVIPs() {
 
-  const container =
-    $("ownedVipList");
+    if (!ownedVipList)
+        return;
 
-  if (!container) {
-    return;
-  }
+    if (!ownedVIPs.length) {
 
-  if (!ownedVIPs.length) {
+        ownedVipList.innerHTML = `
+            <div class="empty-vip">
+                No VIP purchased.
+            </div>
+        `;
 
-    container.innerHTML = `
-      <div class="empty-state">
-        You don't own any VIP yet.
-      </div>
-    `;
+        return;
 
-    return;
-  }
-
-
-  const currentTime =
-    now();
-
-  let html = "";
-
-
-  ownedVIPs.forEach(
-    (vip) => {
-
-      const status =
-        normalizeStatus(
-          vip.status
-        );
-
-      const start =
-        number(
-          vip.startTime ||
-          vip.activatedAt ||
-          vip.createdAt
-        );
-
-      const days =
-        number(
-          vip.duration ||
-          vip.totalDays
-        );
-
-      const expiry =
-        start > 0 && days > 0
-          ? start + days * DAY_MS
-          : 0;
-
-      const expired =
-        expiry > 0 &&
-        currentTime >= expiry;
-
-      const active =
-        !expired &&
-        vip.active !== false &&
-        status !== "expired" &&
-        status !== "inactive";
-
-
-      html += `
-
-        <div class="owned-vip-card">
-
-          <h3>
-            ${escapeHTML(
-              vip.vipName ||
-              vip.name ||
-              "VIP"
-            )}
-          </h3>
-
-          <p>
-            Status:
-            <strong>
-              ${active ? "Active" : "Expired"}
-            </strong>
-          </p>
-
-          <p>
-            Price:
-            <strong>
-              ${money(vip.price)}
-            </strong>
-          </p>
-
-          <p>
-            Daily Income:
-            <strong>
-              ${money(vip.dailyIncome)}
-            </strong>
-          </p>
-
-          <p>
-            Total Profit:
-            <strong>
-              ${money(vip.totalProfit)}
-            </strong>
-          </p>
-
-          <p>
-            Claimed:
-            <strong>
-              ${money(vip.totalClaimed || 0)}
-            </strong>
-          </p>
-
-        </div>
-      `;
     }
-  );
 
 
-  container.innerHTML =
-    html;
+    const now =
+        Date.now();
+
+
+    ownedVipList.innerHTML =
+        ownedVIPs.map(vip => {
+
+            const name =
+                vip.vipName ||
+                "VIP";
+
+            const daily =
+                numberValue(
+                    vip.dailyIncome
+                );
+
+            const totalProfit =
+                numberValue(
+                    vip.totalProfit
+                );
+
+            const days =
+                numberValue(
+                    vip.totalDays ||
+                    vip.duration ||
+                    30
+                );
+
+            const start =
+                numberValue(
+                    vip.startTime ||
+                    vip.activatedAt ||
+                    vip.createdAt
+                );
+
+            const expiry =
+                start +
+                days * DAY_MS;
+
+            const expired =
+                start &&
+                now >= expiry;
+
+            const status =
+                expired
+                    ? "expired"
+                    : "active";
+
+
+            return `
+
+                <div class="owned-vip-card">
+
+                    <div class="owned-vip-header">
+
+                        <div class="owned-vip-name">
+
+                            <i class="fas fa-crown"></i>
+
+                            ${escapeHTML(name)}
+
+                        </div>
+
+                        <span class="vip-status ${status}">
+
+                            ${
+                                status === "active"
+                                    ? "Active"
+                                    : "Expired"
+                            }
+
+                        </span>
+
+                    </div>
+
+
+                    <div class="owned-vip-info">
+
+                        <div class="vip-info-item">
+
+                            <span>
+                                Price
+                            </span>
+
+                            <strong>
+                                ${money(vip.price)}
+                            </strong>
+
+                        </div>
+
+
+                        <div class="vip-info-item">
+
+                            <span>
+                                Daily Income
+                            </span>
+
+                            <strong>
+                                ${money(daily)}
+                            </strong>
+
+                        </div>
+
+
+                        <div class="vip-info-item">
+
+                            <span>
+                                Total Profit
+                            </span>
+
+                            <strong>
+                                ${money(totalProfit)}
+                            </strong>
+
+                        </div>
+
+
+                        <div class="vip-info-item">
+
+                            <span>
+                                Duration
+                            </span>
+
+                            <strong>
+                                ${days} Days
+                            </strong>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            `;
+
+        }).join("");
+
 }
 
 
@@ -1666,135 +1874,174 @@ function renderOwnedVIPs() {
 
 function updateHeroStats() {
 
-  const activeVIPs =
-    getActiveVIPs();
+    const activeVIPs =
+        getActiveVIPs();
 
 
-  const totalDaily =
-    activeVIPs.reduce(
-      (sum, vip) =>
-        sum +
-        number(vip.dailyIncome),
-      0
-    );
+    if (currentVipEl) {
+
+        if (!activeVIPs.length) {
+
+            currentVipEl.textContent =
+                "VIP 0";
+
+        } else if (
+            activeVIPs.length === 1
+        ) {
+
+            currentVipEl.textContent =
+                activeVIPs[0].vipName ||
+                "VIP";
+
+        } else {
+
+            currentVipEl.textContent =
+                `${activeVIPs.length} VIPs`;
+
+        }
+
+    }
 
 
-  const totalProfit =
-    activeVIPs.reduce(
-      (sum, vip) =>
-        sum +
-        number(vip.totalProfit),
-      0
-    );
+    let totalDaily =
+        0;
+
+    let totalProfit =
+        0;
 
 
-  const currentVip =
-    $("currentVip");
+    activeVIPs.forEach(vip => {
 
-  const dailyIncome =
-    $("dailyIncome");
+        totalDaily +=
+            numberValue(
+                vip.dailyIncome
+            );
 
-  const totalProfitElement =
-    $("totalProfit");
+        totalProfit +=
+            numberValue(
+                vip.totalProfit
+            );
 
-
-  if (currentVip) {
-
-    currentVip.textContent =
-      activeVIPs.length
-        ? activeVIPs
-            .map(
-              (vip) =>
-                vip.vipName ||
-                vip.name ||
-                "VIP"
-            )
-            .join(", ")
-        : "VIP 0";
-  }
+    });
 
 
-  if (dailyIncome) {
+    if (dailyIncomeEl) {
 
-    dailyIncome.textContent =
-      money(totalDaily);
-  }
+        dailyIncomeEl.textContent =
+            money(totalDaily);
+
+    }
 
 
-  if (totalProfitElement) {
+    if (totalProfitEl) {
 
-    totalProfitElement.textContent =
-      money(totalProfit);
-  }
+        totalProfitEl.textContent =
+            money(totalProfit);
+
+    }
+
 }
 
 
 /* =========================================================
-   FIND READY VIP FOR CLAIM
+   CLAIM VIP SELECTION
 ========================================================= */
 
 function updateClaimVIP() {
 
-  const activeVIPs =
-    getActiveVIPs();
+    const activeVIPs =
+        getActiveVIPs();
 
-  const currentTime =
-    now();
+    if (!activeVIPs.length) {
 
+        selectedClaimVIP =
+            null;
 
-  selectedClaimVIP =
-    null;
+        if (claimButton) {
 
+            claimButton.disabled =
+                true;
 
-  for (
-    const vip of activeVIPs
-  ) {
+            claimButton.innerHTML =
+                `<i class="fas fa-lock"></i>
+                 Claim Daily Income`;
 
-    const lastClaim =
-      number(
-        vip.lastClaim ||
-        vip.startTime ||
-        vip.activatedAt ||
-        vip.createdAt
-      );
+        }
 
-    if (
-      currentTime -
-      lastClaim >= DAY_MS
-    ) {
+        if (claimTimerEl) {
 
-      selectedClaimVIP =
-        vip;
+            claimTimerEl.textContent =
+                "No Active VIP";
 
-      break;
+        }
+
+        return;
+
     }
-  }
 
 
-  const button =
-    $("claimDailyIncome");
-
-  if (!button) {
-    return;
-  }
+    const now =
+        Date.now();
 
 
-  if (selectedClaimVIP) {
+    const readyVIP =
+        activeVIPs.find(vip => {
 
-    button.disabled =
-      false;
+            const lastClaim =
+                numberValue(
+                    vip.lastClaim
+                );
 
-    button.textContent =
-      "Claim Daily Income";
+            return (
+                !lastClaim ||
+                now - lastClaim >= DAY_MS
+            );
 
-  } else {
+        });
 
-    button.disabled =
-      true;
 
-    button.textContent =
-      "Claim Not Ready";
-  }
+    selectedClaimVIP =
+        readyVIP ||
+        activeVIPs[0];
+
+
+    if (readyVIP) {
+
+        if (claimButton) {
+
+            claimButton.disabled =
+                false;
+
+            claimButton.innerHTML =
+                `<i class="fas fa-coins"></i>
+                 Claim ${money(
+                     readyVIP.dailyIncome
+                 )}`;
+
+        }
+
+        if (claimTimerEl) {
+
+            claimTimerEl.textContent =
+                `${readyVIP.vipName || "VIP"} is ready to claim.`;
+
+        }
+
+    } else {
+
+        if (claimButton) {
+
+            claimButton.disabled =
+                true;
+
+            claimButton.innerHTML =
+                `<i class="fas fa-clock"></i>
+                 Claim Daily Income`;
+
+        }
+
+    }
+
 }
 
 
@@ -1802,253 +2049,259 @@ function updateClaimVIP() {
    CLAIM DAILY INCOME
 ========================================================= */
 
+if (claimButton) {
+
+    claimButton.addEventListener(
+        "click",
+        claimDailyIncome
+    );
+
+}
+
+
 async function claimDailyIncome() {
 
-  if (!currentUser) {
-    return;
-  }
+    if (!currentUser)
+        return;
 
-  if (!selectedClaimVIP) {
+    const vip =
+        selectedClaimVIP;
 
-    toast(
-      "Your daily income is not ready yet.",
-      "error"
-    );
+    if (!vip) {
 
-    return;
-  }
+        showToast(
+            "No active VIP available.",
+            false
+        );
 
+        return;
 
-  const vip =
-    selectedClaimVIP;
-
-  const vipId =
-    vip.id;
-
-  const income =
-    number(vip.dailyIncome);
-
-
-  if (income <= 0) {
-
-    toast(
-      "Invalid daily income.",
-      "error"
-    );
-
-    return;
-  }
-
-
-  const lastClaim =
-    number(
-      vip.lastClaim ||
-      vip.startTime ||
-      vip.activatedAt ||
-      vip.createdAt
-    );
-
-
-  if (
-    now() -
-    lastClaim <
-    DAY_MS
-  ) {
-
-    toast(
-      "You must wait 24 hours before claiming again.",
-      "error"
-    );
-
-    return;
-  }
-
-
-  const button =
-    $("claimDailyIncome");
-
-  if (button) {
-    button.disabled = true;
-    button.textContent = "Claiming...";
-  }
-
-
-  const userRef =
-    ref(
-      db,
-      `${USERS_PATH}/${currentUser.uid}`
-    );
-
-
-  try {
-
-    /* -----------------------------------------------------
-       CREDIT BALANCE
-    ----------------------------------------------------- */
-
-    let credited =
-      false;
-
-    await runTransaction(
-      userRef,
-      (current) => {
-
-        if (!current) {
-          return;
-        }
-
-        credited = true;
-
-        return {
-
-          ...current,
-
-          balance:
-            number(current.balance) +
-            income,
-
-          totalEarnings:
-            number(current.totalEarnings) +
-            income,
-
-          totalTransactions:
-            number(current.totalTransactions) +
-            1
-        };
-      }
-    );
-
-
-    if (!credited) {
-      throw new Error(
-        "Could not update user balance."
-      );
     }
 
 
-    /* -----------------------------------------------------
-       UPDATE VIP CLAIM DATA
-    ----------------------------------------------------- */
+    const now =
+        Date.now();
 
-    const buyerRef =
-      ref(
-        db,
-        `${VIP_BUYERS_PATH}/${currentUser.uid}/${vipId}`
-      );
+    const lastClaim =
+        numberValue(
+            vip.lastClaim
+        );
 
 
-    const newClaimTime =
-      now();
+    if (
+        lastClaim &&
+        now - lastClaim < DAY_MS
+    ) {
+
+        showToast(
+            "Your daily income is not ready yet.",
+            false
+        );
+
+        return;
+
+    }
 
 
-    await update(
-      buyerRef,
-      {
-
-        lastClaim:
-          newClaimTime,
-
-        claimCount:
-          number(vip.claimCount) + 1,
-
-        totalClaimed:
-          number(vip.totalClaimed) +
-          income
-      }
-    );
+    const income =
+        numberValue(
+            vip.dailyIncome
+        );
 
 
-    /* -----------------------------------------------------
-       TRANSACTION
-    ----------------------------------------------------- */
+    if (income <= 0) {
 
-    const transactionRef =
-      push(
-        ref(
-          db,
-          `${TRANSACTIONS_PATH}/${currentUser.uid}`
-        )
-      );
+        showToast(
+            "Invalid daily income.",
+            false
+        );
 
+        return;
 
-    await set(
-      transactionRef,
-      {
-
-        uid:
-          currentUser.uid,
-
-        type:
-          "daily_income",
-
-        category:
-          "VIP Daily Income",
-
-        amount:
-          income,
-
-        currency:
-          CURRENCY,
-
-        vipId:
-          vipId,
-
-        vipPlanId:
-          vip.planId ||
-          vip.vipPlanId ||
-          "",
-
-        vipName:
-          vip.vipName ||
-          vip.name ||
-          "VIP",
-
-        status:
-          "completed",
-
-        createdAt:
-          newClaimTime
-      }
-    );
+    }
 
 
-    toast(
-      `You received ${money(income)} daily income.`,
-      "success"
-    );
+    claimButton.disabled =
+        true;
 
 
-    await loadUser();
+    try {
+
+        const userRef =
+            ref(
+                db,
+                `${USERS_PATH}/${currentUser.uid}`
+            );
 
 
-    selectedClaimVIP =
-      null;
+        /* -------------------------------------------------
+           ATOMIC BALANCE CREDIT
+        ------------------------------------------------- */
 
-    updateClaimVIP();
-    updateClaimTimer();
+        const result =
+            await runTransaction(
+                userRef,
+                user => {
+
+                    if (!user)
+                        return;
+
+                    const currentBalance =
+                        numberValue(
+                            user.balance
+                        );
+
+                    user.balance =
+                        currentBalance +
+                        income;
+
+                    user.totalEarnings =
+                        numberValue(
+                            user.totalEarnings
+                        ) + income;
+
+                    user.totalTransactions =
+                        numberValue(
+                            user.totalTransactions
+                        ) + 1;
+
+                    return user;
+
+                }
+            );
 
 
-  } catch (error) {
+        if (!result.committed) {
 
-    console.error(
-      "CLAIM ERROR:",
-      error
-    );
+            throw new Error(
+                "Income transaction failed."
+            );
+
+        }
 
 
-    toast(
-      "Claim failed: " +
-      (
-        error?.message ||
-        "Unknown error"
-      ),
-      "error"
-    );
+        /* -------------------------------------------------
+           UPDATE VIP
+        ------------------------------------------------- */
 
-  } finally {
+        const newClaimCount =
+            numberValue(
+                vip.claimCount
+            ) + 1;
 
-    updateClaimVIP();
-  }
+        const newTotalClaimed =
+            numberValue(
+                vip.totalClaimed
+            ) + income;
+
+
+        await update(
+            ref(
+                db,
+                `${VIP_BUYERS_PATH}/${currentUser.uid}/${vip.id}`
+            ),
+            {
+
+                lastClaim:
+                    now,
+
+                claimCount:
+                    newClaimCount,
+
+                totalClaimed:
+                    newTotalClaimed
+
+            }
+        );
+
+
+        /* -------------------------------------------------
+           TRANSACTION
+        ------------------------------------------------- */
+
+        const transactionId =
+            push(
+                ref(
+                    db,
+                    `${TRANSACTIONS_PATH}/${currentUser.uid}`
+                )
+            ).key;
+
+
+        if (transactionId) {
+
+            await set(
+                ref(
+                    db,
+                    `${TRANSACTIONS_PATH}/${currentUser.uid}/${transactionId}`
+                ),
+                {
+
+                    type:
+                        "vip_daily_income",
+
+                    category:
+                        "Daily VIP Income",
+
+                    uid:
+                        currentUser.uid,
+
+                    vipId:
+                        vip.id,
+
+                    vipPlanId:
+                        vip.vipPlanId ||
+                        vip.planId,
+
+                    vipName:
+                        vip.vipName,
+
+                    amount:
+                        income,
+
+                    currency:
+                        CURRENCY,
+
+                    status:
+                        "completed",
+
+                    description:
+                        `Daily income from ${vip.vipName}`,
+
+                    createdAt:
+                        now
+
+                }
+            );
+
+        }
+
+
+        showToast(
+            `${money(income)} daily income added!`
+        );
+
+
+        updateClaimVIP();
+
+    } catch (error) {
+
+        console.error(
+            "Claim income error:",
+            error
+        );
+
+        showToast(
+            "Claim failed: " +
+            (error?.message ||
+                "Unknown error"),
+            false
+        );
+
+        updateClaimVIP();
+
+    }
+
 }
 
 
@@ -2056,200 +2309,230 @@ async function claimDailyIncome() {
    CLAIM TIMER
 ========================================================= */
 
+function startClaimTimer() {
+
+    if (claimInterval) {
+
+        clearInterval(
+            claimInterval
+        );
+
+    }
+
+
+    claimInterval =
+        setInterval(
+            updateClaimTimer,
+            1000
+        );
+
+
+    updateClaimTimer();
+
+}
+
+
 function updateClaimTimer() {
 
-  const timer =
-    $("claimTimer");
-
-  if (!timer) {
-    return;
-  }
+    const activeVIPs =
+        getActiveVIPs();
 
 
-  const activeVIPs =
-    getActiveVIPs();
+    if (!activeVIPs.length) {
 
+        if (claimTimerEl) {
 
-  if (!activeVIPs.length) {
+            claimTimerEl.textContent =
+                "No Active VIP";
 
-    timer.textContent =
-      "No active VIP";
+        }
 
-    return;
-  }
-
-
-  const currentTime =
-    now();
-
-
-  let smallestRemaining =
-    Infinity;
-
-
-  activeVIPs.forEach(
-    (vip) => {
-
-      const lastClaim =
-        number(
-          vip.lastClaim ||
-          vip.startTime ||
-          vip.activatedAt ||
-          vip.createdAt
-        );
-
-      const nextClaim =
-        lastClaim + DAY_MS;
-
-      const remaining =
-        Math.max(
-          0,
-          nextClaim - currentTime
-        );
-
-      if (
-        remaining <
-        smallestRemaining
-      ) {
-
-        smallestRemaining =
-          remaining;
-      }
-    }
-  );
-
-
-  if (
-    smallestRemaining <= 0
-  ) {
-
-    timer.textContent =
-      "Income is ready to claim.";
-
-    updateClaimVIP();
-
-    return;
-  }
-
-
-  const hours =
-    Math.floor(
-      smallestRemaining /
-      (60 * 60 * 1000)
-    );
-
-  const minutes =
-    Math.floor(
-      (
-        smallestRemaining %
-        (60 * 60 * 1000)
-      ) /
-      (60 * 1000)
-    );
-
-  const seconds =
-    Math.floor(
-      (
-        smallestRemaining %
-        (60 * 1000)
-      ) /
-      1000
-    );
-
-
-  timer.textContent =
-    `${hours}h ${minutes}m ${seconds}s`;
-}
-
-
-/* =========================================================
-   DISABLE BUY BUTTONS
-========================================================= */
-
-function disableBuyButtons(disabled) {
-
-  const buttons =
-    document.querySelectorAll(
-      ".vip-buy-btn"
-    );
-
-  buttons.forEach(
-    (button) => {
-
-      if (
-        button.textContent
-          .includes("Already")
-      ) {
         return;
-      }
 
-      button.disabled =
-        disabled;
     }
-  );
+
+
+    const now =
+        Date.now();
+
+
+    const readyVIP =
+        activeVIPs.find(vip => {
+
+            const last =
+                numberValue(
+                    vip.lastClaim
+                );
+
+            return (
+                !last ||
+                now - last >= DAY_MS
+            );
+
+        });
+
+
+    if (readyVIP) {
+
+        selectedClaimVIP =
+            readyVIP;
+
+        if (claimTimerEl) {
+
+            claimTimerEl.textContent =
+                `${readyVIP.vipName || "VIP"} is ready to claim.`;
+
+        }
+
+        if (claimButton) {
+
+            claimButton.disabled =
+                false;
+
+            claimButton.innerHTML =
+                `<i class="fas fa-coins"></i>
+                 Claim ${money(
+                     readyVIP.dailyIncome
+                 )}`;
+
+        }
+
+        return;
+
+    }
+
+
+    let nearest =
+        null;
+
+    let nearestTime =
+        Infinity;
+
+
+    activeVIPs.forEach(vip => {
+
+        const last =
+            numberValue(
+                vip.lastClaim
+            );
+
+        const next =
+            last +
+            DAY_MS;
+
+        if (next < nearestTime) {
+
+            nearestTime =
+                next;
+
+            nearest =
+                vip;
+
+        }
+
+    });
+
+
+    if (!nearest)
+        return;
+
+
+    selectedClaimVIP =
+        nearest;
+
+
+    const remaining =
+        Math.max(
+            0,
+            nearestTime - now
+        );
+
+
+    const hours =
+        Math.floor(
+            remaining /
+            (60 * 60 * 1000)
+        );
+
+
+    const minutes =
+        Math.floor(
+            (remaining %
+                (60 * 60 * 1000)) /
+            (60 * 1000)
+        );
+
+
+    const seconds =
+        Math.floor(
+            (remaining %
+                (60 * 1000)) /
+            1000
+        );
+
+
+    if (claimTimerEl) {
+
+        claimTimerEl.textContent =
+            `${nearest.vipName || "VIP"} next claim in ` +
+            `${hours}h ${minutes}m ${seconds}s`;
+
+    }
+
+
+    if (claimButton) {
+
+        claimButton.disabled =
+            true;
+
+        claimButton.innerHTML =
+            `<i class="fas fa-clock"></i>
+             Claim Daily Income`;
+
+    }
+
 }
 
 
 /* =========================================================
-   MENU
+   MOBILE MENU
 ========================================================= */
 
 function setupMenu() {
 
-  const menuBtn =
-    $("menuBtn");
-
-  const sidebar =
-    $("sidebar");
-
-
-  if (
-    !menuBtn ||
-    !sidebar
-  ) {
-    return;
-  }
-
-
-  menuBtn.onclick =
-    () => {
-
-      sidebar.classList.toggle(
-        "active"
-      );
-    };
-
-
-  document.addEventListener(
-    "click",
-    (event) => {
-
-      if (
-        !sidebar.classList.contains(
-          "active"
-        )
-      ) {
+    if (!menuBtn || !sidebar)
         return;
-      }
 
 
-      if (
-        sidebar.contains(
-          event.target
-        ) ||
-        menuBtn.contains(
-          event.target
-        )
-      ) {
-        return;
-      }
+    menuBtn.addEventListener(
+        "click",
+        () => {
+
+            sidebar.classList.toggle(
+                "active"
+            );
+
+        }
+    );
 
 
-      sidebar.classList.remove(
-        "active"
-      );
-    }
-  );
+    sidebar
+        .querySelectorAll("a")
+        .forEach(link => {
+
+            link.addEventListener(
+                "click",
+                () => {
+
+                    sidebar.classList.remove(
+                        "active"
+                    );
+
+                }
+            );
+
+        });
+
 }
 
 
@@ -2259,49 +2542,41 @@ function setupMenu() {
 
 function setupLogout() {
 
-  const logoutBtn =
-    $("logoutBtn");
-
-  if (!logoutBtn) {
-    return;
-  }
+    if (!logoutBtn)
+        return;
 
 
-  logoutBtn.onclick =
-    async () => {
+    logoutBtn.addEventListener(
+        "click",
+        async event => {
 
-      try {
+            event.preventDefault();
 
-        await signOut(auth);
+            try {
 
-        window.location.href =
-          "login.html";
+                await signOut(auth);
 
-      } catch (error) {
+                window.location.href =
+                    "login.html";
 
-        console.error(
-          "Logout error:",
-          error
-        );
+            } catch (error) {
 
-        toast(
-          "Logout failed.",
-          "error"
-        );
-      }
-    };
+                console.error(
+                    "Logout error:",
+                    error
+                );
+
+                showToast(
+                    "Logout failed.",
+                    false
+                );
+
+            }
+
+        }
+    );
+
 }
-
-
-/* =========================================================
-   GLOBAL FUNCTIONS
-========================================================= */
-
-window.buyVIP =
-  buyVIP;
-
-window.claimDailyIncome =
-  claimDailyIncome;
 
 
 /* =========================================================
@@ -2309,25 +2584,25 @@ window.claimDailyIncome =
 ========================================================= */
 
 window.addEventListener(
-  "beforeunload",
-  () => {
+    "beforeunload",
+    () => {
 
-    if (userListener) {
-      userListener();
-    }
+        if (claimInterval) {
 
-    if (plansListener) {
-      plansListener();
-    }
+            clearInterval(
+                claimInterval
+            );
 
-    if (buyersListener) {
-      buyersListener();
-    }
+        }
 
-    if (claimTimerInterval) {
-      clearInterval(
-        claimTimerInterval
-      );
+        if (userUnsubscribe)
+            userUnsubscribe();
+
+        if (plansUnsubscribe)
+            plansUnsubscribe();
+
+        if (buyersUnsubscribe)
+            buyersUnsubscribe();
+
     }
-  }
 );
