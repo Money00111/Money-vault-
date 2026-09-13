@@ -1,18 +1,26 @@
 /* =========================================================
    MONEY VAULT - ADMIN.JS
-   ADMIN PANEL
+   FULL CLEAN VERSION
    CURRENCY: RWF / FRW
 
-   VIP FLOW:
-   - User buys VIP directly
-   - No Admin VIP approval required
-   - Admin only views VIP Requests / VIP Buyers
-
-   QUICK ACTIONS:
-   - Every quick action opens the correct section
-   - Refresh works
-   - Approve All Deposits works
-   - Approve All Withdraws works
+   FEATURES
+   - Admin authentication via admins/{uid}
+   - Dashboard statistics
+   - Total users
+   - Total system balance
+   - Users list + search
+   - User details
+   - Block / Activate user
+   - Deposit requests
+   - Deposit approve / reject
+   - Withdraw requests
+   - Withdraw approve / reject
+   - Transactions
+   - Navigation
+   - Quick Actions
+   - Settings
+   - Proof image viewer
+   - No duplicate declarations
 ========================================================= */
 
 import { auth, db, authReady } from "./firebase.js";
@@ -24,861 +32,64 @@ import {
 
 import {
     ref,
-    onValue,
     get,
+    onValue,
     update,
-    runTransaction
+    push
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
 
 
 /* =========================================================
-   GLOBAL STATE
+   CONFIG
 ========================================================= */
 
+const CURRENCY = "RWF";
+
+const MIN_WITHDRAW = 4000;
+const MAX_WITHDRAW = 500000;
+
 let currentAdmin = null;
-let adminData = null;
-
-let allUsers = [];
-let allDeposits = [];
-let allWithdraws = [];
-let allVipRequests = [];
-let allVipBuyers = [];
-let allBonusRequests = [];
-let allTransactions = [];
-
-let selectedWithdrawId = null;
-
-let listenersStarted = false;
 let adminReady = false;
+
+let allUsersData = {};
+let allDepositData = {};
+let allWithdrawData = {};
+let allTransactionData = {};
+
+let selectedUserId = null;
 
 
 /* =========================================================
    HELPERS
 ========================================================= */
 
-const $ = (id) => document.getElementById(id);
-
-function numberValue(value) {
-    const n = Number(value);
-    return Number.isFinite(n) ? n : 0;
-}
-
 function money(value) {
-    return `${numberValue(value).toLocaleString()} RWF`;
+
+    const number = Number(value || 0);
+
+    return number.toLocaleString("en-US") +
+        " " +
+        CURRENCY;
 }
+
+
+function number(value) {
+
+    return Number(value || 0);
+}
+
 
 function normalizeStatus(value) {
-    return String(value || "pending").toLowerCase().trim();
+
+    return String(value || "pending")
+        .trim()
+        .toLowerCase();
 }
 
-function safeText(value) {
-    return String(value ?? "")
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
-}
-
-function formatDate(timestamp) {
-    if (!timestamp) return "-";
-
-    const date = new Date(Number(timestamp));
-
-    if (Number.isNaN(date.getTime())) {
-        return "-";
-    }
-
-    return date.toLocaleString();
-}
-
-function getUser(uid) {
-    return allUsers.find(u => u.uid === uid) || null;
-}
-
-function showToast(message, type = "info") {
-
-    const container = $("toastContainer");
-
-    if (!container) {
-        alert(message);
-        return;
-    }
-
-    const toast = document.createElement("div");
-
-    toast.className = `toast ${type}`;
-
-    toast.innerHTML = `
-        <span>${safeText(message)}</span>
-    `;
-
-    container.appendChild(toast);
-
-    setTimeout(() => {
-        toast.remove();
-    }, 3500);
-}
-
-
-/* =========================================================
-   ADMIN CHECK
-========================================================= */
-
-async function verifyAdmin(user) {
-
-    if (!user) {
-        throw new Error("No authenticated user.");
-    }
-
-    const adminSnap = await get(
-        ref(db, `admins/${user.uid}`)
-    );
-
-    if (!adminSnap.exists()) {
-        throw new Error("You are not an administrator.");
-    }
-
-    currentAdmin = user;
-
-    adminData = adminSnap.val();
-
-    adminReady = true;
-
-    return true;
-}
-
-
-/* =========================================================
-   ADMIN UI
-========================================================= */
-
-function showAdminPanel() {
-
-    const loading = $("loadingScreen");
-
-    if (loading) {
-        loading.style.display = "none";
-    }
-
-    const adminName =
-        adminData?.name ||
-        adminData?.fullName ||
-        currentAdmin?.displayName ||
-        "Administrator";
-
-    if ($("adminName")) {
-        $("adminName").textContent = adminName;
-    }
-
-    if ($("adminEmail")) {
-        $("adminEmail").textContent =
-            currentAdmin?.email || "";
-    }
-
-    if ($("adminNameInput")) {
-        $("adminNameInput").value = adminName;
-    }
-
-    if ($("adminEmailInput")) {
-        $("adminEmailInput").value =
-            currentAdmin?.email || "";
-    }
-}
-
-
-/* =========================================================
-   NAVIGATION
-========================================================= */
-
-const pageNames = {
-    dashboard: "Dashboard",
-    deposits: "Deposits",
-    withdraws: "Withdraws",
-    vipRequests: "VIP Requests",
-    vipBuyers: "VIP Buyers",
-    bonusRequests: "Bonus Requests",
-    users: "Users",
-    transactions: "Transactions",
-    quickActions: "Quick Actions",
-    settings: "Settings"
-};
-
-function openPage(page) {
-
-    if (!page) return;
-
-    document
-        .querySelectorAll(".page-section")
-        .forEach(section => {
-            section.classList.remove("active");
-        });
-
-    const target = $(`${page}Section`);
-
-    if (target) {
-        target.classList.add("active");
-    }
-
-    document
-        .querySelectorAll(".menu-link")
-        .forEach(link => {
-            link.classList.remove("active");
-
-            if (link.dataset.page === page) {
-                link.classList.add("active");
-            }
-        });
-
-    if ($("pageTitle")) {
-        $("pageTitle").textContent =
-            pageNames[page] || "Dashboard";
-    }
-
-    window.location.hash = page;
-
-    if (page === "dashboard") {
-        renderDashboard();
-    }
-
-    if (page === "deposits") {
-        renderDeposits();
-    }
-
-    if (page === "withdraws") {
-        renderWithdraws();
-    }
-
-    if (page === "vipRequests") {
-        renderVipRequests();
-    }
-
-    if (page === "vipBuyers") {
-        renderVipBuyers();
-    }
-
-    if (page === "bonusRequests") {
-        renderBonusRequests();
-    }
-
-    if (page === "users") {
-        renderUsers();
-    }
-
-    if (page === "transactions") {
-        renderTransactions();
-    }
-}
-
-
-/* =========================================================
-   MENU
-========================================================= */
-
-function initializeNavigation() {
-
-    document
-        .querySelectorAll(".menu-link")
-        .forEach(link => {
-
-            link.addEventListener("click", event => {
-
-                event.preventDefault();
-
-                openPage(link.dataset.page);
-            });
-        });
-
-
-    const menuBtn = $("menuBtn");
-    const sidebar = $("sidebar");
-
-    if (menuBtn && sidebar) {
-
-        menuBtn.addEventListener("click", () => {
-
-            sidebar.classList.toggle("open");
-
-        });
-    }
-
-
-    const logoutBtn = $("logoutBtn");
-
-    if (logoutBtn) {
-
-        logoutBtn.addEventListener("click", async () => {
-
-            try {
-
-                await signOut(auth);
-
-                window.location.href = "login.html";
-
-            } catch (error) {
-
-                console.error(error);
-
-                showToast(
-                    "Logout failed.",
-                    "error"
-                );
-            }
-        });
-    }
-}
-
-
-/* =========================================================
-   DATABASE LISTENERS
-========================================================= */
-
-function startDatabaseListeners() {
-
-    if (listenersStarted) return;
-
-    listenersStarted = true;
-
-
-    /* USERS */
-
-    onValue(
-        ref(db, "users"),
-        snapshot => {
-
-            const data = snapshot.val() || {};
-
-            allUsers = Object.entries(data)
-                .map(([uid, user]) => ({
-                    uid,
-                    ...(user || {})
-                }));
-
-            renderDashboard();
-            renderUsers();
-        },
-        error => {
-
-            console.error(
-                "Users listener:",
-                error
-            );
-        }
-    );
-
-
-    /* DEPOSITS */
-
-    onValue(
-        ref(db, "depositRequests"),
-        snapshot => {
-
-            const data = snapshot.val() || {};
-
-            allDeposits = Object.entries(data)
-                .map(([id, item]) => ({
-                    id,
-                    ...(item || {})
-                }))
-                .sort(
-                    (a, b) =>
-                        numberValue(b.createdAt) -
-                        numberValue(a.createdAt)
-                );
-
-            renderDeposits();
-            renderDashboard();
-        },
-        error => {
-
-            console.error(
-                "Deposits listener:",
-                error
-            );
-        }
-    );
-
-
-    /* WITHDRAWS */
-
-    onValue(
-        ref(db, "withdrawRequests"),
-        snapshot => {
-
-            const data = snapshot.val() || {};
-
-            allWithdraws = Object.entries(data)
-                .map(([id, item]) => ({
-                    id,
-                    ...(item || {})
-                }))
-                .sort(
-                    (a, b) =>
-                        numberValue(b.createdAt) -
-                        numberValue(a.createdAt)
-                );
-
-            renderWithdraws();
-            renderDashboard();
-        },
-        error => {
-
-            console.error(
-                "Withdraws listener:",
-                error
-            );
-        }
-    );
-
-
-    /* VIP REQUESTS */
-
-    onValue(
-        ref(db, "vipPurchaseRequests"),
-        snapshot => {
-
-            const data = snapshot.val() || {};
-
-            allVipRequests = Object.entries(data)
-                .map(([id, item]) => ({
-                    id,
-                    ...(item || {})
-                }))
-                .sort(
-                    (a, b) =>
-                        numberValue(b.createdAt) -
-                        numberValue(a.createdAt)
-                );
-
-            renderVipRequests();
-        },
-        error => {
-
-            console.error(
-                "VIP requests listener:",
-                error
-            );
-        }
-    );
-
-
-    /* VIP BUYERS */
-
-    onValue(
-        ref(db, "vipBuyers"),
-        snapshot => {
-
-            const data = snapshot.val() || {};
-
-            allVipBuyers = Object.entries(data)
-                .map(([id, item]) => ({
-                    id,
-                    ...(item || {})
-                }))
-                .sort(
-                    (a, b) =>
-                        numberValue(b.purchasedAt) -
-                        numberValue(a.purchasedAt)
-                );
-
-            renderVipBuyers();
-        },
-        error => {
-
-            console.error(
-                "VIP buyers listener:",
-                error
-            );
-        }
-    );
-
-
-    /* BONUS REQUESTS */
-
-    onValue(
-        ref(db, "bonusRequests"),
-        snapshot => {
-
-            const data = snapshot.val() || {};
-
-            allBonusRequests = Object.entries(data)
-                .map(([id, item]) => ({
-                    id,
-                    ...(item || {})
-                }))
-                .sort(
-                    (a, b) =>
-                        numberValue(b.createdAt) -
-                        numberValue(a.createdAt)
-                );
-
-            renderBonusRequests();
-        },
-        error => {
-
-            console.error(
-                "Bonus listener:",
-                error
-            );
-        }
-    );
-
-
-    /* TRANSACTIONS */
-
-    onValue(
-        ref(db, "transactions"),
-        snapshot => {
-
-            const data = snapshot.val() || {};
-
-            allTransactions = Object.entries(data)
-                .map(([id, item]) => ({
-                    id,
-                    ...(item || {})
-                }))
-                .sort(
-                    (a, b) =>
-                        numberValue(b.createdAt) -
-                        numberValue(a.createdAt)
-                );
-
-            renderTransactions();
-        },
-        error => {
-
-            console.error(
-                "Transactions listener:",
-                error
-            );
-        }
-    );
-}
-
-// ======================================
-// DASHBOARD STATISTICS
-// USERS + SYSTEM BALANCE
-// ======================================
-
-const totalUsersEl =
-    document.getElementById("totalUsers");
-
-const systemBalanceEl =
-    document.getElementById("systemBalance");
-
-const activeUsersEl =
-    document.getElementById("activeUsers");
-
-const blockedUsersEl =
-    document.getElementById("blockedUsers");
-
-const usersContainer =
-    document.getElementById("usersContainer");
-
-let allUsersData = {};
-
-// ======================================
-// LOAD USERS + SYSTEM BALANCE
-// ======================================
-
-function loadUsersAndSystemBalance() {
-
-    const usersRef = ref(db, "users");
-
-    onValue(
-        usersRef,
-        (snapshot) => {
-
-            allUsersData = {};
-
-            let totalUsers = 0;
-            let totalBalance = 0;
-            let activeUsers = 0;
-            let blockedUsers = 0;
-
-            if (snapshot.exists()) {
-
-                snapshot.forEach((child) => {
-
-                    const uid = child.key;
-                    const user = child.val() || {};
-
-                    allUsersData[uid] = user;
-
-                    totalUsers++;
-
-                    totalBalance +=
-                        Number(user.balance || 0);
-
-                    const status =
-                        String(user.status || "active")
-                            .toLowerCase();
-
-                    if (
-                        status === "blocked" ||
-                        status === "suspended"
-                    ) {
-                        blockedUsers++;
-                    } else {
-                        activeUsers++;
-                    }
-
-                });
-            }
-
-            // ==============================
-            // DASHBOARD
-            // ==============================
-
-            if (totalUsersEl) {
-                totalUsersEl.textContent =
-                    totalUsers.toLocaleString();
-            }
-
-            if (systemBalanceEl) {
-                systemBalanceEl.textContent =
-                    totalBalance.toLocaleString() +
-                    " RWF";
-            }
-
-            if (activeUsersEl) {
-                activeUsersEl.textContent =
-                    activeUsers.toLocaleString();
-            }
-
-            if (blockedUsersEl) {
-                blockedUsersEl.textContent =
-                    blockedUsers.toLocaleString();
-            }
-
-            // ==============================
-            // USERS LIST
-            // ==============================
-
-            renderUsersList(allUsersData);
-
-        },
-        (error) => {
-
-            console.error(
-                "Users Load Error:",
-                error
-            );
-
-            if (usersContainer) {
-
-                usersContainer.innerHTML = `
-                    <div class="empty-state">
-                        <i class="fa-solid fa-triangle-exclamation"></i>
-                        <h3>Failed to Load Users</h3>
-                        <p>${error.message}</p>
-                    </div>
-                `;
-
-            }
-
-        }
-    );
-}
-
-
-// ======================================
-// RENDER USERS
-// ======================================
-
-function renderUsersList(users) {
-
-    if (!usersContainer) return;
-
-    const entries =
-        Object.entries(users);
-
-    if (!entries.length) {
-
-        usersContainer.innerHTML = `
-            <div class="empty-state">
-                <i class="fa-solid fa-users"></i>
-                <h3>No Users Found</h3>
-                <p>No registered users yet.</p>
-            </div>
-        `;
-
-        return;
-    }
-
-    usersContainer.innerHTML = "";
-
-    entries.forEach(([uid, user]) => {
-
-        const name =
-            user.fullName ||
-            user.name ||
-            "Unknown User";
-
-        const email =
-            user.email ||
-            "-";
-
-        const phone =
-            user.phone ||
-            "-";
-
-        const balance =
-            Number(user.balance || 0);
-
-        const status =
-            String(user.status || "active")
-                .toLowerCase();
-
-        const blocked =
-            status === "blocked" ||
-            status === "suspended";
-
-        const vip =
-            user.vip ||
-            "VIP 0";
-
-        const card =
-            document.createElement("div");
-
-        card.className = "user-card";
-
-        card.innerHTML = `
-            <div class="user-card-header">
-
-                <div class="user-avatar">
-                    <i class="fa-solid fa-user"></i>
-                </div>
-
-                <div class="user-main-info">
-
-                    <h3>
-                        ${escapeHTML(name)}
-                    </h3>
-
-                    <p>
-                        ${escapeHTML(email)}
-                    </p>
-
-                </div>
-
-                <span class="status ${
-                    blocked
-                        ? "blocked"
-                        : "active"
-                }">
-                    ${
-                        blocked
-                            ? "Blocked"
-                            : "Active"
-                    }
-                </span>
-
-            </div>
-
-            <div class="user-card-details">
-
-                <div>
-                    <small>Phone</small>
-                    <strong>
-                        ${escapeHTML(phone)}
-                    </strong>
-                </div>
-
-                <div>
-                    <small>Balance</small>
-                    <strong>
-                        ${balance.toLocaleString()} RWF
-                    </strong>
-                </div>
-
-                <div>
-                    <small>VIP</small>
-                    <strong>
-                        ${escapeHTML(String(vip))}
-                    </strong>
-                </div>
-
-            </div>
-
-            <div class="user-card-footer">
-
-                <small>
-                    UID: ${escapeHTML(uid)}
-                </small>
-
-            </div>
-        `;
-
-        usersContainer.appendChild(card);
-
-    });
-
-}
-
-
-// ======================================
-// SEARCH USERS
-// ======================================
-
-const userSearch =
-    document.getElementById("userSearch");
-
-userSearch?.addEventListener(
-    "input",
-    () => {
-
-        const keyword =
-            userSearch.value
-                .trim()
-                .toLowerCase();
-
-        if (!keyword) {
-
-            renderUsersList(
-                allUsersData
-            );
-
-            return;
-        }
-
-        const filtered = {};
-
-        Object.entries(allUsersData)
-            .forEach(([uid, user]) => {
-
-                const text = [
-
-                    user.fullName,
-                    user.name,
-                    user.email,
-                    user.phone,
-                    uid
-
-                ]
-                .filter(Boolean)
-                .join(" ")
-                .toLowerCase();
-
-                if (text.includes(keyword)) {
-                    filtered[uid] = user;
-                }
-
-            });
-
-        renderUsersList(filtered);
-
-    }
-);
-
-
-// ======================================
-// HTML ESCAPE
-// ======================================
 
 function escapeHTML(value) {
 
-    return String(value)
+    return String(value ?? "")
         .replaceAll("&", "&amp;")
         .replaceAll("<", "&lt;")
         .replaceAll(">", "&gt;")
@@ -887,303 +98,2001 @@ function escapeHTML(value) {
 }
 
 
-// ======================================
-// START
-// ======================================
+function getName(user) {
 
-loadUsersAndSystemBalance();
-
-console.log(
-    "✅ Users + System Balance Loaded"
-);
-
-
-/* =========================================================
-   RECENT ACTIVITY
-========================================================= */
-
-function renderRecentActivity() {
-
-    const box = $("recentActivity");
-
-    if (!box) return;
-
-    const recent = [
-        ...allDeposits.map(x => ({
-            type: "Deposit",
-            amount: x.amount,
-            status: x.status,
-            createdAt: x.createdAt,
-            uid: x.uid
-        })),
-
-        ...allWithdraws.map(x => ({
-            type: "Withdraw",
-            amount: x.amount,
-            status: x.status,
-            createdAt: x.createdAt,
-            uid: x.uid
-        })),
-
-        ...allVipRequests.map(x => ({
-            type: "VIP",
-            amount: x.price,
-            status: x.status,
-            createdAt: x.createdAt,
-            uid: x.uid
-        }))
-    ]
-    .sort(
-        (a, b) =>
-            numberValue(b.createdAt) -
-            numberValue(a.createdAt)
-    )
-    .slice(0, 8);
+    return (
+        user?.fullName ||
+        user?.name ||
+        "Unknown User"
+    );
+}
 
 
-    if (!recent.length) {
+function getEmail(user) {
 
-        box.innerHTML = `
-            <div class="empty-state">
-                <i class="fa-solid fa-inbox"></i>
-                <h3>No Recent Activity</h3>
-                <p>There is no recent activity.</p>
-            </div>
-        `;
+    return user?.email || "-";
+}
 
-        return;
+
+function getPhone(user) {
+
+    return (
+        user?.phone ||
+        user?.senderPhone ||
+        "-"
+    );
+}
+
+
+function showToast(message) {
+
+    const toast =
+        document.getElementById("toast");
+
+    const toastMessage =
+        document.getElementById("toastMessage");
+
+    if (toastMessage) {
+        toastMessage.textContent = message;
     }
 
+    if (toast) {
 
-    box.innerHTML = recent.map(item => {
+        toast.classList.add("show");
 
-        const user = getUser(item.uid);
+        setTimeout(() => {
+            toast.classList.remove("show");
+        }, 2500);
 
-        return `
-            <div class="activity-item">
+    } else {
 
-                <div>
-                    <strong>
-                        ${safeText(item.type)}
-                    </strong>
+        console.log(message);
 
-                    <p>
-                        ${safeText(
-                            user?.fullName ||
-                            user?.email ||
-                            item.uid ||
-                            "-"
-                        )}
-                    </p>
-                </div>
+    }
+}
 
-                <div>
-                    <strong>
-                        ${money(item.amount)}
-                    </strong>
 
-                    <small>
-                        ${safeText(
-                            normalizeStatus(item.status)
-                        )}
-                    </small>
-                </div>
+function showError(message) {
 
-            </div>
-        `;
+    console.error(message);
 
-    }).join("");
+    alert(message);
 }
 
 
 /* =========================================================
-   DEPOSITS
+   ELEMENT HELPERS
 ========================================================= */
 
-function renderDeposits() {
+function el(id) {
 
-    const list = $("depositList");
-    const empty = $("emptyDeposit");
+    return document.getElementById(id);
 
-    if (!list) return;
-
-
-    const search =
-        ($("depositSearch")?.value || "")
-        .toLowerCase()
-        .trim();
-
-    const filter =
-        $("depositFilter")?.value || "all";
+}
 
 
-    let items = allDeposits.filter(item => {
+/* =========================================================
+   LOADING SCREEN
+========================================================= */
 
-        const user = getUser(item.uid);
+const loadingScreen =
+    el("loadingScreen");
 
-        const text = `
-            ${item.id}
-            ${item.transactionId || ""}
-            ${user?.fullName || ""}
-            ${user?.email || ""}
-            ${user?.phone || ""}
-        `.toLowerCase();
 
-        const matchesSearch =
-            !search ||
-            text.includes(search);
+function hideLoading() {
 
-        const status =
-            normalizeStatus(item.status);
+    if (loadingScreen) {
 
-        const matchesFilter =
-            filter === "all" ||
-            status === filter;
+        loadingScreen.style.display =
+            "none";
 
-        return matchesSearch && matchesFilter;
+    }
+
+}
+
+
+/* =========================================================
+   NAVIGATION ELEMENTS
+========================================================= */
+
+const sidebar =
+    el("sidebar");
+
+const menuBtn =
+    el("menuBtn");
+
+const logoutBtn =
+    el("logoutBtn");
+
+const adminName =
+    el("adminName");
+
+const menuLinks =
+    document.querySelectorAll(".menu-link");
+
+const pageSections =
+    document.querySelectorAll(".page-section");
+
+
+/* =========================================================
+   PAGE NAVIGATION
+========================================================= */
+
+function openPage(pageName) {
+
+    pageSections.forEach(section => {
+
+        section.style.display = "none";
+
+        section.classList.remove("active");
+
     });
 
 
-    const pending =
-        allDeposits.filter(
-            x => normalizeStatus(x.status) === "pending"
-        ).length;
+    menuLinks.forEach(link => {
 
-    const approved =
-        allDeposits.filter(
-            x => normalizeStatus(x.status) === "approved"
-        ).length;
+        link.classList.remove("active");
 
-    const rejected =
-        allDeposits.filter(
-            x => normalizeStatus(x.status) === "rejected"
-        ).length;
+    });
 
 
-    if ($("depositTotalCount")) {
-        $("depositTotalCount").textContent =
-            allDeposits.length;
-    }
+    const sectionMap = {
 
-    if ($("depositPendingCount")) {
-        $("depositPendingCount").textContent =
-            pending;
-    }
+        dashboard:
+            "dashboardSection",
 
-    if ($("depositApprovedCount")) {
-        $("depositApprovedCount").textContent =
-            approved;
-    }
+        deposits:
+            "depositSection",
 
-    if ($("depositRejectedCount")) {
-        $("depositRejectedCount").textContent =
-            rejected;
-    }
+        deposit:
+            "depositSection",
+
+        withdraws:
+            "withdrawSection",
+
+        withdraw:
+            "withdrawSection",
+
+        vipRequests:
+            "vipRequestsSection",
+
+        vipBuyers:
+            "vipBuyersSection",
+
+        bonusRequests:
+            "bonusRequestsSection",
+
+        users:
+            "usersSection",
+
+        transactions:
+            "transactionsSection",
+
+        settings:
+            "settingsSection"
+
+    };
 
 
-    if (!items.length) {
+    const sectionId =
+        sectionMap[pageName];
 
-        list.innerHTML = "";
 
-        if (empty) {
-            empty.style.display = "block";
+    if (sectionId) {
+
+        const section =
+            el(sectionId);
+
+        if (section) {
+
+            section.style.display =
+                "block";
+
+            section.classList.add("active");
+
         }
 
+    }
+
+
+    const activeLink =
+        document.querySelector(
+            `[data-page="${pageName}"]`
+        );
+
+
+    if (activeLink) {
+
+        activeLink.classList.add("active");
+
+    }
+
+
+    if (sidebar) {
+
+        sidebar.classList.remove("show");
+        sidebar.classList.remove("active");
+
+    }
+
+}
+
+
+/* =========================================================
+   MENU LINKS
+========================================================= */
+
+menuLinks.forEach(link => {
+
+    link.addEventListener("click", event => {
+
+        event.preventDefault();
+
+        const page =
+            link.dataset.page;
+
+        if (page) {
+
+            openPage(page);
+
+        }
+
+    });
+
+});
+
+
+/* =========================================================
+   MOBILE MENU
+========================================================= */
+
+menuBtn?.addEventListener(
+    "click",
+    () => {
+
+        if (!sidebar) return;
+
+        sidebar.classList.toggle("show");
+        sidebar.classList.toggle("active");
+
+    }
+);
+
+
+/* =========================================================
+   QUICK ACTIONS
+========================================================= */
+
+el("openDeposits")?.addEventListener(
+    "click",
+    () => openPage("deposits")
+);
+
+
+el("openWithdraws")?.addEventListener(
+    "click",
+    () => openPage("withdraws")
+);
+
+
+el("openUsers")?.addEventListener(
+    "click",
+    () => openPage("users")
+);
+
+
+el("openTransactions")?.addEventListener(
+    "click",
+    () => openPage("transactions")
+);
+
+
+el("openSettings")?.addEventListener(
+    "click",
+    () => openPage("settings")
+);
+
+
+/* =========================================================
+   LOGOUT
+========================================================= */
+
+logoutBtn?.addEventListener(
+    "click",
+    async () => {
+
+        const ok =
+            confirm(
+                "Logout from Admin Panel?"
+            );
+
+        if (!ok) return;
+
+        try {
+
+            await signOut(auth);
+
+            window.location.href =
+                "login.html";
+
+        } catch (error) {
+
+            showError(
+                "Logout failed: " +
+                error.message
+            );
+
+        }
+
+    }
+);
+
+
+/* =========================================================
+   ADMIN AUTHENTICATION
+========================================================= */
+
+async function checkAdmin(user) {
+
+    if (!user) {
+
+        window.location.href =
+            "login.html";
+
+        return false;
+
+    }
+
+
+    try {
+
+        const adminSnap =
+            await get(
+                ref(
+                    db,
+                    "admins/" +
+                    user.uid
+                )
+            );
+
+
+        if (!adminSnap.exists()) {
+
+            alert(
+                "Access Denied: You are not an administrator."
+            );
+
+            await signOut(auth);
+
+            window.location.href =
+                "dashboard.html";
+
+            return false;
+
+        }
+
+
+        currentAdmin = user;
+        adminReady = true;
+
+
+        const userSnap =
+            await get(
+                ref(
+                    db,
+                    "users/" +
+                    user.uid
+                )
+            );
+
+
+        if (
+            userSnap.exists() &&
+            adminName
+        ) {
+
+            const data =
+                userSnap.val();
+
+            adminName.textContent =
+                data.fullName ||
+                data.name ||
+                "Administrator";
+
+        } else if (adminName) {
+
+            adminName.textContent =
+                "Administrator";
+
+        }
+
+
+        hideLoading();
+
+        console.log(
+            "✅ ADMIN AUTHENTICATED:",
+            user.uid
+        );
+
+
+        startAdminData();
+
+        return true;
+
+
+    } catch (error) {
+
+        console.error(
+            "ADMIN AUTH ERROR:",
+            error
+        );
+
+        hideLoading();
+
+        alert(
+            "Admin authentication failed:\n" +
+            error.message
+        );
+
+        return false;
+
+    }
+
+}
+
+
+/* =========================================================
+   AUTH STATE
+========================================================= */
+
+authReady
+    .catch(() => {})
+    .finally(() => {
+
+        onAuthStateChanged(
+            auth,
+            user => {
+
+                checkAdmin(user);
+
+            }
+        );
+
+    });
+
+
+/* =========================================================
+   DASHBOARD ELEMENTS
+========================================================= */
+
+const totalUsersEl =
+    el("totalUsers");
+
+const totalDepositsEl =
+    el("totalDeposits");
+
+const totalPendingEl =
+    el("totalPending");
+
+const totalApprovedEl =
+    el("totalApproved");
+
+const totalRejectedEl =
+    el("totalRejected");
+
+const totalAmountEl =
+    el("totalAmount");
+
+const activeUsersEl =
+    el("activeUsers");
+
+const blockedUsersEl =
+    el("blockedUsers");
+
+const allUsersEl =
+    el("allUsers");
+
+
+/* =========================================================
+   CREATE SYSTEM BALANCE CARD IF MISSING
+========================================================= */
+
+function ensureSystemBalanceCard() {
+
+    let systemBalanceEl =
+        el("systemBalance");
+
+
+    if (systemBalanceEl) {
+
+        return systemBalanceEl;
+
+    }
+
+
+    if (!totalUsersEl) {
+
+        return null;
+
+    }
+
+
+    const originalCard =
+        totalUsersEl.closest(".stat-card");
+
+
+    if (!originalCard) {
+
+        return null;
+
+    }
+
+
+    const card =
+        document.createElement("div");
+
+    card.className =
+        "stat-card";
+
+
+    card.innerHTML = `
+
+        <div class="stat-icon balance">
+
+            <i class="fa-solid fa-coins"></i>
+
+        </div>
+
+        <div class="stat-info">
+
+            <h3 id="systemBalance">
+                0 RWF
+            </h3>
+
+            <p>
+                Total System Balance
+            </p>
+
+        </div>
+
+    `;
+
+
+    originalCard.parentNode
+        ?.insertBefore(
+            card,
+            originalCard.nextSibling
+        );
+
+
+    return el("systemBalance");
+
+}
+
+
+/* =========================================================
+   DASHBOARD USERS + SYSTEM BALANCE
+========================================================= */
+
+function loadUsersDashboard() {
+
+    const usersRef =
+        ref(db, "users");
+
+
+    onValue(
+        usersRef,
+
+        snapshot => {
+
+            allUsersData = {};
+
+            let totalUsers = 0;
+            let totalBalance = 0;
+            let activeUsers = 0;
+            let blockedUsers = 0;
+
+
+            if (snapshot.exists()) {
+
+                snapshot.forEach(child => {
+
+                    const uid =
+                        child.key;
+
+                    const user =
+                        child.val() || {};
+
+
+                    allUsersData[uid] =
+                        user;
+
+
+                    totalUsers++;
+
+
+                    totalBalance +=
+                        number(
+                            user.balance
+                        );
+
+
+                    const status =
+                        normalizeStatus(
+                            user.status
+                        );
+
+
+                    if (
+                        status === "blocked" ||
+                        status === "suspended"
+                    ) {
+
+                        blockedUsers++;
+
+                    } else {
+
+                        activeUsers++;
+
+                    }
+
+                });
+
+            }
+
+
+            if (totalUsersEl) {
+
+                totalUsersEl.textContent =
+                    totalUsers.toLocaleString();
+
+            }
+
+
+            if (allUsersEl) {
+
+                allUsersEl.textContent =
+                    totalUsers.toLocaleString();
+
+            }
+
+
+            if (activeUsersEl) {
+
+                activeUsersEl.textContent =
+                    activeUsers.toLocaleString();
+
+            }
+
+
+            if (blockedUsersEl) {
+
+                blockedUsersEl.textContent =
+                    blockedUsers.toLocaleString();
+
+            }
+
+
+            const systemBalanceEl =
+                ensureSystemBalanceCard();
+
+
+            if (systemBalanceEl) {
+
+                systemBalanceEl.textContent =
+                    money(totalBalance);
+
+            }
+
+
+            renderUsers(
+                allUsersData
+            );
+
+        },
+
+        error => {
+
+            console.error(
+                "USERS LOAD ERROR:",
+                error
+            );
+
+            renderUsersError(
+                error.message
+            );
+
+        }
+
+    );
+
+}
+
+
+/* =========================================================
+   USERS LIST
+========================================================= */
+
+const usersContainer =
+    el("usersContainer");
+
+
+function renderUsersError(message) {
+
+    if (!usersContainer) return;
+
+
+    usersContainer.innerHTML = `
+
+        <div class="empty-state">
+
+            <i class="fa-solid fa-triangle-exclamation"></i>
+
+            <h3>
+                Failed to Load Users
+            </h3>
+
+            <p>
+                ${escapeHTML(message)}
+            </p>
+
+        </div>
+
+    `;
+
+}
+
+
+function renderUsers(users) {
+
+    if (!usersContainer) return;
+
+
+    const entries =
+        Object.entries(users || {});
+
+
+    if (!entries.length) {
+
+        usersContainer.innerHTML = `
+
+            <div class="empty-state">
+
+                <i class="fa-solid fa-users"></i>
+
+                <h3>
+                    No Users Found
+                </h3>
+
+                <p>
+                    Registered users will appear here.
+                </p>
+
+            </div>
+
+        `;
+
         return;
+
     }
 
 
-    if (empty) {
-        empty.style.display = "none";
-    }
+    usersContainer.innerHTML = "";
 
 
-    list.innerHTML = items.map(item => {
+    entries.forEach(
+        ([uid, user]) => {
 
-        const user = getUser(item.uid);
-        const status = normalizeStatus(item.status);
+            const name =
+                getName(user);
 
-        return `
-            <div class="request-card">
+            const email =
+                getEmail(user);
 
-                <div class="request-header">
+            const phone =
+                getPhone(user);
 
-                    <h3>
-                        ${safeText(
-                            user?.fullName ||
-                            user?.email ||
-                            item.uid
-                        )}
-                    </h3>
+            const balance =
+                number(user.balance);
 
-                    <span class="status ${status}">
-                        ${safeText(status)}
+            const status =
+                normalizeStatus(
+                    user.status
+                );
+
+            const blocked =
+                status === "blocked" ||
+                status === "suspended";
+
+
+            const vip =
+                user.vip ||
+                user.vipPlan ||
+                "VIP 0";
+
+
+            const card =
+                document.createElement(
+                    "div"
+                );
+
+
+            card.className =
+                "user-card";
+
+
+            card.innerHTML = `
+
+                <div class="user-card-header">
+
+                    <div class="user-avatar">
+
+                        <i class="fa-solid fa-user"></i>
+
+                    </div>
+
+
+                    <div class="user-main-info">
+
+                        <h3>
+                            ${escapeHTML(name)}
+                        </h3>
+
+                        <p>
+                            ${escapeHTML(email)}
+                        </p>
+
+                    </div>
+
+
+                    <span class="status ${
+                        blocked
+                            ? "blocked"
+                            : "active"
+                    }">
+
+                        ${
+                            blocked
+                                ? "Blocked"
+                                : "Active"
+                        }
+
                     </span>
 
                 </div>
 
-                <p>
-                    <strong>Amount:</strong>
-                    ${money(item.amount)}
-                </p>
+
+                <div class="user-card-details">
+
+                    <div>
+
+                        <small>
+                            Phone
+                        </small>
+
+                        <strong>
+                            ${escapeHTML(phone)}
+                        </strong>
+
+                    </div>
+
+
+                    <div>
+
+                        <small>
+                            Balance
+                        </small>
+
+                        <strong>
+                            ${money(balance)}
+                        </strong>
+
+                    </div>
+
+
+                    <div>
+
+                        <small>
+                            VIP
+                        </small>
+
+                        <strong>
+                            ${escapeHTML(
+                                String(vip)
+                            )}
+                        </strong>
+
+                    </div>
+
+                </div>
+
+
+                <div class="user-card-footer">
+
+                    <small>
+                        UID:
+                        ${escapeHTML(uid)}
+                    </small>
+
+
+                    <button
+                        class="viewUserBtn"
+                        data-id="${escapeHTML(uid)}">
+
+                        View
+
+                    </button>
+
+                </div>
+
+            `;
+
+
+            usersContainer.appendChild(
+                card
+            );
+
+        }
+    );
+
+
+    activateUserViewButtons();
+
+}
+
+
+/* =========================================================
+   USER SEARCH
+========================================================= */
+
+el("userSearch")
+    ?.addEventListener(
+        "input",
+        event => {
+
+            const keyword =
+                event.target.value
+                    .trim()
+                    .toLowerCase();
+
+
+            if (!keyword) {
+
+                renderUsers(
+                    allUsersData
+                );
+
+                return;
+
+            }
+
+
+            const filtered = {};
+
+
+            Object.entries(
+                allUsersData
+            ).forEach(
+                ([uid, user]) => {
+
+                    const text = [
+
+                        user.fullName,
+                        user.name,
+                        user.email,
+                        user.phone,
+                        uid
+
+                    ]
+                    .filter(Boolean)
+                    .join(" ")
+                    .toLowerCase();
+
+
+                    if (
+                        text.includes(
+                            keyword
+                        )
+                    ) {
+
+                        filtered[uid] =
+                            user;
+
+                    }
+
+                }
+            );
+
+
+            renderUsers(filtered);
+
+        }
+    );
+
+
+/* =========================================================
+   USER VIEW BUTTONS
+========================================================= */
+
+function activateUserViewButtons() {
+
+    document
+        .querySelectorAll(
+            ".viewUserBtn"
+        )
+        .forEach(button => {
+
+            button.onclick = () => {
+
+                openUserModal(
+                    button.dataset.id
+                );
+
+            };
+
+        });
+
+}
+
+
+/* =========================================================
+   USER MODAL
+========================================================= */
+
+const userModal =
+    el("userModal");
+
+const closeUserModal =
+    el("closeUserModal");
+
+const userFullName =
+    el("userFullName");
+
+const userEmail =
+    el("userEmail");
+
+const userPhone =
+    el("userPhone");
+
+const userBalance =
+    el("userBalance");
+
+const userDeposits =
+    el("userDeposits");
+
+const userWithdraws =
+    el("userWithdraws");
+
+const userVip =
+    el("userVip");
+
+const userJoined =
+    el("userJoined");
+
+const blockUserBtn =
+    el("blockUserBtn");
+
+const activateUserBtn =
+    el("activateUserBtn");
+
+
+async function openUserModal(uid) {
+
+    selectedUserId =
+        uid;
+
+
+    try {
+
+        const snapshot =
+            await get(
+                ref(
+                    db,
+                    "users/" + uid
+                )
+            );
+
+
+        if (!snapshot.exists()) {
+
+            alert(
+                "User not found."
+            );
+
+            return;
+
+        }
+
+
+        const user =
+            snapshot.val();
+
+
+        if (userFullName) {
+
+            userFullName.textContent =
+                getName(user);
+
+        }
+
+
+        if (userEmail) {
+
+            userEmail.textContent =
+                getEmail(user);
+
+        }
+
+
+        if (userPhone) {
+
+            userPhone.textContent =
+                getPhone(user);
+
+        }
+
+
+        if (userBalance) {
+
+            userBalance.textContent =
+                money(user.balance);
+
+        }
+
+
+        if (userDeposits) {
+
+            userDeposits.textContent =
+                money(
+                    user.totalDeposits ??
+                    user.totalDeposit ??
+                    0
+                );
+
+        }
+
+
+        if (userWithdraws) {
+
+            userWithdraws.textContent =
+                money(
+                    user.totalWithdraws ??
+                    user.totalWithdraw ??
+                    0
+                );
+
+        }
+
+
+        if (userVip) {
+
+            userVip.textContent =
+                user.vip ||
+                user.vipPlan ||
+                "None";
+
+        }
+
+
+        if (userJoined) {
+
+            userJoined.textContent =
+                user.createdAt
+                    ? new Date(
+                        user.createdAt
+                    ).toLocaleString()
+                    : "-";
+
+        }
+
+
+        const status =
+            normalizeStatus(
+                user.status
+            );
+
+
+        if (blockUserBtn) {
+
+            blockUserBtn.style.display =
+                (
+                    status === "blocked" ||
+                    status === "suspended"
+                )
+                    ? "none"
+                    : "inline-block";
+
+        }
+
+
+        if (activateUserBtn) {
+
+            activateUserBtn.style.display =
+                (
+                    status === "blocked" ||
+                    status === "suspended"
+                )
+                    ? "inline-block"
+                    : "none";
+
+        }
+
+
+        if (userModal) {
+
+            userModal.style.display =
+                "flex";
+
+        }
+
+
+    } catch (error) {
+
+        console.error(
+            "OPEN USER ERROR:",
+            error
+        );
+
+        alert(
+            error.message
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   CLOSE USER MODAL
+========================================================= */
+
+closeUserModal?.addEventListener(
+    "click",
+    () => {
+
+        if (userModal) {
+
+            userModal.style.display =
+                "none";
+
+        }
+
+    }
+);
+
+
+window.addEventListener(
+    "click",
+    event => {
+
+        if (
+            userModal &&
+            event.target === userModal
+        ) {
+
+            userModal.style.display =
+                "none";
+
+        }
+
+    }
+);
+
+
+/* =========================================================
+   BLOCK USER
+========================================================= */
+
+blockUserBtn?.addEventListener(
+    "click",
+    async () => {
+
+        if (!selectedUserId) return;
+
+
+        if (
+            !confirm(
+                "Block this user?"
+            )
+        ) {
+
+            return;
+
+        }
+
+
+        try {
+
+            await update(
+                ref(
+                    db,
+                    "users/" +
+                    selectedUserId
+                ),
+                {
+                    status: "blocked"
+                }
+            );
+
+
+            showToast(
+                "User blocked successfully."
+            );
+
+
+            if (userModal) {
+
+                userModal.style.display =
+                    "none";
+
+            }
+
+
+        } catch (error) {
+
+            showError(
+                "Block user failed: " +
+                error.message
+            );
+
+        }
+
+    }
+);
+
+
+/* =========================================================
+   ACTIVATE USER
+========================================================= */
+
+activateUserBtn?.addEventListener(
+    "click",
+    async () => {
+
+        if (!selectedUserId) return;
+
+
+        if (
+            !confirm(
+                "Activate this user?"
+            )
+        ) {
+
+            return;
+
+        }
+
+
+        try {
+
+            await update(
+                ref(
+                    db,
+                    "users/" +
+                    selectedUserId
+                ),
+                {
+                    status: "active"
+                }
+            );
+
+
+            showToast(
+                "User activated successfully."
+            );
+
+
+            if (userModal) {
+
+                userModal.style.display =
+                    "none";
+
+            }
+
+
+        } catch (error) {
+
+            showError(
+                "Activate user failed: " +
+                error.message
+            );
+
+        }
+
+    }
+);
+
+
+/* =========================================================
+   DASHBOARD DEPOSIT STATISTICS
+========================================================= */
+
+function loadDashboardDeposits() {
+
+    onValue(
+        ref(db, "depositRequests"),
+
+        snapshot => {
+
+            let total = 0;
+            let pending = 0;
+            let approved = 0;
+            let rejected = 0;
+            let amount = 0;
+
+
+            if (snapshot.exists()) {
+
+                snapshot.forEach(child => {
+
+                    const data =
+                        child.val() || {};
+
+                    total++;
+
+                    amount +=
+                        number(data.amount);
+
+
+                    const status =
+                        normalizeStatus(
+                            data.status
+                        );
+
+
+                    if (
+                        status === "pending"
+                    ) {
+
+                        pending++;
+
+                    } else if (
+                        status === "approved"
+                    ) {
+
+                        approved++;
+
+                    } else if (
+                        status === "rejected"
+                    ) {
+
+                        rejected++;
+
+                    }
+
+                });
+
+            }
+
+
+            if (totalDepositsEl) {
+
+                totalDepositsEl.textContent =
+                    total;
+
+            }
+
+
+            if (totalPendingEl) {
+
+                totalPendingEl.textContent =
+                    pending;
+
+            }
+
+
+            if (totalApprovedEl) {
+
+                totalApprovedEl.textContent =
+                    approved;
+
+            }
+
+
+            if (totalRejectedEl) {
+
+                totalRejectedEl.textContent =
+                    rejected;
+
+            }
+
+
+            if (totalAmountEl) {
+
+                totalAmountEl.textContent =
+                    money(amount);
+
+            }
+
+        },
+
+        error => {
+
+            console.error(
+                "DASHBOARD DEPOSIT ERROR:",
+                error
+            );
+
+        }
+
+    );
+
+}
+
+
+/* =========================================================
+   DEPOSIT ELEMENTS
+========================================================= */
+
+const depositContainer =
+    el("depositRequests");
+
+const depositSearch =
+    el("searchInput");
+
+const depositFilter =
+    el("filterStatus");
+
+const depositCount =
+    el("depositCount");
+
+const pendingCount =
+    el("pendingCount");
+
+const approvedCount =
+    el("approvedCount");
+
+const rejectedCount =
+    el("rejectedCount");
+
+const emptyDeposit =
+    el("emptyDeposit");
+
+
+/* =========================================================
+   LOAD DEPOSITS
+========================================================= */
+
+function loadDeposits() {
+
+    onValue(
+        ref(
+            db,
+            "depositRequests"
+        ),
+
+        snapshot => {
+
+            allDepositData = {};
+
+
+            if (snapshot.exists()) {
+
+                snapshot.forEach(
+                    child => {
+
+                        allDepositData[
+                            child.key
+                        ] = {
+                            id: child.key,
+                            ...(child.val() || {})
+                        };
+
+                    }
+                );
+
+            }
+
+
+            renderDeposits();
+
+        },
+
+        error => {
+
+            console.error(
+                "DEPOSIT LOAD ERROR:",
+                error
+            );
+
+
+            if (depositContainer) {
+
+                depositContainer.innerHTML = `
+
+                    <div class="empty-state">
+
+                        <h3>
+                            Failed to Load Deposits
+                        </h3>
+
+                        <p>
+                            ${escapeHTML(
+                                error.message
+                            )}
+                        </p>
+
+                    </div>
+
+                `;
+
+            }
+
+        }
+
+    );
+
+}
+
+
+/* =========================================================
+   RENDER DEPOSITS
+========================================================= */
+
+function renderDeposits() {
+
+    if (!depositContainer) return;
+
+
+    const keyword =
+        (
+            depositSearch?.value ||
+            ""
+        )
+        .trim()
+        .toLowerCase();
+
+
+    const filter =
+        depositFilter?.value ||
+        "All";
+
+
+    const entries =
+        Object.values(
+            allDepositData
+        );
+
+
+    let total = entries.length;
+    let pending = 0;
+    let approved = 0;
+    let rejected = 0;
+
+
+    entries.forEach(data => {
+
+        const status =
+            normalizeStatus(
+                data.status
+            );
+
+
+        if (status === "pending")
+            pending++;
+
+        if (status === "approved")
+            approved++;
+
+        if (status === "rejected")
+            rejected++;
+
+    });
+
+
+    if (depositCount)
+        depositCount.textContent =
+            total;
+
+
+    if (pendingCount)
+        pendingCount.textContent =
+            pending;
+
+
+    if (approvedCount)
+        approvedCount.textContent =
+            approved;
+
+
+    if (rejectedCount)
+        rejectedCount.textContent =
+            rejected;
+
+
+    let filtered =
+        entries.filter(data => {
+
+            const status =
+                normalizeStatus(
+                    data.status
+                );
+
+
+            const text = [
+
+                data.fullName,
+                data.name,
+                data.email,
+                data.phone,
+                data.senderPhone,
+                data.transactionId,
+                data.uid,
+                data.amount
+
+            ]
+            .filter(Boolean)
+            .join(" ")
+            .toLowerCase();
+
+
+            const matchesSearch =
+                !keyword ||
+                text.includes(keyword);
+
+
+            const matchesFilter =
+                filter === "All" ||
+                status ===
+                    filter.toLowerCase();
+
+
+            return (
+                matchesSearch &&
+                matchesFilter
+            );
+
+        });
+
+
+    filtered.sort(
+        (a, b) =>
+            number(b.createdAt) -
+            number(a.createdAt)
+    );
+
+
+    depositContainer.innerHTML = "";
+
+
+    if (!filtered.length) {
+
+        if (emptyDeposit) {
+
+            emptyDeposit.style.display =
+                "block";
+
+        }
+
+
+        depositContainer.innerHTML = `
+
+            <div class="empty-state">
+
+                <i class="fa-solid fa-wallet"></i>
+
+                <h3>
+                    No Deposit Requests
+                </h3>
 
                 <p>
-                    <strong>Email:</strong>
-                    ${safeText(user?.email || item.email || "-")}
+                    Deposit requests will appear here.
                 </p>
 
-                <p>
-                    <strong>Phone:</strong>
-                    ${safeText(user?.phone || item.phone || "-")}
-                </p>
+            </div>
 
-                <p>
-                    <strong>Transaction ID:</strong>
-                    ${safeText(
-                        item.transactionId ||
-                        item.reference ||
-                        item.id
+        `;
+
+        return;
+
+    }
+
+
+    if (emptyDeposit) {
+
+        emptyDeposit.style.display =
+            "none";
+
+    }
+
+
+    filtered.forEach(data => {
+
+        const status =
+            normalizeStatus(
+                data.status
+            );
+
+
+        const statusLabel =
+            status.charAt(0)
+                .toUpperCase() +
+            status.slice(1);
+
+
+        const canAction =
+            status === "pending";
+
+
+        const card =
+            document.createElement(
+                "div"
+            );
+
+
+        card.className =
+            "request-card";
+
+
+        card.innerHTML = `
+
+            <div class="request-top">
+
+                <h3>
+                    ${money(data.amount)}
+                </h3>
+
+                <span class="status ${escapeHTML(status)}">
+
+                    ${escapeHTML(
+                        statusLabel
                     )}
-                </p>
 
-                <p>
-                    <strong>Date:</strong>
-                    ${formatDate(item.createdAt)}
-                </p>
+                </span>
+
+            </div>
+
+
+            <p>
+                <strong>Name:</strong>
+                ${escapeHTML(
+                    data.fullName ||
+                    data.name ||
+                    "-"
+                )}
+            </p>
+
+
+            <p>
+                <strong>Email:</strong>
+                ${escapeHTML(
+                    data.email ||
+                    "-"
+                )}
+            </p>
+
+
+            <p>
+                <strong>Phone:</strong>
+                ${escapeHTML(
+                    data.senderPhone ||
+                    data.phone ||
+                    "-"
+                )}
+            </p>
+
+
+            <p>
+                <strong>Transaction ID:</strong>
+                ${escapeHTML(
+                    data.transactionId ||
+                    "-"
+                )}
+            </p>
+
+
+            <p>
+                <strong>Created:</strong>
+                ${
+                    data.createdAt
+                        ? new Date(
+                            data.createdAt
+                        ).toLocaleString()
+                        : "-"
+                }
+            </p>
+
+
+            <div class="action-buttons">
 
                 ${
-                    status === "pending"
+                    canAction
                     ? `
-                    <div class="action-buttons">
 
                         <button
-                            class="approveBtn"
-                            onclick="approveDeposit('${safeText(item.id)}')">
+                            class="approveDeposit"
+                            data-id="${escapeHTML(data.id)}">
 
-                            <i class="fa-solid fa-circle-check"></i>
+                            <i class="fa-solid fa-check"></i>
                             Approve
 
                         </button>
 
-                        <button
-                            class="rejectBtn"
-                            onclick="rejectDeposit('${safeText(item.id)}')">
 
-                            <i class="fa-solid fa-circle-xmark"></i>
+                        <button
+                            class="rejectDeposit"
+                            data-id="${escapeHTML(data.id)}">
+
+                            <i class="fa-solid fa-xmark"></i>
                             Reject
 
                         </button>
 
-                    </div>
+                    `
+                    : ""
+                }
+
+
+                ${
+                    data.proofImage
+                    ? `
+
+                        <button
+                            class="viewProof"
+                            data-image="${escapeHTML(
+                                data.proofImage
+                            )}">
+
+                            <i class="fa-solid fa-image"></i>
+                            Screenshot
+
+                        </button>
+
+                    `
+                    : ""
+                }
+
+
+                ${
+                    data.transactionId
+                    ? `
+
+                        <button
+                            class="copyTransaction"
+                            data-id="${escapeHTML(
+                                data.transactionId
+                            )}">
+
+                            <i class="fa-solid fa-copy"></i>
+                            Copy ID
+
+                        </button>
+
                     `
                     : ""
                 }
 
             </div>
+
         `;
 
-    }).join("");
+
+        depositContainer.appendChild(
+            card
+        );
+
+    });
+
+
+    activateDepositButtons();
+
 }
+
+
+/* =========================================================
+   DEPOSIT SEARCH / FILTER
+========================================================= */
+
+depositSearch?.addEventListener(
+    "input",
+    renderDeposits
+);
+
+
+depositFilter?.addEventListener(
+    "change",
+    renderDeposits
+);
 
 
 /* =========================================================
@@ -1192,133 +2101,245 @@ function renderDeposits() {
 
 async function approveDeposit(id) {
 
-    if (!adminReady) {
-        showToast("Admin is not ready.", "error");
+    if (
+        !confirm(
+            "Approve this deposit?"
+        )
+    ) {
+
         return;
+
     }
+
 
     try {
 
-        const requestSnap =
-            await get(
-                ref(db, `depositRequests/${id}`)
+        const requestRef =
+            ref(
+                db,
+                "depositRequests/" +
+                id
             );
+
+
+        const requestSnap =
+            await get(requestRef);
+
 
         if (!requestSnap.exists()) {
-            throw new Error("Deposit request not found.");
+
+            throw new Error(
+                "Deposit request not found."
+            );
+
         }
 
-        const request = requestSnap.val();
+
+        const request =
+            requestSnap.val() || {};
+
+
+        const status =
+            normalizeStatus(
+                request.status
+            );
+
 
         if (
-            normalizeStatus(request.status) !==
-            "pending"
+            status === "approved"
         ) {
-            showToast(
-                "This deposit has already been processed.",
-                "info"
+
+            alert(
+                "This deposit is already approved."
             );
+
             return;
+
         }
 
-        const uid = request.uid;
+
+        if (
+            status === "rejected"
+        ) {
+
+            alert(
+                "This deposit has already been rejected."
+            );
+
+            return;
+
+        }
+
+
+        const uid =
+            request.uid;
+
 
         if (!uid) {
-            throw new Error("Deposit user not found.");
+
+            throw new Error(
+                "Deposit request has no user UID."
+            );
+
         }
+
 
         const amount =
-            numberValue(request.amount);
+            number(request.amount);
 
-        if (amount <= 0) {
-            throw new Error("Invalid deposit amount.");
+
+        if (
+            amount <= 0
+        ) {
+
+            throw new Error(
+                "Invalid deposit amount."
+            );
+
         }
+
+
+        const userRef =
+            ref(
+                db,
+                "users/" +
+                uid
+            );
 
 
         const userSnap =
-            await get(
-                ref(db, `users/${uid}`)
-            );
+            await get(userRef);
+
 
         if (!userSnap.exists()) {
-            throw new Error("User account not found.");
+
+            throw new Error(
+                "User account not found."
+            );
+
         }
 
 
-        const user = userSnap.val();
+        const user =
+            userSnap.val() || {};
 
-        const currentBalance =
-            numberValue(user.balance);
 
-        const currentTotalDeposit =
-            numberValue(
-                user.totalDeposit
-            );
+        const oldBalance =
+            number(user.balance);
 
-        const currentTotalDeposits =
-            numberValue(
-                user.totalDeposits
-            );
 
-        const currentTotalTransactions =
-            numberValue(
-                user.totalTransactions
-            );
+        const transactionKey =
+            push(
+                ref(
+                    db,
+                    "transactions"
+                )
+            ).key;
 
 
         const updates = {};
 
 
-        updates[`users/${uid}/balance`] =
-            currentBalance + amount;
-
-        updates[`users/${uid}/totalDeposit`] =
-            currentTotalDeposit + amount;
-
-        updates[`users/${uid}/totalDeposits`] =
-            currentTotalDeposits + amount;
-
-        updates[`users/${uid}/totalTransactions`] =
-            currentTotalTransactions + 1;
-
-
-        updates[`depositRequests/${id}/status`] =
-            "approved";
-
-        updates[`depositRequests/${id}/approvedAt`] =
-            Date.now();
-
-        updates[`depositRequests/${id}/approvedBy`] =
-            currentAdmin.uid;
-
-
-        const transactionId =
-            `deposit_${id}`;
+        updates[
+            "users/" +
+            uid +
+            "/balance"
+        ] =
+            oldBalance + amount;
 
 
         updates[
-            `transactions/${transactionId}`
-        ] = {
+            "users/" +
+            uid +
+            "/totalDeposit"
+        ] =
+            number(
+                user.totalDeposit
+            ) + amount;
 
-            uid,
 
-            type: "deposit",
+        updates[
+            "users/" +
+            uid +
+            "/totalDeposits"
+        ] =
+            number(
+                user.totalDeposits
+            ) + amount;
 
-            amount,
 
-            currency: "RWF",
+        updates[
+            "users/" +
+            uid +
+            "/totalTransactions"
+        ] =
+            number(
+                user.totalTransactions
+            ) + 1;
 
-            status: "approved",
 
-            requestId: id,
+        updates[
+            "depositRequests/" +
+            id +
+            "/status"
+        ] =
+            "approved";
 
-            createdAt: Date.now(),
 
-            approvedAt: Date.now(),
+        updates[
+            "depositRequests/" +
+            id +
+            "/approvedAt"
+        ] =
+            Date.now();
 
-            approvedBy: currentAdmin.uid
 
-        };
+        updates[
+            "depositRequests/" +
+            id +
+            "/approvedBy"
+        ] =
+            currentAdmin?.uid ||
+            "admin";
+
+
+        if (transactionKey) {
+
+            updates[
+                "transactions/" +
+                transactionKey
+            ] = {
+
+                uid: uid,
+
+                type: "Deposit",
+
+                category: "Deposit",
+
+                amount: amount,
+
+                currency: CURRENCY,
+
+                status: "Approved",
+
+                requestId: id,
+
+                transactionId:
+                    request.transactionId ||
+                    transactionKey,
+
+                createdAt:
+                    Date.now(),
+
+                approvedAt:
+                    Date.now(),
+
+                description:
+                    "Deposit approved by admin"
+
+            };
+
+        }
 
 
         await update(
@@ -1328,22 +2349,24 @@ async function approveDeposit(id) {
 
 
         showToast(
-            "Deposit approved successfully.",
-            "success"
+            "Deposit approved successfully."
         );
+
 
     } catch (error) {
 
         console.error(
-            "Deposit approve error:",
+            "DEPOSIT APPROVE ERROR:",
             error
         );
 
-        showToast(
-            `Deposit approve failed: ${error.message}`,
-            "error"
+        alert(
+            "Deposit approve failed:\n" +
+            error.message
         );
+
     }
+
 }
 
 
@@ -1353,329 +2376,655 @@ async function approveDeposit(id) {
 
 async function rejectDeposit(id) {
 
-    if (!adminReady) return;
+    if (
+        !confirm(
+            "Reject this deposit?"
+        )
+    ) {
+
+        return;
+
+    }
+
 
     try {
 
-        const snap =
-            await get(
-                ref(db, `depositRequests/${id}`)
+        const requestRef =
+            ref(
+                db,
+                "depositRequests/" +
+                id
             );
+
+
+        const snap =
+            await get(requestRef);
+
 
         if (!snap.exists()) {
-            throw new Error("Deposit not found.");
+
+            throw new Error(
+                "Deposit request not found."
+            );
+
         }
 
-        const data = snap.val();
+
+        const request =
+            snap.val() || {};
+
+
+        const status =
+            normalizeStatus(
+                request.status
+            );
+
 
         if (
-            normalizeStatus(data.status) !==
-            "pending"
+            status !== "pending"
         ) {
-            showToast(
-                "This request has already been processed.",
-                "info"
+
+            alert(
+                "This request is no longer pending."
             );
+
             return;
+
         }
 
 
         await update(
-            ref(db, `depositRequests/${id}`),
+            requestRef,
             {
+
                 status: "rejected",
-                rejectedAt: Date.now(),
-                rejectedBy: currentAdmin.uid
+
+                rejectedAt:
+                    Date.now(),
+
+                rejectedBy:
+                    currentAdmin?.uid ||
+                    "admin"
+
             }
         );
 
 
         showToast(
-            "Deposit rejected.",
-            "success"
+            "Deposit rejected."
         );
+
 
     } catch (error) {
 
-        console.error(error);
-
-        showToast(
-            `Deposit reject failed: ${error.message}`,
-            "error"
+        console.error(
+            "DEPOSIT REJECT ERROR:",
+            error
         );
+
+        alert(
+            "Deposit reject failed:\n" +
+            error.message
+        );
+
     }
+
 }
 
 
 /* =========================================================
-   WITHDRAWS
+   DEPOSIT BUTTONS
 ========================================================= */
 
-function renderWithdraws() {
+function activateDepositButtons() {
 
-    const list = $("withdrawList");
-    const empty = $("emptyWithdraw");
+    document
+        .querySelectorAll(
+            ".approveDeposit"
+        )
+        .forEach(button => {
 
-    if (!list) return;
+            button.onclick = () => {
 
+                approveDeposit(
+                    button.dataset.id
+                );
 
-    const search =
-        ($("withdrawSearch")?.value || "")
-        .toLowerCase()
-        .trim();
-
-    const filter =
-        $("withdrawFilter")?.value || "all";
-
-
-    const items =
-        allWithdraws.filter(item => {
-
-            const user = getUser(item.uid);
-
-            const text = `
-                ${item.id}
-                ${item.transactionId || ""}
-                ${user?.fullName || ""}
-                ${user?.email || ""}
-                ${user?.phone || ""}
-                ${item.accountNumber || ""}
-            `.toLowerCase();
-
-            const status =
-                normalizeStatus(item.status);
-
-            return (
-                (!search || text.includes(search)) &&
-                (filter === "all" || status === filter)
-            );
+            };
 
         });
 
 
-    const pending =
-        allWithdraws.filter(
-            x => normalizeStatus(x.status) === "pending"
-        ).length;
+    document
+        .querySelectorAll(
+            ".rejectDeposit"
+        )
+        .forEach(button => {
 
-    const approved =
-        allWithdraws.filter(
-            x => normalizeStatus(x.status) === "approved"
-        ).length;
+            button.onclick = () => {
 
-    const rejected =
-        allWithdraws.filter(
-            x => normalizeStatus(x.status) === "rejected"
-        ).length;
+                rejectDeposit(
+                    button.dataset.id
+                );
 
+            };
 
-    if ($("withdrawTotalCount")) {
-        $("withdrawTotalCount").textContent =
-            allWithdraws.length;
-    }
-
-    if ($("withdrawPendingCount")) {
-        $("withdrawPendingCount").textContent =
-            pending;
-    }
-
-    if ($("withdrawApprovedCount")) {
-        $("withdrawApprovedCount").textContent =
-            approved;
-    }
-
-    if ($("withdrawRejectedCount")) {
-        $("withdrawRejectedCount").textContent =
-            rejected;
-    }
+        });
 
 
-    if (!items.length) {
+    document
+        .querySelectorAll(
+            ".viewProof"
+        )
+        .forEach(button => {
 
-        list.innerHTML = "";
+            button.onclick = () => {
 
-        if (empty) {
-            empty.style.display = "block";
-        }
+                openProof(
+                    button.dataset.image
+                );
 
-        return;
-    }
+            };
 
-
-    if (empty) {
-        empty.style.display = "none";
-    }
+        });
 
 
-    list.innerHTML = items.map(item => {
+    document
+        .querySelectorAll(
+            ".copyTransaction"
+        )
+        .forEach(button => {
 
-        const user = getUser(item.uid);
+            button.onclick = async () => {
 
-        const status =
-            normalizeStatus(item.status);
+                const value =
+                    button.dataset.id ||
+                    "";
 
-        return `
-            <div class="request-card">
+                try {
 
-                <div class="request-header">
+                    await navigator.clipboard.writeText(
+                        value
+                    );
 
-                    <h3>
-                        ${safeText(
-                            user?.fullName ||
-                            user?.email ||
-                            item.uid
-                        )}
-                    </h3>
+                    showToast(
+                        "Transaction ID copied."
+                    );
 
-                    <span class="status ${status}">
-                        ${safeText(status)}
-                    </span>
+                } catch {
 
-                </div>
+                    alert(value);
 
-                <p>
-                    <strong>Amount:</strong>
-                    ${money(item.amount)}
-                </p>
-
-                <p>
-                    <strong>Phone:</strong>
-                    ${safeText(
-                        user?.phone ||
-                        item.phone ||
-                        "-"
-                    )}
-                </p>
-
-                <p>
-                    <strong>Payment:</strong>
-                    ${safeText(
-                        item.paymentMethod ||
-                        item.method ||
-                        "-"
-                    )}
-                </p>
-
-                <p>
-                    <strong>Account:</strong>
-                    ${safeText(
-                        item.accountNumber ||
-                        item.account ||
-                        "-"
-                    )}
-                </p>
-
-                <p>
-                    <strong>Date:</strong>
-                    ${formatDate(item.createdAt)}
-                </p>
-
-                ${
-                    status === "pending"
-                    ? `
-                    <div class="action-buttons">
-
-                        <button
-                            class="approveBtn"
-                            onclick="openWithdrawDetails('${safeText(item.id)}')">
-
-                            <i class="fa-solid fa-circle-check"></i>
-                            Review / Approve
-
-                        </button>
-
-                        <button
-                            class="rejectBtn"
-                            onclick="rejectWithdraw('${safeText(item.id)}')">
-
-                            <i class="fa-solid fa-circle-xmark"></i>
-                            Reject
-
-                        </button>
-
-                    </div>
-                    `
-                    : ""
                 }
 
-            </div>
-        `;
+            };
 
-    }).join("");
+        });
+
 }
 
 
 /* =========================================================
-   OPEN WITHDRAW DETAILS
+   PROOF MODAL
 ========================================================= */
 
-function openWithdrawDetails(id) {
+const proofModal =
+    el("proofModal");
 
-    const item =
-        allWithdraws.find(x => x.id === id);
+const proofImage =
+    el("proofImage");
 
-    if (!item) return;
+const closeProof =
+    el("closeProof");
 
-    selectedWithdrawId = id;
 
-    const user = getUser(item.uid);
+function openProof(image) {
 
-    if ($("modalWithdrawName")) {
-        $("modalWithdrawName").textContent =
-            user?.fullName ||
-            item.fullName ||
-            "-";
+    if (!proofModal) return;
+
+
+    if (proofImage) {
+
+        proofImage.src =
+            image || "";
+
     }
 
-    if ($("modalWithdrawEmail")) {
-        $("modalWithdrawEmail").textContent =
-            user?.email ||
-            item.email ||
-            "-";
-    }
 
-    if ($("modalWithdrawAmount")) {
-        $("modalWithdrawAmount").textContent =
-            money(item.amount);
-    }
+    proofModal.style.display =
+        "flex";
 
-    if ($("modalWithdrawPhone")) {
-        $("modalWithdrawPhone").textContent =
-            user?.phone ||
-            item.phone ||
-            "-";
-    }
-
-    if ($("modalWithdrawMethod")) {
-        $("modalWithdrawMethod").textContent =
-            item.paymentMethod ||
-            item.method ||
-            "-";
-    }
-
-    if ($("modalWithdrawAccount")) {
-        $("modalWithdrawAccount").textContent =
-            item.accountNumber ||
-            item.account ||
-            "-";
-    }
-
-    if ($("modalWithdrawDate")) {
-        $("modalWithdrawDate").textContent =
-            formatDate(item.createdAt);
-    }
-
-    if ($("modalWithdrawStatus")) {
-        $("modalWithdrawStatus").textContent =
-            normalizeStatus(item.status);
-    }
-
-    const modal = $("withdrawModal");
-
-    if (modal) {
-        modal.style.display = "flex";
-    }
 }
+
+
+closeProof?.addEventListener(
+    "click",
+    () => {
+
+        if (proofModal) {
+
+            proofModal.style.display =
+                "none";
+
+        }
+
+    }
+);
+
+
+/* =========================================================
+   WITHDRAW ELEMENTS
+========================================================= */
+
+const withdrawContainer =
+    el("withdrawRequests");
+
+const withdrawSearch =
+    el("withdrawSearch");
+
+const withdrawFilter =
+    el("withdrawFilter");
+
+const withdrawCount =
+    el("withdrawCount");
+
+const withdrawPending =
+    el("withdrawPending");
+
+const withdrawApproved =
+    el("withdrawApproved");
+
+const withdrawRejected =
+    el("withdrawRejected");
+
+const emptyWithdraw =
+    el("emptyWithdraw");
+
+
+/* =========================================================
+   LOAD WITHDRAWS
+========================================================= */
+
+function loadWithdraws() {
+
+    onValue(
+        ref(
+            db,
+            "withdrawRequests"
+        ),
+
+        snapshot => {
+
+            allWithdrawData = {};
+
+
+            if (snapshot.exists()) {
+
+                snapshot.forEach(
+                    child => {
+
+                        allWithdrawData[
+                            child.key
+                        ] = {
+
+                            id: child.key,
+
+                            ...(child.val() || {})
+
+                        };
+
+                    }
+                );
+
+            }
+
+
+            renderWithdraws();
+
+        },
+
+        error => {
+
+            console.error(
+                "WITHDRAW LOAD ERROR:",
+                error
+            );
+
+        }
+
+    );
+
+}
+
+
+/* =========================================================
+   RENDER WITHDRAWS
+========================================================= */
+
+function renderWithdraws() {
+
+    if (!withdrawContainer) return;
+
+
+    const keyword =
+        (
+            withdrawSearch?.value ||
+            ""
+        )
+        .trim()
+        .toLowerCase();
+
+
+    const filter =
+        withdrawFilter?.value ||
+        "All";
+
+
+    const entries =
+        Object.values(
+            allWithdrawData
+        );
+
+
+    let pending = 0;
+    let approved = 0;
+    let rejected = 0;
+
+
+    entries.forEach(data => {
+
+        const status =
+            normalizeStatus(
+                data.status
+            );
+
+
+        if (status === "pending")
+            pending++;
+
+        if (status === "approved")
+            approved++;
+
+        if (status === "rejected")
+            rejected++;
+
+    });
+
+
+    if (withdrawCount)
+        withdrawCount.textContent =
+            entries.length;
+
+
+    if (withdrawPending)
+        withdrawPending.textContent =
+            pending;
+
+
+    if (withdrawApproved)
+        withdrawApproved.textContent =
+            approved;
+
+
+    if (withdrawRejected)
+        withdrawRejected.textContent =
+            rejected;
+
+
+    const filtered =
+        entries
+            .filter(data => {
+
+                const text = [
+
+                    data.fullName,
+                    data.name,
+                    data.email,
+                    data.phone,
+                    data.method,
+                    data.amount,
+                    data.uid
+
+                ]
+                .filter(Boolean)
+                .join(" ")
+                .toLowerCase();
+
+
+                const status =
+                    normalizeStatus(
+                        data.status
+                    );
+
+
+                return (
+
+                    (
+                        !keyword ||
+                        text.includes(keyword)
+                    )
+
+                    &&
+
+                    (
+                        filter === "All" ||
+                        status ===
+                            filter.toLowerCase()
+                    )
+
+                );
+
+            })
+            .sort(
+                (a, b) =>
+                    number(b.createdAt) -
+                    number(a.createdAt)
+            );
+
+
+    withdrawContainer.innerHTML = "";
+
+
+    if (!filtered.length) {
+
+        if (emptyWithdraw) {
+
+            emptyWithdraw.style.display =
+                "block";
+
+        }
+
+
+        withdrawContainer.innerHTML = `
+
+            <div class="empty-state">
+
+                <i class="fa-solid fa-money-bill-transfer"></i>
+
+                <h3>
+                    No Withdraw Requests
+                </h3>
+
+                <p>
+                    Withdraw requests will appear here.
+                </p>
+
+            </div>
+
+        `;
+
+        return;
+
+    }
+
+
+    if (emptyWithdraw) {
+
+        emptyWithdraw.style.display =
+            "none";
+
+    }
+
+
+    filtered.forEach(data => {
+
+        const status =
+            normalizeStatus(
+                data.status
+            );
+
+
+        const label =
+            status.charAt(0)
+                .toUpperCase() +
+            status.slice(1);
+
+
+        const card =
+            document.createElement(
+                "div"
+            );
+
+
+        card.className =
+            "request-card";
+
+
+        card.innerHTML = `
+
+            <div class="request-top">
+
+                <h3>
+                    ${money(data.amount)}
+                </h3>
+
+                <span class="status ${escapeHTML(status)}">
+
+                    ${escapeHTML(label)}
+
+                </span>
+
+            </div>
+
+
+            <p>
+
+                <strong>Name:</strong>
+
+                ${escapeHTML(
+                    data.fullName ||
+                    data.name ||
+                    "-"
+                )}
+
+            </p>
+
+
+            <p>
+
+                <strong>Email:</strong>
+
+                ${escapeHTML(
+                    data.email ||
+                    "-"
+                )}
+
+            </p>
+
+
+            <p>
+
+                <strong>Phone:</strong>
+
+                ${escapeHTML(
+                    data.phone ||
+                    "-"
+                )}
+
+            </p>
+
+
+            <p>
+
+                <strong>Method:</strong>
+
+                ${escapeHTML(
+                    data.method ||
+                    data.paymentMethod ||
+                    "-"
+                )}
+
+            </p>
+
+
+            <div class="action-buttons">
+
+                ${
+                    status === "pending"
+                    ? `
+
+                        <button
+                            class="approveWithdraw"
+                            data-id="${escapeHTML(data.id)}">
+
+                            <i class="fa-solid fa-check"></i>
+                            Approve
+
+                        </button>
+
+
+                        <button
+                            class="rejectWithdraw"
+                            data-id="${escapeHTML(data.id)}">
+
+                            <i class="fa-solid fa-xmark"></i>
+                            Reject
+
+                        </button>
+
+                    `
+                    : ""
+                }
+
+                <button
+                    class="viewWithdraw"
+                    data-id="${escapeHTML(data.id)}">
+
+                    View
+
+                </button>
+
+            </div>
+
+        `;
+
+
+        withdrawContainer.appendChild(
+            card
+        );
+
+    });
+
+
+    activateWithdrawButtons();
+
+}
+
+
+/* =========================================================
+   WITHDRAW SEARCH / FILTER
+========================================================= */
+
+withdrawSearch?.addEventListener(
+    "input",
+    renderWithdraws
+);
+
+
+withdrawFilter?.addEventListener(
+    "change",
+    renderWithdraws
+);
 
 
 /* =========================================================
@@ -1684,141 +3033,268 @@ function openWithdrawDetails(id) {
 
 async function approveWithdraw(id) {
 
-    if (!adminReady) return;
+    if (
+        !confirm(
+            "Approve this withdraw?"
+        )
+    ) {
+
+        return;
+
+    }
+
 
     try {
 
-        const snap =
-            await get(
-                ref(db, `withdrawRequests/${id}`)
+        const requestRef =
+            ref(
+                db,
+                "withdrawRequests/" +
+                id
             );
 
-        if (!snap.exists()) {
-            throw new Error("Withdraw request not found.");
+
+        const requestSnap =
+            await get(requestRef);
+
+
+        if (!requestSnap.exists()) {
+
+            throw new Error(
+                "Withdraw request not found."
+            );
+
         }
 
-        const request = snap.val();
+
+        const request =
+            requestSnap.val() || {};
+
+
+        const status =
+            normalizeStatus(
+                request.status
+            );
+
 
         if (
-            normalizeStatus(request.status) !==
-            "pending"
+            status === "approved"
         ) {
-            showToast(
-                "This withdraw has already been processed.",
-                "info"
+
+            alert(
+                "This withdraw is already approved."
             );
+
             return;
+
+        }
+
+
+        if (
+            status === "rejected"
+        ) {
+
+            alert(
+                "This withdraw has already been rejected."
+            );
+
+            return;
+
+        }
+
+
+        const uid =
+            request.uid;
+
+
+        if (!uid) {
+
+            throw new Error(
+                "Withdraw request has no user UID."
+            );
+
         }
 
 
         const amount =
-            numberValue(request.amount);
+            number(request.amount);
+
 
         if (
-            amount < 4000 ||
-            amount > 500000
+            amount < MIN_WITHDRAW ||
+            amount > MAX_WITHDRAW
         ) {
+
             throw new Error(
-                "Withdraw must be between 4,000 and 500,000 RWF."
+                "Withdraw must be between " +
+                MIN_WITHDRAW.toLocaleString() +
+                " and " +
+                MAX_WITHDRAW.toLocaleString() +
+                " RWF."
             );
+
         }
 
 
-        const uid = request.uid;
+        const userRef =
+            ref(
+                db,
+                "users/" +
+                uid
+            );
+
 
         const userSnap =
-            await get(
-                ref(db, `users/${uid}`)
-            );
+            await get(userRef);
+
 
         if (!userSnap.exists()) {
-            throw new Error("User not found.");
+
+            throw new Error(
+                "User account not found."
+            );
+
         }
 
-        const user = userSnap.val();
+
+        const user =
+            userSnap.val() || {};
+
 
         const balance =
-            numberValue(user.balance);
+            number(user.balance);
 
 
-        if (balance < amount) {
+        if (
+            balance < amount
+        ) {
+
             throw new Error(
-                "User has insufficient balance."
+                "Insufficient user balance."
             );
+
         }
 
 
-        const newBalance =
-            balance - amount;
-
-        const newTotalWithdraw =
-            numberValue(user.totalWithdraw) +
-            amount;
-
-        const newTotalWithdraws =
-            numberValue(user.totalWithdraws) +
-            amount;
-
-        const newTotalTransactions =
-            numberValue(user.totalTransactions) +
-            1;
+        const transactionKey =
+            push(
+                ref(
+                    db,
+                    "transactions"
+                )
+            ).key;
 
 
-        const now = Date.now();
-
-        const transactionId =
-            `withdraw_${id}`;
+        const now =
+            Date.now();
 
 
         const updates = {};
 
 
-        updates[`users/${uid}/balance`] =
-            newBalance;
-
-        updates[`users/${uid}/totalWithdraw`] =
-            newTotalWithdraw;
-
-        updates[`users/${uid}/totalWithdraws`] =
-            newTotalWithdraws;
-
-        updates[`users/${uid}/totalTransactions`] =
-            newTotalTransactions;
-
-
-        updates[`withdrawRequests/${id}/status`] =
-            "approved";
-
-        updates[`withdrawRequests/${id}/approvedAt`] =
-            now;
-
-        updates[`withdrawRequests/${id}/approvedBy`] =
-            currentAdmin.uid;
+        updates[
+            "users/" +
+            uid +
+            "/balance"
+        ] =
+            balance - amount;
 
 
         updates[
-            `transactions/${transactionId}`
-        ] = {
+            "users/" +
+            uid +
+            "/totalWithdraw"
+        ] =
+            number(
+                user.totalWithdraw
+            ) + amount;
 
-            uid,
 
-            type: "withdraw",
+        updates[
+            "users/" +
+            uid +
+            "/totalWithdraws"
+        ] =
+            number(
+                user.totalWithdraws
+            ) + amount;
 
-            amount,
 
-            currency: "RWF",
+        updates[
+            "users/" +
+            uid +
+            "/totalTransactions"
+        ] =
+            number(
+                user.totalTransactions
+            ) + 1;
 
-            status: "approved",
 
-            requestId: id,
+        updates[
+            "withdrawRequests/" +
+            id +
+            "/status"
+        ] =
+            "approved";
 
-            createdAt: now,
 
-            approvedAt: now,
+        updates[
+            "withdrawRequests/" +
+            id +
+            "/approvedAt"
+        ] =
+            now;
 
-            approvedBy: currentAdmin.uid
 
-        };
+        updates[
+            "withdrawRequests/" +
+            id +
+            "/approvedBy"
+        ] =
+            currentAdmin?.uid ||
+            "admin";
+
+
+        if (transactionKey) {
+
+            updates[
+                "transactions/" +
+                transactionKey
+            ] = {
+
+                uid: uid,
+
+                type: "Withdraw",
+
+                category: "Withdraw",
+
+                amount: amount,
+
+                currency: CURRENCY,
+
+                status: "Approved",
+
+                requestId: id,
+
+                transactionId:
+                    request.transactionId ||
+                    transactionKey,
+
+                method:
+                    request.method ||
+                    request.paymentMethod ||
+                    "",
+
+                createdAt: now,
+
+                approvedAt: now,
+
+                description:
+                    "Withdraw approved by admin"
+
+            };
+
+        }
 
 
         await update(
@@ -1827,26 +3303,25 @@ async function approveWithdraw(id) {
         );
 
 
-        closeWithdrawModal();
-
-
         showToast(
-            "Withdraw approved successfully.",
-            "success"
+            "Withdraw approved successfully."
         );
+
 
     } catch (error) {
 
         console.error(
-            "Withdraw approve error:",
+            "WITHDRAW APPROVE ERROR:",
             error
         );
 
-        showToast(
-            `Withdraw approve failed: ${error.message}`,
-            "error"
+        alert(
+            "Withdraw approve failed:\n" +
+            error.message
         );
+
     }
+
 }
 
 
@@ -1856,1288 +3331,250 @@ async function approveWithdraw(id) {
 
 async function rejectWithdraw(id) {
 
-    if (!adminReady) return;
+    if (
+        !confirm(
+            "Reject this withdraw?"
+        )
+    ) {
+
+        return;
+
+    }
+
 
     try {
 
-        const snap =
-            await get(
-                ref(db, `withdrawRequests/${id}`)
+        const requestRef =
+            ref(
+                db,
+                "withdrawRequests/" +
+                id
             );
+
+
+        const snap =
+            await get(requestRef);
+
 
         if (!snap.exists()) {
-            throw new Error("Withdraw not found.");
+
+            throw new Error(
+                "Withdraw request not found."
+            );
+
         }
 
-        const data = snap.val();
+
+        const request =
+            snap.val() || {};
+
 
         if (
-            normalizeStatus(data.status) !==
-            "pending"
+            normalizeStatus(
+                request.status
+            ) !== "pending"
         ) {
-            showToast(
-                "This request has already been processed.",
-                "info"
+
+            alert(
+                "This request is no longer pending."
             );
+
             return;
+
         }
 
 
         await update(
-            ref(db, `withdrawRequests/${id}`),
+            requestRef,
             {
+
                 status: "rejected",
-                rejectedAt: Date.now(),
-                rejectedBy: currentAdmin.uid
+
+                rejectedAt:
+                    Date.now(),
+
+                rejectedBy:
+                    currentAdmin?.uid ||
+                    "admin"
+
             }
         );
 
 
-        closeWithdrawModal();
-
-
         showToast(
-            "Withdraw rejected.",
-            "success"
+            "Withdraw rejected."
         );
+
 
     } catch (error) {
 
-        console.error(error);
-
-        showToast(
-            `Withdraw reject failed: ${error.message}`,
-            "error"
+        console.error(
+            "WITHDRAW REJECT ERROR:",
+            error
         );
+
+        alert(
+            "Withdraw reject failed:\n" +
+            error.message
+        );
+
     }
+
 }
 
 
 /* =========================================================
-   VIP REQUESTS
-   IMPORTANT:
-   NO APPROVE / REJECT BUTTONS
-   VIP IS ACTIVATED BY USER PURCHASE FLOW
+   WITHDRAW BUTTONS
 ========================================================= */
 
-function renderVipRequests() {
+function activateWithdrawButtons() {
 
-    const list = $("vipRequestList");
-    const empty = $("emptyVipRequest");
+    document
+        .querySelectorAll(
+            ".approveWithdraw"
+        )
+        .forEach(button => {
 
-    if (!list) return;
+            button.onclick = () => {
 
+                approveWithdraw(
+                    button.dataset.id
+                );
 
-    const total =
-        allVipRequests.length;
-
-    const pending =
-        allVipRequests.filter(
-            x => normalizeStatus(x.status) === "pending"
-        ).length;
-
-    const approved =
-        allVipRequests.filter(
-            x => normalizeStatus(x.status) === "approved"
-        ).length;
-
-    const rejected =
-        allVipRequests.filter(
-            x => normalizeStatus(x.status) === "rejected"
-        ).length;
-
-
-    if ($("vipTotalCount")) {
-        $("vipTotalCount").textContent = total;
-    }
-
-    if ($("vipPendingCount")) {
-        $("vipPendingCount").textContent = pending;
-    }
-
-    if ($("vipApprovedCount")) {
-        $("vipApprovedCount").textContent = approved;
-    }
-
-    if ($("vipRejectedCount")) {
-        $("vipRejectedCount").textContent = rejected;
-    }
-
-
-    if (!allVipRequests.length) {
-
-        list.innerHTML = "";
-
-        if (empty) {
-            empty.style.display = "block";
-        }
-
-        return;
-    }
-
-
-    if (empty) {
-        empty.style.display = "none";
-    }
-
-
-    list.innerHTML =
-        allVipRequests.map(item => {
-
-            const user =
-                getUser(item.uid);
-
-            const status =
-                normalizeStatus(item.status);
-
-            return `
-                <div class="request-card">
-
-                    <div class="request-header">
-
-                        <h3>
-                            <i class="fa-solid fa-crown"></i>
-
-                            ${safeText(
-                                item.vipName ||
-                                item.planName ||
-                                item.planId ||
-                                "VIP Plan"
-                            )}
-                        </h3>
-
-                        <span class="status ${status}">
-                            ${safeText(status)}
-                        </span>
-
-                    </div>
-
-                    <p>
-                        <strong>User:</strong>
-                        ${safeText(
-                            user?.fullName ||
-                            user?.email ||
-                            item.uid ||
-                            "-"
-                        )}
-                    </p>
-
-                    <p>
-                        <strong>Price:</strong>
-                        ${money(item.price)}
-                    </p>
-
-                    <p>
-                        <strong>Daily Income:</strong>
-                        ${money(item.dailyIncome)}
-                    </p>
-
-                    <p>
-                        <strong>Total Profit:</strong>
-                        ${money(item.totalProfit)}
-                    </p>
-
-                    <p>
-                        <strong>Payment:</strong>
-                        ${safeText(
-                            item.paymentMethod ||
-                            "Account Balance"
-                        )}
-                    </p>
-
-                    <p>
-                        <strong>Date:</strong>
-                        ${formatDate(item.createdAt)}
-                    </p>
-
-                    <div class="request-note">
-
-                        <i class="fa-solid fa-circle-info"></i>
-
-                        VIP purchase is handled automatically.
-                        No admin approval is required.
-
-                    </div>
-
-                </div>
-            `;
-
-        }).join("");
-}
-
-
-/* =========================================================
-   VIP BUYERS
-========================================================= */
-
-function renderVipBuyers() {
-
-    const list = $("vipBuyerList");
-    const empty = $("emptyVipBuyer");
-
-    if (!list) return;
-
-
-    const now = Date.now();
-
-    const active =
-        allVipBuyers.filter(item => {
-
-            const status =
-                normalizeStatus(item.status);
-
-            const endDate =
-                numberValue(item.endDate);
-
-            return (
-                status === "active" &&
-                (!endDate || endDate > now)
-            );
+            };
 
         });
 
 
-    const expired =
-        allVipBuyers.filter(item => {
+    document
+        .querySelectorAll(
+            ".rejectWithdraw"
+        )
+        .forEach(button => {
 
-            const endDate =
-                numberValue(item.endDate);
+            button.onclick = () => {
 
-            return (
-                normalizeStatus(item.status) ===
-                "expired" ||
-                (endDate && endDate <= now)
-            );
+                rejectWithdraw(
+                    button.dataset.id
+                );
+
+            };
 
         });
 
 
-    if ($("vipBuyerTotalCount")) {
-        $("vipBuyerTotalCount").textContent =
-            allVipBuyers.length;
-    }
-
-    if ($("vipBuyerActiveCount")) {
-        $("vipBuyerActiveCount").textContent =
-            active.length;
-    }
-
-    if ($("vipBuyerExpiredCount")) {
-        $("vipBuyerExpiredCount").textContent =
-            expired.length;
-    }
-
-
-    if (!allVipBuyers.length) {
-
-        list.innerHTML = "";
-
-        if (empty) {
-            empty.style.display = "block";
-        }
-
-        return;
-    }
-
-
-    if (empty) {
-        empty.style.display = "none";
-    }
-
-
-    list.innerHTML =
-        allVipBuyers.map(item => {
-
-            const user =
-                getUser(item.uid);
-
-            const status =
-                normalizeStatus(item.status);
-
-            return `
-                <div class="request-card">
-
-                    <div class="request-header">
-
-                        <h3>
-
-                            <i class="fa-solid fa-crown"></i>
-
-                            ${safeText(
-                                item.vipName ||
-                                item.planName ||
-                                "VIP"
-                            )}
-
-                        </h3>
-
-                        <span class="status ${status}">
-                            ${safeText(status)}
-                        </span>
-
-                    </div>
-
-                    <p>
-                        <strong>User:</strong>
-                        ${safeText(
-                            user?.fullName ||
-                            user?.email ||
-                            item.uid ||
-                            "-"
-                        )}
-                    </p>
-
-                    <p>
-                        <strong>Price:</strong>
-                        ${money(item.price)}
-                    </p>
-
-                    <p>
-                        <strong>Daily Income:</strong>
-                        ${money(item.dailyIncome)}
-                    </p>
-
-                    <p>
-                        <strong>Total Profit:</strong>
-                        ${money(item.totalProfit)}
-                    </p>
-
-                    <p>
-                        <strong>Purchased:</strong>
-                        ${formatDate(
-                            item.purchasedAt ||
-                            item.createdAt
-                        )}
-                    </p>
-
-                    <p>
-                        <strong>End:</strong>
-                        ${formatDate(item.endDate)}
-                    </p>
-
-                </div>
-            `;
-
-        }).join("");
-}
-
-
-/* =========================================================
-   BONUS REQUESTS
-========================================================= */
-
-function renderBonusRequests() {
-
-    const list = $("bonusRequestList");
-    const empty = $("emptyBonusRequest");
-
-    if (!list) return;
-
-
-    if (!allBonusRequests.length) {
-
-        list.innerHTML = "";
-
-        if (empty) {
-            empty.style.display = "block";
-        }
-
-        return;
-    }
-
-
-    if (empty) {
-        empty.style.display = "none";
-    }
-
-
-    list.innerHTML =
-        allBonusRequests.map(item => {
-
-            const user =
-                getUser(item.uid);
-
-            const status =
-                normalizeStatus(item.status);
-
-            return `
-                <div class="request-card">
-
-                    <div class="request-header">
-
-                        <h3>
-                            <i class="fa-solid fa-gift"></i>
-
-                            Bonus Request
-                        </h3>
-
-                        <span class="status ${status}">
-                            ${safeText(status)}
-                        </span>
-
-                    </div>
-
-                    <p>
-                        <strong>User:</strong>
-                        ${safeText(
-                            user?.fullName ||
-                            user?.email ||
-                            item.uid ||
-                            "-"
-                        )}
-                    </p>
-
-                    <p>
-                        <strong>Amount:</strong>
-                        ${money(item.amount)}
-                    </p>
-
-                    <p>
-                        <strong>Date:</strong>
-                        ${formatDate(item.createdAt)}
-                    </p>
-
-                </div>
-            `;
-
-        }).join("");
-}
-
-
-/* =========================================================
-   USERS
-========================================================= */
-
-function renderUsers() {
-
-    const list = $("usersList");
-    const empty = $("emptyUsers");
-
-    if (!list) return;
-
-
-    const search =
-        ($("userSearch")?.value || "")
-        .toLowerCase()
-        .trim();
-
-
-    const users =
-        allUsers.filter(user => {
-
-            const text = `
-                ${user.fullName || ""}
-                ${user.email || ""}
-                ${user.phone || ""}
-                ${user.uid || ""}
-                ${user.referralCode || ""}
-            `.toLowerCase();
-
-            return (
-                !search ||
-                text.includes(search)
-            );
+    document
+        .querySelectorAll(
+            ".viewWithdraw"
+        )
+        .forEach(button => {
+
+            button.onclick = () => {
+
+                openWithdrawModal(
+                    button.dataset.id
+                );
+
+            };
 
         });
 
-
-    if (!users.length) {
-
-        list.innerHTML = "";
-
-        if (empty) {
-            empty.style.display = "block";
-        }
-
-        return;
-    }
-
-
-    if (empty) {
-        empty.style.display = "none";
-    }
-
-
-    list.innerHTML =
-        users.map(user => {
-
-            return `
-                <div class="user-card">
-
-                    <div class="request-header">
-
-                        <h3>
-                            ${safeText(
-                                user.fullName ||
-                                "User"
-                            )}
-                        </h3>
-
-                        <span>
-                            ${safeText(
-                                user.vip ||
-                                "VIP 0"
-                            )}
-                        </span>
-
-                    </div>
-
-                    <p>
-                        <strong>Email:</strong>
-                        ${safeText(
-                            user.email || "-"
-                        )}
-                    </p>
-
-                    <p>
-                        <strong>Phone:</strong>
-                        ${safeText(
-                            user.phone || "-"
-                        )}
-                    </p>
-
-                    <p>
-                        <strong>Balance:</strong>
-                        ${money(user.balance)}
-                    </p>
-
-                    <p>
-                        <strong>Referral Code:</strong>
-                        ${safeText(
-                            user.referralCode || "-"
-                        )}
-                    </p>
-
-                    <p>
-                        <strong>Referral Count:</strong>
-                        ${numberValue(
-                            user.referralCount
-                        )}
-                    </p>
-
-                </div>
-            `;
-
-        }).join("");
 }
 
 
 /* =========================================================
-   TRANSACTIONS
+   WITHDRAW MODAL
 ========================================================= */
 
-function renderTransactions() {
+const withdrawModal =
+    el("withdrawModal");
 
-    const list = $("transactionList");
-    const empty = $("emptyTransaction");
-
-    if (!list) return;
-
-
-    const search =
-        ($("transactionSearch")?.value || "")
-        .toLowerCase()
-        .trim();
-
-    const filter =
-        $("transactionFilter")?.value ||
-        "all";
+const closeWithdrawModal =
+    el("closeWithdrawModal");
 
 
-    const items =
-        allTransactions.filter(item => {
+function openWithdrawModal(id) {
 
-            const user =
-                getUser(item.uid);
-
-            const text = `
-                ${item.id}
-                ${item.type || ""}
-                ${item.status || ""}
-                ${item.transactionId || ""}
-                ${user?.fullName || ""}
-                ${user?.email || ""}
-                ${user?.phone || ""}
-            `.toLowerCase();
+    const data =
+        allWithdrawData[id];
 
 
-            const type =
-                String(item.type || "")
-                .toLowerCase();
-
-            const status =
-                normalizeStatus(item.status);
+    if (!data) return;
 
 
-            let filterMatch = true;
+    const modalUser =
+        el("modalUser");
+
+    const modalEmail =
+        el("modalEmail");
+
+    const modalPhone =
+        el("modalPhone");
+
+    const modalAmount =
+        el("modalAmount");
+
+    const modalMethod =
+        el("modalMethod");
+
+    const modalStatus =
+        el("modalStatus");
 
 
-            if (
-                [
-                    "deposit",
-                    "withdraw",
-                    "vip",
-                    "profit",
-                    "bonus",
-                    "referral"
-                ].includes(filter)
-            ) {
-                filterMatch =
-                    type === filter;
-            }
+    if (modalUser)
+        modalUser.textContent =
+            data.fullName ||
+            data.name ||
+            "-";
 
 
-            if (
-                [
-                    "approved",
-                    "pending",
-                    "rejected",
-                    "processing"
-                ].includes(filter)
-            ) {
-                filterMatch =
-                    status === filter;
-            }
+    if (modalEmail)
+        modalEmail.textContent =
+            data.email || "-";
 
 
-            return (
-                (!search ||
-                    text.includes(search)) &&
-                filterMatch
-            );
-
-        });
+    if (modalPhone)
+        modalPhone.textContent =
+            data.phone || "-";
 
 
-    if (!items.length) {
+    if (modalAmount)
+        modalAmount.textContent =
+            money(data.amount);
 
-        list.innerHTML = "";
 
-        if (empty) {
-            empty.style.display = "block";
-        }
+    if (modalMethod)
+        modalMethod.textContent =
+            data.method ||
+            data.paymentMethod ||
+            "-";
 
-        return;
+
+    if (modalStatus)
+        modalStatus.textContent =
+            data.status ||
+            "-";
+
+
+    if (withdrawModal) {
+
+        withdrawModal.style.display =
+            "flex";
+
     }
 
-
-    if (empty) {
-        empty.style.display = "none";
-    }
-
-
-    list.innerHTML =
-        items.map(item => {
-
-            const user =
-                getUser(item.uid);
-
-            const status =
-                normalizeStatus(item.status);
-
-            return `
-                <div class="request-card">
-
-                    <div class="request-header">
-
-                        <h3>
-                            ${safeText(
-                                item.type ||
-                                "Transaction"
-                            )}
-                        </h3>
-
-                        <span class="status ${status}">
-                            ${safeText(status)}
-                        </span>
-
-                    </div>
-
-                    <p>
-                        <strong>User:</strong>
-                        ${safeText(
-                            user?.fullName ||
-                            user?.email ||
-                            item.uid ||
-                            "-"
-                        )}
-                    </p>
-
-                    <p>
-                        <strong>Amount:</strong>
-                        ${money(item.amount)}
-                    </p>
-
-                    <p>
-                        <strong>Currency:</strong>
-                        RWF
-                    </p>
-
-                    <p>
-                        <strong>Date:</strong>
-                        ${formatDate(item.createdAt)}
-                    </p>
-
-                </div>
-            `;
-
-        }).join("");
 }
 
 
-/* =========================================================
-   QUICK ACTIONS
-========================================================= */
+closeWithdrawModal?.addEventListener(
+    "click",
+    () => {
 
-function initializeQuickActions() {
+        if (withdrawModal) {
 
-    const actions = {
+            withdrawModal.style.display =
+                "none";
 
-        refreshDashboard:
-            () => {
-                refreshAll();
-                openPage("dashboard");
-            },
-
-        openDeposits:
-            () => openPage("deposits"),
-
-        openWithdraws:
-            () => openPage("withdraws"),
-
-        openUsers:
-            () => openPage("users"),
-
-        openTransactions:
-            () => openPage("transactions"),
-
-        openSettings:
-            () => openPage("settings"),
-
-        openVipRequests:
-            () => openPage("vipRequests"),
-
-        refreshDashboardQuick:
-            () => {
-                refreshAll();
-                openPage("dashboard");
-            },
-
-        openUsersBtn:
-            () => openPage("users"),
-
-        openTransactionsBtn:
-            () => openPage("transactions"),
-
-        openSettingsBtn:
-            () => openPage("settings")
-    };
-
-
-    Object.entries(actions)
-        .forEach(([id, action]) => {
-
-            const button = $(id);
-
-            if (button) {
-                button.addEventListener(
-                    "click",
-                    action
-                );
-            }
-
-        });
-
-
-    const approveAllDeposits =
-        $("approveAllDeposits");
-
-    if (approveAllDeposits) {
-
-        approveAllDeposits.addEventListener(
-            "click",
-            approveAllPendingDeposits
-        );
-    }
-
-
-    const approveAllWithdraws =
-        $("approveAllWithdraws");
-
-    if (approveAllWithdraws) {
-
-        approveAllWithdraws.addEventListener(
-            "click",
-            approveAllPendingWithdraws
-        );
-    }
-}
-
-
-/* =========================================================
-   APPROVE ALL PENDING DEPOSITS
-========================================================= */
-
-async function approveAllPendingDeposits() {
-
-    const pending =
-        allDeposits.filter(
-            item =>
-                normalizeStatus(item.status) ===
-                "pending"
-        );
-
-
-    if (!pending.length) {
-
-        showToast(
-            "There are no pending deposits.",
-            "info"
-        );
-
-        return;
-    }
-
-
-    const confirmed =
-        confirm(
-            `Approve ${pending.length} pending deposit(s)?`
-        );
-
-    if (!confirmed) return;
-
-
-    for (const item of pending) {
-
-        try {
-
-            await approveDeposit(item.id);
-
-        } catch (error) {
-
-            console.error(
-                "Approve all deposit error:",
-                error
-            );
-        }
-    }
-
-
-    showToast(
-        "Pending deposits processed.",
-        "success"
-    );
-}
-
-
-/* =========================================================
-   APPROVE ALL PENDING WITHDRAWS
-========================================================= */
-
-async function approveAllPendingWithdraws() {
-
-    const pending =
-        allWithdraws.filter(
-            item =>
-                normalizeStatus(item.status) ===
-                "pending"
-        );
-
-
-    if (!pending.length) {
-
-        showToast(
-            "There are no pending withdraws.",
-            "info"
-        );
-
-        return;
-    }
-
-
-    const confirmed =
-        confirm(
-            `Approve ${pending.length} pending withdraw(s)?`
-        );
-
-    if (!confirmed) return;
-
-
-    for (const item of pending) {
-
-        try {
-
-            await approveWithdraw(item.id);
-
-        } catch (error) {
-
-            console.error(
-                "Approve all withdraw error:",
-                error
-            );
-        }
-    }
-
-
-    showToast(
-        "Pending withdraws processed.",
-        "success"
-    );
-}
-
-
-/* =========================================================
-   SETTINGS
-========================================================= */
-
-function initializeSettings() {
-
-    const save =
-        $("saveSettings");
-
-    if (!save) return;
-
-
-    save.addEventListener(
-        "click",
-        async () => {
-
-            try {
-
-                const name =
-                    $("adminNameInput")?.value
-                    ?.trim();
-
-                if (!name) {
-                    showToast(
-                        "Enter admin name.",
-                        "error"
-                    );
-                    return;
-                }
-
-
-                await update(
-                    ref(
-                        db,
-                        `admins/${currentAdmin.uid}`
-                    ),
-                    {
-                        name
-                    }
-                );
-
-
-                adminData = {
-                    ...(adminData || {}),
-                    name
-                };
-
-
-                showAdminPanel();
-
-
-                showToast(
-                    "Settings saved.",
-                    "success"
-                );
-
-            } catch (error) {
-
-                console.error(error);
-
-                showToast(
-                    `Settings failed: ${error.message}`,
-                    "error"
-                );
-            }
-
-        }
-    );
-}
-
-
-/* =========================================================
-   SEARCH / FILTER EVENTS
-========================================================= */
-
-function initializeFilters() {
-
-    [
-        "depositSearch",
-        "depositFilter",
-        "withdrawSearch",
-        "withdrawFilter",
-        "userSearch",
-        "transactionSearch",
-        "transactionFilter"
-    ]
-    .forEach(id => {
-
-        const element = $(id);
-
-        if (!element) return;
-
-        element.addEventListener(
-            "input",
-            () => {
-
-                if (
-                    id.includes("deposit")
-                ) {
-                    renderDeposits();
-                }
-
-                if (
-                    id.includes("withdraw")
-                ) {
-                    renderWithdraws();
-                }
-
-                if (
-                    id === "userSearch"
-                ) {
-                    renderUsers();
-                }
-
-                if (
-                    id.includes("transaction")
-                ) {
-                    renderTransactions();
-                }
-            }
-        );
-
-        element.addEventListener(
-            "change",
-            () => {
-
-                if (
-                    id.includes("deposit")
-                ) {
-                    renderDeposits();
-                }
-
-                if (
-                    id.includes("withdraw")
-                ) {
-                    renderWithdraws();
-                }
-
-                if (
-                    id.includes("transaction")
-                ) {
-                    renderTransactions();
-                }
-            }
-        );
-
-    });
-}
-
-
-/* =========================================================
-   WITHDRAW MODAL EVENTS
-========================================================= */
-
-function initializeWithdrawModal() {
-
-    const close =
-        $("closeWithdrawModal");
-
-    if (close) {
-
-        close.addEventListener(
-            "click",
-            closeWithdrawModal
-        );
-    }
-
-
-    const approve =
-        $("modalApproveWithdraw");
-
-    if (approve) {
-
-        approve.addEventListener(
-            "click",
-            async () => {
-
-                if (!selectedWithdrawId) return;
-
-                await approveWithdraw(
-                    selectedWithdrawId
-                );
-
-            }
-        );
-    }
-
-
-    const reject =
-        $("modalRejectWithdraw");
-
-    if (reject) {
-
-        reject.addEventListener(
-            "click",
-            async () => {
-
-                if (!selectedWithdrawId) return;
-
-                await rejectWithdraw(
-                    selectedWithdrawId
-                );
-
-            }
-        );
-    }
-}
-
-
-function closeWithdrawModal() {
-
-    const modal =
-        $("withdrawModal");
-
-    if (modal) {
-        modal.style.display = "none";
-    }
-
-    selectedWithdrawId = null;
-}
-
-
-/* =========================================================
-   REFRESH
-========================================================= */
-
-async function refreshAll() {
-
-    try {
-
-        renderDashboard();
-        renderDeposits();
-        renderWithdraws();
-        renderVipRequests();
-        renderVipBuyers();
-        renderBonusRequests();
-        renderUsers();
-        renderTransactions();
-
-        showToast(
-            "Admin data refreshed.",
-            "success"
-        );
-
-    } catch (error) {
-
-        console.error(error);
-
-        showToast(
-            "Refresh failed.",
-            "error"
-        );
-    }
-}
-
-
-/* =========================================================
-   AUTH INITIALIZATION
-========================================================= */
-
-onAuthStateChanged(
-    auth,
-    async user => {
-
-        try {
-
-            await authReady;
-
-
-            if (!user) {
-
-                window.location.href =
-                    "login.html";
-
-                return;
-            }
-
-
-            await verifyAdmin(user);
-
-
-            showAdminPanel();
-
-
-            initializeNavigation();
-
-            initializeQuickActions();
-
-            initializeSettings();
-
-            initializeFilters();
-
-            initializeWithdrawModal();
-
-
-            startDatabaseListeners();
-
-
-            const hash =
-                window.location.hash
-                .replace("#", "");
-
-
-            if (
-                hash &&
-                pageNames[hash]
-            ) {
-                openPage(hash);
-            } else {
-                openPage("dashboard");
-            }
-
-
-            console.log(
-                "Money Vault Admin Panel ready."
-            );
-
-
-        } catch (error) {
-
-            console.error(
-                "ADMIN INITIALIZATION ERROR:",
-                error
-            );
-
-
-            const loading =
-                $("loadingScreen");
-
-            if (loading) {
-
-                loading.innerHTML = `
-                    <div style="padding:30px;text-align:center;">
-
-                        <h2>
-                            Admin Access Error
-                        </h2>
-
-                        <p>
-                            ${safeText(error.message)}
-                        </p>
-
-                        <button
-                            onclick="location.href='login.html'">
-
-                            Return to Login
-
-                        </button>
-
-                    </div>
-                `;
-            }
         }
 
     }
@@ -3145,29 +3582,1239 @@ onAuthStateChanged(
 
 
 /* =========================================================
-   GLOBAL FUNCTIONS
+   TRANSACTIONS
 ========================================================= */
 
-window.openPage =
-    openPage;
+const transactionList =
+    el("transactionList");
 
-window.approveDeposit =
-    approveDeposit;
+const transactionSearch =
+    el("transactionSearch");
 
-window.rejectDeposit =
-    rejectDeposit;
+const transactionFilter =
+    el("transactionFilter");
 
-window.approveWithdraw =
-    approveWithdraw;
+const transactionTotal =
+    el("transactionTotal");
 
-window.rejectWithdraw =
-    rejectWithdraw;
 
-window.openWithdrawDetails =
-    openWithdrawDetails;
+function loadTransactions() {
 
-window.closeWithdrawModal =
-    closeWithdrawModal;
+    onValue(
+        ref(
+            db,
+            "transactions"
+        ),
 
-window.refreshAll =
-    refreshAll;
+        snapshot => {
+
+            allTransactionData = {};
+
+
+            if (snapshot.exists()) {
+
+                snapshot.forEach(
+                    child => {
+
+                        allTransactionData[
+                            child.key
+                        ] = {
+
+                            id: child.key,
+
+                            ...(child.val() || {})
+
+                        };
+
+                    }
+                );
+
+            }
+
+
+            renderTransactions();
+
+        },
+
+        error => {
+
+            console.error(
+                "TRANSACTIONS ERROR:",
+                error
+            );
+
+        }
+
+    );
+
+}
+
+
+function renderTransactions() {
+
+    if (!transactionList) return;
+
+
+    const keyword =
+        (
+            transactionSearch?.value ||
+            ""
+        )
+        .trim()
+        .toLowerCase();
+
+
+    const filter =
+        transactionFilter?.value ||
+        "All";
+
+
+    const entries =
+        Object.values(
+            allTransactionData
+        );
+
+
+    if (transactionTotal) {
+
+        transactionTotal.textContent =
+            entries.length;
+
+    }
+
+
+    const filtered =
+        entries
+            .filter(data => {
+
+                const text = [
+
+                    data.uid,
+                    data.email,
+                    data.fullName,
+                    data.transactionId,
+                    data.requestId,
+                    data.type,
+                    data.category,
+                    data.amount
+
+                ]
+                .filter(Boolean)
+                .join(" ")
+                .toLowerCase();
+
+
+                const status =
+                    normalizeStatus(
+                        data.status
+                    );
+
+
+                const type =
+                    String(
+                        data.type ||
+                        data.category ||
+                        ""
+                    )
+                    .toLowerCase();
+
+
+                let matchesFilter =
+                    true;
+
+
+                if (
+                    filter !== "All"
+                ) {
+
+                    const wanted =
+                        filter.toLowerCase();
+
+
+                    matchesFilter =
+                        status === wanted ||
+                        type === wanted.toLowerCase();
+
+                }
+
+
+                return (
+
+                    (
+                        !keyword ||
+                        text.includes(keyword)
+                    )
+
+                    &&
+
+                    matchesFilter
+
+                );
+
+            })
+            .sort(
+                (a, b) =>
+                    number(b.createdAt) -
+                    number(a.createdAt)
+            );
+
+
+    transactionList.innerHTML = "";
+
+
+    if (!filtered.length) {
+
+        transactionList.innerHTML = `
+
+            <div class="empty-state">
+
+                <i class="fa-solid fa-clock-rotate-left"></i>
+
+                <h3>
+                    No Transactions Found
+                </h3>
+
+            </div>
+
+        `;
+
+        return;
+
+    }
+
+
+    filtered.forEach(data => {
+
+        const card =
+            document.createElement(
+                "div"
+            );
+
+
+        card.className =
+            "request-card";
+
+
+        card.innerHTML = `
+
+            <div class="request-top">
+
+                <h3>
+                    ${money(data.amount)}
+                </h3>
+
+                <span class="status">
+
+                    ${escapeHTML(
+                        data.status ||
+                        "-"
+                    )}
+
+                </span>
+
+            </div>
+
+
+            <p>
+
+                <strong>Type:</strong>
+
+                ${escapeHTML(
+                    data.type ||
+                    data.category ||
+                    "-"
+                )}
+
+            </p>
+
+
+            <p>
+
+                <strong>User UID:</strong>
+
+                ${escapeHTML(
+                    data.uid ||
+                    "-"
+                )}
+
+            </p>
+
+
+            <p>
+
+                <strong>Transaction ID:</strong>
+
+                ${escapeHTML(
+                    data.transactionId ||
+                    data.id ||
+                    "-"
+                )}
+
+            </p>
+
+
+            <p>
+
+                <strong>Date:</strong>
+
+                ${
+                    data.createdAt
+                        ? new Date(
+                            data.createdAt
+                        ).toLocaleString()
+                        : "-"
+                }
+
+            </p>
+
+        `;
+
+
+        transactionList.appendChild(
+            card
+        );
+
+    });
+
+}
+
+
+transactionSearch?.addEventListener(
+    "input",
+    renderTransactions
+);
+
+
+transactionFilter?.addEventListener(
+    "change",
+    renderTransactions
+);
+
+
+/* =========================================================
+   SETTINGS
+========================================================= */
+
+const adminNameInput =
+    el("adminNameInput");
+
+const adminEmailInput =
+    el("adminEmailInput");
+
+const saveSettings =
+    el("saveSettings");
+
+
+function loadSettings() {
+
+    if (adminNameInput) {
+
+        adminNameInput.value =
+            adminName?.textContent ||
+            "Administrator";
+
+    }
+
+
+    if (
+        adminEmailInput &&
+        currentAdmin
+    ) {
+
+        adminEmailInput.value =
+            currentAdmin.email ||
+            "";
+
+    }
+
+}
+
+
+saveSettings?.addEventListener(
+    "click",
+    async () => {
+
+        if (!currentAdmin) {
+
+            alert(
+                "Admin not ready."
+            );
+
+            return;
+
+        }
+
+
+        const name =
+            adminNameInput?.value
+                ?.trim();
+
+
+        if (!name) {
+
+            alert(
+                "Enter admin name."
+            );
+
+            return;
+
+        }
+
+
+        try {
+
+            await update(
+                ref(
+                    db,
+                    "users/" +
+                    currentAdmin.uid
+                ),
+                {
+                    fullName: name
+                }
+            );
+
+
+            if (adminName) {
+
+                adminName.textContent =
+                    name;
+
+            }
+
+
+            showToast(
+                "Settings saved."
+            );
+
+
+        } catch (error) {
+
+            alert(
+                "Settings save failed:\n" +
+                error.message
+            );
+
+        }
+
+    }
+);
+
+
+/* =========================================================
+   VIP REQUESTS
+   INFORMATIONAL ONLY
+   VIP PURCHASE IS AUTOMATIC
+========================================================= */
+
+function loadVipRequests() {
+
+    const container =
+        el("vipRequestList");
+
+    if (!container) return;
+
+
+    onValue(
+        ref(
+            db,
+            "vipPurchaseRequests"
+        ),
+
+        snapshot => {
+
+            container.innerHTML = "";
+
+
+            if (!snapshot.exists()) {
+
+                container.innerHTML = `
+
+                    <div class="empty-state">
+
+                        <h3>
+                            No VIP Requests
+                        </h3>
+
+                    </div>
+
+                `;
+
+                return;
+
+            }
+
+
+            const entries = [];
+
+
+            snapshot.forEach(
+                child => {
+
+                    entries.unshift({
+
+                        id: child.key,
+
+                        ...(child.val() || {})
+
+                    });
+
+                }
+            );
+
+
+            entries.forEach(
+                data => {
+
+                    const card =
+                        document.createElement(
+                            "div"
+                        );
+
+
+                    card.className =
+                        "request-card";
+
+
+                    card.innerHTML = `
+
+                        <div class="request-top">
+
+                            <h3>
+                                ${escapeHTML(
+                                    data.vipName ||
+                                    data.name ||
+                                    "VIP"
+                                )}
+                            </h3>
+
+                            <span class="status">
+
+                                ${escapeHTML(
+                                    data.status ||
+                                    "active"
+                                )}
+
+                            </span>
+
+                        </div>
+
+
+                        <p>
+
+                            <strong>Price:</strong>
+
+                            ${money(
+                                data.price
+                            )}
+
+                        </p>
+
+
+                        <p>
+
+                            <strong>User UID:</strong>
+
+                            ${escapeHTML(
+                                data.uid ||
+                                "-"
+                            )}
+
+                        </p>
+
+
+                        <p>
+
+                            <strong>Payment:</strong>
+
+                            ${escapeHTML(
+                                data.paymentMethod ||
+                                "Account Balance"
+                            )}
+
+                        </p>
+
+
+                        <p>
+
+                            <strong>Currency:</strong>
+
+                            ${escapeHTML(
+                                data.currency ||
+                                CURRENCY
+                            )}
+
+                        </p>
+
+
+                        <p>
+
+                            <strong>Date:</strong>
+
+                            ${
+                                data.createdAt
+                                    ? new Date(
+                                        data.createdAt
+                                    ).toLocaleString()
+                                    : "-"
+                            }
+
+                        </p>
+
+
+                        <small>
+                            VIP purchase is automatic.
+                            No admin approval required.
+                        </small>
+
+                    `;
+
+
+                    container.appendChild(
+                        card
+                    );
+
+                }
+            );
+
+        },
+
+        error => {
+
+            console.error(
+                "VIP REQUEST ERROR:",
+                error
+            );
+
+        }
+
+    );
+
+}
+
+
+/* =========================================================
+   VIP BUYERS
+========================================================= */
+
+function loadVipBuyers() {
+
+    const container =
+        el("vipBuyerList");
+
+    if (!container) return;
+
+
+    onValue(
+        ref(
+            db,
+            "vipBuyers"
+        ),
+
+        snapshot => {
+
+            container.innerHTML = "";
+
+
+            let total = 0;
+            let active = 0;
+            let expired = 0;
+
+
+            if (snapshot.exists()) {
+
+                snapshot.forEach(
+                    child => {
+
+                        const data =
+                            child.val() || {};
+
+
+                        total++;
+
+
+                        const status =
+                            normalizeStatus(
+                                data.status
+                            );
+
+
+                        if (
+                            status === "expired"
+                        ) {
+
+                            expired++;
+
+                        } else {
+
+                            active++;
+
+                        }
+
+
+                        const card =
+                            document.createElement(
+                                "div"
+                            );
+
+
+                        card.className =
+                            "request-card";
+
+
+                        card.innerHTML = `
+
+                            <div class="request-top">
+
+                                <h3>
+
+                                    ${escapeHTML(
+                                        data.vipName ||
+                                        data.name ||
+                                        "VIP"
+                                    )}
+
+                                </h3>
+
+                                <span class="status">
+
+                                    ${escapeHTML(
+                                        data.status ||
+                                        "active"
+                                    )}
+
+                                </span>
+
+                            </div>
+
+
+                            <p>
+
+                                <strong>User:</strong>
+
+                                ${escapeHTML(
+                                    data.uid ||
+                                    "-"
+                                )}
+
+                            </p>
+
+
+                            <p>
+
+                                <strong>Price:</strong>
+
+                                ${money(
+                                    data.price
+                                )}
+
+                            </p>
+
+
+                            <p>
+
+                                <strong>Daily Income:</strong>
+
+                                ${money(
+                                    data.dailyIncome
+                                )}
+
+                            </p>
+
+
+                            <p>
+
+                                <strong>Activated:</strong>
+
+                                ${
+                                    data.activatedAt
+                                        ? new Date(
+                                            data.activatedAt
+                                        ).toLocaleString()
+                                        : "-"
+                                }
+
+                            </p>
+
+                        `;
+
+
+                        container.appendChild(
+                            card
+                        );
+
+                    }
+                );
+
+            }
+
+
+            if (el("vipBuyerTotalCount"))
+                el(
+                    "vipBuyerTotalCount"
+                ).textContent = total;
+
+
+            if (el("vipBuyerActiveCount"))
+                el(
+                    "vipBuyerActiveCount"
+                ).textContent = active;
+
+
+            if (el("vipBuyerExpiredCount"))
+                el(
+                    "vipBuyerExpiredCount"
+                ).textContent = expired;
+
+
+            if (
+                total === 0 &&
+                el("emptyVipBuyer")
+            ) {
+
+                el(
+                    "emptyVipBuyer"
+                ).style.display =
+                    "block";
+
+            }
+
+        },
+
+        error => {
+
+            console.error(
+                "VIP BUYERS ERROR:",
+                error
+            );
+
+        }
+
+    );
+
+}
+
+
+/* =========================================================
+   BONUS REQUESTS
+========================================================= */
+
+function loadBonusRequests() {
+
+    const container =
+        el("bonusRequestList");
+
+    if (!container) return;
+
+
+    onValue(
+        ref(
+            db,
+            "bonusRequests"
+        ),
+
+        snapshot => {
+
+            container.innerHTML = "";
+
+
+            if (!snapshot.exists()) {
+
+                container.innerHTML = `
+
+                    <div class="empty-state">
+
+                        <h3>
+                            No Bonus Requests
+                        </h3>
+
+                    </div>
+
+                `;
+
+                return;
+
+            }
+
+
+            snapshot.forEach(
+                child => {
+
+                    const data =
+                        child.val() || {};
+
+
+                    const card =
+                        document.createElement(
+                            "div"
+                        );
+
+
+                    card.className =
+                        "request-card";
+
+
+                    card.innerHTML = `
+
+                        <div class="request-top">
+
+                            <h3>
+                                ${money(
+                                    data.amount
+                                )}
+                            </h3>
+
+                            <span class="status">
+
+                                ${escapeHTML(
+                                    data.status ||
+                                    "-"
+                                )}
+
+                            </span>
+
+                        </div>
+
+
+                        <p>
+
+                            <strong>User UID:</strong>
+
+                            ${escapeHTML(
+                                data.uid ||
+                                "-"
+                            )}
+
+                        </p>
+
+
+                        <p>
+
+                            <strong>Date:</strong>
+
+                            ${
+                                data.createdAt
+                                    ? new Date(
+                                        data.createdAt
+                                    ).toLocaleString()
+                                    : "-"
+                            }
+
+                        </p>
+
+                    `;
+
+
+                    container.appendChild(
+                        card
+                    );
+
+                }
+            );
+
+        },
+
+        error => {
+
+            console.error(
+                "BONUS REQUEST ERROR:",
+                error
+            );
+
+        }
+
+    );
+
+}
+
+
+/* =========================================================
+   QUICK REFRESH
+========================================================= */
+
+el("refreshDashboardQuick")
+    ?.addEventListener(
+        "click",
+        () => {
+
+            startAdminData();
+
+            showToast(
+                "Dashboard refreshed."
+            );
+
+        }
+    );
+
+
+/* =========================================================
+   APPROVE ALL DEPOSITS
+========================================================= */
+
+el("approveAllDeposits")
+    ?.addEventListener(
+        "click",
+        async () => {
+
+            const pending =
+                Object.values(
+                    allDepositData
+                )
+                .filter(
+                    item =>
+                        normalizeStatus(
+                            item.status
+                        ) === "pending"
+                );
+
+
+            if (!pending.length) {
+
+                alert(
+                    "No pending deposits."
+                );
+
+                return;
+
+            }
+
+
+            if (
+                !confirm(
+                    "Approve all pending deposits?"
+                )
+            ) {
+
+                return;
+
+            }
+
+
+            for (
+                const item of pending
+            ) {
+
+                try {
+
+                    await approveDeposit(
+                        item.id
+                    );
+
+                } catch (error) {
+
+                    console.error(
+                        error
+                    );
+
+                }
+
+            }
+
+        }
+    );
+
+
+/* =========================================================
+   APPROVE ALL WITHDRAWS
+========================================================= */
+
+el("approveAllWithdraws")
+    ?.addEventListener(
+        "click",
+        async () => {
+
+            const pending =
+                Object.values(
+                    allWithdrawData
+                )
+                .filter(
+                    item =>
+                        normalizeStatus(
+                            item.status
+                        ) === "pending"
+                );
+
+
+            if (!pending.length) {
+
+                alert(
+                    "No pending withdraws."
+                );
+
+                return;
+
+            }
+
+
+            if (
+                !confirm(
+                    "Approve all pending withdraws?"
+                )
+            ) {
+
+                return;
+
+            }
+
+
+            for (
+                const item of pending
+            ) {
+
+                try {
+
+                    await approveWithdraw(
+                        item.id
+                    );
+
+                } catch (error) {
+
+                    console.error(
+                        error
+                    );
+
+                }
+
+            }
+
+        }
+    );
+
+
+/* =========================================================
+   START ALL ADMIN LISTENERS
+========================================================= */
+
+let dataStarted = false;
+
+
+function startAdminData() {
+
+    if (!adminReady) return;
+
+
+    /*
+       Prevent duplicate listeners.
+    */
+
+    if (dataStarted) return;
+
+    dataStarted = true;
+
+
+    console.log(
+        "🚀 Starting Admin Data Listeners..."
+    );
+
+
+    loadUsersDashboard();
+
+    loadDashboardDeposits();
+
+    loadDeposits();
+
+    loadWithdraws();
+
+    loadTransactions();
+
+    loadVipRequests();
+
+    loadVipBuyers();
+
+    loadBonusRequests();
+
+    loadSettings();
+
+
+    openPage("dashboard");
+
+
+    console.log(
+        "✅ ALL ADMIN LISTENERS STARTED"
+    );
+
+}
+
+
+/* =========================================================
+   INITIAL PAGE
+========================================================= */
+
+document.addEventListener(
+    "DOMContentLoaded",
+    () => {
+
+        openPage("dashboard");
+
+    }
+);
+
+
+/* =========================================================
+   GLOBAL MODAL CLOSE
+========================================================= */
+
+window.addEventListener(
+    "click",
+    event => {
+
+        if (
+            proofModal &&
+            event.target === proofModal
+        ) {
+
+            proofModal.style.display =
+                "none";
+
+        }
+
+
+        if (
+            withdrawModal &&
+            event.target === withdrawModal
+        ) {
+
+            withdrawModal.style.display =
+                "none";
+
+        }
+
+    }
+);
+
+
+/* =========================================================
+   FINAL
+========================================================= */
+
+console.log(
+    "=========================================="
+);
+
+console.log(
+    " MONEY VAULT ADMIN.JS"
+);
+
+console.log(
+    " CLEAN FULL VERSION"
+);
+
+console.log(
+    " CURRENCY: RWF / FRW"
+);
+
+console.log(
+    " USERS + BALANCE + DEPOSITS + WITHDRAWS"
+);
+
+console.log(
+    " TRANSACTIONS + VIP + SETTINGS"
+);
+
+console.log(
+    " NO DUPLICATE LISTENERS"
+);
+
+console.log(
+    "=========================================="
+);
