@@ -1611,19 +1611,24 @@ async function findReferrer() {
 
 
 // =========================================================
-// PAY REFERRAL BONUS
+// PAY REFERRAL BONUS - AUTOMATIC
 // =========================================================
 //
-// Bonus:
-// 1,000 RWF
+// RULES:
+// - Bonus = 1,000 RWF
+// - Paid immediately after successful VIP purchase
+// - No admin approval required
+// - One bonus per VIP purchase request
 //
-// Updates:
-// - balance
-// - referralBonus
-// - referralEarnings
-// - referralCount
+// UPDATES REFERRER:
+// - balance + 1,000
+// - referralBonus + 1,000
+// - referralEarnings + 1,000
+// - referralCount + 1
 //
-// Paid once for each VIP purchase request.
+// RECORD:
+// vipReferralBonuses/{requestId}
+//
 // =========================================================
 
 async function payReferralBonus(
@@ -1636,19 +1641,26 @@ async function payReferralBonus(
         !currentUser ||
         !requestId
     ) {
+
         return {
             paid: false,
             reason: "No user/request"
         };
+
     }
 
+
+    // -----------------------------------------------------
+    // FIND REFERRER
+    // -----------------------------------------------------
 
     const referrer =
         await findReferrer();
 
 
     if (
-        !referrer
+        !referrer ||
+        !referrer.uid
     ) {
 
         return {
@@ -1660,10 +1672,30 @@ async function payReferralBonus(
 
 
     const referrerUid =
-        referrer.uid;
+        String(
+            referrer.uid
+        ).trim();
 
 
-    const bonusRecordRef =
+    if (
+        !referrerUid ||
+        referrerUid ===
+        currentUser.uid
+    ) {
+
+        return {
+            paid: false,
+            reason: "Invalid referrer"
+        };
+
+    }
+
+
+    // -----------------------------------------------------
+    // BONUS RECORD
+    // -----------------------------------------------------
+
+    const bonusRef =
         ref(
             db,
             "vipReferralBonuses/" +
@@ -1672,23 +1704,39 @@ async function payReferralBonus(
 
 
     // -----------------------------------------------------
-    // ALREADY PAID?
+    // CHECK IF ALREADY PAID
     // -----------------------------------------------------
 
-    const existingBonus =
+    const existing =
         await get(
-            bonusRecordRef
+            bonusRef
         );
 
 
     if (
-        existingBonus.exists()
+        existing.exists()
     ) {
 
+        const existingData =
+            existing.val() || {};
+
+
         return {
+
             paid: false,
+
             alreadyPaid: true,
-            referrerUid
+
+            referrerUid:
+                existingData.referrerUid ||
+                referrerUid,
+
+            amount:
+                numberValue(
+                    existingData.amount
+                ) ||
+                REFERRAL_BONUS
+
         };
 
     }
@@ -1706,16 +1754,19 @@ async function payReferralBonus(
         );
 
 
-    const transaction =
+    const result =
         await runTransaction(
             referrerRef,
+
             current => {
 
                 if (
                     !current ||
                     typeof current !== "object"
                 ) {
+
                     return;
+
                 }
 
 
@@ -1780,69 +1831,132 @@ async function payReferralBonus(
         );
 
 
+    // -----------------------------------------------------
+    // REFERRER UPDATE FAILED
+    // -----------------------------------------------------
+
     if (
-        !transaction.committed
+        !result.committed
     ) {
 
-        throw new Error(
-            "Referral bonus update failed."
-        );
+        return {
+
+            paid: false,
+
+            reason:
+                "Referrer balance update failed.",
+
+            referrerUid:
+                referrerUid
+
+        };
 
     }
 
 
     // -----------------------------------------------------
-    // RECORD BONUS
+    // CREATE BONUS RECORD
     // -----------------------------------------------------
 
     const now =
         Date.now();
 
 
-    await set(
-        bonusRecordRef,
-        {
+    try {
 
-            id:
-                requestId,
+        await set(
+            bonusRef,
+            {
+
+                id:
+                    requestId,
+
+                referrerUid:
+                    referrerUid,
+
+                referredUserUid:
+                    currentUser.uid,
+
+                requestId:
+                    requestId,
+
+                vipName:
+                    vipName,
+
+                purchasePrice:
+                    Number(
+                        purchasePrice || 0
+                    ),
+
+                amount:
+                    REFERRAL_BONUS,
+
+                currency:
+                    CURRENCY,
+
+                status:
+                    "paid",
+
+                createdAt:
+                    now
+
+            }
+        );
+
+
+    } catch (recordError) {
+
+        console.error(
+            "Referral bonus record failed:",
+            recordError
+        );
+
+
+        // -------------------------------------------------
+        // IMPORTANT:
+        // The referrer was already credited.
+        //
+        // We return paid=true because the actual money
+        // was already added. This prevents the UI from
+        // falsely saying that no bonus was paid.
+        // -------------------------------------------------
+
+        return {
+
+            paid:
+                true,
+
+            recordSaved:
+                false,
 
             referrerUid:
                 referrerUid,
 
-            referredUserUid:
-                currentUser.uid,
-
-            requestId:
-                requestId,
-
-            vipName:
-                vipName,
-
-            purchasePrice:
-                Number(
-                    purchasePrice.toFixed(2)
-                ),
-
             amount:
                 REFERRAL_BONUS,
 
-            currency:
-                CURRENCY,
+            warning:
+                "Bonus paid but bonus record could not be saved."
 
-            status:
-                "paid",
+        };
 
-            createdAt:
-                now
+    }
 
-        }
-    );
 
+    // -----------------------------------------------------
+    // SUCCESS
+    // -----------------------------------------------------
 
     return {
 
         paid:
             true,
+
+        recordSaved:
+            true,
+
+        alreadyPaid:
+            false,
 
         referrerUid:
             referrerUid,
@@ -1851,6 +1965,7 @@ async function payReferralBonus(
             REFERRAL_BONUS
 
     };
+
 }
 
 
