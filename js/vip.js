@@ -1329,109 +1329,190 @@ async function loadOwnedVIPs() {
 }
 
 
-/* =========================================================
+
+
+        /* =========================================================
    RENDER OWNED VIPS
    ========================================================= */
-
 function renderOwnedVIPs() {
-
     if (!ownedVipListEl) {
         return;
     }
 
     ownedVipListEl.innerHTML = "";
 
-
-    const entries =
-        Object.entries(ownedVIPs || {});
-
+    const entries = Object.entries(ownedVIPs || {});
 
     if (entries.length === 0) {
-
         ownedVipListEl.innerHTML = `
             <div class="empty-vip">
                 No VIP purchased.
             </div>
         `;
-
         return;
     }
 
+    entries.forEach(([planId, vip]) => {
+        if (!vip) {
+            return;
+        }
 
-    entries.forEach(
-        ([planId, vip]) => {
+        const item = document.createElement("div");
+        item.className = "owned-vip-item";
 
-            if (!vip) {
-                return;
-            }
-
-            const item =
-                document.createElement("div");
-
-            item.className =
-                "owned-vip-item";
-
-
-            const vipName =
-                vip.vipName ||
-                (
-                    vipPlans[planId]
-                        ? getPlanName(
-                            vipPlans[planId]
-                        )
-                        : "VIP Plan"
-                );
-
-
-            const daily =
-                numberValue(
-                    vip.dailyIncome
-                );
-
-
-            const status =
-                String(
-                    vip.status ||
-                    "active"
-                ).toLowerCase();
-
-
-            item.innerHTML = `
-
-                <div class="owned-vip-info">
-
-                    <h4>
-                        <i class="fas fa-crown"></i>
-                        ${escapeHTML(vipName)}
-                    </h4>
-
-                    <p>
-                        Daily:
-                        <strong>
-                            ${formatMoney(daily)}
-                        </strong>
-                    </p>
-
-                </div>
-
-                <div class="owned-vip-status">
-
-                    <span class="vip-status active">
-                        ${escapeHTML(status)}
-                    </span>
-
-                </div>
-
-            `;
-
-
-            ownedVipListEl.appendChild(
-                item
+        const vipName =
+            vip.vipName ||
+            (
+                vipPlans[planId]
+                    ? getPlanName(vipPlans[planId])
+                    : "VIP Plan"
             );
 
+        const daily =
+            numberValue(vip.dailyIncome);
+
+        const totalProfit =
+            numberValue(vip.totalProfit);
+
+        const duration =
+            numberValue(
+                vip.duration ??
+                vip.totalDays ??
+                vip.days
+            );
+
+        const purchasedAt =
+            numberValue(
+                vip.purchasedAt ??
+                vip.purchaseDate ??
+                vip.activatedAt
+            );
+
+        const status =
+            String(
+                vip.status || "active"
+            ).toLowerCase();
+
+        /* -------------------------------------------------
+           CALCULATE REMAINING DAYS
+           ------------------------------------------------- */
+
+        let daysRemaining = duration;
+
+        if (purchasedAt > 0 && duration > 0) {
+            const now = Date.now();
+
+            const elapsedDays =
+                Math.floor(
+                    (now - purchasedAt) /
+                    (24 * 60 * 60 * 1000)
+                );
+
+            daysRemaining =
+                Math.max(
+                    0,
+                    duration - elapsedDays
+                );
         }
-    );
-}
+
+        /* -------------------------------------------------
+           CALCULATE NEXT CLAIM
+           ------------------------------------------------- */
+
+        const lastClaim =
+            numberValue(vip.lastClaim);
+
+        const nextClaim =
+            lastClaim +
+            CLAIM_INTERVAL;
+
+        const now =
+            Date.now();
+
+        let claimText =
+            "Claim available";
+
+        if (now < nextClaim) {
+            const remaining =
+                nextClaim - now;
+
+            const hours =
+                Math.floor(
+                    remaining /
+                    (60 * 60 * 1000)
+                );
+
+            const minutes =
+                Math.floor(
+                    (
+                        remaining %
+                        (60 * 60 * 1000)
+                    ) /
+                    (60 * 1000)
+                );
+
+            claimText =
+                `Next claim in ${hours}h ${minutes}m`;
+        }
+
+        /* -------------------------------------------------
+           DISPLAY OWNED VIP
+           ------------------------------------------------- */
+
+        item.innerHTML = `
+            <div class="owned-vip-info">
+
+                <h4>
+                    <i class="fas fa-crown"></i>
+                    ${escapeHTML(vipName)}
+                </h4>
+
+                <p>
+                    Daily Income:
+                    <strong>
+                        ${formatMoney(daily)}
+                    </strong>
+                </p>
+
+                <p>
+                    Total Profit:
+                    <strong>
+                        ${formatMoney(totalProfit)}
+                    </strong>
+                </p>
+
+                <p>
+                    Duration:
+                    <strong>
+                        ${duration} Days
+                    </strong>
+                </p>
+
+                <p>
+                    Days Remaining:
+                    <strong>
+                        ${daysRemaining} Days
+                    </strong>
+                </p>
+
+                <p>
+                    ${escapeHTML(claimText)}
+                </p>
+
+            </div>
+
+            <div class="owned-vip-status">
+
+                <span class="vip-status active">
+                    ${escapeHTML(status)}
+                </span>
+
+            </div>
+        `;
+
+        ownedVipListEl.appendChild(item);
+    });
+}        
 
 
 /* =========================================================
