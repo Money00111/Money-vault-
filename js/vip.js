@@ -1223,8 +1223,7 @@ async function buyVIP(planId) {
 
 
 /* =========================================================
-   REFERRAL BONUS
-   1,000 RWF
+   REFERRAL BONUS 1,000 RWF
    PAID ONCE AFTER VIP PURCHASE
 ========================================================= */
 
@@ -1233,159 +1232,124 @@ async function processReferralBonus(
     vipName,
     planId
 ) {
-
     try {
 
-
-/* -------------------------------------------------
-   GET REFERRER UID
-   Supports both:
-   - Firebase UID
-   - Referral Code
-------------------------------------------------- */
-
-const referrerValue =
-    String(
-        userData.referredBy ||
-        userData.referrerUid ||
-        userData.referrerId ||
-        userData.referralCodeUsed ||
-        ""
-    ).trim();
-
-if (!referrerValue) {
-
-    console.log(
-        "No referrer found for this user."
-    );
-
-    return;
-
-}
-
-let referrerUid = referrerValue;
-
-
-/* -------------------------------------------------
-   FIRST: CHECK IF VALUE IS A REAL USER UID
-------------------------------------------------- */
-
-let referrerRef =
-    ref(
-        db,
-        `${USERS_PATH}/${referrerValue}`
-    );
-
-let referrerSnapshot =
-    await get(referrerRef);
-
-
-/* -------------------------------------------------
-   IF NOT UID, SEARCH BY referralCode
-------------------------------------------------- */
-
-if (!referrerSnapshot.exists()) {
-
-    const usersQuery =
-        query(
-            ref(db, USERS_PATH),
-            orderByChild("referralCode"),
-            equalTo(referrerValue)
-        );
-
-    const codeSnapshot =
-        await get(usersQuery);
-
-    if (codeSnapshot.exists()) {
-
-        const matches =
-            codeSnapshot.val();
-
-        const firstMatch =
-            Object.entries(matches)[0];
-
-        if (firstMatch) {
-
-            referrerUid =
-                firstMatch[0];
-
-            referrerRef =
-                ref(
-                    db,
-                    `${USERS_PATH}/${referrerUid}`
-                );
-
-            referrerSnapshot =
-                await get(referrerRef);
-
-        }
-
-    }
-
-}
-
-
-/* -------------------------------------------------
-   CHECK REFERRER EXISTS
-------------------------------------------------- */
-
-if (!referrerSnapshot.exists()) {
-
-    console.error(
-        "Referrer user not found:",
-        referrerValue
-    );
-
-    return;
-
-}
-
-
-/* -------------------------------------------------
-   PREVENT SELF REFERRAL
-------------------------------------------------- */
-
-if (
-    referrerUid ===
-    currentUser.uid
-) {
-
-    console.log(
-        "Invalid self-referral."
-    );
-
-    return;
-
-}
-       
         /* -------------------------------------------------
-           CHECK BONUS ALREADY GIVEN
+           GET REFERRER
+           Supports:
+           - Firebase UID
+           - Referral Code
         ------------------------------------------------- */
 
-        const markerRef =
-            ref(
-                db,
-                `${USERS_PATH}/${currentUser.uid}/referralBonusGiven`
+        const referrerValue = String(
+            userData.referredBy ||
+            userData.referrerUid ||
+            userData.referrerId ||
+            userData.referralCodeUsed ||
+            ""
+        ).trim();
+
+        if (!referrerValue) {
+            console.log("No referrer found.");
+            return;
+        }
+
+        let referrerUid = referrerValue;
+
+        let referrerRef = ref(
+            db,
+            `${USERS_PATH}/${referrerUid}`
+        );
+
+        let referrerSnapshot = await get(referrerRef);
+
+        /* -------------------------------------------------
+           IF VALUE IS NOT UID,
+           SEARCH BY referralCode
+        ------------------------------------------------- */
+
+        if (!referrerSnapshot.exists()) {
+
+            const usersQuery = query(
+                ref(db, USERS_PATH),
+                orderByChild("referralCode"),
+                equalTo(referrerValue)
             );
 
+            const codeSnapshot =
+                await get(usersQuery);
+
+            if (codeSnapshot.exists()) {
+
+                const matches =
+                    codeSnapshot.val() || {};
+
+                const firstMatch =
+                    Object.entries(matches)[0];
+
+                if (firstMatch) {
+
+                    referrerUid =
+                        firstMatch[0];
+
+                    referrerRef = ref(
+                        db,
+                        `${USERS_PATH}/${referrerUid}`
+                    );
+
+                    referrerSnapshot =
+                        await get(referrerRef);
+                }
+            }
+        }
+
+        /* -------------------------------------------------
+           CHECK REFERRER EXISTS
+        ------------------------------------------------- */
+
+        if (!referrerSnapshot.exists()) {
+            console.error(
+                "Referrer not found:",
+                referrerValue
+            );
+            return;
+        }
+
+        /* -------------------------------------------------
+           PREVENT SELF REFERRAL
+        ------------------------------------------------- */
+
+        if (
+            String(referrerUid) ===
+            String(currentUser.uid)
+        ) {
+            console.log(
+                "Self referral blocked."
+            );
+            return;
+        }
+
+        /* -------------------------------------------------
+           CHECK IF BONUS WAS ALREADY GIVEN
+        ------------------------------------------------- */
+
+        const markerRef = ref(
+            db,
+            `${USERS_PATH}/${currentUser.uid}/referralBonusGiven`
+        );
 
         const markerSnapshot =
             await get(markerRef);
-
 
         if (
             markerSnapshot.exists() &&
             markerSnapshot.val() === true
         ) {
-
             console.log(
                 "Referral bonus already paid."
             );
-
             return;
-
         }
-
 
         /* -------------------------------------------------
            PAY REFERRER
@@ -1396,8 +1360,9 @@ if (
                 referrerRef,
                 referrer => {
 
-                    if (!referrer)
+                    if (!referrer) {
                         return;
+                    }
 
                     referrer.balance =
                         numberValue(
@@ -1425,19 +1390,14 @@ if (
                         ) + REFERRAL_BONUS;
 
                     return referrer;
-
                 }
             );
 
-
         if (!bonusResult.committed) {
-
             throw new Error(
                 "Referral bonus transaction failed."
             );
-
         }
-
 
         /* -------------------------------------------------
            MARK BONUS AS PAID
@@ -1447,7 +1407,6 @@ if (
             markerRef,
             true
         );
-
 
         /* -------------------------------------------------
            CREATE REFERRAL TRANSACTION
@@ -1461,7 +1420,6 @@ if (
                 )
             ).key;
 
-
         if (transactionId) {
 
             await set(
@@ -1470,7 +1428,6 @@ if (
                     `${TRANSACTIONS_PATH}/${referrerUid}/${transactionId}`
                 ),
                 {
-
                     type:
                         "referral_bonus",
 
@@ -1503,31 +1460,27 @@ if (
 
                     createdAt:
                         purchaseTime
-
                 }
             );
-
         }
 
-
         /* -------------------------------------------------
-           SUCCESS MESSAGE
+           SUCCESS
         ------------------------------------------------- */
+
+        console.log(
+            "Referral bonus paid successfully:",
+            REFERRAL_BONUS,
+            "RWF",
+            "to:",
+            referrerUid
+        );
 
         showToast(
             `Referral bonus ${money(
                 REFERRAL_BONUS
-            )} paid to your referrer.`
+            )} paid successfully.`
         );
-
-
-        console.log(
-            "Referral bonus paid:",
-            REFERRAL_BONUS,
-            "RWF to:",
-            referrerUid
-        );
-
 
     } catch (error) {
 
@@ -1537,18 +1490,16 @@ if (
         );
 
         /*
-          IMPORTANT:
-          VIP purchase itself should NOT fail
-          because referral bonus failed.
+           IMPORTANT:
+           VIP purchase remains successful
+           even if referral processing fails.
         */
 
         showToast(
-            "VIP purchased successfully, but referral bonus could not be processed.",
+            "VIP purchased successfully, but referral bonus failed.",
             false
         );
-
     }
-
 }
 
 /* =========================================================
