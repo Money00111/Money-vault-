@@ -1529,10 +1529,8 @@ async function approveWithdraw(id) {
         updates[`withdrawRequests/${id}/approvedBy`] =
             currentAdmin.uid;
 
-
-        updates[
-            `transactions/${transactionId}`
-        ] = {
+updates[`transactions/${uid}/withdraw_${id}`] = {
+        
 
             uid,
 
