@@ -1,2841 +1,4 @@
-/* =========================================================
-   MONEY VAULT - ADMIN.JS
-   COMPLETE ADMIN PANEL
-   =========================================================
-
-   CURRENCY:
-   RWF / FRW
-
-   ADMIN SECURITY:
-   admins/{uid}
-
-   FEATURES:
-   - Firebase Authentication
-   - Admin verification
-   - Dashboard
-   - Deposits
-   - Withdraws
-   - VIP Requests
-   - VIP Buyers
-   - Bonus Requests
-   - Users
-   - Transactions
-   - Quick Actions
-   - Settings
-   - Search / Filters
-   - Mobile Sidebar
-   - Toast Notifications
-
-   IMPORTANT:
-   Request statuses are always:
-       pending
-       approved
-       rejected
-
-   No hard-coded admin email.
-========================================================= */
-
-
-/* =========================================================
-   FIREBASE IMPORTS
-========================================================= */
-
-import {
-    auth,
-    db,
-    authReady
-} from "./firebase.js";
-
-import {
-    onAuthStateChanged,
-    signOut
-} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
-
-import {
-    ref,
-    get,
-    set,
-    update,
-    push,
-    onValue,
-    runTransaction
-} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
-
-
-/* =========================================================
-   GLOBAL STATE
-========================================================= */
-
-let currentAdmin = null;
-let adminData = null;
-
-let allDeposits = {};
-let allWithdraws = {};
-let allVipRequests = {};
-let allVipBuyers = {};
-let allBonusRequests = {};
-let allUsers = {};
-let allTransactions = {};
-
-let selectedWithdrawId = null;
-
-let dashboardListenersStarted = false;
-
-
-/* =========================================================
-   DOM HELPERS
-========================================================= */
-
-const $ = (id) => document.getElementById(id);
-
-
-/* =========================================================
-   MAIN ELEMENTS
-========================================================= */
-
-const loadingScreen = $("loadingScreen");
-const sidebar = $("sidebar");
-const menuBtn = $("menuBtn");
-const logoutBtn = $("logoutBtn");
-
-const adminNameEl = $("adminName");
-const adminEmailEl = $("adminEmail");
-
-const pageTitle = $("pageTitle");
-const contentArea = $("contentArea");
-
-
-/* =========================================================
-   TOAST
-========================================================= */
-
-function showToast(message, type = "success") {
-
-    const container = $("toastContainer");
-
-    if (!container) {
-        alert(message);
-        return;
-    }
-
-    const toast = document.createElement("div");
-
-    toast.className = `toast toast-${type}`;
-
-    let icon = "fa-circle-check";
-
-    if (type === "error") {
-        icon = "fa-circle-xmark";
-    }
-
-    if (type === "warning") {
-        icon = "fa-triangle-exclamation";
-    }
-
-    if (type === "info") {
-        icon = "fa-circle-info";
-    }
-
-    toast.innerHTML = `
-        <i class="fa-solid ${icon}"></i>
-        <span>${escapeHtml(message)}</span>
-    `;
-
-    container.appendChild(toast);
-
-    setTimeout(() => {
-        toast.classList.add("show");
-    }, 10);
-
-    setTimeout(() => {
-
-        toast.classList.remove("show");
-
-        setTimeout(() => {
-            toast.remove();
-        }, 300);
-
-    }, 3500);
-}
-
-
-/* =========================================================
-   ESCAPE HTML
-========================================================= */
-
-function escapeHtml(value) {
-
-    if (value === null || value === undefined) {
-        return "";
-    }
-
-    return String(value)
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;");
-}
-
-
-/* =========================================================
-   NORMALIZE STATUS
-========================================================= */
-
-function normalizeStatus(status) {
-
-    if (!status) {
-        return "pending";
-    }
-
-    const value =
-        String(status).trim().toLowerCase();
-
-    if (
-        value === "approved" ||
-        value === "approve" ||
-        value === "accepted" ||
-        value === "success" ||
-        value === "successful"
-    ) {
-        return "approved";
-    }
-
-    if (
-        value === "rejected" ||
-        value === "reject" ||
-        value === "declined" ||
-        value === "cancelled" ||
-        value === "canceled"
-    ) {
-        return "rejected";
-    }
-
-    return "pending";
-}
-
-
-/* =========================================================
-   FORMAT MONEY
-========================================================= */
-
-function formatMoney(value) {
-
-    const amount = Number(value || 0);
-
-    return amount.toLocaleString(
-        "en-US",
-        {
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 2
-        }
-    ) + " RWF";
-}
-
-
-/* =========================================================
-   FORMAT DATE
-========================================================= */
-
-function formatDate(timestamp) {
-
-    if (!timestamp) {
-        return "-";
-    }
-
-    const date = new Date(Number(timestamp));
-
-    if (Number.isNaN(date.getTime())) {
-        return "-";
-    }
-
-    return date.toLocaleString(
-        "en-GB",
-        {
-            day: "2-digit",
-            month: "2-digit",
-            year: "numeric",
-            hour: "2-digit",
-            minute: "2-digit"
-        }
-    );
-}
-
-
-/* =========================================================
-   GET REQUEST NAME
-========================================================= */
-
-function getUserName(data) {
-
-    return (
-        data?.fullName ||
-        data?.name ||
-        data?.userName ||
-        "Unknown User"
-    );
-}
-
-
-/* =========================================================
-   GET REQUEST EMAIL
-========================================================= */
-
-function getEmail(data) {
-
-    return (
-        data?.email ||
-        data?.userEmail ||
-        "-"
-    );
-}
-
-
-/* =========================================================
-   GET AMOUNT
-========================================================= */
-
-function getAmount(data) {
-
-    return Number(
-        data?.amount ??
-        data?.price ??
-        data?.value ??
-        0
-    );
-}
-
-
-/* =========================================================
-   AUTH WAIT
-========================================================= */
-
-async function waitForAuthPersistence() {
-
-    try {
-
-        if (authReady) {
-            await authReady;
-        }
-
-    } catch (error) {
-
-        console.warn(
-            "Auth persistence warning:",
-            error
-        );
-
-    }
-}
-
-
-/* =========================================================
-   ADMIN VERIFICATION
-========================================================= */
-
-async function verifyAdmin(user) {
-
-    if (!user) {
-        return false;
-    }
-
-    try {
-
-        const adminRef =
-            ref(db, `admins/${user.uid}`);
-
-        const snapshot =
-            await get(adminRef);
-
-        if (!snapshot.exists()) {
-            return false;
-        }
-
-        adminData =
-            snapshot.val();
-
-        return true;
-
-    } catch (error) {
-
-        console.error(
-            "Admin verification error:",
-            error
-        );
-
-        return false;
-    }
-}
-
-
-/* =========================================================
-   AUTHENTICATION
-========================================================= */
-
-onAuthStateChanged(auth, async (user) => {
-
-    try {
-
-        await waitForAuthPersistence();
-
-        if (!user) {
-
-            window.location.href =
-                "login.html";
-
-            return;
-        }
-
-        const isAdmin =
-            await verifyAdmin(user);
-
-        if (!isAdmin) {
-
-            showToast(
-                "Access denied. You are not an administrator.",
-                "error"
-            );
-
-            await signOut(auth);
-
-            setTimeout(() => {
-                window.location.href =
-                    "dashboard.html";
-            }, 800);
-
-            return;
-        }
-
-        currentAdmin = user;
-
-        loadAdminInformation();
-
-        hideLoadingScreen();
-
-        initializeAdminPanel();
-
-        console.log(
-            "✅ Money Vault Admin authenticated"
-        );
-
-    } catch (error) {
-
-        console.error(
-            "Admin authentication error:",
-            error
-        );
-
-        showToast(
-            error.message ||
-            "Failed to load admin panel.",
-            "error"
-        );
-
-        hideLoadingScreen();
-    }
-
-});
-
-
-/* =========================================================
-   ADMIN INFORMATION
-========================================================= */
-
-function loadAdminInformation() {
-
-    const name =
-        adminData?.name ||
-        adminData?.fullName ||
-        currentAdmin?.displayName ||
-        "Administrator";
-
-    const email =
-        currentAdmin?.email ||
-        adminData?.email ||
-        "-";
-
-    if (adminNameEl) {
-        adminNameEl.textContent =
-            name;
-    }
-
-    if (adminEmailEl) {
-        adminEmailEl.textContent =
-            email;
-    }
-
-    const adminNameInput =
-        $("adminNameInput");
-
-    const adminEmailInput =
-        $("adminEmailInput");
-
-    if (adminNameInput) {
-        adminNameInput.value =
-            name;
-    }
-
-    if (adminEmailInput) {
-        adminEmailInput.value =
-            email;
-    }
-}
-
-
-/* =========================================================
-   HIDE LOADING
-========================================================= */
-
-function hideLoadingScreen() {
-
-    if (!loadingScreen) {
-        return;
-    }
-
-    loadingScreen.style.opacity = "0";
-
-    setTimeout(() => {
-
-        loadingScreen.style.display =
-            "none";
-
-    }, 300);
-}
-
-
-/* =========================================================
-   INITIALIZE ADMIN PANEL
-========================================================= */
-
-function initializeAdminPanel() {
-
-    if (dashboardListenersStarted) {
-        return;
-    }
-
-    dashboardListenersStarted = true;
-
-    initializeNavigation();
-    initializeQuickActions();
-    initializeSearchFilters();
-    initializeSettings();
-
-    loadUsers();
-    loadDeposits();
-    loadWithdraws();
-    loadVipRequests();
-    loadVipBuyers();
-    loadBonusRequests();
-    loadTransactions();
-
-    loadDashboardData();
-
-    console.log(
-        "✅ Money Vault Admin Panel initialized"
-    );
-}
-
-
-/* =========================================================
-   SIDEBAR NAVIGATION
-========================================================= */
-
-function initializeNavigation() {
-
-    document
-        .querySelectorAll(".menu-link")
-        .forEach((link) => {
-
-            link.addEventListener(
-                "click",
-                (event) => {
-
-                    event.preventDefault();
-
-                    const page =
-                        link.dataset.page;
-
-                    if (!page) {
-                        return;
-                    }
-
-                    openPage(page);
-
-                    sidebar?.classList.remove(
-                        "active"
-                    );
-                }
-            );
-
-        });
-
-
-    menuBtn?.addEventListener(
-        "click",
-        () => {
-
-            sidebar?.classList.toggle(
-                "active"
-            );
-
-        }
-    );
-
-
-    logoutBtn?.addEventListener(
-        "click",
-        handleLogout
-    );
-}
-
-
-/* =========================================================
-   OPEN PAGE
-========================================================= */
-
-function openPage(page) {
-
-    document
-        .querySelectorAll(".page-section")
-        .forEach((section) => {
-
-            section.classList.remove(
-                "active"
-            );
-
-        });
-
-
-    document
-        .querySelectorAll(".menu-link")
-        .forEach((link) => {
-
-            link.classList.remove(
-                "active"
-            );
-
-        });
-
-
-    const section =
-        $(`${page}Section`);
-
-    if (section) {
-
-        section.classList.add(
-            "active"
-        );
-
-    }
-
-
-    const activeLink =
-        document.querySelector(
-            `.menu-link[data-page="${page}"]`
-        );
-
-    if (activeLink) {
-
-        activeLink.classList.add(
-            "active"
-        );
-
-    }
-
-
-    const titles = {
-
-        dashboard:
-            "Dashboard",
-
-        deposits:
-            "Deposits",
-
-        withdraws:
-            "Withdraws",
-
-        vipRequests:
-            "VIP Requests",
-
-        vipBuyers:
-            "VIP Buyers",
-
-        bonusRequests:
-            "Bonus Requests",
-
-        users:
-            "Users",
-
-        transactions:
-            "Transactions",
-
-        quickActions:
-            "Quick Actions",
-
-        settings:
-            "Settings"
-
-    };
-
-
-    if (pageTitle) {
-
-        pageTitle.textContent =
-            titles[page] ||
-            "Dashboard";
-
-    }
-
-}
-
-
-/* =========================================================
-   LOGOUT
-========================================================= */
-
-async function handleLogout(event) {
-
-    event?.preventDefault();
-
-    const confirmLogout =
-        confirm(
-            "Logout from Money Vault Admin Panel?"
-        );
-
-    if (!confirmLogout) {
-        return;
-    }
-
-    try {
-
-        await signOut(auth);
-
-        window.location.href =
-            "login.html";
-
-    } catch (error) {
-
-        console.error(error);
-
-        showToast(
-            error.message ||
-            "Logout failed.",
-            "error"
-        );
-
-    }
-}
-
-
-/* =========================================================
-   DASHBOARD DATA
-========================================================= */
-
-function loadDashboardData() {
-
-    /* USERS */
-
-    onValue(
-        ref(db, "users"),
-        (snapshot) => {
-
-            allUsers = {};
-
-            let total = 0;
-            let balance = 0;
-
-            if (snapshot.exists()) {
-
-                snapshot.forEach((child) => {
-
-                    const user =
-                        child.val() || {};
-
-                    allUsers[child.key] =
-                        user;
-
-                    total++;
-
-                    balance +=
-                        Number(
-                            user.balance || 0
-                        );
-
-                });
-
-            }
-
-            const totalUsersEl =
-                $("totalUsers");
-
-            const systemBalanceEl =
-                $("systemBalance");
-
-            if (totalUsersEl) {
-
-                totalUsersEl.textContent =
-                    total.toLocaleString();
-
-            }
-
-            if (systemBalanceEl) {
-
-                systemBalanceEl.textContent =
-                    formatMoney(balance);
-
-            }
-
-            renderUsers();
-
-        },
-        (error) => {
-
-            console.error(
-                "Users listener:",
-                error
-            );
-
-        }
-    );
-
-
-    /* DEPOSITS */
-
-    onValue(
-        ref(db, "depositRequests"),
-        (snapshot) => {
-
-            calculateDepositDashboard(
-                snapshot
-            );
-
-        }
-    );
-
-
-    /* WITHDRAWS */
-
-    onValue(
-        ref(db, "withdrawRequests"),
-        (snapshot) => {
-
-            calculateWithdrawDashboard(
-                snapshot
-            );
-
-        }
-    );
-
-}
-
-
-/* =========================================================
-   DEPOSIT DASHBOARD
-========================================================= */
-
-function calculateDepositDashboard(snapshot) {
-
-    let total = 0;
-    let pending = 0;
-    let approved = 0;
-    let amount = 0;
-
-    if (snapshot.exists()) {
-
-        snapshot.forEach((child) => {
-
-            const data =
-                child.val() || {};
-
-            const status =
-                normalizeStatus(
-                    data.status
-                );
-
-            total++;
-
-            amount +=
-                getAmount(data);
-
-            if (status === "pending") {
-                pending++;
-            }
-
-            if (status === "approved") {
-                approved++;
-            }
-
-        });
-
-    }
-
-    const totalEl =
-        $("dashboardTotalDeposits");
-
-    const pendingEl =
-        $("dashboardPendingDeposits");
-
-    const approvedEl =
-        $("dashboardApprovedDeposits");
-
-    if (totalEl) {
-        totalEl.textContent =
-            total.toLocaleString();
-    }
-
-    if (pendingEl) {
-        pendingEl.textContent =
-            pending.toLocaleString();
-    }
-
-    if (approvedEl) {
-        approvedEl.textContent =
-            approved.toLocaleString();
-    }
-
-}
-
-
-/* =========================================================
-   WITHDRAW DASHBOARD
-========================================================= */
-
-function calculateWithdrawDashboard(snapshot) {
-
-    let total = 0;
-
-    if (snapshot.exists()) {
-
-        snapshot.forEach(() => {
-            total++;
-        });
-
-    }
-
-    const totalEl =
-        $("dashboardTotalWithdraws");
-
-    if (totalEl) {
-
-        totalEl.textContent =
-            total.toLocaleString();
-
-    }
-
-}
-
-
-/* =========================================================
-   DEPOSITS
-========================================================= */
-
-function loadDeposits() {
-
-    onValue(
-        ref(db, "depositRequests"),
-        (snapshot) => {
-
-            allDeposits = {};
-
-            if (snapshot.exists()) {
-
-                snapshot.forEach((child) => {
-
-                    allDeposits[child.key] =
-                        {
-                            id: child.key,
-                            ...(child.val() || {})
-                        };
-
-                });
-
-            }
-
-            renderDeposits();
-
-        },
-        (error) => {
-
-            console.error(
-                "Deposit listener:",
-                error
-            );
-
-            showToast(
-                "Unable to load deposits.",
-                "error"
-            );
-
-        }
-    );
-
-}
-
-
-/* =========================================================
-   RENDER DEPOSITS
-========================================================= */
-
-function renderDeposits() {
-
-    const list =
-        $("depositList");
-
-    const empty =
-        $("emptyDeposit");
-
-    if (!list) {
-        return;
-    }
-
-    const search =
-        (
-            $("depositSearch")?.value ||
-            ""
-        )
-        .trim()
-        .toLowerCase();
-
-    const filter =
-        $("depositFilter")?.value ||
-        "all";
-
-
-    const deposits =
-        Object.values(allDeposits)
-            .filter((data) => {
-
-                const status =
-                    normalizeStatus(
-                        data.status
-                    );
-
-                if (
-                    filter !== "all" &&
-                    status !== filter
-                ) {
-                    return false;
-                }
-
-                if (!search) {
-                    return true;
-                }
-
-                const text =
-                    [
-                        getUserName(data),
-                        getEmail(data),
-                        data.transactionId,
-                        data.senderPhone,
-                        data.paymentMethod
-                    ]
-                    .join(" ")
-                    .toLowerCase();
-
-                return text.includes(search);
-
-            })
-            .sort(
-                (a, b) =>
-                    Number(
-                        b.createdAt || 0
-                    ) -
-                    Number(
-                        a.createdAt || 0
-                    )
-            );
-
-
-    updateDepositSummary();
-
-
-    if (deposits.length === 0) {
-
-        list.innerHTML = "";
-
-        if (empty) {
-            empty.style.display =
-                "block";
-        }
-
-        return;
-    }
-
-
-    if (empty) {
-        empty.style.display =
-            "none";
-    }
-
-
-    list.innerHTML =
-        deposits.map(renderDepositCard)
-        .join("");
-
-
-    activateDepositButtons();
-}
-
-
-/* =========================================================
-   DEPOSIT CARD
-========================================================= */
-
-function renderDepositCard(data) {
-
-    const status =
-        normalizeStatus(data.status);
-
-    const amount =
-        getAmount(data);
-
-    const statusClass =
-        status;
-
-    let buttons = "";
-
-    if (status === "pending") {
-
-        buttons = `
-            <div class="action-buttons">
-
-                <button
-                    class="approveBtn"
-                    data-id="${escapeHtml(data.id)}">
-
-                    <i class="fa-solid fa-circle-check"></i>
-                    Approve
-
-                </button>
-
-                <button
-                    class="rejectBtn"
-                    data-id="${escapeHtml(data.id)}">
-
-                    <i class="fa-solid fa-circle-xmark"></i>
-                    Reject
-
-                </button>
-
-            </div>
-        `;
-
-    }
-
-
-    return `
-        <div class="request-card">
-
-            <div class="request-header">
-
-                <div>
-
-                    <h3>
-                        ${escapeHtml(
-                            getUserName(data)
-                        )}
-                    </h3>
-
-                    <p>
-                        ${escapeHtml(
-                            getEmail(data)
-                        )}
-                    </p>
-
-                </div>
-
-                <span class="status ${statusClass}">
-                    ${escapeHtml(
-                        status.toUpperCase()
-                    )}
-                </span>
-
-            </div>
-
-
-            <div class="request-details">
-
-                <p>
-                    <strong>Amount:</strong>
-                    ${formatMoney(amount)}
-                </p>
-
-                <p>
-                    <strong>Payment Method:</strong>
-                    ${escapeHtml(
-                        data.paymentMethod ||
-                        "-"
-                    )}
-                </p>
-
-                <p>
-                    <strong>Sender Phone:</strong>
-                    ${escapeHtml(
-                        data.senderPhone ||
-                        data.phone ||
-                        "-"
-                    )}
-                </p>
-
-                <p>
-                    <strong>Transaction ID:</strong>
-                    ${escapeHtml(
-                        data.transactionId ||
-                        "-"
-                    )}
-                </p>
-
-                <p>
-                    <strong>Payment Date:</strong>
-                    ${escapeHtml(
-                        data.paymentDate ||
-                        "-"
-                    )}
-                </p>
-
-                <p>
-                    <strong>Request Date:</strong>
-                    ${formatDate(
-                        data.createdAt
-                    )}
-                </p>
-
-            </div>
-
-
-            ${data.note ? `
-                <div class="request-note">
-
-                    <strong>Note:</strong>
-
-                    <p>
-                        ${escapeHtml(
-                            data.note
-                        )}
-                    </p>
-
-                </div>
-            ` : ""}
-
-
-            ${buttons}
-
-        </div>
-    `;
-}
-
-
-/* =========================================================
-   DEPOSIT SUMMARY
-========================================================= */
-
-function updateDepositSummary() {
-
-    let total = 0;
-    let pending = 0;
-    let approved = 0;
-    let rejected = 0;
-
-    Object.values(allDeposits)
-        .forEach((data) => {
-
-            const status =
-                normalizeStatus(
-                    data.status
-                );
-
-            total++;
-
-            if (status === "pending") {
-                pending++;
-            }
-
-            if (status === "approved") {
-                approved++;
-            }
-
-            if (status === "rejected") {
-                rejected++;
-            }
-
-        });
-
-
-    if ($("depositTotalCount")) {
-        $("depositTotalCount").textContent =
-            total;
-    }
-
-    if ($("depositPendingCount")) {
-        $("depositPendingCount").textContent =
-            pending;
-    }
-
-    if ($("depositApprovedCount")) {
-        $("depositApprovedCount").textContent =
-            approved;
-    }
-
-    if ($("depositRejectedCount")) {
-        $("depositRejectedCount").textContent =
-            rejected;
-    }
-
-}
-
-
-/* =========================================================
-   DEPOSIT BUTTONS
-========================================================= */
-
-function activateDepositButtons() {
-
-    document
-        .querySelectorAll(".approveBtn")
-        .forEach((button) => {
-
-            button.onclick = () => {
-
-                approveDeposit(
-                    button.dataset.id
-                );
-
-            };
-
-        });
-
-
-    document
-        .querySelectorAll(".rejectBtn")
-        .forEach((button) => {
-
-            button.onclick = () => {
-
-                rejectDeposit(
-                    button.dataset.id
-                );
-
-            };
-
-        });
-
-}
-
-
-/* =========================================================
-   APPROVE DEPOSIT
-========================================================= */
-
-async function approveDeposit(id) {
-
-    if (!currentAdmin) {
-        showToast(
-            "Admin session not ready.",
-            "error"
-        );
-        return;
-    }
-
-    const confirmed =
-        confirm(
-            "Approve this deposit and add the amount to the user's balance?"
-        );
-
-    if (!confirmed) {
-        return;
-    }
-
-
-    try {
-
-        const requestRef =
-            ref(
-                db,
-                `depositRequests/${id}`
-            );
-
-        const requestSnapshot =
-            await get(requestRef);
-
-        if (!requestSnapshot.exists()) {
-
-            showToast(
-                "Deposit request not found.",
-                "error"
-            );
-
-            return;
-        }
-
-
-        const request =
-            requestSnapshot.val() || {};
-
-        const status =
-            normalizeStatus(
-                request.status
-            );
-
-
-        if (status === "approved") {
-
-            showToast(
-                "This deposit is already approved.",
-                "warning"
-            );
-
-            return;
-        }
-
-
-        if (status === "rejected") {
-
-            showToast(
-                "A rejected deposit cannot be approved.",
-                "warning"
-            );
-
-            return;
-        }
-
-
-        const uid =
-            request.uid;
-
-        if (!uid) {
-
-            showToast(
-                "Deposit has no user UID.",
-                "error"
-            );
-
-            return;
-        }
-
-
-        const amount =
-            Number(request.amount || 0);
-
-
-        if (!Number.isFinite(amount) ||
-            amount <= 0) {
-
-            showToast(
-                "Invalid deposit amount.",
-                "error"
-            );
-
-            return;
-        }
-
-
-        const userRef =
-            ref(
-                db,
-                `users/${uid}`
-            );
-
-
-        /* -----------------------------------------
-           FIRST:
-           Update user balance safely with transaction
-        ----------------------------------------- */
-
-        const transactionResult =
-            await runTransaction(
-                userRef,
-                (currentData) => {
-
-                    if (!currentData) {
-                        return currentData;
-                    }
-
-                    const alreadyProcessed =
-                        currentData.lastApprovedDepositId;
-
-                    if (
-                        alreadyProcessed === id
-                    ) {
-                        return;
-                    }
-
-                    const currentBalance =
-                        Number(
-                            currentData.balance || 0
-                        );
-
-                    const currentDeposits =
-                        Number(
-                            currentData.totalDeposit ||
-                            currentData.totalDeposits ||
-                            0
-                        );
-
-                    const currentTransactions =
-                        Number(
-                            currentData.totalTransactions ||
-                            0
-                        );
-
-                    return {
-                        ...currentData,
-
-                        balance:
-                            currentBalance +
-                            amount,
-
-                        totalDeposit:
-                            currentDeposits +
-                            amount,
-
-                        totalTransactions:
-                            currentTransactions +
-                            1,
-
-                        lastApprovedDepositId:
-                            id,
-
-                        lastDepositApprovedAt:
-                            Date.now()
-                    };
-
-                }
-            );
-
-
-        if (!transactionResult.committed) {
-
-            showToast(
-                "User balance could not be updated.",
-                "error"
-            );
-
-            return;
-        }
-
-
-        /* -----------------------------------------
-           SECOND:
-           Mark request APPROVED
-        ----------------------------------------- */
-
-        await update(
-            requestRef,
-            {
-
-                status:
-                    "approved",
-
-                approvedAt:
-                    Date.now(),
-
-                approvedBy:
-                    currentAdmin.uid,
-
-                approvedByEmail:
-                    currentAdmin.email || "",
-
-                processed:
-                    true
-
-            }
-        );
-
-
-        /* -----------------------------------------
-           TRANSACTION RECORD
-        ----------------------------------------- */
-
-        const transactionKey =
-            push(
-                ref(db, "transactions")
-            ).key;
-
-
-        if (transactionKey) {
-
-            await set(
-                ref(
-                    db,
-                    `transactions/${transactionKey}`
-                ),
-                {
-
-                    uid:
-                        uid,
-
-                    email:
-                        request.email || "",
-
-                    type:
-                        "deposit",
-
-                    category:
-                        "deposit",
-
-                    amount:
-                        amount,
-
-                    currency:
-                        "RWF",
-
-                    status:
-                        "approved",
-
-                    requestId:
-                        id,
-
-                    description:
-                        "Deposit approved by admin",
-
-                    createdAt:
-                        Date.now(),
-
-                    adminUid:
-                        currentAdmin.uid
-
-                }
-            );
-
-        }
-
-
-        /* -----------------------------------------
-           NOTIFICATION
-        ----------------------------------------- */
-
-        const notificationKey =
-            push(
-                ref(
-                    db,
-                    `notifications/${uid}`
-                )
-            ).key;
-
-
-        if (notificationKey) {
-
-            await set(
-                ref(
-                    db,
-                    `notifications/${uid}/${notificationKey}`
-                ),
-                {
-
-                    type:
-                        "deposit",
-
-                    title:
-                        "Deposit Approved",
-
-                    message:
-                        `${formatMoney(amount)} has been added to your balance.`,
-
-                    amount:
-                        amount,
-
-                    read:
-                        false,
-
-                    createdAt:
-                        Date.now()
-
-                }
-            );
-
-        }
-
-
-        showToast(
-            "Deposit approved successfully.",
-            "success"
-        );
-
-
-    } catch (error) {
-
-        console.error(
-            "APPROVE DEPOSIT ERROR:",
-            error
-        );
-
-        showToast(
-            error.message ||
-            "Failed to approve deposit.",
-            "error"
-        );
-
-    }
-
-}
-
-
-/* =========================================================
-   REJECT DEPOSIT
-========================================================= */
-
-async function rejectDeposit(id) {
-
-    if (!currentAdmin) {
-        return;
-    }
-
-
-    const confirmed =
-        confirm(
-            "Reject this deposit request?"
-        );
-
-    if (!confirmed) {
-        return;
-    }
-
-
-    try {
-
-        const requestRef =
-            ref(
-                db,
-                `depositRequests/${id}`
-            );
-
-        const snapshot =
-            await get(requestRef);
-
-        if (!snapshot.exists()) {
-
-            showToast(
-                "Deposit request not found.",
-                "error"
-            );
-
-            return;
-        }
-
-
-        const data =
-            snapshot.val() || {};
-
-        const status =
-            normalizeStatus(
-                data.status
-            );
-
-
-        if (status === "approved") {
-
-            showToast(
-                "Approved deposit cannot be rejected.",
-                "warning"
-            );
-
-            return;
-        }
-
-
-        if (status === "rejected") {
-
-            showToast(
-                "This deposit is already rejected.",
-                "warning"
-            );
-
-            return;
-        }
-
-
-        await update(
-            requestRef,
-            {
-
-                status:
-                    "rejected",
-
-                rejectedAt:
-                    Date.now(),
-
-                rejectedBy:
-                    currentAdmin.uid,
-
-                rejectedByEmail:
-                    currentAdmin.email || ""
-
-            }
-        );
-
-
-        showToast(
-            "Deposit rejected.",
-            "success"
-        );
-
-
-    } catch (error) {
-
-        console.error(
-            "Reject deposit:",
-            error
-        );
-
-        showToast(
-            error.message ||
-            "Failed to reject deposit.",
-            "error"
-        );
-
-    }
-
-}
-
-
-/* =========================================================
-   WITHDRAWS
-========================================================= */
-
-function loadWithdraws() {
-
-    onValue(
-        ref(db, "withdrawRequests"),
-        (snapshot) => {
-
-            allWithdraws = {};
-
-            if (snapshot.exists()) {
-
-                snapshot.forEach((child) => {
-
-                    allWithdraws[child.key] =
-                        {
-                            id: child.key,
-                            ...(child.val() || {})
-                        };
-
-                });
-
-            }
-
-            renderWithdraws();
-
-        },
-        (error) => {
-
-            console.error(
-                "Withdraw listener:",
-                error
-            );
-
-            showToast(
-                "Unable to load withdraws.",
-                "error"
-            );
-
-        }
-    );
-
-}
-
-
-/* =========================================================
-   RENDER WITHDRAWS
-========================================================= */
-
-function renderWithdraws() {
-
-    const list =
-        $("withdrawList");
-
-    const empty =
-        $("emptyWithdraw");
-
-    if (!list) {
-        return;
-    }
-
-
-    const search =
-        (
-            $("withdrawSearch")?.value ||
-            ""
-        )
-        .trim()
-        .toLowerCase();
-
-    const filter =
-        $("withdrawFilter")?.value ||
-        "all";
-
-
-    const requests =
-        Object.values(allWithdraws)
-            .filter((data) => {
-
-                const status =
-                    normalizeStatus(
-                        data.status
-                    );
-
-                if (
-                    filter !== "all" &&
-                    status !== filter
-                ) {
-                    return false;
-                }
-
-                if (!search) {
-                    return true;
-                }
-
-                const text =
-                    [
-                        getUserName(data),
-                        getEmail(data),
-                        data.transactionId,
-                        data.phone,
-                        data.accountName,
-                        data.paymentMethod
-                    ]
-                    .join(" ")
-                    .toLowerCase();
-
-                return text.includes(search);
-
-            })
-            .sort(
-                (a, b) =>
-                    Number(
-                        b.createdAt || 0
-                    ) -
-                    Number(
-                        a.createdAt || 0
-                    )
-            );
-
-
-    updateWithdrawSummary();
-
-
-    if (requests.length === 0) {
-
-        list.innerHTML = "";
-
-        if (empty) {
-            empty.style.display =
-                "block";
-        }
-
-        return;
-    }
-
-
-    if (empty) {
-        empty.style.display =
-            "none";
-    }
-
-
-    list.innerHTML =
-        requests
-            .map(renderWithdrawCard)
-            .join("");
-
-
-    activateWithdrawButtons();
-}
-
-
-/* =========================================================
-   WITHDRAW CARD
-========================================================= */
-
-function renderWithdrawCard(data) {
-
-    const status =
-        normalizeStatus(data.status);
-
-    const amount =
-        Number(data.amount || 0);
-
-    const receive =
-        Number(
-            data.receive ??
-            (
-                amount -
-                Number(data.fee || 0)
-            )
-        );
-
-
-    const buttons =
-        status === "pending"
-            ? `
-                <div class="action-buttons">
-
-                    <button
-                        class="approveWithdrawBtn"
-                        data-id="${escapeHtml(data.id)}">
-
-                        <i class="fa-solid fa-circle-check"></i>
-                        Approve
-
-                    </button>
-
-                    <button
-                        class="viewWithdrawBtn"
-                        data-id="${escapeHtml(data.id)}">
-
-                        <i class="fa-solid fa-eye"></i>
-                        View
-
-                    </button>
-
-                    <button
-                        class="rejectWithdrawBtn"
-                        data-id="${escapeHtml(data.id)}">
-
-                        <i class="fa-solid fa-circle-xmark"></i>
-                        Reject
-
-                    </button>
-
-                </div>
-            `
-            : `
-                <div class="action-buttons">
-
-                    <button
-                        class="viewWithdrawBtn"
-                        data-id="${escapeHtml(data.id)}">
-
-                        <i class="fa-solid fa-eye"></i>
-                        View
-
-                    </button>
-
-                </div>
-            `;
-
-
-    return `
-        <div class="request-card">
-
-            <div class="request-header">
-
-                <div>
-
-                    <h3>
-                        ${escapeHtml(
-                            getUserName(data)
-                        )}
-                    </h3>
-
-                    <p>
-                        ${escapeHtml(
-                            getEmail(data)
-                        )}
-                    </p>
-
-                </div>
-
-                <span class="status ${status}">
-                    ${escapeHtml(
-                        status.toUpperCase()
-                    )}
-                </span>
-
-            </div>
-
-
-            <div class="request-details">
-
-                <p>
-                    <strong>Amount:</strong>
-                    ${formatMoney(amount)}
-                </p>
-
-                <p>
-                    <strong>Fee:</strong>
-                    ${formatMoney(
-                        data.fee || 0
-                    )}
-                </p>
-
-                <p>
-                    <strong>Receive:</strong>
-                    ${formatMoney(receive)}
-                </p>
-
-                <p>
-                    <strong>Payment Method:</strong>
-                    ${escapeHtml(
-                        data.paymentMethod ||
-                        "-"
-                    )}
-                </p>
-
-                <p>
-                    <strong>Phone:</strong>
-                    ${escapeHtml(
-                        data.phone ||
-                        data.receiverPhone ||
-                        "-"
-                    )}
-                </p>
-
-                <p>
-                    <strong>Account Name:</strong>
-                    ${escapeHtml(
-                        data.accountName ||
-                        "-"
-                    )}
-                </p>
-
-                <p>
-                    <strong>Request Date:</strong>
-                    ${formatDate(
-                        data.createdAt
-                    )}
-                </p>
-
-            </div>
-
-
-            ${buttons}
-
-        </div>
-    `;
-}
-
-
-/* =========================================================
-   WITHDRAW SUMMARY
-========================================================= */
-
-function updateWithdrawSummary() {
-
-    let total = 0;
-    let pending = 0;
-    let approved = 0;
-    let rejected = 0;
-
-
-    Object.values(allWithdraws)
-        .forEach((data) => {
-
-            const status =
-                normalizeStatus(
-                    data.status
-                );
-
-            total++;
-
-            if (status === "pending") {
-                pending++;
-            }
-
-            if (status === "approved") {
-                approved++;
-            }
-
-            if (status === "rejected") {
-                rejected++;
-            }
-
-        });
-
-
-    if ($("withdrawTotalCount")) {
-        $("withdrawTotalCount").textContent =
-            total;
-    }
-
-    if ($("withdrawPendingCount")) {
-        $("withdrawPendingCount").textContent =
-            pending;
-    }
-
-    if ($("withdrawApprovedCount")) {
-        $("withdrawApprovedCount").textContent =
-            approved;
-    }
-
-    if ($("withdrawRejectedCount")) {
-        $("withdrawRejectedCount").textContent =
-            rejected;
-    }
-
-}
-
-
-/* =========================================================
-   WITHDRAW BUTTONS
-========================================================= */
-
-function activateWithdrawButtons() {
-
-    document
-        .querySelectorAll(".approveWithdrawBtn")
-        .forEach((button) => {
-
-            button.onclick = () => {
-
-                approveWithdraw(
-                    button.dataset.id
-                );
-
-            };
-
-        });
-
-
-    document
-        .querySelectorAll(".rejectWithdrawBtn")
-        .forEach((button) => {
-
-            button.onclick = () => {
-
-                rejectWithdraw(
-                    button.dataset.id
-                );
-
-            };
-
-        });
-
-
-    document
-        .querySelectorAll(".viewWithdrawBtn")
-        .forEach((button) => {
-
-            button.onclick = () => {
-
-                openWithdrawModal(
-                    button.dataset.id
-                );
-
-            };
-
-        });
-
-}
-
-
-/* =========================================================
-   APPROVE WITHDRAW
-========================================================= */
-
-async function approveWithdraw(id) {
-
-    if (!currentAdmin) {
-        return;
-    }
-
-
-    const confirmed =
-        confirm(
-            "Approve this withdraw request?"
-        );
-
-    if (!confirmed) {
-        return;
-    }
-
-
-    try {
-
-        const requestRef =
-            ref(
-                db,
-                `withdrawRequests/${id}`
-            );
-
-        const requestSnapshot =
-            await get(requestRef);
-
-
-        if (!requestSnapshot.exists()) {
-
-            showToast(
-                "Withdraw request not found.",
-                "error"
-            );
-
-            return;
-        }
-
-
-        const request =
-            requestSnapshot.val() || {};
-
-        const status =
-            normalizeStatus(
-                request.status
-            );
-
-
-        if (status === "approved") {
-
-            showToast(
-                "This withdraw is already approved.",
-                "warning"
-            );
-
-            return;
-        }
-
-
-        if (status === "rejected") {
-
-            showToast(
-                "Rejected withdraw cannot be approved.",
-                "warning"
-            );
-
-            return;
-        }
-
-
-        const uid =
-            request.uid;
-
-        if (!uid) {
-
-            showToast(
-                "Withdraw has no user UID.",
-                "error"
-            );
-
-            return;
-        }
-
-
-        const amount =
-            Number(request.amount || 0);
-
-
-        if (!Number.isFinite(amount) ||
-            amount <= 0) {
-
-            showToast(
-                "Invalid withdraw amount.",
-                "error"
-            );
-
-            return;
-        }
-
-
-        const userRef =
-            ref(
-                db,
-                `users/${uid}`
-            );
-
-
-        const transactionResult =
-            await runTransaction(
-                userRef,
-                (currentData) => {
-
-                    if (!currentData) {
-                        return currentData;
-                    }
-
-
-                    if (
-                        currentData.lastApprovedWithdrawId === id
-                    ) {
-                        return;
-                    }
-
-
-                    const balance =
-                        Number(
-                            currentData.balance || 0
-                        );
-
-
-                    if (balance < amount) {
-
-                        return;
-
-                    }
-
-
-                    const totalWithdraw =
-                        Number(
-                            currentData.totalWithdraw ||
-                            currentData.totalWithdraws ||
-                            0
-                        );
-
-
-                    const totalTransactions =
-                        Number(
-                            currentData.totalTransactions ||
-                            0
-                        );
-
-
-                    return {
-
-                        ...currentData,
-
-                        balance:
-                            balance - amount,
-
-                        totalWithdraw:
-                            totalWithdraw +
-                            amount,
-
-                        totalTransactions:
-                            totalTransactions +
-                            1,
-
-                        lastApprovedWithdrawId:
-                            id,
-
-                        lastWithdrawApprovedAt:
-                            Date.now()
-
-                    };
-
-                }
-            );
-
-
-        if (!transactionResult.committed) {
-
-            const freshUser =
-                await get(userRef);
-
-            if (freshUser.exists()) {
-
-                const freshData =
-                    freshUser.val();
-
-                const freshBalance =
-                    Number(
-                        freshData.balance || 0
-                    );
-
-                if (freshBalance < amount) {
-
-                    showToast(
-                        "Insufficient user balance.",
-                        "error"
-                    );
-
-                    return;
-                }
-
-                if (
-                    freshData.lastApprovedWithdrawId === id
-                ) {
-
-                    showToast(
-                        "This withdraw was already processed.",
-                        "warning"
-                    );
-
-                    return;
-                }
-            }
-
-
-            showToast(
-                "Could not update user balance.",
-                "error"
-            );
-
-            return;
-        }
-
-
-        await update(
-            requestRef,
-            {
-
-                status:
-                    "approved",
-
-                approvedAt:
-                    Date.now(),
-
-                approvedBy:
-                    currentAdmin.uid,
-
-                approvedByEmail:
-                    currentAdmin.email || "",
-
-                processed:
-                    true
-
-            }
-        );
-
-
-        const transactionKey =
-            push(
-                ref(db, "transactions")
-            ).key;
-
-
-        if (transactionKey) {
-
-            await set(
-                ref(
-                    db,
-                    `transactions/${transactionKey}`
-                ),
-                {
-
-                    uid:
-                        uid,
-
-                    email:
-                        request.email || "",
-
-                    type:
-                        "withdraw",
-
-                    category:
-                        "withdraw",
-
-                    amount:
-                        amount,
-
-                    currency:
-                        "RWF",
-
-                    status:
-                        "approved",
-
-                    requestId:
-                        id,
-
-                    description:
-                        "Withdraw approved by admin",
-
-                    createdAt:
-                        Date.now(),
-
-                    adminUid:
-                        currentAdmin.uid
-
-                }
-            );
-
-        }
-
-
-        const notificationKey =
-            push(
-                ref(
-                    db,
-                    `notifications/${uid}`
-                )
-            ).key;
-
-
-        if (notificationKey) {
-
-            await set(
-                ref(
-                    db,
-                    `notifications/${uid}/${notificationKey}`
-                ),
-                {
-
-                    type:
-                        "withdraw",
-
-                    title:
-                        "Withdraw Approved",
-
-                    message:
-                        `${formatMoney(amount)} withdraw has been approved.`,
-
-                    amount:
-                        amount,
-
-                    read:
-                        false,
-
-                    createdAt:
-                        Date.now()
-
-                }
-            );
-
-        }
-
-
-        showToast(
-            "Withdraw approved successfully.",
-            "success"
-        );
-
-
-    } catch (error) {
-
-        console.error(
-            "Approve withdraw:",
-            error
-        );
-
-        showToast(
-            error.message ||
-            "Failed to approve withdraw.",
-            "error"
-        );
-
-    }
-
-}
-
-
-/* =========================================================
-   REJECT WITHDRAW
-========================================================= */
-
-async function rejectWithdraw(id) {
-
-    if (!currentAdmin) {
-        return;
-    }
-
-
-    const confirmed =
-        confirm(
-            "Reject this withdraw request?"
-        );
-
-    if (!confirmed) {
-        return;
-    }
-
-
-    try {
-
-        const requestRef =
-            ref(
-                db,
-                `withdrawRequests/${id}`
-            );
-
-        const snapshot =
-            await get(requestRef);
-
-
-        if (!snapshot.exists()) {
-
-            showToast(
-                "Withdraw request not found.",
-                "error"
-            );
-
-            return;
-        }
-
-
-        const data =
-            snapshot.val() || {};
-
-        const status =
-            normalizeStatus(
-                data.status
-            );
-
-
-        if (status === "approved") {
-
-            showToast(
-                "Approved withdraw cannot be rejected.",
-                "warning"
-            );
-
-            return;
-        }
-
-
-        if (status === "rejected") {
-
-            showToast(
-                "This withdraw is already rejected.",
-                "warning"
-            );
-
-            return;
-        }
-
-
-        await update(
-            requestRef,
-            {
-
-                status:
-                    "rejected",
-
-                rejectedAt:
-                    Date.now(),
-
-                rejectedBy:
-                    currentAdmin.uid,
-
-                rejectedByEmail:
-                    currentAdmin.email || ""
-
-            }
-        );
-
-
-        showToast(
-            "Withdraw rejected.",
-            "success"
-        );
-
-
-    } catch (error) {
-
-        console.error(
-            "Reject withdraw:",
-            error
-        );
-
-        showToast(
-            error.message ||
-            "Failed to reject withdraw.",
-            "error"
-        );
-
-    }
-
-}
-
-
-/* =========================================================
-   WITHDRAW MODAL
-========================================================= */
-
-function openWithdrawModal(id) {
-
-    const data =
-        allWithdraws[id];
-
-    if (!data) {
-        return;
-    }
-
-
-    selectedWithdrawId =
-        id;
-
-
-    if ($("modalWithdrawName")) {
-        $("modalWithdrawName").textContent =
-            getUserName(data);
-    }
-
-    if ($("modalWithdrawEmail")) {
-        $("modalWithdrawEmail").textContent =
-            getEmail(data);
-    }
-
-    if ($("modalWithdrawAmount")) {
-        $("modalWithdrawAmount").textContent =
-            formatMoney(
-                data.amount || 0
-            );
-    }
-
-    if ($("modalWithdrawPhone")) {
-        $("modalWithdrawPhone").textContent =
-            data.phone ||
-            data.receiverPhone ||
-            "-";
-    }
-
-    if ($("modalWithdrawMethod")) {
-        $("modalWithdrawMethod").textContent =
-            data.paymentMethod ||
-            "-";
-    }
-
-    if ($("modalWithdrawAccount")) {
-        $("modalWithdrawAccount").textContent =
-            data.accountNumber ||
-            data.accountName ||
-            "-";
-    }
-
-    if ($("modalWithdrawDate")) {
-        $("modalWithdrawDate").textContent =
-            formatDate(
-                data.createdAt
-            );
-    }
-
-
-    const status =
-        normalizeStatus(
-            data.status
-        );
-
-
-    if ($("modalWithdrawStatus")) {
-
-        $("modalWithdrawStatus").textContent =
-            status.toUpperCase();
-
-        $("modalWithdrawStatus").className =
-            `status ${status}`;
-
-    }
-
-
-    const modal =
-        $("withdrawModal");
-
-    if (modal) {
-        modal.style.display =
-            "flex";
-    }
-
-}
-
-
-function closeWithdrawModal() {
-
-    const modal =
-        $("withdrawModal");
-
-    if (modal) {
-        modal.style.display =
-            "none";
-    }
-
-    selectedWithdrawId =
-        null;
-}
-
-
-$("closeWithdrawModal")
-    ?.addEventListener(
-        "click",
-        closeWithdrawModal
-    );
-
-
-$("modalApproveWithdraw")
-    ?.addEventListener(
-        "click",
-        async () => {
-
-            if (!selectedWithdrawId) {
-                return;
-            }
-
-            await approveWithdraw(
+oveWithdraw(
                 selectedWithdrawId
             );
 
@@ -3263,20 +426,23 @@ async function findReferrer(user) {
 }
 
 
-// ======================================
-// APPROVE VIP REQUEST
-// MONEY VAULT - RWF / FRW
+
+            // =========================================================
+// MONEY VAULT
+// APPROVE VIP REQUEST - FINAL FIX
+// CURRENCY: RWF / FRW
 //
 // IMPORTANT:
-// - DO NOT deduct balance here.
-// - Buy Now already deducted the balance.
-// - VIP income starts after 24 hours.
-// - Referral bonus = 1,000 RWF after approval.
-// ======================================
+// 1. DO NOT deduct balance here.
+// 2. Buy Now already deducted balance.
+// 3. VIP becomes active after approval.
+// 4. First income claim is only after 24 hours.
+// 5. Referral bonus = 1,000 RWF after approval.
+// =========================================================
 
 async function approveVipRequest(id) {
 
-    if (!currentAdmin) {
+    if (!currentAdmin || !currentAdmin.uid) {
         alert("Admin not logged in.");
         return;
     }
@@ -3287,9 +453,9 @@ async function approveVipRequest(id) {
 
     try {
 
-        // ======================================
-        // 1. GET VIP REQUEST
-        // ======================================
+        // =================================================
+        // 1. GET REQUEST
+        // =================================================
 
         const requestRef = ref(
             db,
@@ -3299,80 +465,74 @@ async function approveVipRequest(id) {
         const requestSnap = await get(requestRef);
 
         if (!requestSnap.exists()) {
-            alert("VIP request not found.");
-            return;
+            throw new Error("VIP request not found.");
         }
 
-        const request = requestSnap.val() || {};
+        const oldRequest = requestSnap.val() || {};
 
-        const currentStatus =
-            String(request.status || "").toLowerCase();
+        const oldStatus =
+            String(oldRequest.status || "").toLowerCase();
 
-        // --------------------------------------
-        // ALREADY APPROVED
-        // --------------------------------------
-
-        if (currentStatus === "approved") {
+        if (oldStatus === "approved") {
             alert("This VIP request is already approved.");
             return;
         }
 
-        // ======================================
+        // =================================================
         // 2. USER ID
-        // ======================================
+        // =================================================
 
         const uid =
-            request.uid ||
-            request.userId ||
-            request.userUID ||
+            oldRequest.uid ||
+            oldRequest.userId ||
+            oldRequest.userUID ||
             "";
 
         if (!uid) {
-            throw new Error("Invalid user ID.");
+            throw new Error("VIP request has no user ID.");
         }
 
-        // ======================================
-        // 3. VIP INFORMATION
-        // ======================================
+        // =================================================
+        // 3. VIP DATA
+        // =================================================
 
         const vipName =
-            request.vipName ||
-            request.planName ||
-            request.name ||
+            oldRequest.vipName ||
+            oldRequest.planName ||
+            oldRequest.name ||
             "VIP Plan";
 
         const price = Number(
-            request.price ??
-            request.vipPrice ??
-            request.amount ??
+            oldRequest.price ??
+            oldRequest.vipPrice ??
+            oldRequest.amount ??
             0
         );
 
         const dailyIncome = Number(
-            request.dailyIncome ??
-            request.daily ??
-            request.dailyProfit ??
+            oldRequest.dailyIncome ??
+            oldRequest.daily ??
+            oldRequest.dailyProfit ??
+            0
+        );
+
+        const totalProfitValue = Number(
+            oldRequest.totalProfit ??
+            oldRequest.profit ??
+            oldRequest.total ??
             0
         );
 
         let duration = Number(
-            request.duration ??
-            request.durationDays ??
-            request.days ??
+            oldRequest.duration ??
+            oldRequest.durationDays ??
+            oldRequest.days ??
             0
         );
 
-        const totalProfit = Number(
-            request.totalProfit ??
-            request.profit ??
-            request.total ??
-            0
-        );
-
-        const planId =
-            request.vipPlanId ||
-            request.planId ||
-            "";
+        // =================================================
+        // 4. VALIDATE VIP DATA
+        // =================================================
 
         if (!Number.isFinite(price) || price <= 0) {
             throw new Error("Invalid VIP price.");
@@ -3385,20 +545,17 @@ async function approveVipRequest(id) {
             throw new Error("Invalid daily income.");
         }
 
-        // --------------------------------------
-        // CALCULATE DURATION IF MISSING
-        // --------------------------------------
-
         if (
             !Number.isFinite(duration) ||
             duration <= 0
         ) {
+
             if (
-                totalProfit > 0 &&
+                totalProfitValue > 0 &&
                 dailyIncome > 0
             ) {
                 duration = Math.round(
-                    totalProfit / dailyIncome
+                    totalProfitValue / dailyIncome
                 );
             }
         }
@@ -3407,12 +564,29 @@ async function approveVipRequest(id) {
             !Number.isFinite(duration) ||
             duration <= 0
         ) {
-            throw new Error("VIP duration is invalid.");
+            throw new Error("Invalid VIP duration.");
         }
 
-        // ======================================
-        // 4. GET USER
-        // ======================================
+        const totalProfit =
+            totalProfitValue > 0
+                ? totalProfitValue
+                : dailyIncome * duration;
+
+        // =================================================
+        // 5. VIP PLAN ID
+        // =================================================
+
+        const planId =
+            String(
+                oldRequest.vipPlanId ||
+                oldRequest.planId ||
+                oldRequest.planID ||
+                "unknown"
+            );
+
+        // =================================================
+        // 6. GET USER
+        // =================================================
 
         const userRef = ref(
             db,
@@ -3427,18 +601,17 @@ async function approveVipRequest(id) {
 
         const user = userSnap.val() || {};
 
-        // ======================================
+        // =================================================
         // IMPORTANT
         //
-        // DO NOT:
-        // balance -= price
+        // DO NOT TOUCH USER BALANCE HERE.
         //
-        // Buy Now already deducted the balance.
-        // ======================================
+        // Buy Now already deducted the VIP price.
+        // =================================================
 
-        // ======================================
-        // 5. APPROVAL TIME
-        // ======================================
+        // =================================================
+        // 7. APPROVAL TIME
+        // =================================================
 
         const approvedAt = Date.now();
 
@@ -3452,53 +625,38 @@ async function approveVipRequest(id) {
                 1000
             );
 
-        // ======================================
-        // 6. CREATE VIP BUYER ID
-        // ======================================
+        // =================================================
+        // 8. CREATE IDS
+        // =================================================
 
-        const vipBuyerRef = push(
-            ref(db, "vipBuyers")
-        );
+        const vipBuyerKey =
+            push(ref(db, "vipBuyers")).key;
 
-        const vipBuyerId = vipBuyerRef.key;
+        const userVipKey =
+            push(
+                ref(
+                    db,
+                    "users/" +
+                    uid +
+                    "/vipPlans"
+                )
+            ).key;
 
-        if (!vipBuyerId) {
+        if (!vipBuyerKey) {
             throw new Error(
                 "Could not create VIP buyer ID."
             );
         }
 
-        // ======================================
-        // 7. CREATE USER VIP PLAN ID
-        // ======================================
-
-        const userVipRef = push(
-            ref(
-                db,
-                "users/" +
-                uid +
-                "/vipPlans"
-            )
-        );
-
-        const userVipId = userVipRef.key;
-
-        if (!userVipId) {
+        if (!userVipKey) {
             throw new Error(
-                "Could not create user VIP plan ID."
+                "Could not create user VIP ID."
             );
         }
 
-        // ======================================
-        // 8. VIP DATA
-        // ======================================
-
-        const calculatedTotalProfit =
-            (
-                totalProfit > 0
-            )
-                ? totalProfit
-                : dailyIncome * duration;
+        // =================================================
+        // 9. VIP DATA
+        // =================================================
 
         const vipData = {
 
@@ -3506,13 +664,11 @@ async function approveVipRequest(id) {
 
             requestId: id,
 
-            vipBuyerId: vipBuyerId,
+            vipBuyerId: vipBuyerKey,
 
-            vipPlanId:
-                planId || "unknown",
+            vipPlanId: planId,
 
-            planId:
-                planId || "unknown",
+            planId: planId,
 
             vipName: vipName,
 
@@ -3520,8 +676,7 @@ async function approveVipRequest(id) {
 
             dailyIncome: dailyIncome,
 
-            totalProfit:
-                calculatedTotalProfit,
+            totalProfit: totalProfit,
 
             duration: duration,
 
@@ -3531,17 +686,21 @@ async function approveVipRequest(id) {
 
             status: "active",
 
-            purchasedAt: approvedAt,
+            purchasedAt:
+                Number(
+                    oldRequest.createdAt ||
+                    approvedAt
+                ),
 
             approvedAt: approvedAt,
 
             approvedBy:
                 currentAdmin.uid,
 
-            // ==================================
-            // IMPORTANT:
-            // FIRST CLAIM ONLY AFTER 24 HOURS
-            // ==================================
+            // =============================================
+            // VERY IMPORTANT
+            // NO IMMEDIATE DAILY INCOME
+            // =============================================
 
             lastClaim: approvedAt,
 
@@ -3560,39 +719,406 @@ async function approveVipRequest(id) {
             claimCount: 0
         };
 
-        // ======================================
-        // 9. VIP BUYER DATA
-        // ======================================
+        // =================================================
+        // 10. VIP BUYER
+        // =================================================
 
         const vipBuyerData = {
             ...vipData,
-            id: vipBuyerId
+            id: vipBuyerKey
         };
 
-        // ======================================
-        // 10. PREPARE ATOMIC UPDATES
-        // ======================================
+        // =================================================
+        // 11. BUILD A COMPLETE REQUEST
+        //
+        // This is important because Firebase rules
+        // validate the COMPLETE resulting request.
+        // =================================================
+
+        const approvedRequest = {
+
+            ...oldRequest,
+
+            uid: uid,
+
+            vipPlanId: planId,
+
+            planId: planId,
+
+            vipName: vipName,
+
+            price: price,
+
+            dailyIncome: dailyIncome,
+
+            totalProfit: totalProfit,
+
+            duration: duration,
+
+            currency: "RWF",
+
+            paymentMethod:
+                oldRequest.paymentMethod ||
+                "Account Balance",
+
+            createdAt:
+                Number(
+                    oldRequest.createdAt ||
+                    approvedAt
+                ),
+
+            status: "approved",
+
+            approvedAt: approvedAt,
+
+            approvedBy:
+                currentAdmin.uid,
+
+            approvedByEmail:
+                currentAdmin.email || "",
+
+            processed: true,
+
+            vipBuyerId: vipBuyerKey,
+
+            userVipId: userVipKey,
+
+            endDate: endDate,
+
+            // Balance was already deducted when Buy Now
+            balanceDeducted: true
+        };
+
+        // =================================================
+        // 12. PREPARE UPDATE
+        // =================================================
 
         const updates = {};
 
-        // --------------------------------------
-        // VIP BUYER
-        // --------------------------------------
-
-        updates[
-            "vipBuyers/" + vipBuyerId
-        ] = vipBuyerData;
-
-        // --------------------------------------
+        // -----------------------------------------------
         // USER VIP PLAN
-        // --------------------------------------
+        // -----------------------------------------------
 
         updates[
             "users/" +
             uid +
             "/vipPlans/" +
-            userVipId
+            userVipKey
         ] = vipData;
+
+        // -----------------------------------------------
+        // VIP BUYER
+        // -----------------------------------------------
+
+        updates[
+            "vipBuyers/" +
+            vipBuyerKey
+        ] = vipBuyerData;
+
+        // -----------------------------------------------
+        // VIP REQUEST
+        // -----------------------------------------------
+
+        updates[
+            "vipPurchaseRequests/" +
+            id
+        ] = approvedRequest;
+
+        // =================================================
+        // 13. REFERRAL BONUS
+        // =================================================
+
+        let referralPaid = false;
+        let referrerUid = "";
+        let referralBonusId = "";
+
+        const referralCode =
+            user.referredBy ||
+            user.referralCodeUsed ||
+            "";
+
+        if (referralCode) {
+
+            try {
+
+                const codeSnap = await get(
+                    ref(
+                        db,
+                        "referralCodes/" +
+                        referralCode
+                    )
+                );
+
+                if (codeSnap.exists()) {
+
+                    const codeData =
+                        codeSnap.val() || {};
+
+                    referrerUid =
+                        codeData.uid || "";
+
+                    // Prevent self referral
+                    if (referrerUid === uid) {
+                        referrerUid = "";
+                    }
+                }
+
+                if (referrerUid) {
+
+                    const referrerSnap =
+                        await get(
+                            ref(
+                                db,
+                                "users/" +
+                                referrerUid
+                            )
+                        );
+
+                    if (referrerSnap.exists()) {
+
+                        // ---------------------------------
+                        // CHECK EXISTING BONUS
+                        // ---------------------------------
+
+                        const bonusesSnap =
+                            await get(
+                                ref(
+                                    db,
+                                    "vipReferralBonuses"
+                                )
+                            );
+
+                        let alreadyPaid = false;
+
+                        if (bonusesSnap.exists()) {
+
+                            bonusesSnap.forEach(child => {
+
+                                const bonus =
+                                    child.val() || {};
+
+                                if (
+                                    String(
+                                        bonus.requestId || ""
+                                    ) === String(id) &&
+                                    String(
+                                        bonus.status || ""
+                                    ).toLowerCase()
+                                    === "paid"
+                                ) {
+                                    alreadyPaid = true;
+                                }
+                            });
+                        }
+
+                        // ---------------------------------
+                        // PAY ONLY ONCE
+                        // ---------------------------------
+
+                        if (!alreadyPaid) {
+
+                            const referrer =
+                                referrerSnap.val() || {};
+
+                            referralBonusId =
+                                push(
+                                    ref(
+                                        db,
+                                        "vipReferralBonuses"
+                                    )
+                                ).key;
+
+                            if (referralBonusId) {
+
+                                const oldBalance =
+                                    Number(
+                                        referrer.balance || 0
+                                    );
+
+                                const oldBonus =
+                                    Number(
+                                        referrer.referralBonus || 0
+                                    );
+
+                                const oldEarnings =
+                                    Number(
+                                        referrer.referralEarnings || 0
+                                    );
+
+                                const oldCount =
+                                    Number(
+                                        referrer.referralCount || 0
+                                    );
+
+                                // --------------------------------
+                                // +1,000 RWF
+                                // --------------------------------
+
+                                updates[
+                                    "users/" +
+                                    referrerUid +
+                                    "/balance"
+                                ] =
+                                    oldBalance + 1000;
+
+                                updates[
+                                    "users/" +
+                                    referrerUid +
+                                    "/referralBonus"
+                                ] =
+                                    oldBonus + 1000;
+
+                                updates[
+                                    "users/" +
+                                    referrerUid +
+                                    "/referralEarnings"
+                                ] =
+                                    oldEarnings + 1000;
+
+                                updates[
+                                    "users/" +
+                                    referrerUid +
+                                    "/referralCount"
+                                ] =
+                                    oldCount + 1;
+
+                                updates[
+                                    "vipReferralBonuses/" +
+                                    referralBonusId
+                                ] = {
+
+                                    referrerUid:
+                                        referrerUid,
+
+                                    referredUserUid:
+                                        uid,
+
+                                    requestId:
+                                        id,
+
+                                    amount: 1000,
+
+                                    currency: "RWF",
+
+                                    status: "paid",
+
+                                    createdAt:
+                                        approvedAt
+                                };
+
+                                referralPaid = true;
+                            }
+                        }
+                    }
+                }
+
+            } catch (refError) {
+
+                console.error(
+                    "Referral bonus error:",
+                    refError
+                );
+
+                // VIP approval should not fail just
+                // because referral lookup failed.
+                referralPaid = false;
+                referrerUid = "";
+                referralBonusId = "";
+            }
+        }
+
+        // =================================================
+        // 14. ADD REFERRAL STATUS TO REQUEST
+        // =================================================
+
+        updates[
+            "vipPurchaseRequests/" +
+            id +
+            "/referralBonusPaid"
+        ] = referralPaid;
+
+        if (referrerUid) {
+
+            updates[
+                "vipPurchaseRequests/" +
+                id +
+                "/referrerUid"
+            ] = referrerUid;
+        }
+
+        if (referralBonusId) {
+
+            updates[
+                "vipPurchaseRequests/" +
+                id +
+                "/referralBonusId"
+            ] = referralBonusId;
+        }
+
+        // =================================================
+        // 15. SINGLE ATOMIC UPDATE
+        // =================================================
+
+        console.log(
+            "VIP approval update paths:",
+            Object.keys(updates)
+        );
+
+        await update(
+            ref(db),
+            updates
+        );
+
+        // =================================================
+        // 16. SUCCESS
+        // =================================================
+
+        alert(
+            referralPaid
+                ? "VIP approved successfully. 1,000 RWF referral bonus paid."
+                : "VIP approved successfully."
+        );
+
+        if (
+            typeof loadVipRequests ===
+            "function"
+        ) {
+            loadVipRequests();
+        }
+
+        if (
+            typeof loadVipBuyers ===
+            "function"
+        ) {
+            loadVipBuyers();
+        }
+
+    } catch (error) {
+
+        console.error(
+            "VIP APPROVE ERROR:",
+            error
+        );
+
+        console.error(
+            "ERROR CODE:",
+            error?.code
+        );
+
+        console.error(
+            "ERROR MESSAGE:",
+            error?.message
+        );
+
+        alert(
+            "VIP approve failed: " +
+            (
+                error?.message ||
+                "Update failed"
+            )
+        );
+    }
+}
 
         // --------------------------------------
         // APPROVE REQUEST
