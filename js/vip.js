@@ -386,9 +386,12 @@ function getPlanPrice(plan) {
     return numberValue(
         plan.price ??
         plan.amount ??
-        plan.cost
+        plan.cost ??
+        plan.vipPrice ??
+        plan.packagePrice ??
+        0
     );
-}
+   }
 
 
 /* =========================================================
@@ -400,7 +403,10 @@ function getPlanDailyIncome(plan) {
     return numberValue(
         plan.dailyIncome ??
         plan.daily ??
-        plan.dailyProfit
+        plan.dailyProfit ??
+        plan.dailyEarning ??
+        plan.incomePerDay ??
+        0
     );
 }
 
@@ -414,23 +420,29 @@ function getPlanTotalProfit(plan) {
     return numberValue(
         plan.totalProfit ??
         plan.profit ??
-        plan.totalIncome
+        plan.totalIncome ??
+        plan.totalEarnings ??
+        plan.totalProfitAmount ??
+        0
     );
-}
+   }
 
 
 /* =========================================================
    GET PLAN DURATION
    ========================================================= */
-
 function getPlanDuration(plan) {
 
     return numberValue(
         plan.duration ??
         plan.totalDays ??
-        plan.days
+        plan.days ??
+        plan.durationDays ??
+        plan.validityDays ??
+        0
     );
 }
+
 
 
 /* =========================================================
