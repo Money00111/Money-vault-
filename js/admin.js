@@ -555,83 +555,347 @@ function startDatabaseListeners() {
     );
 }
 
+// ======================================
+// DASHBOARD STATISTICS
+// USERS + SYSTEM BALANCE
+// ======================================
 
-/* =========================================================
-   DASHBOARD
-========================================================= */
+const totalUsersEl =
+    document.getElementById("totalUsers");
 
-function renderDashboard() {
+const systemBalanceEl =
+    document.getElementById("systemBalance");
 
-    const totalUsers =
-        allUsers.length;
+const activeUsersEl =
+    document.getElementById("activeUsers");
 
-    const totalDeposits =
-        allDeposits.reduce(
-            (sum, item) =>
-                sum + numberValue(item.amount),
-            0
-        );
+const blockedUsersEl =
+    document.getElementById("blockedUsers");
 
-    const pendingDeposits =
-        allDeposits.filter(
-            item =>
-                normalizeStatus(item.status) === "pending"
-        ).length;
+const usersContainer =
+    document.getElementById("usersContainer");
 
-    const approvedDeposits =
-        allDeposits.filter(
-            item =>
-                normalizeStatus(item.status) === "approved"
-        ).length;
+let allUsersData = {};
 
-    const totalWithdraws =
-        allWithdraws.reduce(
-            (sum, item) =>
-                sum + numberValue(item.amount),
-            0
-        );
+// ======================================
+// LOAD USERS + SYSTEM BALANCE
+// ======================================
 
-    const systemBalance =
-        allUsers.reduce(
-            (sum, user) =>
-                sum + numberValue(user.balance),
-            0
-        );
+function loadUsersAndSystemBalance() {
 
+    const usersRef = ref(db, "users");
 
-    if ($("totalUsers")) {
-        $("totalUsers").textContent =
-            totalUsers.toLocaleString();
-    }
+    onValue(
+        usersRef,
+        (snapshot) => {
 
-    if ($("dashboardTotalDeposits")) {
-        $("dashboardTotalDeposits").textContent =
-            money(totalDeposits);
-    }
+            allUsersData = {};
 
-    if ($("dashboardPendingDeposits")) {
-        $("dashboardPendingDeposits").textContent =
-            pendingDeposits;
-    }
+            let totalUsers = 0;
+            let totalBalance = 0;
+            let activeUsers = 0;
+            let blockedUsers = 0;
 
-    if ($("dashboardApprovedDeposits")) {
-        $("dashboardApprovedDeposits").textContent =
-            approvedDeposits;
-    }
+            if (snapshot.exists()) {
 
-    if ($("dashboardTotalWithdraws")) {
-        $("dashboardTotalWithdraws").textContent =
-            money(totalWithdraws);
-    }
+                snapshot.forEach((child) => {
 
-    if ($("systemBalance")) {
-        $("systemBalance").textContent =
-            money(systemBalance);
-    }
+                    const uid = child.key;
+                    const user = child.val() || {};
 
+                    allUsersData[uid] = user;
 
-    renderRecentActivity();
+                    totalUsers++;
+
+                    totalBalance +=
+                        Number(user.balance || 0);
+
+                    const status =
+                        String(user.status || "active")
+                            .toLowerCase();
+
+                    if (
+                        status === "blocked" ||
+                        status === "suspended"
+                    ) {
+                        blockedUsers++;
+                    } else {
+                        activeUsers++;
+                    }
+
+                });
+            }
+
+            // ==============================
+            // DASHBOARD
+            // ==============================
+
+            if (totalUsersEl) {
+                totalUsersEl.textContent =
+                    totalUsers.toLocaleString();
+            }
+
+            if (systemBalanceEl) {
+                systemBalanceEl.textContent =
+                    totalBalance.toLocaleString() +
+                    " RWF";
+            }
+
+            if (activeUsersEl) {
+                activeUsersEl.textContent =
+                    activeUsers.toLocaleString();
+            }
+
+            if (blockedUsersEl) {
+                blockedUsersEl.textContent =
+                    blockedUsers.toLocaleString();
+            }
+
+            // ==============================
+            // USERS LIST
+            // ==============================
+
+            renderUsersList(allUsersData);
+
+        },
+        (error) => {
+
+            console.error(
+                "Users Load Error:",
+                error
+            );
+
+            if (usersContainer) {
+
+                usersContainer.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        <h3>Failed to Load Users</h3>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+
+            }
+
+        }
+    );
 }
+
+
+// ======================================
+// RENDER USERS
+// ======================================
+
+function renderUsersList(users) {
+
+    if (!usersContainer) return;
+
+    const entries =
+        Object.entries(users);
+
+    if (!entries.length) {
+
+        usersContainer.innerHTML = `
+            <div class="empty-state">
+                <i class="fa-solid fa-users"></i>
+                <h3>No Users Found</h3>
+                <p>No registered users yet.</p>
+            </div>
+        `;
+
+        return;
+    }
+
+    usersContainer.innerHTML = "";
+
+    entries.forEach(([uid, user]) => {
+
+        const name =
+            user.fullName ||
+            user.name ||
+            "Unknown User";
+
+        const email =
+            user.email ||
+            "-";
+
+        const phone =
+            user.phone ||
+            "-";
+
+        const balance =
+            Number(user.balance || 0);
+
+        const status =
+            String(user.status || "active")
+                .toLowerCase();
+
+        const blocked =
+            status === "blocked" ||
+            status === "suspended";
+
+        const vip =
+            user.vip ||
+            "VIP 0";
+
+        const card =
+            document.createElement("div");
+
+        card.className = "user-card";
+
+        card.innerHTML = `
+            <div class="user-card-header">
+
+                <div class="user-avatar">
+                    <i class="fa-solid fa-user"></i>
+                </div>
+
+                <div class="user-main-info">
+
+                    <h3>
+                        ${escapeHTML(name)}
+                    </h3>
+
+                    <p>
+                        ${escapeHTML(email)}
+                    </p>
+
+                </div>
+
+                <span class="status ${
+                    blocked
+                        ? "blocked"
+                        : "active"
+                }">
+                    ${
+                        blocked
+                            ? "Blocked"
+                            : "Active"
+                    }
+                </span>
+
+            </div>
+
+            <div class="user-card-details">
+
+                <div>
+                    <small>Phone</small>
+                    <strong>
+                        ${escapeHTML(phone)}
+                    </strong>
+                </div>
+
+                <div>
+                    <small>Balance</small>
+                    <strong>
+                        ${balance.toLocaleString()} RWF
+                    </strong>
+                </div>
+
+                <div>
+                    <small>VIP</small>
+                    <strong>
+                        ${escapeHTML(String(vip))}
+                    </strong>
+                </div>
+
+            </div>
+
+            <div class="user-card-footer">
+
+                <small>
+                    UID: ${escapeHTML(uid)}
+                </small>
+
+            </div>
+        `;
+
+        usersContainer.appendChild(card);
+
+    });
+
+}
+
+
+// ======================================
+// SEARCH USERS
+// ======================================
+
+const userSearch =
+    document.getElementById("userSearch");
+
+userSearch?.addEventListener(
+    "input",
+    () => {
+
+        const keyword =
+            userSearch.value
+                .trim()
+                .toLowerCase();
+
+        if (!keyword) {
+
+            renderUsersList(
+                allUsersData
+            );
+
+            return;
+        }
+
+        const filtered = {};
+
+        Object.entries(allUsersData)
+            .forEach(([uid, user]) => {
+
+                const text = [
+
+                    user.fullName,
+                    user.name,
+                    user.email,
+                    user.phone,
+                    uid
+
+                ]
+                .filter(Boolean)
+                .join(" ")
+                .toLowerCase();
+
+                if (text.includes(keyword)) {
+                    filtered[uid] = user;
+                }
+
+            });
+
+        renderUsersList(filtered);
+
+    }
+);
+
+
+// ======================================
+// HTML ESCAPE
+// ======================================
+
+function escapeHTML(value) {
+
+    return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+}
+
+
+// ======================================
+// START
+// ======================================
+
+loadUsersAndSystemBalance();
+
+console.log(
+    "✅ Users + System Balance Loaded"
+);
 
 
 /* =========================================================
