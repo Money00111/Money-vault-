@@ -36,8 +36,6 @@ const paymentMethod = document.getElementById("paymentMethod");
 
 const senderPhone = document.getElementById("senderPhone");
 
-const transactionId = document.getElementById("transactionId");
-
 const paymentDate = document.getElementById("paymentDate");
 
 const note = document.getElementById("note");
@@ -239,23 +237,6 @@ depositForm?.addEventListener("submit", async (e) => {
     try {
 
 
-        // ======================================
-        // GET TRANSACTION ID
-        // ======================================
-
-        const enteredTransactionId =
-            transactionId.value.trim();
-
-
-        if (!enteredTransactionId) {
-
-            alert(
-                "Please enter the Transaction ID."
-            );
-
-            return;
-
-        }
 
 
         // ======================================
@@ -285,61 +266,7 @@ depositForm?.addEventListener("submit", async (e) => {
             await get(userDepositsQuery);
 
 
-        // ======================================
-        // CHECK DUPLICATE TRANSACTION ID
-        // ======================================
-
-        let transactionIdExists = false;
-
-
-        if (depositsSnapshot.exists()) {
-
-            depositsSnapshot.forEach((child) => {
-
-                const deposit = child.val();
-
-
-                const existingId =
-                    String(
-                        deposit.transactionId || ""
-                    )
-                    .trim()
-                    .toLowerCase();
-
-
-                const newId =
-                    enteredTransactionId
-                        .trim()
-                        .toLowerCase();
-
-
-                if (
-                    existingId &&
-                    existingId === newId
-                ) {
-
-                    transactionIdExists = true;
-
-                }
-
-            });
-
-        }
-
-
-        // ======================================
-        // DUPLICATE FOUND
-        // ======================================
-
-        if (transactionIdExists) {
-
-            alert(
-                "This Transaction ID has already been used. Please enter a new Transaction ID."
-            );
-
-            return;
-
-        }
+        
 
 
         // ======================================
@@ -360,9 +287,7 @@ depositForm?.addEventListener("submit", async (e) => {
             senderPhone:
                 senderPhone.value.trim(),
 
-            transactionId:
-                enteredTransactionId,
-
+            
             paymentDate:
                 paymentDate.value,
 
@@ -598,10 +523,6 @@ async function loadDepositHistory() {
                             ${deposit.senderPhone || "-"}
                         </p>
 
-                        <p>
-                            <strong>Transaction ID:</strong>
-                            ${deposit.transactionId || "-"}
-                        </p>
 
                         <p>
                             <strong>Date:</strong>
